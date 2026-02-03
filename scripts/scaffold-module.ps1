@@ -159,9 +159,12 @@ dependencies {
     implementation(libs.kotlin.stdlib)
     implementation(libs.kotlinx.coroutines.core)
 
-    // Platform Shared
+    // Platform Shared - Interfaces
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":platform-shared:event-bus"))
+    implementation(project(":platform-shared:common-messaging"))
+    implementation(project(":platform-shared:config-model"))
+    implementation(project(":platform-shared:org-model"))
+    implementation(project(":platform-shared:workflow-model"))
 
     // Testing
     testImplementation("io.quarkus:quarkus-junit5")
@@ -598,17 +601,17 @@ See ``src/main/resources/application.yml`` for all configuration options.
 
 ``````bash
 # Build Docker image
-./gradlew :$ModuleName:quarkusBuild -Dquarkus.container-image.build=true
+./gradlew :${ModuleName}:quarkusBuild -Dquarkus.container-image.build=true
 
 # Run container
-docker run -p $Port:$Port $ModuleName:latest
+docker run -p ${Port}:${Port} ${ModuleName}:latest
 ``````
 
 ### Kubernetes
 
 ``````bash
 # Deploy to Kubernetes
-kubectl apply -f k8s/$ModuleName/
+kubectl apply -f k8s/${ModuleName}/
 ``````
 
 ## Monitoring
