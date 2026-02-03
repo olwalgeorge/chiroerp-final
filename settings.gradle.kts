@@ -117,3 +117,11 @@ println("=== Discovery Complete ===\n")
 //
 // // ... (Continue for all 92 modules)
 // =============================================================================
+
+
+// Platform-shared modules (cross-cutting concerns)
+include("platform-shared:common-types")
+include("platform-shared:common-messaging")
+include("platform-shared:config-model")
+include("platform-shared:org-model")
+include("platform-shared:workflow-model")

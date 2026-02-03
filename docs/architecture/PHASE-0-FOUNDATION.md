@@ -29,10 +29,12 @@ The roadmap assumes a working development environment, but we currently have:
 | Criterion | Acceptance Test | Success Metric |
 |-----------|-----------------|----------------|
 | **Module Structure Complete** | All 12 domain modules scaffolded | 100% modules build successfully |
-| **Local Dev Stack Operational** | Docker Compose up → all services healthy | PostgreSQL + Kafka + Redis + Temporal running |
+| **Platform-Shared Foundation** | 4 interface modules created | Config/Org/Workflow abstractions available |
+| **Local Dev Stack Operational** | Docker Compose up → all services healthy | PostgreSQL + Redpanda + Redis + Temporal running |
 | **CI/CD Pipeline Working** | Push to main → build → test → deploy to staging | < 10 min pipeline duration |
 | **Database Migrations** | Flyway migrations run successfully | Zero migration errors |
 | **First Module Working** | Finance GL CRUD operations complete | Create/Read/Update/Delete GL accounts |
+| **Platform-Ready Architecture** | Finance GL uses platform interfaces | PostingRulesEngine, OrgHierarchy injected via CDI |
 | **Team Onboarded** | 6-8 engineers productive on Day 1 of Phase 1 | IDE setup < 30 min, first PR < 2 hours |
 
 ---
@@ -574,6 +576,332 @@ CREATE INDEX idx_audit_changed_at ON gl_audit_log(changed_at);
 
 ---
 
+### Day 7.5: Platform-Shared Foundation Modules
+
+**Goal**: Create platform abstraction interfaces that domains will depend on
+
+**Context**: This enables the "SAP-grade configurability" strategy where 85%+ of variation is handled via configuration, not code. Domains will depend on **interfaces** from platform-shared; implementations can be swapped from hardcoded (Phase 0) → config-driven (Phase 1) → AI-powered (Phase 3+) without changing domain code.
+
+**Deliverables**:
+- [ ] `platform-shared/common-messaging/` - Event publishing/consuming interfaces (Kafka abstractions)
+- [ ] `platform-shared/config-model/` - Configuration engine domain model (PricingRule, PostingRule, TaxRule, ApprovalRule)
+- [ ] `platform-shared/org-model/` - Organizational hierarchy value objects (OrgUnit, AuthorizationContext)
+- [ ] `platform-shared/workflow-model/` - Workflow definitions (WorkflowDefinition, WorkflowStep, ApprovalRoute)
+
+**Why Now?**: 
+- Week 2 is when we implement first domain module (finance-gl)
+- That module needs to post journal entries → needs PostingRulesEngine interface
+- Better to create interfaces NOW than refactor in Phase 1
+- Enables "platform-ready" architecture from Day 1
+
+**Module 1: Common Messaging** (`platform-shared/common-messaging/`):
+
+```kotlin
+// src/main/kotlin/com/chiroerp/shared/messaging/DomainEventPublisher.kt
+package com.chiroerp.shared.messaging
+
+import java.util.UUID
+
+/**
+ * Publishes domain events to message broker (Kafka/Redpanda)
+ * Implementations handle serialization, partitioning, and delivery guarantees
+ */
+interface DomainEventPublisher {
+    /**
+     * Publish event to default topic for event type
+     * @param event Domain event to publish
+     * @param partitionKey Key for partitioning (typically tenantId or aggregateId)
+     */
+    suspend fun publish(event: DomainEvent, partitionKey: UUID)
+    
+    /**
+     * Publish event to specific topic
+     * @param topic Target topic name
+     * @param event Domain event to publish
+     * @param partitionKey Key for partitioning
+     */
+    suspend fun publishToTopic(topic: String, event: DomainEvent, partitionKey: UUID)
+}
+
+interface DomainEvent {
+    val eventId: UUID
+    val eventType: String
+    val aggregateId: UUID
+    val tenantId: UUID
+    val occurredAt: Instant
+    val version: Long
+}
+```
+
+**Module 2: Config Model** (`platform-shared/config-model/`):
+
+```kotlin
+// src/main/kotlin/com/chiroerp/shared/config/PostingRulesEngine.kt
+package com.chiroerp.shared.config
+
+import java.math.BigDecimal
+import java.util.UUID
+
+/**
+ * Determines GL account assignments based on business rules
+ * Phase 0: Hardcoded implementation (kenya-specific)
+ * Phase 1: Drools rule engine reading from config database
+ * Phase 2: AI-powered rule suggestion and validation
+ */
+interface PostingRulesEngine {
+    /**
+     * Determine which GL accounts to use for a transaction
+     * @param context Transaction context (document type, amounts, org unit, etc.)
+     * @return Account mapping (debit, credit, tax accounts)
+     */
+    fun determineAccounts(context: PostingContext): AccountMapping
+}
+
+data class PostingContext(
+    val tenantId: UUID,
+    val documentType: String,         // "SALES_INVOICE", "PURCHASE_INVOICE", etc.
+    val amount: BigDecimal,
+    val taxCode: String,              // "VAT_STANDARD", "VAT_ZERO", etc.
+    val orgUnitId: UUID,
+    val customerId: UUID? = null,
+    val vendorId: UUID? = null,
+    val productCategory: String? = null
+)
+
+data class AccountMapping(
+    val debitAccountId: UUID,
+    val creditAccountId: UUID,
+    val taxAccountId: UUID? = null,
+    val costCenterId: UUID? = null,
+    val profitCenterId: UUID? = null
+)
+
+// src/main/kotlin/com/chiroerp/shared/config/PricingRulesEngine.kt
+package com.chiroerp.shared.config
+
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.util.UUID
+
+/**
+ * Calculates pricing based on business rules (customer, product, quantity, date)
+ * Phase 0: Hardcoded base prices + simple quantity discounts
+ * Phase 1: Complex pricing rules (tiered, promotional, contract-based)
+ * Phase 2: AI-powered dynamic pricing
+ */
+interface PricingRulesEngine {
+    /**
+     * Calculate final price after applying all rules
+     * @param context Pricing context
+     * @return Final price with breakdown of applied rules
+     */
+    fun calculatePrice(context: PricingContext): PricingResult
+    
+    /**
+     * Get applicable tax rate
+     * @param context Tax context
+     * @return Tax rate (e.g., 0.16 for Kenya 16% VAT)
+     */
+    fun getTaxRate(context: TaxContext): BigDecimal
+}
+
+data class PricingContext(
+    val tenantId: UUID,
+    val productId: UUID,
+    val customerId: UUID,
+    val quantity: Int,
+    val orderDate: LocalDate,
+    val countryCode: String
+)
+
+data class PricingResult(
+    val basePrice: BigDecimal,
+    val finalPrice: BigDecimal,
+    val appliedRules: List<AppliedRule>
+)
+
+data class AppliedRule(
+    val ruleId: UUID,
+    val ruleName: String,
+    val discount: BigDecimal,      // Positive = discount, Negative = surcharge
+    val discountType: String       // "PERCENTAGE", "FIXED_AMOUNT"
+)
+
+data class TaxContext(
+    val tenantId: UUID,
+    val countryCode: String,
+    val productCategory: String,
+    val customerType: String       // "B2B", "B2C", "EXEMPT"
+)
+```
+
+**Module 3: Org Model** (`platform-shared/org-model/`):
+
+```kotlin
+// src/main/kotlin/com/chiroerp/shared/org/OrgHierarchyService.kt
+package com.chiroerp.shared.org
+
+import java.util.UUID
+
+/**
+ * Manages organizational hierarchy and authorizations
+ * Supports matrix organizations, cost/profit centers, data visibility rules
+ */
+interface OrgHierarchyService {
+    /**
+     * Get all org units user has access to (based on position in hierarchy)
+     * Used for data visibility filtering
+     */
+    fun getAuthorizedOrgUnits(userId: UUID): List<UUID>
+    
+    /**
+     * Check if user has specific permission in org unit
+     * Examples: "GL_POST", "PO_APPROVE", "INV_ADJUST"
+     */
+    fun hasPermission(userId: UUID, orgUnitId: UUID, permission: String): Boolean
+    
+    /**
+     * Get parent org unit (for hierarchical rollups)
+     */
+    fun getParent(orgUnitId: UUID): UUID?
+    
+    /**
+     * Get all child org units recursively
+     */
+    fun getChildren(orgUnitId: UUID, recursive: Boolean = false): List<UUID>
+}
+
+data class OrgUnit(
+    val id: UUID,
+    val code: String,
+    val name: String,
+    val type: OrgUnitType,
+    val parentId: UUID?,
+    val tenantId: UUID,
+    val isActive: Boolean
+)
+
+enum class OrgUnitType {
+    COMPANY,           // Top-level legal entity
+    DEPARTMENT,        // Sales, Finance, Operations, etc.
+    COST_CENTER,       // Budget owner
+    PROFIT_CENTER,     // P&L owner
+    PROJECT,           // Temporary org unit
+    PLANT,             // Manufacturing/warehouse location
+    SALES_OFFICE       // Sales org unit
+}
+```
+
+**Module 4: Workflow Model** (`platform-shared/workflow-model/`):
+
+```kotlin
+// src/main/kotlin/com/chiroerp/shared/workflow/WorkflowEngine.kt
+package com.chiroerp.shared.workflow
+
+import java.math.BigDecimal
+import java.util.UUID
+
+/**
+ * Manages approval workflows and escalations
+ * Phase 0: Simple amount-based approvals
+ * Phase 1: Complex multi-step workflows with parallel/sequential steps
+ * Phase 2: AI-powered approval routing and fraud detection
+ */
+interface WorkflowEngine {
+    /**
+     * Submit document for approval
+     * @param context Document context
+     * @return Workflow instance ID
+     */
+    suspend fun submitForApproval(context: ApprovalContext): UUID
+    
+    /**
+     * Get pending approvals for user
+     */
+    suspend fun getPendingApprovals(userId: UUID): List<ApprovalTask>
+    
+    /**
+     * Approve/reject a task
+     */
+    suspend fun processApproval(taskId: UUID, decision: ApprovalDecision, userId: UUID, comments: String?)
+}
+
+data class ApprovalContext(
+    val tenantId: UUID,
+    val documentType: String,      // "PURCHASE_ORDER", "JOURNAL_ENTRY", etc.
+    val documentId: UUID,
+    val amount: BigDecimal,
+    val currencyCode: String,
+    val orgUnitId: UUID,
+    val requestedBy: UUID
+)
+
+data class ApprovalTask(
+    val taskId: UUID,
+    val documentType: String,
+    val documentId: UUID,
+    val amount: BigDecimal,
+    val requestedBy: UUID,
+    val submittedAt: Instant,
+    val dueDate: Instant?
+)
+
+enum class ApprovalDecision {
+    APPROVED,
+    REJECTED,
+    DELEGATED,
+    RETURNED_FOR_REVISION
+}
+```
+
+**Build Files** (`platform-shared/config-model/build.gradle.kts` example):
+
+```kotlin
+plugins {
+    id("chiroerp.quarkus-conventions")
+}
+
+dependencies {
+    // Only depend on common-types (shared value objects)
+    implementation(project(":platform-shared:common-types"))
+    
+    // No external dependencies - pure interfaces and value objects
+}
+```
+
+**Updated scaffold-module.ps1** (add platform-shared dependencies):
+
+```powershell
+# In scaffold-module.ps1, update the dependencies section:
+
+dependencies {
+    // Platform-shared interfaces
+    implementation(project(":platform-shared:common-types"))
+    implementation(project(":platform-shared:common-messaging"))
+    implementation(project(":platform-shared:config-model"))
+    implementation(project(":platform-shared:org-model"))
+    implementation(project(":platform-shared:workflow-model"))
+    
+    // Quarkus (existing)
+    implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:3.31.1"))
+    // ... rest of dependencies
+}
+```
+
+**Success Metric**: 
+- All 4 platform-shared modules compile successfully
+- No implementation code, only interfaces and value objects
+- scaffold-module.ps1 generates domains with platform dependencies
+- Future domain modules can inject these interfaces via CDI
+
+**Refactoring Timeline**:
+- **Phase 0 (Week 2)**: Domains use hardcoded implementations of these interfaces
+- **Phase 1 (Months 1-3)**: Replace with Drools-based config engine
+- **Phase 2 (Months 4-6)**: Add AI-powered suggestions/validation
+- **Zero domain code changes** required during transitions
+
+---
+
 ### Day 8-10: First Module Implementation (Finance GL)
 
 **Goal**: Complete CRUD operations for GL Accounts with tests
@@ -1023,7 +1351,8 @@ curl -X POST http://localhost:8080/api/v1/finance/gl-accounts \
 | Criterion | Target | Current | Status |
 |-----------|--------|---------|--------|
 | **Module Structure** | 12 modules building | 0/12 | ❌ |
-| **Docker Services** | 8 services healthy | 0/8 | ❌ |
+| **Platform-Shared Modules** | 4 interface modules created | 0/4 | ❌ |
+| **Docker Services** | 14 services healthy | 13/14 | 🟡 |
 | **CI/CD Pipeline** | < 10 min build time | N/A | ❌ |
 | **Database Migrations** | All migrations successful | 0/12 | ❌ |
 | **First Module (Finance GL)** | CRUD operations + 80% coverage | 0% | ❌ |
@@ -1148,7 +1477,8 @@ Week 1: Infrastructure & Module Scaffolding
 
 Week 2: Database Schema & First Module Implementation
 ├─ Day 6-7: Database migrations (Flyway schemas for all domains)
-├─ Day 8-10: Finance GL module (CRUD + tests)
+├─ Day 7.5: Platform-shared foundation modules (interfaces for config/org/workflow)
+├─ Day 8-10: Finance GL module (CRUD + tests, uses platform interfaces)
 └─ Day 11-12: Team onboarding (docs + training)
 
 Phase 0 Complete → Phase 1 Starts (Week 3)
