@@ -189,15 +189,15 @@ LOG_LEVEL=DEBUG
 docker-compose up -d
 ```
 
-**Services started** (15 total):
+**Services started** (14 total):
 - **6 PostgreSQL databases** (Finance, Sales, Inventory, Procurement, Production, Temporal)
-- **Kafka + Zookeeper** (Event streaming)
+- **Redpanda** (Kafka API-compatible event streaming with built-in Schema Registry)
 - **Redis** (Caching)
 - **Temporal** (Workflow engine)
 - **Jaeger** (Distributed tracing)
 - **Prometheus** (Metrics)
 - **Grafana** (Dashboards)
-- **Kafka UI** (Kafka management)
+- **Redpanda Console** (Kafka/Schema Registry management)
 - **Redis Commander** (Redis management)
 - **pgAdmin** (Database management)
 
@@ -557,7 +557,9 @@ sleep 30
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| **Kafka UI** | http://localhost:8090 | - |
+| **Redpanda Console** | http://localhost:8090 | - |
+| **Redpanda Kafka API** | localhost:19092 (external), localhost:9092 (docker) | - |
+| **Schema Registry** | http://localhost:18081 | - |
 | **Redis Commander** | http://localhost:8091 | - |
 | **Temporal UI** | http://localhost:8092 | - |
 | **pgAdmin** | http://localhost:8093 | admin@chiroerp.local / admin |

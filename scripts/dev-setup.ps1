@@ -196,7 +196,8 @@ if (-not $SkipDocker) {
         @{ Name = "PostgreSQL (Finance)"; Port = 5432 }
         @{ Name = "PostgreSQL (Sales)"; Port = 5433 }
         @{ Name = "PostgreSQL (Inventory)"; Port = 5434 }
-        @{ Name = "Kafka"; Port = 9092 }
+        @{ Name = "Redpanda (Kafka API)"; Port = 19092 }
+        @{ Name = "Redpanda Schema Registry"; Port = 18081 }
         @{ Name = "Redis"; Port = 6379 }
         @{ Name = "Temporal"; Port = 7233 }
         @{ Name = "Jaeger UI"; Port = 16686 }
@@ -294,13 +295,14 @@ Write-Info "Available services:"
 Write-Host "  🐘 PostgreSQL (Finance):    localhost:5432" -ForegroundColor White
 Write-Host "  🐘 PostgreSQL (Sales):       localhost:5433" -ForegroundColor White
 Write-Host "  🐘 PostgreSQL (Inventory):   localhost:5434" -ForegroundColor White
-Write-Host "  📨 Kafka:                     localhost:9092" -ForegroundColor White
+Write-Host "  📨 Redpanda (Kafka API):     localhost:19092 (external), localhost:9092 (docker)" -ForegroundColor White
+Write-Host "  📋 Schema Registry:          localhost:18081" -ForegroundColor White
 Write-Host "  🔴 Redis:                     localhost:6379" -ForegroundColor White
 Write-Host "  ⏱️  Temporal:                  localhost:7233" -ForegroundColor White
 Write-Host ""
 
 Write-Info "Web UIs:"
-Write-Host "  📊 Kafka UI:                  http://localhost:8090" -ForegroundColor Cyan
+Write-Host "  📊 Redpanda Console:          http://localhost:8090" -ForegroundColor Cyan
 Write-Host "  🔴 Redis Commander:           http://localhost:8091" -ForegroundColor Cyan
 Write-Host "  ⏱️  Temporal UI:               http://localhost:8092" -ForegroundColor Cyan
 Write-Host "  🐘 pgAdmin:                   http://localhost:8093" -ForegroundColor Cyan
