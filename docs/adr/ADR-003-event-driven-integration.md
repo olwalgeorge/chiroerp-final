@@ -5,10 +5,12 @@
 **Deciders**: Architecture Team  
 **Tier**: Core  
 **Tags**: events, integration, messaging, bounded-contexts  
-**Updated**: 2025-11-10 (Planned Redpanda migration)  
+**Updated**: 2026-02-03 (Kafka vendor selection & Redpanda local dev adoption)  
 
 ## Context
 Bounded contexts in our ERP platform need to share data and coordinate workflows without creating tight coupling. We must choose an integration strategy that supports eventual consistency, scalability, and maintains bounded context autonomy.
+
+We also need to decide on the specific message broker implementation: which Kafka distribution/vendor provides the best balance of cost, operational simplicity, developer experience, and production readiness for our East African healthcare ERP deployment.
 
 ## Decision
 We will use **asynchronous event-driven integration** as the primary communication pattern between bounded contexts, with **synchronous REST APIs** reserved for read-heavy, request-response scenarios.
@@ -31,14 +33,61 @@ We will use **asynchronous event-driven integration** as the primary communicati
    - Versioned contracts with backward compatibility
    - No breaking changes without migration path
 
-3. **Message Broker**
-   - **Redpanda** planned for production (Kafka-compatible, simpler operations)
+3. **Message Broker Strategy**
+   
+   **Decision**: Hybrid approach - **Redpanda for local development**, **Apache Kafka for production**
+   
+   **Local Development** (Redpanda):
+   - Single container vs 3 containers (Kafka + ZooKeeper + Schema Registry)
+   - 2-second startup vs 30+ seconds
+   - 500 MB RAM vs 2+ GB
+   - Built-in Schema Registry (no separate container)
    - 100% Kafka API compatible (no code changes)
-   - 10x faster than Kafka, 75% less memory
+   - Better developer experience
+   
+   **Production** (Apache Kafka 3.7.0 + Strimzi Operator):
+   - Kubernetes deployment on DigitalOcean/AWS
+   - No vendor lock-in (can deploy anywhere)
+   - Proven at scale (LinkedIn, Uber, Netflix)
+   - $55K 5-year TCO vs $190K for Confluent Cloud
+   - Strimzi operator for automated management
+   - Apicurio Schema Registry
+   
+   **Alternatives Evaluated**:
+   
+   | Option | 5-Year TCO | Pros | Cons | Decision |
+   |--------|-----------|------|------|----------|
+   | **Apache Kafka OSS** | **$55K** | No vendor lock-in, deploy anywhere, proven at scale | Manual operations (mitigated by Strimzi) | ✅ **CHOSEN for production** |
+   | **Confluent Cloud** | $190K | Managed, full ecosystem | 3.5x more expensive, vendor lock-in, cloud-only | ❌ Rejected - cost |
+   | **Redpanda Cloud** | $115K | Simpler operations, fast | Smaller ecosystem, less battle-tested | ⚠️ Deferred - use for dev only |
+   | **AWS MSK** | $140K | Managed, AWS integration | AWS lock-in, regional constraints (no Kenya/Tanzania) | ❌ Rejected - lock-in |
+   
+   **TCO Breakdown** (5 years, 3 brokers, 50TB storage, 200MB/s throughput):
+   
+   **Apache Kafka (OSS)**:
+   - Compute: 3x c2-standard-8 @ $219/month = $39K
+   - Storage: 15TB SSD @ $51/month = $9K
+   - Operations: 20% time for 1 engineer @ $1,500/month = $9K
+   - **Total: $57K** (rounded to $55K)
+   
+   **Confluent Cloud**:
+   - Platform fees: $500/month = $30K
+   - Compute: $2,000/month = $120K
+   - Storage: $1,000/month = $60K
+   - **Total: $210K** (rounded to $190K after discounts)
+   
+   **Why Hybrid Approach?**:
+   - 💰 **Cost savings**: $135K saved over 5 years vs Confluent
+   - 🚀 **Developer productivity**: Redpanda 10x faster startup, 75% less RAM
+   - 🔓 **No vendor lock-in**: Can deploy Apache Kafka anywhere (on-prem, any cloud)
+   - 🌍 **Regional flexibility**: Kenya/Tanzania deployments possible (AWS MSK not available)
+   - ✅ **API compatibility**: 100% Kafka API compatible - zero code changes between environments
+   
+   **Configuration**:
    - Durable, ordered, replayable event log
-   - Topic per event type or per bounded context
+   - Topic per bounded context (see "Kafka Topics Strategy" below)
    - Consumer groups for parallel processing
-   - See [`REDPANDA_MIGRATION.md`](../REDPANDA_MIGRATION.md) for planned migration details
+   - See "Implementation Plan" section for Kubernetes manifests
 
 4. **Event Store (Optional per Context)**
    - Contexts can optionally persist events
@@ -167,7 +216,124 @@ PaymentFailed -> ReleaseInventory -> CancelOrder
 - **Contract Tests**: Verify event schema compatibility
 - **E2E Tests**: Full workflow testing with real broker
 
+## Production Kafka Operations
+
+### Deployment (Strimzi on Kubernetes)
+
+```yaml
+# strimzi-kafka-cluster.yaml
+apiVersion: kafka.strimzi.io/v1beta2
+kind: Kafka
+metadata:
+  name: chiroerp-kafka
+  namespace: kafka
+spec:
+  kafka:
+    version: 3.7.0
+    replicas: 3
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    storage:
+      type: persistent-claim
+      size: 5Ti
+      class: fast-ssd
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      log.retention.hours: 168
+      min.insync.replicas: 2
+      default.replication.factor: 3
+  zookeeper:
+    replicas: 3
+    storage:
+      type: persistent-claim
+      size: 100Gi
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+```
+
+### Monitoring (Prometheus + Grafana)
+
+**Key Metrics**:
+- **Broker metrics**: CPU, memory, disk I/O, network throughput
+- **Topic metrics**: Message rate, byte rate, partition count
+- **Consumer metrics**: Lag, processing rate, errors
+- **Producer metrics**: Send rate, error rate, latency
+
+**Alerting Rules**:
+```yaml
+# kafka-alerts.yaml
+groups:
+  - name: kafka
+    interval: 30s
+    rules:
+      - alert: KafkaBrokerDown
+        expr: up{job="kafka-broker"} == 0
+        for: 2m
+        annotations:
+          summary: "Kafka broker {{ $labels.instance }} is down"
+      
+      - alert: UnderReplicatedPartitions
+        expr: kafka_server_replicamanager_underreplicatedpartitions > 0
+        for: 5m
+        annotations:
+          summary: "Kafka has under-replicated partitions"
+      
+      - alert: ConsumerLag
+        expr: kafka_consumergroup_lag > 1000
+        for: 10m
+        annotations:
+          summary: "Consumer {{ $labels.consumergroup }} lagging behind"
+```
+
+### Schema Registry (Apicurio)
+
+```yaml
+# apicurio-registry.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apicurio-registry
+  namespace: kafka
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: apicurio
+        image: apicurio/apicurio-registry-mem:2.5.0
+        env:
+        - name: REGISTRY_KAFKASQL_BOOTSTRAP_SERVERS
+          value: chiroerp-kafka-bootstrap:9092
+        ports:
+        - containerPort: 8080
+```
+
+### High Availability Configuration
+
+**Production Kafka Settings**:
+- **Replication factor**: 3 (data replicated across 3 brokers)
+- **Min in-sync replicas**: 2 (must have 2 replicas synchronized before write acknowledged)
+- **Retention**: 7 days (168 hours) for standard events, 7 years for financial events
+- **Partitions**: 12 per topic (1 partition per bounded context for ordering)
+
+**Disaster Recovery**:
+- **Cross-region replication**: Mirror topics to secondary region (Kenya → Tanzania)
+- **Backup**: Daily snapshots of ZooKeeper state and Kafka data directories
+- **Recovery time objective (RTO)**: 1 hour
+- **Recovery point objective (RPO)**: 5 minutes
+
 ## Alternatives Considered
+
 ### 1. Synchronous REST Only
 **Rejected**: Creates tight coupling, cascading failures, difficult to scale independently.
 
@@ -175,12 +341,43 @@ PaymentFailed -> ReleaseInventory -> CancelOrder
 **Rejected**: Violates bounded context autonomy, creates coupling at data level.
 
 ### 3. RabbitMQ Instead of Kafka
-**Deferred**: RabbitMQ excellent for queuing, but Kafka's log-based approach better for event sourcing and replay. May use RabbitMQ for specific use cases.
+**Deferred**: RabbitMQ excellent for queuing, but Kafka's log-based approach better for event sourcing and replay. May use RabbitMQ for specific use cases (e.g., workflow task queues).
 
-### 4. AWS EventBridge / Azure Event Grid
-**Deferred**: Cloud-specific, vendor lock-in. Will consider for cloud deployments but keep abstraction layer.
+### 4. Confluent Cloud (Fully Managed Kafka)
+**Rejected for production** despite excellent features:
+- **Cost**: $190K over 5 years vs $55K for Apache Kafka OSS (3.5x more expensive)
+- **Vendor lock-in**: Locked into Confluent's pricing and cloud infrastructure
+- **Cloud-only**: Cannot deploy on-premises in Tanzania clinics with intermittent connectivity
+- **Regional constraints**: Limited Africa coverage, high latency from Kenya/Tanzania
+- **Features we'd pay for but not use**: ksqlDB, advanced connectors, tiered storage
+
+**When Confluent makes sense**: Large enterprises with >$10M budgets, cloud-native only, need managed Schema Registry + ksqlDB.
+
+### 5. Redpanda for Production
+**Deferred** (using for local dev only):
+- **Pros**: Simpler operations (no ZooKeeper), 10x faster, 75% less memory
+- **Cons**: Smaller community/ecosystem, less battle-tested at scale, newer (founded 2019)
+- **Decision**: Use for local development (excellent DX), defer production adoption until more mature
+- **Re-evaluation**: Consider after 2+ years of production use at scale by major companies
+
+### 6. AWS MSK (Managed Kafka)
+**Rejected** for production:
+- **Cost**: $140K over 5 years (2.5x more expensive than self-hosted)
+- **AWS lock-in**: Locked into AWS regions, cannot deploy on-prem or other clouds
+- **Regional availability**: Not available in Kenya or Tanzania (closest: South Africa)
+- **Network latency**: 50-100ms from East Africa to South Africa
+- **Compliance**: Data residency requirements conflict with regional availability
+
+**When MSK makes sense**: AWS-only deployments in regions where MSK available, teams with limited Kubernetes expertise.
+
+### 7. Azure Event Hubs (Kafka-compatible)
+**Rejected**: Similar to AWS MSK - vendor lock-in, regional constraints, higher cost than self-hosted.
+
+### 8. Apache Pulsar
+**Rejected**: Excellent technology but smaller ecosystem than Kafka, steeper learning curve, not Kafka API compatible (would require code changes).
 
 ## Consequences
+
 ### Positive
 - ✅ Bounded contexts remain independent
 - ✅ Easy to add new event subscribers
@@ -188,6 +385,10 @@ PaymentFailed -> ReleaseInventory -> CancelOrder
 - ✅ Supports event sourcing and CQRS
 - ✅ Can replay events for new read models
 - ✅ Resilient to temporary service outages
+- ✅ **$135K cost savings** over 5 years vs Confluent Cloud
+- ✅ **No vendor lock-in** - can deploy anywhere (on-prem, any cloud)
+- ✅ **Excellent developer experience** - Redpanda 10x faster startup for local dev
+- ✅ **100% Kafka API compatible** - zero code changes between dev (Redpanda) and prod (Apache Kafka)
 
 ### Negative
 - ❌ Eventual consistency (not immediate)
@@ -196,11 +397,15 @@ PaymentFailed -> ReleaseInventory -> CancelOrder
 - ❌ Dead letter queue management required
 - ❌ Event schema evolution complexity
 - ❌ Duplicate message handling required (idempotency)
+- ❌ **Operational overhead** - managing Kafka cluster (mitigated by Strimzi operator)
+- ❌ **Different environments** - Redpanda (dev) vs Apache Kafka (prod) - must test both
+- ❌ **Manual operations** - no managed service for production (deliberate trade-off for cost/flexibility)
 
 ### Neutral
-- ⚖️ Requires message broker infrastructure (Redpanda cluster)
+- ⚖️ Requires message broker infrastructure (Redpanda for dev, Apache Kafka for prod)
 - ⚖️ Developers must understand async patterns
 - ⚖️ Testing integration flows more complex
+- ⚖️ Kubernetes expertise required for production deployment (Strimzi operator simplifies)
 
 ## Compliance
 
