@@ -18,7 +18,7 @@ import java.util.UUID
  * - ADR-005: Multi-Tenancy Isolation
  */
 @ApplicationScoped
-class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, String> {
+class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
     
     /**
      * Find journal entry by entry number within tenant.
