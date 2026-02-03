@@ -10,7 +10,9 @@ repositories {
 dependencies {
     // Gradle Kotlin DSL
     implementation(kotlin("gradle-plugin", "2.2.0"))
-    implementation("io.quarkus:gradle-application-plugin:3.29.0")
+    implementation(kotlin("allopen", "2.2.0"))
+    implementation(kotlin("noarg", "2.2.0"))
+    implementation("io.quarkus:gradle-application-plugin:3.31.1")
 }
 
 gradlePlugin {

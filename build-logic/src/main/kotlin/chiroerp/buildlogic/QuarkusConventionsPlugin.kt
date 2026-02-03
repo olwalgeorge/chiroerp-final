@@ -38,13 +38,9 @@ class QuarkusConventionsPlugin : Plugin<Project> {
         
         // Apply Kotlin plugins for JPA/AllOpen (needed for Hibernate entities)
         pluginManager.apply("org.jetbrains.kotlin.plugin.allopen")
-        pluginManager.apply("org.jetbrains.kotlin.plugin.jpa")
+        pluginManager.apply("org.jetbrains.kotlin.plugin.noarg")
         
-        // Configure allOpen for Quarkus/JPA annotations
-        extensions.configure<org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper> {
-            // This makes classes with these annotations open (required for Hibernate proxies)
-            // Workaround: directly configure in module if needed
-        }
+        // AllOpen will be configured in the module's build file via allOpen {} block
         
         // Add Quarkus dependencies
         dependencies {

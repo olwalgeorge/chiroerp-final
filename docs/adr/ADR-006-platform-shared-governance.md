@@ -1,12 +1,15 @@
 # ADR-006: Platform-Shared Governance Rules
 
-**Status**: Draft (Not Implemented)  
+**Status**: Amended (Phase 0 Implementation)  
 **Date**: 2025-11-06  
+**Updated**: 2026-02-03  
 **Tier**: Core  
-**Context**: Phase 2 - Preventing Shared Kernel Anti-Pattern  
+**Context**: Phase 0 - Platform Foundation + Preventing Shared Kernel Anti-Pattern  
 
 ## Context
 The platform uses multiple bounded contexts and a small set of shared technical primitives. To preserve bounded-context autonomy and avoid shared-kernel drift, we define enforceable governance rules that keep platform-shared modules small, technical, and dependency-safe.
+
+**Phase 0 Update (2026-02-03):** Added configuration/organizational/workflow abstraction modules to support the "SAP-grade configurability" strategy (ADR-044, ADR-045, ADR-046). These enable domains to depend on **interfaces** while implementations evolve from hardcoded (Phase 0) → config-driven (Phase 1) → AI-powered (Phase 2+) without changing domain code.
 
 ## Decision
 Establish strict governance rules for `platform-shared` modules to prevent distributed monolith anti-pattern and maintain bounded context autonomy.
@@ -48,6 +51,28 @@ object MetricsCollector
 interface AuthenticationPrincipal
 sealed class SecurityContext
 ```
+
+### 5. Platform Abstraction Interfaces (Phase 0 Addition)
+```kotlin
+// ✅ Configuration engine abstractions (ADR-044)
+interface PricingRulesEngine
+interface PostingRulesEngine
+interface TaxRulesEngine
+
+// ✅ Organizational model abstractions (ADR-045)
+interface OrgHierarchyService
+data class OrgUnit(val id: UUID, val code: String, val type: OrgUnitType)
+
+// ✅ Workflow engine abstractions (ADR-046)
+interface WorkflowEngine
+data class ApprovalContext(val documentType: String, val amount: BigDecimal)
+
+// ✅ Event messaging abstractions (ADR-003)
+interface DomainEventPublisher
+interface DomainEvent
+```
+
+**Rationale:** These are **pure technical contracts** that enable the configurability strategy. Domains depend on interfaces, implementations are swapped without code changes. This is different from shared domain models (which are forbidden).
 
 ### Forbidden in platform-shared
 
@@ -166,9 +191,17 @@ See `docs/ARCHITECTURE_TESTING_GUIDE.md` for wiring details, scope expansion, an
 ### Governance Mechanisms
 
 ### 1. Module Size Limit
-- **Maximum:** 4 modules in `platform-shared/`
-- **Current:** 4 (common-types, common-observability, common-security, common-messaging)
-- **Adding 5th module requires:** Architecture review + team consensus
+- **Maximum (Original):** 4 modules in `platform-shared/`
+- **Updated (Phase 0):** 7 modules in `platform-shared/`
+- **Current Modules:**
+  1. `common-types` - Shared value objects (Money, Email, UUID extensions)
+  2. `common-messaging` - Event publishing/consuming interfaces (Kafka abstractions)
+  3. `common-observability` - Logging, metrics, tracing contracts
+  4. `common-security` - Authentication/authorization primitives
+  5. `config-model` - Configuration engine domain model (PricingRule, PostingRule, TaxRule) ⭐ NEW
+  6. `org-model` - Organizational hierarchy value objects (OrgUnit, AuthorizationContext) ⭐ NEW
+  7. `workflow-model` - Workflow definitions (WorkflowDefinition, ApprovalRoute) ⭐ NEW
+- **Adding 8th module requires:** Architecture review + team consensus + ADR update
 
 ### 2. File Count Alert
 - **Warning threshold:** 25 files per module
@@ -200,11 +233,12 @@ fun `bounded contexts must not depend on each other`() {
 
 ### 4. Code Review Checklist
 Every PR touching `platform-shared` must answer:
-- [ ] Is this a pure technical primitive?
-- [ ] Does it contain zero business semantics?
+- [ ] Is this a pure technical primitive or abstraction interface?
+- [ ] Does it contain zero business logic/implementation?
 - [ ] Would 2+ contexts use the EXACT same behavior?
 - [ ] Is coupling cost < duplication cost?
 - [ ] Could this belong in a specific context instead?
+- [ ] **NEW:** If interface, can implementations be swapped without domain code changes?
 
 **Review Frequency:** Every Sprint (2 weeks)  
 **Enforcement (Planned):** 
@@ -243,7 +277,7 @@ Every PR touching `platform-shared` must answer:
 ### Coverage
 
 **Planned coverage (not yet implemented):**
-- ⬜ platform-shared (4 modules)
+- ⬜ platform-shared (7 modules) ⭐ UPDATED from 4
 - ⬜ tenancy-identity (3 modules)
 - ⬜ financial-management (10 modules)
 - ⬜ commerce (12 modules)
@@ -256,7 +290,7 @@ Every PR touching `platform-shared` must answer:
 - ⬜ operations-service (3 modules)
 - ⬜ procurement (6 modules)
 
-**Target:** 74 modules under governance
+**Target:** 77 modules under governance (updated from 74)
 
 ### Local Validation
 
@@ -291,12 +325,60 @@ Every PR touching `platform-shared` must answer:
 - Phase 3: Add a local audit script and code review checklist.
 - Phase 4: Train the team on platform-shared boundaries and escalation paths.
 
+## Phase 0 Amendment (2026-02-03)
+
+### New Modules Added
+
+Added 3 platform abstraction modules to support SAP-grade configurability:
+
+1. **`config-model`** - Configuration engine abstractions
+   - **Why:** Enables 85%+ of variation via configuration, not code (ADR-044)
+   - **Interfaces:** `PricingRulesEngine`, `PostingRulesEngine`, `TaxRulesEngine`
+   - **Pattern:** Domains depend on interface → implementations swapped (hardcoded → Drools → AI)
+   - **Zero business logic:** Only interfaces and context data classes
+
+2. **`org-model`** - Organizational hierarchy abstractions
+   - **Why:** Dynamic org structures, matrix organizations, data visibility (ADR-045)
+   - **Interfaces:** `OrgHierarchyService`, value objects like `OrgUnit`
+   - **Pattern:** Authorization/visibility checks via interface, not hardcoded
+   - **Zero business logic:** Pure structural contracts
+
+3. **`workflow-model`** - Workflow engine abstractions
+   - **Why:** Configurable approval routes, escalations, delegation (ADR-046)
+   - **Interfaces:** `WorkflowEngine`, context classes like `ApprovalContext`
+   - **Pattern:** Approval logic via interface, not domain code
+   - **Zero business logic:** Only workflow primitives
+
+### Rationale for Exception
+
+**Question:** Why add 3 modules when ADR-006 limits to 4?
+
+**Answer:** These modules are **critical infrastructure** for the platform strategy:
+
+1. **Not domain models** - Pure technical contracts (interfaces + value objects)
+2. **Enable autonomy** - Domains depend on abstractions, not implementations
+3. **Strategic goal** - Without these, cannot achieve SAP-grade configurability
+4. **Referenced by ADRs** - ADR-044, ADR-045, ADR-046 explicitly require these
+5. **Swappable implementations** - Phase 0 hardcoded → Phase 1 config → Phase 2 AI
+
+**This is consistent with ADR-006 principle:** "Technical primitives and framework contracts are allowed."
+
+### Updated Governance
+
+- **Module limit:** 4 → **7** (increased to accommodate platform abstractions)
+- **Next limit:** 8th module requires architecture review + ADR amendment
+- **Enforcement:** Same ArchUnit rules apply (no business logic, no domain models)
+- **Code review:** Enhanced checklist includes "can implementations be swapped?"
+
 ## References
 
 ### Related ADRs
 - ADR-001: Modular CQRS Implementation
 - ADR-003: Event-Driven Integration Between Contexts
 - ADR-005: Multi-Tenancy Data Isolation Strategy
+- **ADR-044: Configuration Rules Framework** ⭐ NEW (config-model rationale)
+- **ADR-045: Enterprise Organizational Model** ⭐ NEW (org-model rationale)
+- **ADR-046: Workflow & Approval Engine** ⭐ NEW (workflow-model rationale)
 
 ### Internal Documentation
 - *Domain-Driven Design* by Eric Evans (Ch. 14: Maintaining Model Integrity)

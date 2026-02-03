@@ -125,3 +125,6 @@ include("platform-shared:common-messaging")
 include("platform-shared:config-model")
 include("platform-shared:org-model")
 include("platform-shared:workflow-model")
+
+// Bounded Contexts - Finance Domain
+include("finance-domain")
