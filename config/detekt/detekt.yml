@@ -1,0 +1,30 @@
+autoCorrect: true
+build:
+  maxIssues: 0
+  excludes: '**/build/**'
+config:
+  validation: true
+processors:
+  active: false
+console-reports:
+  active: true
+  exclude:
+    - 'ProjectStatisticsReport'
+    - 'ComplexityReport'
+    - 'NotificationReport'
+    - 'FindingsReport'
+    - 'FileBasedFindingsReport'
+style:
+  MagicNumber:
+    active: false
+  MaxLineLength:
+    active: false
+  WildcardImport:
+    active: false
+formatting:
+  active: true
+  android: false
+  Indentation:
+    active: false
+  MaximumLineLength:
+    active: false

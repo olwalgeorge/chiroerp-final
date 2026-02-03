@@ -1,0 +1,365 @@
+version: '3.8'
+
+# ChiroERP Local Development Stack
+# Provides all infrastructure services needed for local development
+
+services:
+  # PostgreSQL Databases (Database-per-Bounded-Context)
+  
+  postgres-finance:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-finance
+    environment:
+      POSTGRES_DB: finance
+      POSTGRES_USER: chiroerp
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-finance-data:/var/lib/postgresql/data
+      - ./database/init/finance:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d finance"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  postgres-sales:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-sales
+    environment:
+      POSTGRES_DB: sales
+      POSTGRES_USER: chiroerp
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres-sales-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d sales"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  postgres-inventory:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-inventory
+    environment:
+      POSTGRES_DB: inventory
+      POSTGRES_USER: chiroerp
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-inventory-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d inventory"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  postgres-procurement:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-procurement
+    environment:
+      POSTGRES_DB: procurement
+      POSTGRES_USER: chiroerp
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5435:5432"
+    volumes:
+      - postgres-procurement-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d procurement"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  postgres-production:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-production
+    environment:
+      POSTGRES_DB: production
+      POSTGRES_USER: chiroerp
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5436:5432"
+    volumes:
+      - postgres-production-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d production"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  postgres-temporal:
+    image: postgres:16-alpine
+    container_name: chiroerp-postgres-temporal
+    environment:
+      POSTGRES_DB: temporal
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+    ports:
+      - "5437:5432"
+    volumes:
+      - postgres-temporal-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  # Kafka + Zookeeper - Event Streaming Platform
+  
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    container_name: chiroerp-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    networks:
+      - chiroerp-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    container_name: chiroerp-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092,PLAINTEXT_INTERNAL://kafka:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT_INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_LOG_RETENTION_HOURS: 168
+      KAFKA_LOG_SEGMENT_BYTES: 1073741824
+      KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 300000
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD", "kafka-broker-api-versions", "--bootstrap-server=localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - chiroerp-network
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: chiroerp-kafka-ui
+    depends_on:
+      - kafka
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+      KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+    ports:
+      - "8090:8080"
+    networks:
+      - chiroerp-network
+
+  # Redis - Caching & Session Management
+  
+  redis:
+    image: redis:7-alpine
+    container_name: chiroerp-redis
+    command: redis-server --appendonly yes --requirepass dev_password
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chiroerp-network
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: chiroerp-redis-commander
+    depends_on:
+      - redis
+    environment:
+      REDIS_HOSTS: local:redis:6379:0:dev_password
+    ports:
+      - "8091:8081"
+    networks:
+      - chiroerp-network
+
+  # Temporal - Workflow Engine
+  
+  temporal:
+    image: temporalio/auto-setup:1.22.4
+    container_name: chiroerp-temporal
+    depends_on:
+      postgres-temporal:
+        condition: service_healthy
+    environment:
+      - DB=postgresql
+      - DB_PORT=5432
+      - POSTGRES_USER=temporal
+      - POSTGRES_PWD=temporal
+      - POSTGRES_SEEDS=postgres-temporal
+      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+    ports:
+      - "7233:7233"  # gRPC
+      - "8233:8233"  # Web UI
+    volumes:
+      - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
+    healthcheck:
+      test: ["CMD", "tctl", "--address", "temporal:7233", "workflow", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - chiroerp-network
+
+  temporal-ui:
+    image: temporalio/ui:2.22.3
+    container_name: chiroerp-temporal-ui
+    depends_on:
+      - temporal
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8092:8080"
+    networks:
+      - chiroerp-network
+
+  # Observability Stack
+  
+  jaeger:
+    image: jaegertracing/all-in-one:1.53
+    container_name: chiroerp-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+      COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
+    ports:
+      - "5775:5775/udp"  # Zipkin compact
+      - "6831:6831/udp"  # Jaeger compact
+      - "6832:6832/udp"  # Jaeger binary
+      - "5778:5778"      # Serve configs
+      - "16686:16686"    # Web UI
+      - "14268:14268"    # Jaeger collector
+      - "14250:14250"    # Jaeger gRPC
+      - "9411:9411"      # Zipkin
+      - "4317:4317"      # OTLP gRPC
+      - "4318:4318"      # OTLP HTTP
+    networks:
+      - chiroerp-network
+
+  prometheus:
+    image: prom/prometheus:v2.48.1
+    container_name: chiroerp-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - chiroerp-network
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: chiroerp-grafana
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+    volumes:
+      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - chiroerp-network
+
+  # pgAdmin - Database Management UI
+  
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: chiroerp-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@chiroerp.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: "False"
+      PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
+    ports:
+      - "8093:80"
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+      - ./database/pgadmin-servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - chiroerp-network
+
+networks:
+  chiroerp-network:
+    driver: bridge
+    name: chiroerp-network
+
+volumes:
+  postgres-finance-data:
+    name: chiroerp-postgres-finance-data
+  postgres-sales-data:
+    name: chiroerp-postgres-sales-data
+  postgres-inventory-data:
+    name: chiroerp-postgres-inventory-data
+  postgres-procurement-data:
+    name: chiroerp-postgres-procurement-data
+  postgres-production-data:
+    name: chiroerp-postgres-production-data
+  postgres-temporal-data:
+    name: chiroerp-postgres-temporal-data
+  zookeeper-data:
+    name: chiroerp-zookeeper-data
+  zookeeper-logs:
+    name: chiroerp-zookeeper-logs
+  kafka-data:
+    name: chiroerp-kafka-data
+  redis-data:
+    name: chiroerp-redis-data
+  prometheus-data:
+    name: chiroerp-prometheus-data
+  grafana-data:
+    name: chiroerp-grafana-data
+  pgadmin-data:
+    name: chiroerp-pgadmin-data
