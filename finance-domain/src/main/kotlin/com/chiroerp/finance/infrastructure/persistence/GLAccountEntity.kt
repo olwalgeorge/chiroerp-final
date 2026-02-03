@@ -1,8 +1,8 @@
 package com.chiroerp.finance.infrastructure.persistence
 
+import com.chiroerp.finance.domain.GLAccount
 import com.chiroerp.finance.domain.AccountType
 import com.chiroerp.finance.domain.BalanceType
-import com.chiroerp.finance.domain.GLAccount
 import io.quarkus.hibernate.orm.panache.kotlin.PanacheEntityBase
 import jakarta.persistence.*
 import java.time.Instant
