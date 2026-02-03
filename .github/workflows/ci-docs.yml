@@ -1,0 +1,187 @@
+name: Documentation CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'scripts/validate-docs.ps1'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'docs/**'
+      - 'scripts/validate-docs.ps1'
+  schedule:
+    # Run weekly on Mondays at 9am UTC to catch drift
+    - cron: '0 9 * * 1'
+
+jobs:
+  validate-documentation:
+    name: Validate Documentation Consistency
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for date checks
+      
+      - name: Setup PowerShell
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install PowerShell (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https software-properties-common
+          wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+          sudo dpkg -i packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+      
+      - name: Run Documentation Validation
+        shell: pwsh
+        run: |
+          Write-Host "Starting ChiroERP documentation validation..." -ForegroundColor Cyan
+          ./scripts/validate-docs.ps1 -Verbose
+      
+      - name: Check for Auto-Fix Suggestions
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "⚠️ Validation failed. Run locally with -Fix flag:" -ForegroundColor Yellow
+          Write-Host "  pwsh ./scripts/validate-docs.ps1 -Fix" -ForegroundColor Cyan
+      
+      - name: Upload Validation Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-report
+          path: validation-report.txt
+          retention-days: 30
+      
+      - name: Comment on PR (if validation fails)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Documentation validation failed**\n\nPlease review the errors above and fix them before merging.\n\nYou can run validation locally:\n```bash\npwsh ./scripts/validate-docs.ps1 -Verbose\n```\n\nTo auto-fix some issues:\n```bash\npwsh ./scripts/validate-docs.ps1 -Fix\n```'
+            })
+
+  check-adr-completeness:
+    name: Check ADR Completeness
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Check ADR Structure
+        shell: bash
+        run: |
+          echo "Checking ADR file structure..."
+          
+          # Check each ADR has required sections
+          for adr in docs/adr/ADR-*.md; do
+            echo "Validating $adr..."
+            
+            # Check for required sections
+            if ! grep -q "^## Status" "$adr"; then
+              echo "⚠️ Missing 'Status' section in $adr"
+            fi
+            
+            if ! grep -q "^## Context" "$adr"; then
+              echo "⚠️ Missing 'Context' section in $adr"
+            fi
+            
+            if ! grep -q "^## Decision" "$adr"; then
+              echo "⚠️ Missing 'Decision' section in $adr"
+            fi
+            
+            if ! grep -q "^## Consequences" "$adr"; then
+              echo "⚠️ Missing 'Consequences' section in $adr"
+            fi
+          done
+          
+          echo "✓ ADR structure check complete"
+
+  check-markdown-lint:
+    name: Markdown Linting
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Install markdownlint-cli
+        run: npm install -g markdownlint-cli
+      
+      - name: Run markdownlint
+        run: |
+          markdownlint 'docs/**/*.md' \
+            --ignore 'docs/architecture/WORKSPACE-STRUCTURE.md' \
+            --config .markdownlint.json \
+            || echo "⚠️ Markdown linting found issues (non-blocking)"
+      
+      - name: Check for broken links
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          config-file: '.markdown-link-check.json'
+          folder-path: 'docs/'
+          max-depth: 5
+
+  documentation-metrics:
+    name: Documentation Metrics
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Calculate Documentation Stats
+        shell: bash
+        run: |
+          echo "╔════════════════════════════════════════════════════════════╗"
+          echo "║  ChiroERP Documentation Metrics                            ║"
+          echo "╚════════════════════════════════════════════════════════════╝"
+          echo ""
+          
+          # Count ADRs
+          adr_count=$(find docs/adr -name "ADR-*.md" | wc -l)
+          echo "Total ADRs: $adr_count"
+          
+          # Count architecture documents
+          arch_docs=$(find docs/architecture -name "*.md" | wc -l)
+          echo "Architecture Docs: $arch_docs"
+          
+          # Count total markdown files
+          total_md=$(find docs -name "*.md" | wc -l)
+          echo "Total Markdown Files: $total_md"
+          
+          # Count words in documentation
+          total_words=$(find docs -name "*.md" -exec wc -w {} + | tail -1 | awk '{print $1}')
+          echo "Total Word Count: $total_words"
+          
+          # Calculate documentation ratio (words per ADR)
+          words_per_adr=$((total_words / adr_count))
+          echo "Average Words per ADR: $words_per_adr"
+          
+          echo ""
+          echo "✓ Documentation metrics calculated"
+          
+          # Export metrics for badge generation (if needed)
+          echo "ADR_COUNT=$adr_count" >> $GITHUB_ENV
+          echo "TOTAL_DOCS=$total_md" >> $GITHUB_ENV

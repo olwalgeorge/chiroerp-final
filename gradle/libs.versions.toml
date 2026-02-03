@@ -1,0 +1,351 @@
+# =============================================================================
+# ChiroERP Version Catalog
+# =============================================================================
+# Centralized dependency management for all ChiroERP modules.
+# This file eliminates version conflicts and enables batch dependency updates.
+#
+# Usage in build.gradle.kts:
+#   implementation(libs.quarkus.rest)
+#   implementation(libs.bundles.quarkus.core)
+#
+# Reference: https://docs.gradle.org/current/userguide/platforms.html
+# =============================================================================
+
+[versions]
+# -----------------------------------------------------------------------------
+# Core Platforms
+# -----------------------------------------------------------------------------
+kotlin = "2.2.0"
+quarkus = "3.31.1"
+java = "21"
+
+# -----------------------------------------------------------------------------
+# Quarkus Extensions
+# -----------------------------------------------------------------------------
+# Note: Most Quarkus extensions inherit version from quarkus-bom
+quarkusPlatform = "3.31.1"
+
+# -----------------------------------------------------------------------------
+# Testing Frameworks
+# -----------------------------------------------------------------------------
+junit = "5.11.2"
+mockk = "1.13.12"
+kotest = "5.9.1"
+testcontainers = "1.20.1"
+assertj = "3.26.3"
+restAssured = "5.5.0"
+
+# -----------------------------------------------------------------------------
+# Database & Persistence
+# -----------------------------------------------------------------------------
+postgresql = "42.7.3"
+flyway = "10.10.0"
+liquibase = "4.29.1"
+hibernate = "6.6.1.Final"
+
+# -----------------------------------------------------------------------------
+# Kafka & Messaging
+# -----------------------------------------------------------------------------
+kafka = "3.8.0"
+avro = "1.12.0"
+confluentPlatform = "7.7.0"
+
+# -----------------------------------------------------------------------------
+# Observability & Monitoring
+# -----------------------------------------------------------------------------
+micrometer = "1.13.2"
+opentelemetry = "1.40.0"
+slf4j = "2.0.13"
+logback = "1.5.6"
+
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+jjwt = "0.12.6"
+bcrypt = "0.10.2"
+
+# -----------------------------------------------------------------------------
+# Configuration & Rules Engine
+# -----------------------------------------------------------------------------
+drools = "8.44.0.Final"
+jackson = "2.17.2"
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+commons-lang3 = "3.14.0"
+commons-collections4 = "4.4"
+guava = "33.2.1-jre"
+vavr = "0.10.4"
+
+# -----------------------------------------------------------------------------
+# Code Quality & Analysis
+# -----------------------------------------------------------------------------
+ktlint = "12.1.1"
+detekt = "1.23.6"
+sonarqube = "5.1.0.4882"
+
+# -----------------------------------------------------------------------------
+# Build Plugins
+# -----------------------------------------------------------------------------
+gradleVersions = "0.51.0"
+shadowJar = "8.1.1"
+
+# =============================================================================
+# LIBRARY DEFINITIONS
+# =============================================================================
+
+[libraries]
+# -----------------------------------------------------------------------------
+# Quarkus Core
+# -----------------------------------------------------------------------------
+quarkus-bom = { group = "io.quarkus.platform", name = "quarkus-bom", version.ref = "quarkusPlatform" }
+quarkus-arc = { group = "io.quarkus", name = "quarkus-arc" }
+quarkus-rest = { group = "io.quarkus", name = "quarkus-rest" }
+quarkus-rest-jackson = { group = "io.quarkus", name = "quarkus-rest-jackson" }
+quarkus-hibernate-orm = { group = "io.quarkus", name = "quarkus-hibernate-orm" }
+quarkus-hibernate-validator = { group = "io.quarkus", name = "quarkus-hibernate-validator" }
+quarkus-jdbc-postgresql = { group = "io.quarkus", name = "quarkus-jdbc-postgresql" }
+quarkus-flyway = { group = "io.quarkus", name = "quarkus-flyway" }
+quarkus-liquibase = { group = "io.quarkus", name = "quarkus-liquibase" }
+
+# -----------------------------------------------------------------------------
+# Quarkus Messaging & Kafka
+# -----------------------------------------------------------------------------
+quarkus-kafka-client = { group = "io.quarkus", name = "quarkus-kafka-client" }
+quarkus-messaging-kafka = { group = "io.quarkus", name = "quarkus-messaging-kafka" }
+quarkus-avro = { group = "io.quarkus", name = "quarkus-avro" }
+
+# -----------------------------------------------------------------------------
+# Quarkus Security
+# -----------------------------------------------------------------------------
+quarkus-security = { group = "io.quarkus", name = "quarkus-security" }
+quarkus-oidc = { group = "io.quarkus", name = "quarkus-oidc" }
+quarkus-elytron-security-jdbc = { group = "io.quarkus", name = "quarkus-elytron-security-jdbc" }
+
+# -----------------------------------------------------------------------------
+# Quarkus Observability
+# -----------------------------------------------------------------------------
+quarkus-micrometer = { group = "io.quarkus", name = "quarkus-micrometer" }
+quarkus-micrometer-registry-prometheus = { group = "io.quarkus", name = "quarkus-micrometer-registry-prometheus" }
+quarkus-opentelemetry = { group = "io.quarkus", name = "quarkus-opentelemetry" }
+quarkus-logging-json = { group = "io.quarkus", name = "quarkus-logging-json" }
+
+# -----------------------------------------------------------------------------
+# Quarkus Redis & Cache
+# -----------------------------------------------------------------------------
+quarkus-redis-client = { group = "io.quarkus", name = "quarkus-redis-client" }
+quarkus-cache = { group = "io.quarkus", name = "quarkus-cache" }
+
+# -----------------------------------------------------------------------------
+# Quarkus Testing
+# -----------------------------------------------------------------------------
+quarkus-junit5 = { group = "io.quarkus", name = "quarkus-junit5" }
+quarkus-junit5-mockito = { group = "io.quarkus", name = "quarkus-junit5-mockito" }
+quarkus-test-security = { group = "io.quarkus", name = "quarkus-test-security" }
+rest-assured = { group = "io.rest-assured", name = "rest-assured", version.ref = "restAssured" }
+
+# -----------------------------------------------------------------------------
+# Kotlin
+# -----------------------------------------------------------------------------
+kotlin-stdlib = { group = "org.jetbrains.kotlin", name = "kotlin-stdlib", version.ref = "kotlin" }
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.9.0" }
+kotlinx-coroutines-reactor = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-reactor", version = "1.9.0" }
+
+# -----------------------------------------------------------------------------
+# Database
+# -----------------------------------------------------------------------------
+postgresql-driver = { group = "org.postgresql", name = "postgresql", version.ref = "postgresql" }
+flyway-core = { group = "org.flywaydb", name = "flyway-core", version.ref = "flyway" }
+flyway-database-postgresql = { group = "org.flywaydb", name = "flyway-database-postgresql", version.ref = "flyway" }
+
+# -----------------------------------------------------------------------------
+# Kafka & Avro
+# -----------------------------------------------------------------------------
+kafka-clients = { group = "org.apache.kafka", name = "kafka-clients", version.ref = "kafka" }
+avro = { group = "org.apache.avro", name = "avro", version.ref = "avro" }
+avro-kotlin = { group = "org.apache.avro", name = "avro-kotlin", version.ref = "avro" }
+kafka-avro-serializer = { group = "io.confluent", name = "kafka-avro-serializer", version.ref = "confluentPlatform" }
+kafka-schema-registry-client = { group = "io.confluent", name = "kafka-schema-registry-client", version.ref = "confluentPlatform" }
+
+# -----------------------------------------------------------------------------
+# Testing
+# -----------------------------------------------------------------------------
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junit" }
+junit-jupiter-api = { group = "org.junit.jupiter", name = "junit-jupiter-api", version.ref = "junit" }
+junit-jupiter-engine = { group = "org.junit.jupiter", name = "junit-jupiter-engine", version.ref = "junit" }
+junit-jupiter-params = { group = "org.junit.jupiter", name = "junit-jupiter-params", version.ref = "junit" }
+junit-platform-launcher = { group = "org.junit.platform", name = "junit-platform-launcher", version = "1.11.2" }
+
+mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
+mockk-jvm = { group = "io.mockk", name = "mockk-jvm", version.ref = "mockk" }
+
+kotest-runner-junit5 = { group = "io.kotest", name = "kotest-runner-junit5", version.ref = "kotest" }
+kotest-assertions-core = { group = "io.kotest", name = "kotest-assertions-core", version.ref = "kotest" }
+kotest-property = { group = "io.kotest", name = "kotest-property", version.ref = "kotest" }
+
+testcontainers-core = { group = "org.testcontainers", name = "testcontainers", version.ref = "testcontainers" }
+testcontainers-junit-jupiter = { group = "org.testcontainers", name = "junit-jupiter", version.ref = "testcontainers" }
+testcontainers-postgresql = { group = "org.testcontainers", name = "postgresql", version.ref = "testcontainers" }
+testcontainers-kafka = { group = "org.testcontainers", name = "kafka", version.ref = "testcontainers" }
+
+assertj-core = { group = "org.assertj", name = "assertj-core", version.ref = "assertj" }
+
+# -----------------------------------------------------------------------------
+# Drools Rules Engine (ADR-044 Config Engine)
+# -----------------------------------------------------------------------------
+drools-core = { group = "org.drools", name = "drools-core", version.ref = "drools" }
+drools-compiler = { group = "org.drools", name = "drools-compiler", version.ref = "drools" }
+drools-mvel = { group = "org.drools", name = "drools-mvel", version.ref = "drools" }
+drools-engine = { group = "org.drools", name = "drools-engine", version.ref = "drools" }
+
+# -----------------------------------------------------------------------------
+# Jackson (JSON Processing)
+# -----------------------------------------------------------------------------
+jackson-module-kotlin = { group = "com.fasterxml.jackson.module", name = "jackson-module-kotlin", version.ref = "jackson" }
+jackson-datatype-jsr310 = { group = "com.fasterxml.jackson.datatype", name = "jackson-datatype-jsr310", version.ref = "jackson" }
+
+# -----------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------
+jjwt-api = { group = "io.jsonwebtoken", name = "jjwt-api", version.ref = "jjwt" }
+jjwt-impl = { group = "io.jsonwebtoken", name = "jjwt-impl", version.ref = "jjwt" }
+jjwt-jackson = { group = "io.jsonwebtoken", name = "jjwt-jackson", version.ref = "jjwt" }
+bcrypt = { group = "at.favre.lib", name = "bcrypt", version.ref = "bcrypt" }
+
+# -----------------------------------------------------------------------------
+# Utilities
+# -----------------------------------------------------------------------------
+commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.ref = "commons-lang3" }
+commons-collections4 = { group = "org.apache.commons", name = "commons-collections4", version.ref = "commons-collections4" }
+guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
+vavr = { group = "io.vavr", name = "vavr", version.ref = "vavr" }
+
+# =============================================================================
+# BUNDLE DEFINITIONS
+# =============================================================================
+# Bundles group related dependencies for convenience
+# Usage: implementation(libs.bundles.quarkus.core)
+
+[bundles]
+# -----------------------------------------------------------------------------
+# Quarkus Bundles
+# -----------------------------------------------------------------------------
+quarkus-core = [
+    "quarkus-arc",
+    "quarkus-rest",
+    "quarkus-rest-jackson",
+    "quarkus-hibernate-validator"
+]
+
+quarkus-persistence = [
+    "quarkus-hibernate-orm",
+    "quarkus-jdbc-postgresql",
+    "quarkus-flyway"
+]
+
+quarkus-messaging = [
+    "quarkus-kafka-client",
+    "quarkus-messaging-kafka",
+    "quarkus-avro"
+]
+
+quarkus-observability = [
+    "quarkus-micrometer",
+    "quarkus-micrometer-registry-prometheus",
+    "quarkus-opentelemetry",
+    "quarkus-logging-json"
+]
+
+quarkus-security = [
+    "quarkus-security",
+    "quarkus-oidc",
+    "quarkus-elytron-security-jdbc"
+]
+
+# -----------------------------------------------------------------------------
+# Kotlin Bundles
+# -----------------------------------------------------------------------------
+kotlin-core = [
+    "kotlin-stdlib",
+    "kotlin-reflect"
+]
+
+kotlin-coroutines = [
+    "kotlinx-coroutines-core",
+    "kotlinx-coroutines-reactor"
+]
+
+# -----------------------------------------------------------------------------
+# Testing Bundles
+# -----------------------------------------------------------------------------
+testing-core = [
+    "junit-jupiter",
+    "junit-jupiter-api",
+    "junit-jupiter-params",
+    "mockk",
+    "assertj-core"
+]
+
+testing-kotest = [
+    "kotest-runner-junit5",
+    "kotest-assertions-core",
+    "kotest-property"
+]
+
+testing-quarkus = [
+    "quarkus-junit5",
+    "quarkus-test-security",
+    "rest-assured"
+]
+
+testing-containers = [
+    "testcontainers-core",
+    "testcontainers-junit-jupiter",
+    "testcontainers-postgresql",
+    "testcontainers-kafka"
+]
+
+# -----------------------------------------------------------------------------
+# Drools Bundle (Config Engine)
+# -----------------------------------------------------------------------------
+drools = [
+    "drools-core",
+    "drools-compiler",
+    "drools-mvel",
+    "drools-engine"
+]
+
+# -----------------------------------------------------------------------------
+# Jackson Bundle
+# -----------------------------------------------------------------------------
+jackson = [
+    "jackson-module-kotlin",
+    "jackson-datatype-jsr310"
+]
+
+# -----------------------------------------------------------------------------
+# Security Bundle
+# -----------------------------------------------------------------------------
+security = [
+    "jjwt-api",
+    "jjwt-impl",
+    "jjwt-jackson",
+    "bcrypt"
+]
+
+# =============================================================================
+# PLUGIN DEFINITIONS
+# =============================================================================
+
+[plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-plugin-allopen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+kotlin-plugin-jpa = { id = "org.jetbrains.kotlin.plugin.jpa", version.ref = "kotlin" }
+quarkus = { id = "io.quarkus", version.ref = "quarkusPlatform" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlint" }
+detekt = { id = "io.gitlab.arturbosch.detekt", version.ref = "detekt" }
+sonarqube = { id = "org.sonarqube", version.ref = "sonarqube" }
+gradle-versions = { id = "com.github.ben-manes.versions", version.ref = "gradleVersions" }
+shadow = { id = "com.github.johnrengelman.shadow", version.ref = "shadowJar" }
