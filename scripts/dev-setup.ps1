@@ -270,12 +270,16 @@ Write-Step "Step 7: Generating IDE project files"
 
 Write-Info "Generating IntelliJ IDEA files..."
 if ($IsWindows -or $env:OS -eq "Windows_NT") {
-    & .\gradlew.bat idea --no-daemon
+    & .\gradlew.bat idea --no-daemon 2>$null
 } else {
-    & ./gradlew idea --no-daemon
+    & ./gradlew idea --no-daemon 2>$null
 }
 
-Write-Success "IDE project files generated"
+if ($LASTEXITCODE -ne 0) {
+    Write-Info "IDEA plugin not available (this is OK - IntelliJ can auto-import Gradle projects)"
+} else {
+    Write-Success "IDE project files generated"
+}
 
 # Summary
 Write-Step "Setup Complete! 🎉"
