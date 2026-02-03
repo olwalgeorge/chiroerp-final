@@ -25,22 +25,25 @@ dependencies {
 }
 
 // Architecture validation
-tasks.register("validateArchitecture") {
+val validateArchitectureTask = tasks.register("validateArchitecture") {
     group = "verification"
     description = "Ensures common-types has no framework dependencies"
     
+    // Make configuration-cache compatible by capturing values at configuration time
+    val implementationDeps = configurations.getByName("implementation").dependencies
+        .map { "${it.group}:${it.name}" }
+    
     doLast {
-        val deps = configurations.getByName("implementation").dependencies
-        val violations = deps.filter { dep ->
-            dep.group?.contains("quarkus") == true ||
-            dep.group?.contains("spring") == true ||
-            dep.group?.contains("jakarta.persistence") == true
+        val violations = implementationDeps.filter { dep ->
+            dep.contains("quarkus") ||
+            dep.contains("spring") ||
+            dep.contains("jakarta.persistence")
         }
         
         if (violations.isNotEmpty()) {
             throw GradleException(
                 "❌ ARCHITECTURE VIOLATION: common-types must not depend on frameworks!\n" +
-                "Violating dependencies: ${violations.map { "${it.group}:${it.name}" }}\n" +
+                "Violating dependencies: $violations\n" +
                 "See ADR-006: Platform Shared Governance"
             )
         }
@@ -50,5 +53,5 @@ tasks.register("validateArchitecture") {
 }
 
 tasks.named("build") {
-    dependsOn("validateArchitecture")
+    dependsOn(validateArchitectureTask)
 }

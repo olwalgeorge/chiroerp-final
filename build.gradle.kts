@@ -11,6 +11,8 @@ plugins {
     // Base plugins applied to all projects
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.quarkus) apply false
+    alias(libs.plugins.ktlint) apply false
+    alias(libs.plugins.detekt) apply false
 }
 
 // =============================================================================
@@ -31,7 +33,7 @@ allprojects {
 
 subprojects {
     // Apply common configuration to all subprojects
-    
+
     tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
@@ -69,21 +71,22 @@ subprojects {
             "-XX:+HeapDumpOnOutOfMemoryError"
         )
     }
+    
+    // TODO: Add ktlint and detekt configuration
+    // See ADR-017 for code quality standards
 }
 
 // =============================================================================
 // ROOT PROJECT TASKS
 // =============================================================================
 
-tasks.register("clean") {
+tasks.register<Delete>("clean") {
     group = "build"
     description = "Cleans all project build directories"
     
-    doLast {
-        allprojects {
-            delete(layout.buildDirectory)
-        }
-        println("✓ All build directories cleaned")
+    delete(layout.buildDirectory)
+    subprojects.forEach { subproject ->
+        delete(subproject.layout.buildDirectory)
     }
 }
 
@@ -91,7 +94,10 @@ tasks.register("buildAll") {
     group = "build"
     description = "Builds all ChiroERP modules"
     
-    dependsOn(subprojects.map { it.tasks.named("build") })
+    dependsOn(subprojects
+        .filter { it.tasks.findByName("build") != null }
+        .map { it.tasks.named("build") }
+    )
 }
 
 tasks.register("testAll") {
@@ -187,7 +193,7 @@ tasks.register("checkArchitecture") {
     }
 }
 
-tasks.wrapper {
+tasks.named<Wrapper>("wrapper") {
     gradleVersion = "9.0"
     distributionType = Wrapper.DistributionType.ALL
 }

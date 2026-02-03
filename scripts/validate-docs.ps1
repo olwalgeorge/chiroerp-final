@@ -33,14 +33,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$script:ValidationErrors = @()
+$script:ValidationIssues = @()
 $script:ValidationWarnings = @()
 $script:FixesApplied = @()
 
 # Color output helpers
 function Write-Success { param($Message) Write-Host "✓ $Message" -ForegroundColor Green }
-function Write-Error-Custom { param($Message) Write-Host "✗ $Message" -ForegroundColor Red; $script:ValidationErrors += $Message }
-function Write-Warning-Custom { param($Message) Write-Host "⚠ $Message" -ForegroundColor Yellow; $script:ValidationWarnings += $Message }
+function Write-ValidationError { param($Message) Write-Host "✗ $Message" -ForegroundColor Red; $script:ValidationIssues += $Message }
+function Write-ValidationWarning { param($Message) Write-Host "⚠ $Message" -ForegroundColor Yellow; $script:ValidationWarnings += $Message }
 function Write-Info { param($Message) Write-Verbose $Message }
 
 # Constants
@@ -54,14 +54,14 @@ $CURRENT_DATE = Get-Date -Format "yyyy-MM-dd"
 
 Write-Host "`n╔════════════════════════════════════════════════════════════╗" -ForegroundColor Cyan
 Write-Host "║  ChiroERP Documentation Validation (CI/CD)                 ║" -ForegroundColor Cyan
-Write-Host "║  Date: $CURRENT_DATE                                  ║" -ForegroundColor Cyan
+Write-Host "║  Date: $($CURRENT_DATE)                                    ║" -ForegroundColor Cyan
 Write-Host "╚════════════════════════════════════════════════════════════╝`n" -ForegroundColor Cyan
 
 #region Helper Functions
 
 function Get-ADRFiles {
     if (-not (Test-Path $ADR_DIR)) {
-        Write-Error-Custom "ADR directory not found: $ADR_DIR"
+        Write-ValidationError "ADR directory not found: $ADR_DIR"
         return @()
     }
     Get-ChildItem -Path $ADR_DIR -Filter "ADR-*.md" | Sort-Object Name
@@ -104,8 +104,8 @@ function Extract-DocumentDate {
     param([string]$Content)
     if (-not $Content) { return $null }
     
-    # Match patterns: "Last Updated: 2026-02-03", "Date: 2026-02-03"
-    if ($Content -match '(?:Last Updated|Date):\s*(\d{4}-\d{2}-\d{2})') {
+    # Match patterns: "Last Updated: 2026-02-03", "**Last Updated**: 2026-02-03"
+    if ($Content -match '(?:\*{0,2})?(?:Last Updated|Date)(?:\*{0,2})?\s*:\s*(\d{4}-\d{2}-\d{2})') {
         return $matches[1]
     }
     return $null
@@ -148,8 +148,8 @@ function Extract-PortAssignments {
     param([string]$Content)
     if (-not $Content) { return @() }
     
-    # Extract port numbers from microservices tables (e.g., "| finance-gl | 8081 |")
-    $matches = [regex]::Matches($Content, '\|\s*[a-z-]+\s*\|\s*(\d{4,5})\s*\|')
+    # Extract port numbers from tables (e.g., "| finance-gl | 8081 |")
+    $matches = [regex]::Matches($Content, '\|\s*[^|]+\s*\|\s*(\d{4,5})\s*\|')
     return $matches | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object
 }
 
@@ -164,12 +164,13 @@ $adrCount = $adrFiles.Count
 $highestADR = Get-HighestADRNumber
 
 Write-Info "Found $adrCount ADR files in $ADR_DIR"
-Write-Info "Highest ADR number: ADR-$('{0:D3}' -f $highestADR)"
+$highestADRFormatted = $highestADR.ToString("000")
+Write-Info "Highest ADR number: ADR-$highestADRFormatted"
 
 if ($adrCount -eq 0) {
-    Write-Error-Custom "No ADR files found in $ADR_DIR"
+    Write-ValidationError "No ADR files found in $ADR_DIR"
 } else {
-    Write-Success "Found $adrCount ADR files (ADR-001 to ADR-$('{0:D3}' -f $highestADR))"
+    Write-Success "Found $adrCount ADR files (ADR-001 to ADR-$highestADRFormatted)"
 }
 
 # Check for gaps in ADR numbering
@@ -180,7 +181,7 @@ $actualNumbers = $adrFiles | ForEach-Object {
 $missingNumbers = $expectedNumbers | Where-Object { $_ -notin $actualNumbers }
 
 if ($missingNumbers) {
-    Write-Warning-Custom "Missing ADR numbers: $($missingNumbers -join ', ')"
+    Write-ValidationWarning "Missing ADR numbers: $($missingNumbers -join ', ')"
 } else {
     Write-Success "No gaps in ADR numbering (continuous 1-$highestADR)"
 }
@@ -190,20 +191,21 @@ if ($missingNumbers) {
 Write-Host "`n[2/7] Validating WORKSPACE-STRUCTURE.md..." -ForegroundColor Cyan
 
 if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
-    Write-Error-Custom "WORKSPACE-STRUCTURE.md not found at $WORKSPACE_STRUCTURE"
+    Write-ValidationError "WORKSPACE-STRUCTURE.md not found at $WORKSPACE_STRUCTURE"
 } else {
     $wsContent = Get-FileContent $WORKSPACE_STRUCTURE
     
     # Check ADR count
     $wsADRCount = Extract-ADRCount $wsContent
     if (-not $wsADRCount) {
-        Write-Error-Custom "WORKSPACE-STRUCTURE.md: Cannot extract ADR count"
+        Write-ValidationError "WORKSPACE-STRUCTURE.md: Cannot extract ADR count"
     } elseif ($wsADRCount -ne $highestADR) {
-        Write-Error-Custom "WORKSPACE-STRUCTURE.md: ADR count mismatch (claims $wsADRCount, actual $highestADR)"
+        Write-ValidationError "WORKSPACE-STRUCTURE.md: ADR count mismatch (claims $wsADRCount, actual $highestADR)"
         
         if ($Fix) {
+            $highestADRFormatted = $highestADR.ToString("000")
             $wsContent = $wsContent -replace '(\d+)\+?\s*ADRs?', "$highestADR+ ADRs"
-            $wsContent = $wsContent -replace '(ADR-\d+\s+through\s+)ADR-\d+', "`${1}ADR-$('{0:D3}' -f $highestADR)"
+            $wsContent = $wsContent -replace '(ADR-\d+\s+through\s+)ADR-\d+', "`${1}ADR-$highestADRFormatted"
             Set-Content -Path $WORKSPACE_STRUCTURE -Value $wsContent -NoNewline
             $script:FixesApplied += "Updated WORKSPACE-STRUCTURE.md ADR count: $wsADRCount → $highestADR"
             Write-Success "Fixed: Updated ADR count to $highestADR"
@@ -215,11 +217,11 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
     # Check date
     $wsDate = Extract-DocumentDate $wsContent
     if (-not $wsDate) {
-        Write-Warning-Custom "WORKSPACE-STRUCTURE.md: Cannot extract last updated date"
+        Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract last updated date"
     } else {
         $daysDiff = ((Get-Date) - (Get-Date $wsDate)).Days
         if ($daysDiff -gt 30) {
-            Write-Warning-Custom "WORKSPACE-STRUCTURE.md: Last updated $daysDiff days ago ($wsDate)"
+            Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Last updated $daysDiff days ago ($wsDate)"
         } else {
             Write-Success "Last updated date: $wsDate ($daysDiff days ago)"
         }
@@ -239,13 +241,13 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
     if ($wsModuleCount) {
         Write-Success "Module count: $wsModuleCount"
     } else {
-        Write-Warning-Custom "WORKSPACE-STRUCTURE.md: Cannot extract module count"
+        Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract module count"
     }
     
     if ($wsDomainCount) {
         Write-Success "Domain count: $wsDomainCount"
     } else {
-        Write-Warning-Custom "WORKSPACE-STRUCTURE.md: Cannot extract domain count"
+        Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract domain count"
     }
 }
 
@@ -256,16 +258,16 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
 Write-Host "`n[3/7] Validating Architecture README.md..." -ForegroundColor Cyan
 
 if (-not (Test-Path $ARCH_README)) {
-    Write-Error-Custom "Architecture README.md not found at $ARCH_README"
+    Write-ValidationError "Architecture README.md not found at $ARCH_README"
 } else {
     $readmeContent = Get-FileContent $ARCH_README
     
     # Check ADR count
     $readmeADRCount = Extract-ADRCount $readmeContent
     if (-not $readmeADRCount) {
-        Write-Warning-Custom "Architecture README.md: Cannot extract ADR count"
+        Write-ValidationWarning "Architecture README.md: Cannot extract ADR count"
     } elseif ($readmeADRCount -ne $highestADR) {
-        Write-Error-Custom "Architecture README.md: ADR count mismatch (claims $readmeADRCount, actual $highestADR)"
+        Write-ValidationError "Architecture README.md: ADR count mismatch (claims $readmeADRCount, actual $highestADR)"
         
         if ($Fix) {
             $readmeContent = $readmeContent -replace '(\d+)\+?\s*ADRs?', "$highestADR ADRs"
@@ -282,13 +284,13 @@ if (-not (Test-Path $ARCH_README)) {
     $readmeDomainCount = Extract-DomainCount $readmeContent
     
     if ($readmeModuleCount -and $wsModuleCount -and $readmeModuleCount -ne $wsModuleCount) {
-        Write-Error-Custom "Module count mismatch: README=$readmeModuleCount, WORKSPACE-STRUCTURE=$wsModuleCount"
+        Write-ValidationError "Module count mismatch: README=$readmeModuleCount, WORKSPACE-STRUCTURE=$wsModuleCount"
     } elseif ($readmeModuleCount) {
         Write-Success "Module count matches: $readmeModuleCount"
     }
     
     if ($readmeDomainCount -and $wsDomainCount -and $readmeDomainCount -ne $wsDomainCount) {
-        Write-Error-Custom "Domain count mismatch: README=$readmeDomainCount, WORKSPACE-STRUCTURE=$wsDomainCount"
+        Write-ValidationError "Domain count mismatch: README=$readmeDomainCount, WORKSPACE-STRUCTURE=$wsDomainCount"
     } elseif ($readmeDomainCount) {
         Write-Success "Domain count matches: $readmeDomainCount"
     }
@@ -310,7 +312,8 @@ foreach ($doc in $allArchDocs) {
     foreach ($ref in $references) {
         if ($ref -match 'ADR-(\d+)') {
             $adrNum = [int]$matches[1]
-            $expectedFile = "ADR-$('{0:D3}' -f $adrNum)-*.md"
+            $adrNumFormatted = $adrNum.ToString("000")
+            $expectedFile = "ADR-$adrNumFormatted-*.md"
             $adrFile = Get-ChildItem -Path $ADR_DIR -Filter $expectedFile -ErrorAction SilentlyContinue
             
             if (-not $adrFile) {
@@ -325,7 +328,7 @@ foreach ($doc in $allArchDocs) {
 }
 
 if ($brokenReferences.Count -gt 0) {
-    Write-Error-Custom "Found $($brokenReferences.Count) broken ADR references:"
+    Write-ValidationError "Found $($brokenReferences.Count) broken ADR references:"
     foreach ($broken in $brokenReferences) {
         Write-Host "  - $($broken.Document): $($broken.Reference)" -ForegroundColor Red
     }
@@ -344,14 +347,14 @@ if (Test-Path $WORKSPACE_STRUCTURE) {
     $ports = Extract-PortAssignments $wsContent
     
     if ($ports.Count -eq 0) {
-        Write-Warning-Custom "No port assignments found in WORKSPACE-STRUCTURE.md"
+        Write-ValidationWarning "No port assignments found in WORKSPACE-STRUCTURE.md"
     } else {
         Write-Info "Found $($ports.Count) port assignments"
         
         # Check for duplicates
         $duplicates = $ports | Group-Object | Where-Object { $_.Count -gt 1 }
         if ($duplicates) {
-            Write-Error-Custom "Duplicate port assignments found:"
+            Write-ValidationError "Duplicate port assignments found:"
             foreach ($dup in $duplicates) {
                 Write-Host "  - Port $($dup.Name) assigned $($dup.Count) times" -ForegroundColor Red
             }
@@ -362,7 +365,7 @@ if (Test-Path $WORKSPACE_STRUCTURE) {
         # Check port ranges (8000-10999 for microservices)
         $invalidPorts = $ports | Where-Object { $_ -lt 8000 -or $_ -gt 10999 }
         if ($invalidPorts) {
-            Write-Warning-Custom "Ports outside recommended range (8000-10999):"
+            Write-ValidationWarning "Ports outside recommended range (8000-10999):"
             foreach ($port in $invalidPorts) {
                 Write-Host "  - Port $port" -ForegroundColor Yellow
             }
@@ -410,7 +413,7 @@ $consistencyChecks = @(
 foreach ($check in $consistencyChecks) {
     $unique = $check.Values | Select-Object -Unique
     if ($unique.Count -gt 1) {
-        Write-Error-Custom "$($check.Name) inconsistent across documents: $($check.Values -join ', ')"
+        Write-ValidationError "$($check.Name) inconsistent across documents: $($check.Values -join ', ')"
     } else {
         Write-Success "$($check.Name) consistent: $($unique[0])"
     }
@@ -422,18 +425,18 @@ foreach ($check in $consistencyChecks) {
 
 Write-Host "`n[7/7] Validating ADR file naming conventions..." -ForegroundColor Cyan
 
-$namingErrors = @()
+$namingIssues = @()
 foreach ($adrFile in $adrFiles) {
     # ADR-001-descriptive-title.md format
-    if ($adrFile.Name -notmatch '^ADR-\d{3}-[a-z-]+\.md$') {
-        $namingErrors += $adrFile.Name
+    if ($adrFile.Name -notmatch '^ADR-\d{3}-[a-z0-9-]+\.md$') {
+        $namingIssues += $adrFile.Name
     }
 }
 
-if ($namingErrors.Count -gt 0) {
-    Write-Error-Custom "ADR files with invalid naming conventions:"
-    foreach ($namingError in $namingErrors) {
-        Write-Host "  - $namingError (expected: ADR-XXX-kebab-case.md)" -ForegroundColor Red
+if ($namingIssues.Count -gt 0) {
+    Write-ValidationError "ADR files with invalid naming conventions:"
+    foreach ($fileName in $namingIssues) {
+        Write-Host "  - $fileName (expected: ADR-XXX-kebab-case.md)" -ForegroundColor Red
     }
 } else {
     Write-Success "All ADR files follow naming convention (ADR-XXX-kebab-case.md)"
@@ -450,7 +453,8 @@ Write-Host "╚═════════════════════�
 Write-Host "Total ADRs: " -NoNewline
 Write-Host "$adrCount" -ForegroundColor Green
 Write-Host "Highest ADR: " -NoNewline
-Write-Host "ADR-$('{0:D3}' -f $highestADR)" -ForegroundColor Green
+$highestADRDisplay = $highestADR.ToString("000")
+Write-Host "ADR-$highestADRDisplay" -ForegroundColor Green
 Write-Host "Documents Checked: " -NoNewline
 Write-Host "$($allArchDocs.Count)" -ForegroundColor Green
 Write-Host "Port Assignments: " -NoNewline
@@ -458,10 +462,10 @@ Write-Host "$($ports.Count)" -ForegroundColor Green
 
 Write-Host "`n"
 
-if ($script:ValidationErrors.Count -gt 0) {
-    Write-Host "✗ ERRORS: $($script:ValidationErrors.Count)" -ForegroundColor Red
-    foreach ($validationError in $script:ValidationErrors) {
-        Write-Host "  - $validationError" -ForegroundColor Red
+if ($script:ValidationIssues.Count -gt 0) {
+    Write-Host "✗ ERRORS: $($script:ValidationIssues.Count)" -ForegroundColor Red
+    foreach ($item in $script:ValidationIssues) {
+        Write-Host "  - $item" -ForegroundColor Red
     }
     Write-Host ""
 }
@@ -482,13 +486,13 @@ if ($script:FixesApplied.Count -gt 0) {
     Write-Host ""
 }
 
-if ($script:ValidationErrors.Count -eq 0 -and $script:ValidationWarnings.Count -eq 0) {
+if ($script:ValidationIssues.Count -eq 0 -and $script:ValidationWarnings.Count -eq 0) {
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Green
     Write-Host "║  ✓ ALL VALIDATION CHECKS PASSED                            ║" -ForegroundColor Green
     Write-Host "║  Documentation is consistent and up-to-date                ║" -ForegroundColor Green
     Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Green
     exit 0
-} elseif ($script:ValidationErrors.Count -eq 0) {
+} elseif ($script:ValidationIssues.Count -eq 0) {
     Write-Host "╔════════════════════════════════════════════════════════════╗" -ForegroundColor Yellow
     Write-Host "║  ⚠ VALIDATION PASSED WITH WARNINGS                         ║" -ForegroundColor Yellow
     Write-Host "║  Review warnings above                                     ║" -ForegroundColor Yellow
