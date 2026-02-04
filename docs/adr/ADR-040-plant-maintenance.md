@@ -1,10 +1,10 @@
 # ADR-040: Plant Maintenance (PM)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-02  
-**Deciders**: Architecture Team, Operations Team, Facilities Team  
-**Priority**: P3 (Optional Add-on)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-02
+**Deciders**: Architecture Team, Operations Team, Facilities Team
+**Priority**: P3 (Optional Add-on)
+**Tier**: Add-on
 **Tags**: maintenance, asset-maintenance, preventive, predictive, cmms, eam
 
 ## Context

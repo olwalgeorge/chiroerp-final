@@ -1,10 +1,10 @@
 # ADR-025: Sales & Distribution (SD)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Sales Ops  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Sales Ops
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: sales, orders, pricing, fulfillment, omnichannel
 
 ## Context

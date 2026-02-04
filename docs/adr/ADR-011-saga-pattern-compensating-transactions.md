@@ -1,10 +1,10 @@
 # ADR-011: Saga Pattern & Compensating Transactions
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team  
-**Tier**: Core  
-**Tags**: saga, transactions, reliability, orchestration, choreography, compensating-actions  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team
+**Tier**: Core
+**Tags**: saga, transactions, reliability, orchestration, choreography, compensating-actions
 
 ## Context
 Cross-context business processes (Order-to-Cash, Procure-to-Pay, Make-to-Order, Period Close) span multiple bounded contexts. Two-phase commit is not feasible across services and brokers. We need a consistent pattern for long-running, distributed workflows with clear failure handling, compensation, and observability that meets SAP-grade ERP reliability expectations.

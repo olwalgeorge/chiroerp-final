@@ -1,8 +1,8 @@
 # Inventory Advanced Operations - ADR-024 Extension
 
-> **Bounded Context:** `inventory-advanced-ops`  
-> **Port:** `9008`  
-> **Database:** `chiroerp_inventory_advanced_ops`  
+> **Bounded Context:** `inventory-advanced-ops`
+> **Port:** `9008`
+> **Database:** `chiroerp_inventory_advanced_ops`
 > **Kafka Consumer Group:** `inventory-advanced-ops-cg`
 
 ## Overview
@@ -835,4 +835,3 @@ CertifiedRepairCenter:
 - **Predictive Repair Analytics**: Forecast repair demand and loaner pool requirements
 
 ---
-

@@ -1,10 +1,10 @@
 # ADR-006: Platform-Shared Governance Rules
 
-**Status**: Amended (Phase 0 Implementation)  
-**Date**: 2025-11-06  
-**Updated**: 2026-02-03  
-**Tier**: Core  
-**Context**: Phase 0 - Platform Foundation + Preventing Shared Kernel Anti-Pattern  
+**Status**: Amended (Phase 0 Implementation)
+**Date**: 2025-11-06
+**Updated**: 2026-02-03
+**Tier**: Core
+**Context**: Phase 0 - Platform Foundation + Preventing Shared Kernel Anti-Pattern
 
 ## Context
 The platform uses multiple bounded contexts and a small set of shared technical primitives. To preserve bounded-context autonomy and avoid shared-kernel drift, we define enforceable governance rules that keep platform-shared modules small, technical, and dependency-safe.
@@ -240,14 +240,14 @@ Every PR touching `platform-shared` must answer:
 - [ ] Could this belong in a specific context instead?
 - [ ] **NEW:** If interface, can implementations be swapped without domain code changes?
 
-**Review Frequency:** Every Sprint (2 weeks)  
-**Enforcement (Planned):** 
+**Review Frequency:** Every Sprint (2 weeks)
+**Enforcement (Planned):**
 - ⬜ **Automated:** ArchUnit tests in CI pipeline (`.github/workflows/ci.yml`) - **PLANNED**
 - ⬜ **Weekly Audit:** GitHub Actions workflow (`.github/workflows/arch-governance.yml`) - **PLANNED**
 - ⬜ **Local Audit:** PowerShell script (`scripts/audit-platform-shared.ps1`)
 - ⬜ **Code Review:** Manual checklist for platform-shared PRs
 
-**Owner:** Lead Architect / Senior Engineer  
+**Owner:** Lead Architect / Senior Engineer
 **Escalation:** Team consensus required to add new shared module
 
 ### Enforcement Status
@@ -313,8 +313,8 @@ Every PR touching `platform-shared` must answer:
 
 ### Compliance Verification
 
-**Last Verified:** Not yet verified  
-**Verification Method:** ArchUnit automated tests (planned)  
+**Last Verified:** Not yet verified
+**Verification Method:** ArchUnit automated tests (planned)
 **Result:** ❌ Not implemented
 
 **Next Audit:** After initial implementation

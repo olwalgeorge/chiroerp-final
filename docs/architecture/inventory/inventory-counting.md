@@ -1,8 +1,8 @@
 # Inventory Cycle Counting - ADR-024
 
-> **Bounded Context:** `inventory-counting`  
-> **Port:** `9004` (logical, part of inventory-core service)  
-> **Database:** `chiroerp_inventory_core`  
+> **Bounded Context:** `inventory-counting`
+> **Port:** `9004` (logical, part of inventory-core service)
+> **Database:** `chiroerp_inventory_core`
 > **Kafka Consumer Group:** `inventory-core-cg`
 
 ## Overview

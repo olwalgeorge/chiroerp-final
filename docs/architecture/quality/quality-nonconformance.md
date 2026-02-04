@@ -1,8 +1,8 @@
 # Quality Nonconformance - ADR-039
 
-> **Bounded Context:** `quality-nonconformance`  
-> **Port:** `9503`  
-> **Database:** `chiroerp_quality_nonconformance`  
+> **Bounded Context:** `quality-nonconformance`
+> **Port:** `9503`
+> **Database:** `chiroerp_quality_nonconformance`
 > **Kafka Consumer Group:** `quality-nonconformance-cg`
 
 ## Overview

@@ -1,15 +1,15 @@
 # ADR-056: AI Demand Forecasting & Replenishment
 
-**Status**: Proposed (Phase 2 - Year 2)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Supply Chain Team, Data Science Team  
-**Priority**: P1 (High)  
-**Tier**: Add-on (Advanced)  
+**Status**: Proposed (Phase 2 - Year 2)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Supply Chain Team, Data Science Team
+**Priority**: P1 (High)
+**Tier**: Add-on (Advanced)
 **Tags**: ai, ml, demand-forecasting, replenishment, inventory-optimization, retail, time-series
 
 ## Context
 
-Sophisticated multi-branch retail chains require AI-powered demand forecasting to optimize inventory replenishment, reduce stockouts, and minimize excess inventory. Without demand forecasting AI, retailers experience 15-20% stockouts (lost sales) and 25-30% excess inventory (markdown losses). 
+Sophisticated multi-branch retail chains require AI-powered demand forecasting to optimize inventory replenishment, reduce stockouts, and minimize excess inventory. Without demand forecasting AI, retailers experience 15-20% stockouts (lost sales) and 25-30% excess inventory (markdown losses).
 
 While **ADR-024 (Inventory Management)** provides real-time stock visibility and **ADR-055 (Workforce Scheduling)** includes labor demand forecasting, there is **no AI capability for product-level demand forecasting and automatic replenishment recommendations**. This creates a competitive gap versus enterprise retail systems (SAP IBP, Oracle RDFC, Blue Yonder).
 

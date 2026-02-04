@@ -8,7 +8,7 @@
 
 ### ValuationRunCompletedEvent
 
-**Trigger**: Valuation run completed  
+**Trigger**: Valuation run completed
 **Consumers**: Finance/GL, Analytics
 
 ```json
@@ -26,7 +26,7 @@
 
 ### LandedCostAllocatedEvent
 
-**Trigger**: Landed cost allocation completed  
+**Trigger**: Landed cost allocation completed
 **Consumers**: Finance/GL
 
 ```json
@@ -42,7 +42,7 @@
 
 ### FxRevaluationPostedEvent
 
-**Trigger**: FX revaluation posted  
+**Trigger**: FX revaluation posted
 **Consumers**: Finance/GL
 
 ```json

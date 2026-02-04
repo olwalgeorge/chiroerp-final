@@ -10,7 +10,7 @@
 
 #### VendorInvoicePostedEvent
 
-**Trigger**: Invoice posted to GL  
+**Trigger**: Invoice posted to GL
 **Consumers**: General Ledger, Controlling, Treasury
 
 ```json
@@ -41,7 +41,7 @@
 
 #### VendorInvoiceCancelledEvent
 
-**Trigger**: Invoice cancelled  
+**Trigger**: Invoice cancelled
 **Consumers**: General Ledger (reversal), Procurement
 
 ```json
@@ -59,7 +59,7 @@
 
 #### VendorInvoiceMatchedEvent
 
-**Trigger**: Invoice matched with PO/GRN  
+**Trigger**: Invoice matched with PO/GRN
 **Consumers**: Procurement, Audit
 
 ```json
@@ -82,7 +82,7 @@
 
 #### PaymentSentEvent
 
-**Trigger**: Payment executed  
+**Trigger**: Payment executed
 **Consumers**: General Ledger, Treasury, Vendor Portal
 
 ```json
@@ -112,7 +112,7 @@
 
 #### PaymentClearedEvent
 
-**Trigger**: Payment cleared by bank  
+**Trigger**: Payment cleared by bank
 **Consumers**: Treasury, Bank Reconciliation
 
 ```json
@@ -128,7 +128,7 @@
 
 #### PaymentReturnedEvent
 
-**Trigger**: Payment returned/bounced  
+**Trigger**: Payment returned/bounced
 **Consumers**: General Ledger (reversal), Treasury, Collections
 
 ```json
@@ -149,7 +149,7 @@
 
 #### PaymentRunApprovedEvent
 
-**Trigger**: Payment run approved  
+**Trigger**: Payment run approved
 **Consumers**: Treasury, Notifications
 
 ```json
@@ -168,7 +168,7 @@
 
 #### PaymentRunExecutedEvent
 
-**Trigger**: Payment run execution completed  
+**Trigger**: Payment run execution completed
 **Consumers**: Treasury, Bank Integration, Audit
 
 ```json
@@ -195,7 +195,7 @@
 
 #### MatchExceptionCreatedEvent
 
-**Trigger**: Variance exceeds tolerance during matching  
+**Trigger**: Variance exceeds tolerance during matching
 **Consumers**: Procurement, Workflow, Notifications
 
 ```json
@@ -221,7 +221,7 @@
 
 #### VendorBlockedEvent
 
-**Trigger**: Vendor blocked for payments  
+**Trigger**: Vendor blocked for payments
 **Consumers**: Procurement, Sales, CRM
 
 ```json
@@ -244,7 +244,7 @@
 
 #### PurchaseOrderApprovedEvent
 
-**Source**: Procurement  
+**Source**: Procurement
 **Action**: Enable invoice matching against PO
 
 ```json
@@ -263,7 +263,7 @@
 
 #### GoodsReceivedEvent
 
-**Source**: Warehouse/Inventory  
+**Source**: Warehouse/Inventory
 **Action**: Enable 3-way matching
 
 ```json
@@ -286,7 +286,7 @@
 
 #### CommissionPayableCreatedEvent
 
-**Source**: Sales Commissions  
+**Source**: Sales Commissions
 **Action**: Create AP vendor invoice for commission payout
 
 ```json
@@ -310,7 +310,7 @@
 
 #### BankStatementImportedEvent
 
-**Source**: Treasury  
+**Source**: Treasury
 **Action**: Auto-clear payments
 
 ```json
@@ -333,7 +333,7 @@
 
 #### VendorCreatedEvent / VendorUpdatedEvent
 
-**Source**: Master Data Governance (MDG)  
+**Source**: Master Data Governance (MDG)
 **Action**: Sync vendor master data
 
 ```json

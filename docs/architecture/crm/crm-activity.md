@@ -1,8 +1,8 @@
 # CRM Activity - ADR-043
 
-> **Bounded Context:** `crm-activity`  
-> **Port:** `9406` (logical, part of crm-service-orders service)  
-> **Database:** `chiroerp_crm_service_orders`  
+> **Bounded Context:** `crm-activity`
+> **Port:** `9406` (logical, part of crm-service-orders service)
+> **Database:** `chiroerp_crm_service_orders`
 > **Kafka Consumer Group:** `crm-service-orders-cg`
 
 ## Overview
@@ -80,7 +80,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | TaskCompletedEvent | `crm.activity.task.completed` | 6 | 30d |
 | CustomerProfileUpdatedEvent (consumed) | `crm.customer.profile.updated` | 6 | 30d |
 
-**Consumer Group:** `crm-service-orders-cg`  
+**Consumer Group:** `crm-service-orders-cg`
 **Partition Key:** `customerId` (ensures all events for a customer are processed in order)
 
 ## API Endpoints (Examples)

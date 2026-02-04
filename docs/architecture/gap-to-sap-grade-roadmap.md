@@ -1,8 +1,8 @@
 # Gap-to-SAP-Grade Implementation Plan - ChiroERP
 
-**Status**: Implementation Roadmap  
-**Priority**: P0 (Critical - Product-Market Fit)  
-**Last Updated**: February 3, 2026  
+**Status**: Implementation Roadmap
+**Priority**: P0 (Critical - Product-Market Fit)
+**Last Updated**: February 3, 2026
 **Target**: Transform architecture into SAP-grade product for African market
 
 ---
@@ -323,7 +323,7 @@ class ConfigurationEngine(
             configType = ConfigType.PRICING,
             effectiveDate = orderDate
         )
-        
+
         // Evaluate rules in priority order
         return rules
             .sortedBy { it.priority }
@@ -351,7 +351,7 @@ class ConfigurationEngine(
                 }
             } ?: throw PricingException("No pricing rule found")
     }
-    
+
     // 2. Tax Configuration (replace hardcoded tax logic)
     fun calculateTax(
         netAmount: BigDecimal,
@@ -366,11 +366,11 @@ class ConfigurationEngine(
             taxCategory = taxCategory,
             effectiveDate = transactionDate
         )
-        
+
         val taxAmount = taxRules.fold(BigDecimal.ZERO) { acc, rule ->
             acc + netAmount * rule.rate / 100
         }
-        
+
         return TaxResult(
             netAmount = netAmount,
             taxAmount = taxAmount,
@@ -378,7 +378,7 @@ class ConfigurationEngine(
             appliedRules = taxRules.map { it.id }
         )
     }
-    
+
     // 3. Posting Rule Configuration (replace hardcoded GL accounts)
     fun determineGLAccounts(
         transactionType: TransactionType,
@@ -393,7 +393,7 @@ class ConfigurationEngine(
             businessArea = businessArea
         ) ?: throw PostingException("No posting rule found")
     }
-    
+
     // 4. Approval Configuration (replace hardcoded approval limits)
     fun determineApprovers(
         documentType: DocumentType,
@@ -407,13 +407,13 @@ class ConfigurationEngine(
             documentType = documentType,
             orgUnitId = orgUnitId
         )
-        
+
         return approvalMatrix
             .filter { amount >= it.minAmount && amount < it.maxAmount }
             .sortedBy { it.level }
             .map { it.approverId }
     }
-    
+
     // 5. Number Range Configuration (replace hardcoded sequences)
     fun getNextNumber(
         documentType: DocumentType,
@@ -427,12 +427,12 @@ class ConfigurationEngine(
             fiscalYear = fiscalYear,
             countryCode = countryCode
         )
-        
+
         val nextNumber = numberRange.currentNumber + 1
-        
+
         // Update current number (atomic)
         configRepository.updateNumberRange(numberRange.id, nextNumber)
-        
+
         return numberRange.format.format(nextNumber)  // e.g., "INV-2026-00001"
     }
 }
@@ -443,7 +443,7 @@ class ConfigurationEngine(
 // Configuration Management UI
 const ConfigurationManager = () => {
   const [configType, setConfigType] = useState<ConfigType>('PRICING');
-  
+
   return (
     <div className="config-manager">
       <Tabs value={configType} onChange={setConfigType}>
@@ -453,21 +453,21 @@ const ConfigurationManager = () => {
         <Tab value="APPROVAL">Approval Matrix</Tab>
         <Tab value="NUMBER_RANGE">Number Ranges</Tab>
       </Tabs>
-      
+
       {configType === 'PRICING' && (
         <PricingRuleEditor
           onSave={(rule) => saveConfig(rule)}
           onTest={(rule) => testPricingRule(rule)}
         />
       )}
-      
+
       {configType === 'TAX' && (
         <TaxRuleEditor
           countries={['KE', 'TZ', 'US', 'DE']}
           onSave={(rule) => saveConfig(rule)}
         />
       )}
-      
+
       {/* ... other config types ... */}
     </div>
   );
@@ -503,7 +503,7 @@ class OrgModelService(
         val unit = orgRepository.findById(orgUnitId)
         val parent = unit.parentId?.let { getOrgHierarchy(it) }
         val children = orgRepository.findByParentId(orgUnitId).map { getOrgHierarchy(it.id) }
-        
+
         return OrgNode(
             id = unit.id,
             name = unit.name,
@@ -512,11 +512,11 @@ class OrgModelService(
             children = children
         )
     }
-    
+
     // 2. Authorization Scope Derivation
     fun deriveUserScope(userId: UUID, permission: Permission): Set<UUID> {
         val userAssignments = orgRepository.findUserAssignments(userId)
-        
+
         return userAssignments.flatMap { assignment ->
             when (assignment.scopeType) {
                 ScopeType.SELF -> setOf(assignment.orgUnitId)
@@ -525,7 +525,7 @@ class OrgModelService(
             }
         }.toSet()
     }
-    
+
     // 3. Org-Based Data Filtering
     fun <T> filterByOrgScope(
         entities: List<T>,
@@ -536,23 +536,23 @@ class OrgModelService(
         val allowedOrgs = deriveUserScope(userId, permission)
         return entities.filter { orgExtractor(it) in allowedOrgs }
     }
-    
+
     // 4. Reporting Line Traversal
     fun getReportingChain(userId: UUID): List<UserId> {
         val user = orgRepository.findUserById(userId)
         val manager = user.managerId
-        
+
         return if (manager != null) {
             listOf(manager) + getReportingChain(manager)
         } else {
             emptyList()
         }
     }
-    
+
     // 5. Cost Center Inheritance
     fun getCostCenter(orgUnitId: UUID): CostCenter {
         val unit = orgRepository.findById(orgUnitId)
-        
+
         return unit.costCenterId?.let { costCenterId ->
             costCenterRepository.findById(costCenterId)
         } ?: run {
@@ -568,7 +568,7 @@ class OrgModelService(
 // Org Chart Visualization
 const OrgChartViewer = () => {
   const { data: orgTree } = useOrgHierarchy();
-  
+
   return (
     <OrgChart
       data={orgTree}
@@ -627,7 +627,7 @@ class WorkflowEngine(
             orgUnitId = orgUnitId,
             tenantId = tenantId
         )
-        
+
         // Start Temporal workflow
         val workflow = temporalClient.newWorkflowStub(
             ApprovalWorkflow::class.java,
@@ -636,7 +636,7 @@ class WorkflowEngine(
                 .setWorkflowId("approval-${documentId}")
                 .build()
         )
-        
+
         WorkflowClient.start(workflow::processApproval, ApprovalRequest(
             documentId = documentId,
             documentType = documentType,
@@ -644,10 +644,10 @@ class WorkflowEngine(
             requesterId = requesterId,
             tenantId = tenantId
         ))
-        
+
         return workflow.workflowId
     }
-    
+
     // 2. Approve/Reject
     fun processApprovalDecision(
         workflowId: WorkflowId,
@@ -659,17 +659,17 @@ class WorkflowEngine(
             ApprovalWorkflow::class.java,
             workflowId
         )
-        
+
         workflow.submitDecision(approverId, decision, comments)
     }
-    
+
     // 3. Query Workflow State
     fun getWorkflowState(workflowId: WorkflowId): WorkflowState {
         val workflow = temporalClient.newWorkflowStub(
             ApprovalWorkflow::class.java,
             workflowId
         )
-        
+
         return workflow.getState()
     }
 }
@@ -679,10 +679,10 @@ class WorkflowEngine(
 interface ApprovalWorkflow {
     @WorkflowMethod
     fun processApproval(request: ApprovalRequest): ApprovalResult
-    
+
     @SignalMethod
     fun submitDecision(approverId: UUID, decision: ApprovalDecision, comments: String?)
-    
+
     @QueryMethod
     fun getState(): WorkflowState
 }
@@ -691,25 +691,25 @@ interface ApprovalWorkflow {
 class ApprovalWorkflowImpl : ApprovalWorkflow {
     override fun processApproval(request: ApprovalRequest): ApprovalResult {
         val decisions = mutableListOf<ApprovalDecision>()
-        
+
         // Sequential approval (Level 1 → Level 2 → Level 3)
         for ((level, approverId) in request.approvers.withIndex()) {
             // Wait for approval decision (signal)
             val decision = Workflow.await { decisions.size > level }
-            
+
             if (decision == ApprovalDecision.REJECTED) {
                 return ApprovalResult.REJECTED
             }
         }
-        
+
         return ApprovalResult.APPROVED
     }
-    
+
     override fun submitDecision(approverId: UUID, decision: ApprovalDecision, comments: String?) {
         // Store decision (Temporal will resume workflow)
         decisions.add(decision)
     }
-    
+
     override fun getState(): WorkflowState {
         return WorkflowState(
             currentLevel = decisions.size + 1,
@@ -725,7 +725,7 @@ class ApprovalWorkflowImpl : ApprovalWorkflow {
 // Unified Task Inbox
 const TaskInbox = () => {
   const { data: tasks } = usePendingTasks();
-  
+
   return (
     <TaskList>
       {tasks.map((task) => (
@@ -1051,7 +1051,7 @@ const TaskInbox = () => {
 
 **Rationale**: With advanced inventory operations in place (Phase 3), retail customers can benefit from AI-powered demand forecasting and dynamic pricing capabilities that leverage the operational foundation. This enhancement closes competitive gaps with enterprise retail systems (SAP IBP, Oracle RDFC, Blue Yonder, SAP OPP, Oracle RPM).
 
-**Strategic Value**: 
+**Strategic Value**:
 - Closes **CRITICAL** competitive gap with SAP/Oracle/Blue Yonder retail AI capabilities
 - Improves retail AI maturity from **6/10 → 8.5/10**
 - Generates **$10M-$16M cumulative ROI** (3 years, 100-store chain)
@@ -1067,8 +1067,8 @@ const TaskInbox = () => {
 **Two-Phase AI Implementation** (18 months total, can run parallel to Phase 4-6):
 
 ##### Phase AI-1: AI Demand Forecasting & Replenishment (Months 1-9)
-**ADR**: ADR-056 (AI Demand Forecasting & Replenishment)  
-**Investment**: $500K-$1M (2-3 data scientists, 9 months)  
+**ADR**: ADR-056 (AI Demand Forecasting & Replenishment)
+**Investment**: $500K-$1M (2-3 data scientists, 9 months)
 **ROI**: 3-5X in Year 1 = $5M-$8M savings (100-store chain)
 
 **Core Capabilities** (7 major components):
@@ -1109,9 +1109,9 @@ const TaskInbox = () => {
 **Competitive Impact**: ✅ **CLOSES CRITICAL GAP** with SAP IBP, Oracle RDFC, Blue Yonder Luminate Demand
 
 ##### Phase AI-2: Dynamic Pricing & Markdown Optimization (Months 10-18)
-**ADR**: ADR-057 (Dynamic Pricing & Markdown Optimization)  
-**Investment**: $300K-$500K (1-2 data scientists, 9 months)  
-**ROI**: 2-3X in Year 1 = $4M-$6M margin improvement (100-store chain)  
+**ADR**: ADR-057 (Dynamic Pricing & Markdown Optimization)
+**Investment**: $300K-$500K (1-2 data scientists, 9 months)
+**ROI**: 2-3X in Year 1 = $4M-$6M margin improvement (100-store chain)
 **Prerequisites**: ADR-056 (demand forecasting) REQUIRED
 
 **Core Capabilities** (7 major components):
@@ -1401,10 +1401,10 @@ services:
       - KAFKA_ENABLED=false  # Use in-memory event bus
     ports:
       - "8080:8080"
-    
+
   db:
     image: postgres:15
-    
+
   redis:
     image: redis:7
 ```
@@ -1425,25 +1425,25 @@ services:
 services:
   api-gateway:
     image: chiroerp/api-gateway:latest
-  
+
   finance-service:
     image: chiroerp/finance:latest
     replicas: 2
-  
+
   sales-service:
     image: chiroerp/sales:latest
     replicas: 2
-  
+
   inventory-service:
     image: chiroerp/inventory:latest
     replicas: 2
-  
+
   postgres-finance:
     image: postgres:15
-  
+
   postgres-sales:
     image: postgres:15
-  
+
   kafka:
     image: confluentinc/cp-kafka:latest
 ```
@@ -1686,8 +1686,8 @@ spec:
 | **Q3** | 2 (Kenya, Tanzania) | 0 | 3 | $30K | $60K | $0 | $60K | **$90K** |
 | **Q4** | 2 (Tanzania, US) | 0 | 5 | $30K | $60K | $0 | $60K | **$150K** |
 
-**Year 1 Total**: 5 customers, $150K ARR  
-**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)  
+**Year 1 Total**: 5 customers, $150K ARR
+**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)
 **Burn Multiple**: 23.4 (NOT GOOD - expected in Year 1)
 
 ---
@@ -1701,8 +1701,8 @@ spec:
 | **Q3** | 6 (Ethiopia, Zambia, Botswana, etc.) | 1 (churn) | 17 | $80K | $480K | -$30K | $30K | $480K | **$1.125M** |
 | **Q4** | 9 (Enterprise deals start) | 1 (churn) | 25 | $100K | $900K | -$60K | $50K | $890K | **$2.015M** |
 
-**Year 2 Total**: 25 customers (20 net new), $2.015M ARR  
-**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)  
+**Year 2 Total**: 25 customers (20 net new), $2.015M ARR
+**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)
 **Burn Multiple**: 1.75 (IMPROVING - path to profitability)
 
 ---
@@ -1716,12 +1716,12 @@ spec:
 | **Q3** | 12 (Geographic expansion) | 4 (churn) | 46 | $180K | $2.16M | -$240K | $200K | $2.12M | **$6.545M** |
 | **Q4** | 8 (Slowing growth) | 4 (churn) | 50 | $200K | $1.6M | -$240K | $250K | $1.61M | **$8.155M** |
 
-**Year 3 Total**: 50 customers (25 net new), $8.155M ARR  
-**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)  
-**Burn Multiple**: 0.43 (PROFITABLE - revenue > costs)  
-**Gross Margin**: 75% (typical SaaS)  
-**Gross Profit**: $6.1M  
-**Operating Costs**: $3.516M  
+**Year 3 Total**: 50 customers (25 net new), $8.155M ARR
+**Investment**: $3.516M (12 months × $293K aligned with 18-month roadmap)
+**Burn Multiple**: 0.43 (PROFITABLE - revenue > costs)
+**Gross Margin**: 75% (typical SaaS)
+**Gross Profit**: $6.1M
+**Operating Costs**: $3.516M
 **EBITDA**: **+$2.584M (32% margin)** ← **PROFITABILITY ACHIEVED**
 
 ---
@@ -1738,8 +1738,8 @@ spec:
 | **Burn Multiple** | 23.4 | 1.75 | 0.43 | 1.29 |
 | **EBITDA** | -$3.366M | -$1.501M | +$2.584M | -$2.283M |
 
-**Cumulative Cash Burn**: $2.283M (offset by $2.584M Year 3 profit → Net positive $301K)  
-**Break-Even**: Month 32 (Q3 Year 3)  
+**Cumulative Cash Burn**: $2.283M (offset by $2.584M Year 3 profit → Net positive $301K)
+**Break-Even**: Month 32 (Q3 Year 3)
 **Funding Requirement**: $11M Series A (to cover $10.548M investment + $500K buffer)
 
 ---
@@ -1883,9 +1883,9 @@ spec:
 
 ### Phase Gate Review Template
 
-**Phase**: [Phase 1 / 2 / 3 / 4 / 5 / 6]  
-**Review Date**: [YYYY-MM-DD]  
-**Attendees**: CTO, VP Engineering, VP Sales, CEO, Board Observer  
+**Phase**: [Phase 1 / 2 / 3 / 4 / 5 / 6]
+**Review Date**: [YYYY-MM-DD]
+**Attendees**: CTO, VP Engineering, VP Sales, CEO, Board Observer
 **Decision**: [ ] GO / [ ] NO-GO / [ ] CONDITIONAL GO
 
 ---
@@ -1970,7 +1970,7 @@ spec:
 
 **Decision**: [GO / NO-GO / CONDITIONAL GO]
 
-**Next Phase Start Date**: [YYYY-MM-DD]  
+**Next Phase Start Date**: [YYYY-MM-DD]
 **Review Cadence**: Weekly status meetings (team), Monthly steering committee (execs), Quarterly board review
 
 **Action Items**:
@@ -1998,7 +1998,7 @@ spec:
 | **8. GL Posting** | IFRS accounts, posting rules | GL API | Dr: Bank, Cr: Revenue + VAT | Correct GL entries | ❌ |
 | **9. Reconciliation** | Daily M-Pesa statement | Reconciliation engine | All payments matched | Zero unmatched payments | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - 100 orders processed end-to-end with **zero manual intervention**
 - 85%+ variation driven by configuration (not code)
 - < 3 P0 bugs/month in production
@@ -2023,7 +2023,7 @@ spec:
 | **9. Payment (RTGS)** | Bank integration (RTGS Kenya) | Payment API | Large supplier > $10K → RTGS | RTGS payment initiated | ❌ |
 | **10. GL Posting** | IFRS accounts, posting rules | GL API | Dr: Expense, Cr: Bank + WHT | Correct GL entries | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - 50 POs processed end-to-end with **3-way match + withholding tax**
 - 100% of POs use workflow (no manual routing)
 - < 3 P0 bugs/month in production
@@ -2048,7 +2048,7 @@ spec:
 | **9. Audit Trail** | Change log | Audit report | All GL changes logged | Who/What/When captured | ❌ |
 | **10. Period Unlock** | Close calendar | Period lock API | Unlock for adjustments | Users can post adjustments | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - Month-end close in **< 5 days** (down from 10-15 days)
 - Zero manual elimination entries
 - Audit trail complete (100% of GL changes logged)
@@ -2071,7 +2071,7 @@ spec:
 | **7. Daily Sales Report** | Report format | eTIMS report API | Submit daily sales | Report accepted by KRA | ❌ |
 | **8. Monthly VAT Return** | VAT return format | VAT return API | File monthly return | Return filed successfully | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - **95%+ Cu retrieval success rate** in production
 - **< 2s latency** p95
 - Zero data loss (invoice submission idempotent)
@@ -2094,7 +2094,7 @@ spec:
 | **7. Payment Reconciliation** | Daily statement | Reconciliation engine | Match 500 payments | All payments matched | ❌ |
 | **8. Failed Payment Retry** | Retry logic | Payment retry handler | Simulate failure | Auto-retry works | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - **98%+ payment success rate** in production
 - Zero duplicate payments (idempotency keys)
 - Daily reconciliation (all payments matched)
@@ -2118,7 +2118,7 @@ spec:
 | **Database** | 10K concurrent queries | < 100ms query p95 | Not tested | ❌ |
 | **Multi-Region Latency** | Kenya ↔ US | < 200ms cross-region | Not tested | ❌ |
 
-**Success Criteria**: 
+**Success Criteria**:
 - **10,000 concurrent users** with < 2s API response p95
 - Database optimized (partitioning + read replicas + caching)
 - Kafka optimized (10 partitions per topic, < 5s consumer lag)

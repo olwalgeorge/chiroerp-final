@@ -1,10 +1,10 @@
 # ADR-029: Intercompany Accounting (IC)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P0 (Critical)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P0 (Critical)
+**Tier**: Advanced
 **Tags**: intercompany, consolidation, eliminations, transfer-pricing
 
 ## Context

@@ -1,10 +1,10 @@
 # ADR-032: Budgeting & Planning (FP&A)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P2 (Medium)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P2 (Medium)
+**Tier**: Advanced
 **Tags**: budgeting, planning, forecasting, fpa
 
 ## Context

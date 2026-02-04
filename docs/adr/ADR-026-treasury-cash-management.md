@@ -1,10 +1,10 @@
 # ADR-026: Treasury & Cash Management (TR-CM)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P2 (Medium)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P2 (Medium)
+**Tier**: Advanced
 **Tags**: treasury, cash-management, banking, liquidity, payments
 
 ## Context
@@ -92,24 +92,24 @@ Banks, financial institutions, and large multinational corporations require adva
   - Contract management (counterparties, terms, notional amounts, strike prices).
   - Valuation models (Black-Scholes for options, discounted cash flow for swaps).
   - Settlement and margin calls.
-  
+
 - **Hedge Accounting**:
   - Hedge designation and documentation.
   - Effectiveness testing (dollar-offset, regression analysis).
   - Hedge reserve tracking (OCI for cash flow hedges).
   - Hedge ineffectiveness recognition in P&L.
-  
+
 - **Cash Pooling**:
   - Multi-entity structures (header accounts, participant accounts).
   - Interest allocation and netting arrangements.
   - Automated sweeping and concentration.
-  
+
 - **Investment Portfolio**:
   - Security master data (ISIN, CUSIP, ratings).
   - Acquisition, accrual, valuation, disposal.
   - Dividend/coupon income recognition.
   - Portfolio performance analytics (YTM, duration, convexity).
-  
+
 - **Debt & Securities**:
   - Issuance tracking (bonds, commercial paper, syndicated loans).
   - Amortized cost vs fair value accounting.

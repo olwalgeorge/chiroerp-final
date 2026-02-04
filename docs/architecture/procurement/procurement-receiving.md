@@ -1,8 +1,8 @@
 # Procurement Receiving & Inspection - ADR-023
 
-> **Bounded Context:** `procurement-receiving`  
-> **Port:** `9104` (logical, part of procurement-core service)  
-> **Database:** `chiroerp_procurement_core`  
+> **Bounded Context:** `procurement-receiving`
+> **Port:** `9104` (logical, part of procurement-core service)
+> **Database:** `chiroerp_procurement_core`
 > **Kafka Consumer Group:** `procurement-core-cg`
 
 ## Overview
@@ -91,7 +91,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | VendorReturnCreatedEvent | `procurement.receiving.return.created` | 6 | 30d |
 | PurchaseOrderApprovedEvent (consumed) | `procurement.core.po.approved` | 6 | 30d |
 
-**Consumer Group:** `procurement-core-cg`  
+**Consumer Group:** `procurement-core-cg`
 **Partition Key:** `receiptId` / `poId` (ensures all events for a receipt are processed in order)
 
 ## API Endpoints (Examples)

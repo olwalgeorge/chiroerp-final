@@ -8,7 +8,7 @@
 
 ### CloseRunCompletedEvent
 
-**Trigger**: Close run finalized  
+**Trigger**: Close run finalized
 **Consumers**: General Ledger, Reporting
 
 ```json

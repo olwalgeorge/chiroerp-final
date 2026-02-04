@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS finance.gl_accounts (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_by UUID NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
-    
+
     -- Constraints
     CONSTRAINT uk_gl_account_number UNIQUE (tenant_id, account_number),
     CONSTRAINT chk_account_number_format CHECK (account_number ~ '^[0-9]{4,10}(-[0-9]{3})?$'),
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS finance.journal_entries (
     posted_at TIMESTAMP,
     posted_by UUID,
     version BIGINT NOT NULL DEFAULT 0,
-    
+
     -- Constraints
     CONSTRAINT uk_journal_entry_number UNIQUE (tenant_id, entry_number),
     CONSTRAINT chk_posting_date CHECK (posting_date >= entry_date),
@@ -125,7 +125,7 @@ CREATE TABLE IF NOT EXISTS finance.journal_entry_lines (
     profit_center_id UUID,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     created_by UUID NOT NULL,
-    
+
     -- Constraints
     CONSTRAINT uk_journal_entry_line UNIQUE (journal_entry_id, line_number),
     CONSTRAINT chk_debit_or_credit CHECK (

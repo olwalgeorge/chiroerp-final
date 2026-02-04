@@ -1,8 +1,8 @@
 # Plant Maintenance Spare Parts - ADR-040
 
-> **Bounded Context:** `maintenance-spare-parts`  
-> **Port:** `9606` (logical, part of maintenance-work-orders service)  
-> **Database:** `chiroerp_maintenance_work_orders`  
+> **Bounded Context:** `maintenance-spare-parts`
+> **Port:** `9606` (logical, part of maintenance-work-orders service)
+> **Database:** `chiroerp_maintenance_work_orders`
 > **Kafka Consumer Group:** `maintenance-work-orders-cg`
 
 ## Overview
@@ -94,7 +94,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | ReservationCreatedEvent (consumed) | `inventory.reservation.created` | 6 | 30d |
 | StockIssuedEvent (consumed) | `inventory.stock.issued` | 6 | 30d |
 
-**Consumer Group:** `maintenance-work-orders-cg`  
+**Consumer Group:** `maintenance-work-orders-cg`
 **Partition Key:** `workOrderId` / `partId` (ensures all events for a work order are processed in order)
 
 ## API Endpoints (Examples)

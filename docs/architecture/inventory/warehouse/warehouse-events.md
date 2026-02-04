@@ -8,7 +8,7 @@
 
 ### WaveReleasedEvent
 
-**Trigger**: Wave released for picking  
+**Trigger**: Wave released for picking
 **Consumers**: Analytics, Labor, Operations
 
 ```json
@@ -29,7 +29,7 @@
 
 ### TaskCompletedEvent
 
-**Trigger**: Task completed (pick/putaway/replenishment/kit/repack)  
+**Trigger**: Task completed (pick/putaway/replenishment/kit/repack)
 **Consumers**: Inventory Core, Analytics, Advanced Ops
 
 ```json
@@ -52,7 +52,7 @@
 
 ### PutawayConfirmedEvent
 
-**Trigger**: Putaway confirmed  
+**Trigger**: Putaway confirmed
 **Consumers**: Inventory Core
 
 ```json

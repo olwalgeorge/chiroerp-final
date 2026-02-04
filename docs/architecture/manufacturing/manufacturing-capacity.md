@@ -1,8 +1,8 @@
 # Manufacturing Capacity Planning - ADR-037
 
-> **Bounded Context:** `manufacturing-capacity`  
-> **Port:** `9306` (logical, part of manufacturing-production service)  
-> **Database:** `chiroerp_manufacturing_production`  
+> **Bounded Context:** `manufacturing-capacity`
+> **Port:** `9306` (logical, part of manufacturing-production service)
+> **Database:** `chiroerp_manufacturing_production`
 > **Kafka Consumer Group:** `manufacturing-production-cg`
 
 ## Overview
@@ -100,7 +100,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | RoutingUpdatedEvent (consumed) | `manufacturing.bom.routing.updated` | 6 | 30d |
 | FinancialPeriodClosedEvent (consumed) | `finance.period.close.completed` | 6 | 30d |
 
-**Consumer Group:** `manufacturing-production-cg`  
+**Consumer Group:** `manufacturing-production-cg`
 **Partition Key:** `plantId` / `workCenterId` (ensures all events for a plant are processed in order)
 
 ## API Endpoints (Examples)

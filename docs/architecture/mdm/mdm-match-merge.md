@@ -1,8 +1,8 @@
 # Master Data Match & Merge - ADR-027
 
-> **Bounded Context:** `mdm-match-merge`  
-> **Port:** `9704` (logical, part of mdm-hub service)  
-> **Database:** `chiroerp_mdm_hub`  
+> **Bounded Context:** `mdm-match-merge`
+> **Port:** `9704` (logical, part of mdm-hub service)
+> **Database:** `chiroerp_mdm_hub`
 > **Kafka Consumer Group:** `mdm-hub-cg`
 
 ## Overview
@@ -90,7 +90,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | MasterRecordMergedEvent | `mdm.matchmerge.record.merged` | 6 | 30d |
 | MasterRecordPublishedEvent (consumed) | `mdm.hub.record.published` | 6 | 30d |
 
-**Consumer Group:** `mdm-hub-cg`  
+**Consumer Group:** `mdm-hub-cg`
 **Partition Key:** `domain` / `recordId` (ensures all events for a record are processed in order)
 
 ## API Endpoints (Examples)

@@ -8,7 +8,7 @@
 
 ### StockReceivedEvent
 
-**Trigger**: Receipt posted to stock ledger  
+**Trigger**: Receipt posted to stock ledger
 **Consumers**: Finance/GL, WMS, Analytics
 
 ```json
@@ -37,7 +37,7 @@
 
 ### StockIssuedEvent
 
-**Trigger**: Issue posted to stock ledger  
+**Trigger**: Issue posted to stock ledger
 **Consumers**: Finance/GL, Sales, Manufacturing
 
 ```json
@@ -56,7 +56,7 @@
 
 ### ReservationCreatedEvent
 
-**Trigger**: Reservation created  
+**Trigger**: Reservation created
 **Consumers**: WMS, Sales
 
 ```json

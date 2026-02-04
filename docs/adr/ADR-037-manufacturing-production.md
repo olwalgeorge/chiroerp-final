@@ -1,10 +1,10 @@
 # ADR-037: Manufacturing & Production (PP)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: P2 (Medium)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Operations Team
+**Priority**: P2 (Medium)
+**Tier**: Add-on
 **Tags**: manufacturing, production, mrp, bom, routing
 
 ## Context
@@ -102,28 +102,28 @@ Process manufacturing industries (chemicals, pharmaceuticals, food & beverage, o
   - Process phases (sequence, duration, temperature, pressure).
   - Scaling factors for different batch sizes.
   - Version control and approval workflows.
-  
+
 - **Process Orders**:
   - Formula-driven material consumption (not BOM-based).
   - Phase execution tracking (start, complete, hold, skip).
   - In-process quality checks and holds.
   - Dynamic yield calculations.
-  
+
 - **Batch Genealogy**:
   - Lot-to-lot traceability (forward: which finished goods contain input lot X).
   - Backward tracing (which raw material lots went into finished lot Y).
   - Genealogy trees for recall management.
-  
+
 - **Co-products & By-products**:
   - Joint production from single process order.
   - Cost allocation methods (sales value, physical units, NRV).
   - By-product revenue or disposal cost tracking.
-  
+
 - **Process Control**:
   - SOP integration (work instructions, critical parameters).
   - HACCP critical control points.
   - Environmental controls (temperature, pH, viscosity).
-  
+
 - **Campaign Management**:
   - Multi-batch production runs for equipment efficiency.
   - Cleaning validation between campaigns.

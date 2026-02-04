@@ -9,17 +9,17 @@ import java.util.UUID
 
 /**
  * Repository for Journal Entry persistence using Panache.
- * 
+ *
  * Provides tenant-aware query methods for journal entries.
  * All queries filter by tenant ID to enforce multi-tenancy isolation.
- * 
+ *
  * Related ADRs:
  * - ADR-009: Financial Accounting Domain
  * - ADR-005: Multi-Tenancy Isolation
  */
 @ApplicationScoped
 class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
-    
+
     /**
      * Find journal entry by entry number within tenant.
      */
@@ -30,7 +30,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId = ?1 and entryNumber = ?2", tenantId, entryNumber)
             .firstResult()
     }
-    
+
     /**
      * Find all journal entries for a tenant.
      */
@@ -38,7 +38,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId", tenantId)
             .list()
     }
-    
+
     /**
      * Find journal entries by status within tenant.
      */
@@ -49,7 +49,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId = ?1 and status = ?2", tenantId, status)
             .list()
     }
-    
+
     /**
      * Find journal entries by type within tenant.
      */
@@ -60,7 +60,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId = ?1 and entryType = ?2", tenantId, entryType)
             .list()
     }
-    
+
     /**
      * Find journal entries within date range for a tenant.
      */
@@ -76,7 +76,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
             endDate
         ).list()
     }
-    
+
     /**
      * Find journal entries by company code within tenant.
      */
@@ -87,7 +87,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId = ?1 and companyCode = ?2", tenantId, companyCode)
             .list()
     }
-    
+
     /**
      * Find journal entries by fiscal period within tenant.
      */
@@ -103,7 +103,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
             fiscalPeriod
         ).list()
     }
-    
+
     /**
      * Check if entry number exists within tenant.
      */
@@ -113,7 +113,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
     ): Boolean {
         return count("tenantId = ?1 and entryNumber = ?2", tenantId, entryNumber) > 0
     }
-    
+
     /**
      * Find draft entries for a tenant.
      */
@@ -124,7 +124,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
             JournalEntryStatus.DRAFT
         ).list()
     }
-    
+
     /**
      * Find posted entries for a tenant.
      */
@@ -135,7 +135,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
             JournalEntryStatus.POSTED
         ).list()
     }
-    
+
     /**
      * Find entries created by a specific user within tenant.
      */
@@ -146,7 +146,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         return find("tenantId = ?1 and createdBy = ?2", tenantId, createdBy)
             .list()
     }
-    
+
     /**
      * Find entries with a specific reference within tenant.
      */

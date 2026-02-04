@@ -1,12 +1,12 @@
 
 # ADR-009: Financial Accounting Domain Strategy
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-13  
-**Tier**: Core  
-**Context**: Phase 4 – First financial slice (`financial-management/financial-accounting`)  
-**Scope**: SMB to Enterprise-grade financial management  
-**Last Updated**: 2025-11-14 (Phase 5 Enterprise Enhancements)  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-13
+**Tier**: Core
+**Context**: Phase 4 – First financial slice (`financial-management/financial-accounting`)
+**Scope**: SMB to Enterprise-grade financial management
+**Last Updated**: 2025-11-14 (Phase 5 Enterprise Enhancements)
 
 ## Context
 - Phase 4 requires a demonstrable financial slice before onboarding other contexts.
@@ -98,35 +98,35 @@ Features are enabled via tenant configuration to support different business size
 ```yaml
 financial_features:
   tier: "SMB" | "MIDMARKET" | "ENTERPRISE"
-  
+
   core:
     basic_ledger: true              # Always enabled
     chart_of_accounts: true         # Always enabled
     journal_entries: true           # Always enabled
     accounting_periods: true        # Always enabled
-  
+
   currency:
     multi_currency: false           # SMB: false, Mid+: true
     currency_translation: false     # SMB: false, Enterprise: true
     unrealized_gains: false         # SMB: false, Enterprise: true
-  
+
   dimensions:
     cost_centers: false             # SMB: false, Mid+: true
     profit_centers: false           # SMB: false, Enterprise: true
     projects: false                 # SMB: false, Mid+: true
     departments: false              # SMB: false, Mid+: true
     business_units: false           # SMB: false, Enterprise: true
-  
+
   workflows:
     approval_workflows: false       # SMB: false, Mid+: true
     multi_level_approval: false     # SMB: false, Enterprise: true
     delegation: false               # SMB: false, Enterprise: true
-  
+
   compliance:
     tax_engine: "SIMPLE"            # SMB: SIMPLE, Mid: STANDARD, Enterprise: ADVANCED
     sox_controls: false             # SMB: false, Enterprise: true
     regulatory_reporting: false     # SMB: false, Enterprise: true
-  
+
   advanced:
     intercompany: false             # SMB: false, Mid+: true
     consolidation: false            # SMB: false, Enterprise: true
@@ -219,23 +219,23 @@ financial_features:
 
 ## Alternatives Considered
 ### Phase 4 Alternatives
-1. **Embed financial logic into commerce / shared modules**  
+1. **Embed financial logic into commerce / shared modules**
    Rejected: Violates bounded-context autonomy and complicates compliance boundaries.
-2. **Defer ledger modeling until later phases**  
+2. **Defer ledger modeling until later phases**
    Rejected: Phase 4 success criteria explicitly require a vertical slice with measurable SLIs.
-3. **Adopt event sourcing + bespoke storage from day one**  
+3. **Adopt event sourcing + bespoke storage from day one**
    Deferred: Adds risk/complexity; we can layer event sourcing later on top of the CQRS baseline.
 
 ### Phase 5 Alternatives
-4. **Use external financial system (SAP, Oracle) instead of building**  
+4. **Use external financial system (SAP, Oracle) instead of building**
    Rejected: High licensing costs ($50K-$500K/year), limited customization, vendor lock-in, integration complexity.
-5. **Feature flags for all enterprise capabilities**  
+5. **Feature flags for all enterprise capabilities**
    **Accepted**: Use configuration-based feature enablement to allow SMBs to start simple and grow into complexity.
-6. **Separate microservices for each dimension (currency, tax, consolidation)**  
+6. **Separate microservices for each dimension (currency, tax, consolidation)**
    Rejected: Over-fragmentation increases operational overhead; bounded context should own its complete domain.
-7. **Blockchain for immutable audit trail**  
+7. **Blockchain for immutable audit trail**
    Deferred: Traditional database audit logging with write-ahead log meets current compliance needs; revisit for specific industries (e.g., crypto).
-8. **Real-time consolidation vs. batch processing**  
+8. **Real-time consolidation vs. batch processing**
    Hybrid: Real-time for operational dashboards, batch for regulatory reporting and complex eliminations.
 
 ## Consequences

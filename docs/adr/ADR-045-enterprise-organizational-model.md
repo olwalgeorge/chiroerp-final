@@ -1,10 +1,10 @@
 # ADR-045: Enterprise Organizational Model
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: P0 (Critical)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team
+**Priority**: P0 (Critical)
+**Tier**: Core
 **Tags**: organization, master-data, hierarchy, authorization, cross-domain
 
 ## Context
@@ -66,7 +66,7 @@ data class CompanyCode(
 )
 ```
 
-**Purpose**: Independent legal entity with own balance sheet/P&L  
+**Purpose**: Independent legal entity with own balance sheet/P&L
 **Cardinality**: 1 CompanyCode : N Plants, N CostCenters, N ProfitCenters
 
 ---
@@ -86,7 +86,7 @@ data class Plant(
 )
 ```
 
-**Purpose**: Physical location for inventory, production, procurement  
+**Purpose**: Physical location for inventory, production, procurement
 **Cardinality**: 1 Plant : N StorageLocations
 
 ---
@@ -122,7 +122,7 @@ data class CostCenter(
 )
 ```
 
-**Purpose**: Cost accounting dimension (overhead allocation)  
+**Purpose**: Cost accounting dimension (overhead allocation)
 **Cardinality**: 1 CostCenter : N Users (responsible), N Assets, N Activities
 
 ---
@@ -157,7 +157,7 @@ data class SalesOrganization(
 )
 ```
 
-**Purpose**: Sales hierarchy for pricing, credit, order processing  
+**Purpose**: Sales hierarchy for pricing, credit, order processing
 **Cardinality**: 1 SalesOrg : N DistributionChannels : N Divisions
 
 ---
@@ -246,13 +246,13 @@ interface OrgAuthorizationService {
     fun hasPlantAccess(userId: UserId, plantId: PlantId): Boolean {
         // 1. Check direct plant assignment
         if (userHasDirectAssignment(userId, PLANT, plantId)) return true
-        
+
         // 2. Check inherited from CompanyCode
         val plant = plantRepository.findById(plantId)
         if (userHasAssignment(userId, COMPANY_CODE, plant.companyCodeId, inheritDownstream=true)) {
             return true
         }
-        
+
         // 3. Check tenant-level admin
         return userHasTenantAdminRole(userId)
     }
@@ -422,23 +422,23 @@ val postingRule = configRepository.getPostingRule(
 ## Alternatives Considered
 
 ### 1. Domain-Specific Org Models Only
-**Pros**: Simple; each domain owns its org structure  
-**Cons**: Duplication and inconsistent semantics; weak cross-domain mappings and authorization derivation  
+**Pros**: Simple; each domain owns its org structure
+**Cons**: Duplication and inconsistent semantics; weak cross-domain mappings and authorization derivation
 **Decision**: Rejected in favor of a canonical organizational model
 
 ### 2. Flat Org Model (No Hierarchy)
-**Pros**: Simple to implement  
-**Cons**: Cannot model complex enterprises, no inheritance  
+**Pros**: Simple to implement
+**Cons**: Cannot model complex enterprises, no inheritance
 **Decision**: Rejected (enterprise requirement)
 
 ### 3. Flexible/Generic Hierarchy (JSON-based)
-**Pros**: Maximum flexibility  
-**Cons**: No type safety, hard to query, performance issues  
+**Pros**: Maximum flexibility
+**Cons**: No type safety, hard to query, performance issues
 **Decision**: Rejected (type safety critical for ERP)
 
 ### 4. External Org Management System
-**Pros**: Offload complexity  
-**Cons**: Integration complexity, latency, not suitable for transactional data  
+**Pros**: Offload complexity
+**Cons**: Integration complexity, latency, not suitable for transactional data
 **Decision**: Rejected (org data is core master data)
 
 ## Consequences

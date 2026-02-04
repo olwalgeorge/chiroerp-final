@@ -1,8 +1,8 @@
 # Finance FP&A (Planning) - ADR-032
 
-> **Bounded Context:** `finance-planning`  
-> **Port:** `8092`  
-> **Database:** `chiroerp_finance_planning`  
+> **Bounded Context:** `finance-planning`
+> **Port:** `8092`
+> **Database:** `chiroerp_finance_planning`
 > **Kafka Consumer Group:** `finance-planning-cg`
 
 ## Overview

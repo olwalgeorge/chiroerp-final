@@ -1,5 +1,5 @@
 # ChiroERP Domain Coverage Gap Analysis & Resolution
-**Date**: February 3, 2026  
+**Date**: February 3, 2026
 **Analysis Scope**: Full ERP Domain Coverage Evaluation (52 → 55 ADRs)
 
 ## Executive Summary
@@ -62,7 +62,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 
 #### 5. Fleet Management
 - **Initial Assessment**: 20% coverage → **Target: 95%**
-- **Existing Coverage**: 
+- **Existing Coverage**:
   - ADR-033: Fleet lease accounting only
   - ADR-040: Explicitly **excludes** fleet ("Out of Scope: Fleet management")
 - **Gap**: No vehicle master data, driver management, telematics, fuel cards, GPS tracking, DOT compliance
@@ -86,7 +86,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 
 #### 6. Travel & Expense Management (T&E)
 - **Initial Assessment**: 40% coverage → **Target: 95%**
-- **Existing Coverage**: 
+- **Existing Coverage**:
   - ADR-034: Basic T&E (expense approval, reimbursement, GL posting)
   - ADR-052: Consultant expense reporting
 - **Gap**: No travel booking, policy enforcement, per diem, receipt OCR, corporate card reconciliation
@@ -113,7 +113,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 
 #### 7. Workforce Scheduling & Labor Management (WFM)
 - **Initial Assessment**: 20% coverage → **Target: 95%**
-- **Existing Coverage**: 
+- **Existing Coverage**:
   - ADR-042: Technician dispatch scheduling (field service)
   - ADR-040: Maintenance crew scheduling
   - ADR-052: Healthcare locum tenens shift scheduling
@@ -122,7 +122,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 
 **ADR-055 Capabilities**:
 - **Shift Planning**: Shift templates, patterns (4x10, 3x12, DuPont, Pitman), rotating schedules
-- **Labor Demand Forecasting**: 
+- **Labor Demand Forecasting**:
   - Sales-based (retail, restaurants: TPLH targets)
   - Occupancy-based (hotels: room occupancy)
   - Volume-based (call centers: AHT × calls)
@@ -131,11 +131,11 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
   - Meet demand, minimize cost, maximize employee satisfaction
   - Hard/soft constraints (availability, skills, compliance, preferences)
 - **Employee Self-Service**: Schedule viewing, time off requests, shift bidding, shift swapping
-- **Time & Attendance**: 
+- **Time & Attendance**:
   - Clock in/out (biometric, mobile, badge, geofencing)
   - Real-time labor tracking and alerts
   - Attendance scoring and exception handling
-- **Compliance Engine**: 
+- **Compliance Engine**:
   - Labor laws (FLSA overtime, break rules, minor labor laws, predictive scheduling)
   - Union contracts (seniority, OT distribution, shift differentials)
   - Fatigue management (rest periods, max consecutive days)
@@ -171,7 +171,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 - **Tier**: Add-on
 - **Priority**: P3 (Optional)
 - **Target Industries**: Delivery, transportation, field service, sales, executive transport
-- **Key Differentiators**: 
+- **Key Differentiators**:
   - Telematics integration (GPS, driver behavior, diagnostics)
   - Fuel card reconciliation (WEX, Voyager, Comdata)
   - DOT compliance (HOS, ELD, driver qualification files)
@@ -182,7 +182,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 - **Tier**: Advanced
 - **Priority**: P2 (High Value)
 - **Target Users**: Sales, consulting, field service, executives
-- **Key Differentiators**: 
+- **Key Differentiators**:
   - TMC integration (Concur, Egencia, TripActions)
   - Mobile receipt OCR with auto-categorization
   - Corporate card reconciliation (Amex, Visa, Mastercard)
@@ -193,7 +193,7 @@ Initial domain coverage analysis identified **7 potential gaps** in the ChiroERP
 - **Tier**: Add-on
 - **Priority**: P3 (Industry-Specific)
 - **Target Industries**: Retail, hospitality, healthcare, manufacturing, call centers
-- **Key Differentiators**: 
+- **Key Differentiators**:
   - Auto-scheduling optimization (ILP/CSP)
   - Labor demand forecasting (sales, volume, occupancy-based)
   - Compliance engine (FLSA, union contracts, fatigue management)

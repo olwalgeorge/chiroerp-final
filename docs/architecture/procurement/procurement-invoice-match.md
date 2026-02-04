@@ -1,8 +1,8 @@
 # Procurement Invoice Verification - ADR-023
 
-> **Bounded Context:** `procurement-invoice-match`  
-> **Port:** `9105` (logical, part of procurement-core service)  
-> **Database:** `chiroerp_procurement_core`  
+> **Bounded Context:** `procurement-invoice-match`
+> **Port:** `9105` (logical, part of procurement-core service)
+> **Database:** `chiroerp_procurement_core`
 > **Kafka Consumer Group:** `procurement-core-cg`
 
 ## Overview
@@ -104,7 +104,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | VendorInvoicePostedEvent (consumed) | `finance.ap.invoice.posted` | 6 | 30d |
 | GoodsReceivedEvent (consumed) | `procurement.receiving.goods.received` | 6 | 30d |
 
-**Consumer Group:** `procurement-core-cg`  
+**Consumer Group:** `procurement-core-cg`
 **Partition Key:** `matchId` / `invoiceId` (ensures all events for a match are processed in order)
 
 ## API Endpoints (Examples)

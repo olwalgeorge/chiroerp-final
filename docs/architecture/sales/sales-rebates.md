@@ -1,8 +1,8 @@
 # Sales Rebates & Incentives - ADR-025
 
-> **Bounded Context:** `sales-rebates`  
-> **Port:** `9207` (logical, part of sales-core service)  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-rebates`
+> **Port:** `9207` (logical, part of sales-core service)
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview

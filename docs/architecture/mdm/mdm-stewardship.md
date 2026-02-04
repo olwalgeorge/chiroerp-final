@@ -1,8 +1,8 @@
 # Master Data Stewardship Workflows - ADR-027
 
-> **Bounded Context:** `mdm-stewardship`  
-> **Port:** `9703` (logical, part of mdm-hub service)  
-> **Database:** `chiroerp_mdm_hub`  
+> **Bounded Context:** `mdm-stewardship`
+> **Port:** `9703` (logical, part of mdm-hub service)
+> **Database:** `chiroerp_mdm_hub`
 > **Kafka Consumer Group:** `mdm-hub-cg`
 
 ## Overview
@@ -90,7 +90,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | ChangeRequestApprovedEvent | `mdm.stewardship.changerequest.approved` | 6 | 30d |
 | ChangeRequestCreatedEvent (consumed) | `mdm.hub.changerequest.created` | 6 | 30d |
 
-**Consumer Group:** `mdm-hub-cg`  
+**Consumer Group:** `mdm-hub-cg`
 **Partition Key:** `changeRequestId` (ensures all events for a change request are processed in order)
 
 ## API Endpoints (Examples)

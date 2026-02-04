@@ -1,10 +1,10 @@
 # ADR-036: Project Accounting (PS)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-02  
-**Deciders**: Architecture Team, Finance Team, Operations Team  
-**Priority**: P3 (Optional Add-on)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-02
+**Deciders**: Architecture Team, Finance Team, Operations Team
+**Priority**: P3 (Optional Add-on)
+**Tier**: Add-on
 **Tags**: project-accounting, wbs, cost-tracking, milestone-billing, psa, construction
 
 ## Context

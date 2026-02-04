@@ -1,10 +1,10 @@
 # ADR-051: Insurance Policy Administration & Claims Management (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: P3 (Niche Market)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Operations Team
+**Priority**: P3 (Niche Market)
+**Tier**: Add-on
 **Tags**: insurance, policy-admin, claims, underwriting, actuarial, reinsurance
 
 ## Context
@@ -65,18 +65,18 @@ Adopt an **Insurance Policy Administration & Claims Management** domain as an ad
   - Deductible and limit options.
   - Premium calculation via rating engine.
   - Quote comparison (quote vs bind, renewal vs prior term).
-  
+
 - **Policy Binding & Issuance**:
   - Bind quote into in-force policy.
   - Generate policy number, effective date, expiration date.
   - Issue policy documents (declarations page, jacket, endorsements).
   - Premium invoice generation (full-pay, installment plans).
-  
+
 - **Endorsements**:
   - Mid-term changes (add driver, replace vehicle, increase limits).
   - Pro-rata or short-rate premium adjustments.
   - Audit trail of policy changes.
-  
+
 - **Renewals & Cancellations**:
   - Automated renewal quotes (re-rate with updated risk data).
   - Manual underwriting review for complex risks.
@@ -89,23 +89,23 @@ Adopt an **Insurance Policy Administration & Claims Management** domain as an ad
   - Loss details (date, location, cause, parties involved).
   - Coverage verification (policy in force, covered peril).
   - Claim number assignment.
-  
+
 - **Claim Assignment**:
   - Auto-assignment rules (claim type, complexity, geography, adjuster workload).
   - Adjuster skills matching (auto physical damage, liability, property, injury).
-  
+
 - **Investigation & Adjudication**:
   - Adjuster notes, photos, estimates.
   - Third-party reports (police reports, medical records, repair estimates).
   - Coverage determination (covered vs denied).
   - Reserve establishment (case reserve by coverage).
-  
+
 - **Payments**:
   - Claimant payments (settlement, reimbursement).
   - Vendor payments (repair shops, medical providers, rental cars).
   - Defense costs (attorney fees, expert witnesses).
   - Payment approval workflows (authority limits, supervisor approval).
-  
+
 - **Subrogation**:
   - Subrogation opportunity identification (third-party fault).
   - Recovery tracking (demand letters, settlements, arbitration).
@@ -116,18 +116,18 @@ Adopt an **Insurance Policy Administration & Claims Management** domain as an ad
   - Quote request intake (agent portal, direct).
   - Risk information gathering (property inspection, loss history, MVR).
   - Third-party data integration (LexisNexis, ISO, credit bureaus).
-  
+
 - **Underwriting Rules Engine**:
   - Eligibility rules (age, prior claims, credit score, construction type).
   - Referral rules (high value, unusual risks, prior declinations).
   - Auto-approval vs manual review.
-  
+
 - **Pricing & Rating**:
   - Base rate lookup (territory, class, coverage).
   - Risk factor adjustments (age, claims history, credit, safety features).
   - Discounts and surcharges (multi-policy, claims-free, DUI).
   - Final premium calculation.
-  
+
 - **Approval & Declination**:
   - Underwriter review and approval.
   - Declination letters with reasons.
@@ -139,13 +139,13 @@ Adopt an **Insurance Policy Administration & Claims Management** domain as an ad
   - IBNR reserves: Actuarial models (chain ladder, Bornhuetter-Ferguson, expected loss ratio).
   - Bulk reserves: Aggregate reserves for small claims.
   - Reserve adequacy testing and adjustments.
-  
+
 - **Premium Rating**:
   - Pure premium (expected losses per exposure).
   - Expense loading (commissions, overhead, premium tax).
   - Profit and contingency margin.
   - Rate manual development and filing.
-  
+
 - **Loss Ratio Analysis**:
   - Incurred losses (paid + reserves) / earned premium.
   - Ultimate loss projections (development triangles).
@@ -157,17 +157,17 @@ Adopt an **Insurance Policy Administration & Claims Management** domain as an ad
   - Automatic cessions per treaty terms.
   - Premium ceded calculations (quota share %, surplus share layers).
   - Ceding commission income.
-  
+
 - **Facultative Certificates**:
   - Case-by-case reinsurance placement.
   - Certificate tracking (reinsurer, terms, premium).
   - Claim notification to facultative reinsurers.
-  
+
 - **Reinsurance Recoveries**:
   - Recovery calculations (excess of loss, quota share).
   - Recovery posting (reduce net claim costs).
   - Reinsurer collectibility monitoring (A.M. Best rating).
-  
+
 - **Bordereaux Reporting**:
   - Monthly/quarterly reports to reinsurers (premiums, claims, reserves).
   - Cash settlements with reinsurers.

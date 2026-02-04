@@ -1,8 +1,8 @@
 # Finance Controlling (CO) - ADR-028
 
-> **Bounded Context:** `finance-controlling`  
-> **Port:** `8088`  
-> **Database:** `chiroerp_finance_controlling`  
+> **Bounded Context:** `finance-controlling`
+> **Port:** `8088`
+> **Database:** `chiroerp_finance_controlling`
 > **Kafka Consumer Group:** `finance-controlling-cg`
 
 ## Overview

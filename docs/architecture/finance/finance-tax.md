@@ -1,8 +1,8 @@
 # Finance Tax Engine - ADR-030
 
-> **Bounded Context:** `finance-tax`  
-> **Port:** `8087`  
-> **Database:** `chiroerp_finance_tax`  
+> **Bounded Context:** `finance-tax`
+> **Port:** `8087`
+> **Database:** `chiroerp_finance_tax`
 > **Kafka Consumer Group:** `finance-tax-cg`
 
 ## Overview

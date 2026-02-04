@@ -1,8 +1,8 @@
 # Analytics Embedded Analytics - ADR-016
 
-> **Bounded Context:** `analytics-embedded`  
-> **Port:** `9806` (logical, part of analytics-olap service)  
-> **Database:** `chiroerp_analytics_olap`  
+> **Bounded Context:** `analytics-embedded`
+> **Port:** `9806` (logical, part of analytics-olap service)
+> **Database:** `chiroerp_analytics_olap`
 > **Kafka Consumer Group:** `analytics-olap-cg`
 
 ## Overview
@@ -82,7 +82,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | KpiCalculatedEvent (consumed) | `analytics.kpi.calculated` | 6 | 30d |
 | CubeRefreshedEvent (consumed) | `analytics.olap.cube.refreshed` | 6 | 30d |
 
-**Consumer Group:** `analytics-olap-cg`  
+**Consumer Group:** `analytics-olap-cg`
 **Partition Key:** `widgetId` / `cacheKey` (ensures all events for a widget are processed in order)
 
 ## API Endpoints (Examples)

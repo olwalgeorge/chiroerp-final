@@ -1,8 +1,8 @@
 # Finance Lease Accounting - ADR-033
 
-> **Bounded Context:** `finance-lease`  
-> **Port:** `8093`  
-> **Database:** `chiroerp_finance_lease`  
+> **Bounded Context:** `finance-lease`
+> **Port:** `8093`
+> **Database:** `chiroerp_finance_lease`
 > **Kafka Consumer Group:** `finance-lease-cg`
 
 ## Overview

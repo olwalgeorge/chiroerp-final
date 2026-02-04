@@ -1,8 +1,8 @@
 # Plant Maintenance Work Orders - ADR-040
 
-> **Bounded Context:** `maintenance-work-orders`  
-> **Port:** `9602`  
-> **Database:** `chiroerp_maintenance_work_orders`  
+> **Bounded Context:** `maintenance-work-orders`
+> **Port:** `9602`
+> **Database:** `chiroerp_maintenance_work_orders`
 > **Kafka Consumer Group:** `maintenance-work-orders-cg`
 
 ## Overview

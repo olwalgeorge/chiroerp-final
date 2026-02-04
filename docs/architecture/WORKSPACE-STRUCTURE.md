@@ -1,8 +1,8 @@
 # ChiroERP - Complete Workspace File Tree Structure
 
-> **Based on**: 57+ ADRs (ADR-001 through ADR-057) | 12 Major Domains | 92 Modules  
-> **Last Updated**: 2026-02-03  
-> **Architecture Principles**: Modular CQRS (ADR-001), Database-per-Context (ADR-002), Event-Driven (ADR-003), API Gateway (ADR-004)  
+> **Based on**: 57+ ADRs (ADR-001 through ADR-057) | 12 Major Domains | 92 Modules
+> **Last Updated**: 2026-02-03
+> **Architecture Principles**: Modular CQRS (ADR-001), Database-per-Context (ADR-002), Event-Driven (ADR-003), API Gateway (ADR-004)
 > **Status**: Target workspace structure (see [Architecture README](./README.md) for current implementation status)
 
 > ⚠️ **Important**: This document shows the **target/desired workspace structure** for complete ChiroERP implementation. For the **current architecture index** with actual domain coverage, module counts, ports, and implementation status, see [docs/architecture/README.md](./README.md).
@@ -1924,20 +1924,20 @@ services:
     image: postgres:16
     volumes:
       - pgdata:/var/lib/postgresql/data
-  
+
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-  
+
   api-gateway:
     build: ./bounded-contexts/platform-services/api-gateway
     ports:
       - "8000:8000"
-  
+
   finance-gl:
     build: ./bounded-contexts/finance/finance-gl
     environment:
       - DATABASE_URL=jdbc:postgresql://postgres:5432/finance_gl_db
-  
+
   # ... all other services
 ```
 

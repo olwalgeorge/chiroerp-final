@@ -1,11 +1,11 @@
 # Phase 0: Development Infrastructure Foundation
 
-**Status**: In Progress  
-**Priority**: P0 (BLOCKING - Must complete before Phase 1)  
-**Duration**: 2 weeks  
-**Investment**: $150K  
-**Team**: 2-3 platform engineers  
-**Start Date**: February 3, 2026  
+**Status**: In Progress
+**Priority**: P0 (BLOCKING - Must complete before Phase 1)
+**Duration**: 2 weeks
+**Investment**: $150K
+**Team**: 2-3 platform engineers
+**Start Date**: February 3, 2026
 **Target Completion**: February 17, 2026
 
 ---
@@ -277,31 +277,31 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
         java: [21]
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
           cache: 'gradle'
-      
+
       - name: Validate Gradle wrapper
         uses: gradle/wrapper-validation-action@v2
-      
+
       - name: Build all modules
         run: ./gradlew buildAll --no-daemon --configuration-cache
-      
+
       - name: Run unit tests
         run: ./gradlew test --no-daemon
-      
+
       - name: Generate test report
         if: always()
         uses: dorny/test-reporter@v1
@@ -309,7 +309,7 @@ jobs:
           name: Test Results
           path: '**/build/test-results/test/*.xml'
           reporter: java-junit
-      
+
       - name: Upload build artifacts
         if: success()
         uses: actions/upload-artifact@v4
@@ -319,10 +319,10 @@ jobs:
             **/build/libs/*.jar
             **/build/quarkus-app/**
           retention-days: 7
-      
+
       - name: Code coverage
         run: ./gradlew jacocoTestReport
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -333,7 +333,7 @@ jobs:
   integration-tests:
     runs-on: ubuntu-latest
     needs: build
-    
+
     services:
       postgres:
         image: postgres:16-alpine
@@ -348,7 +348,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       kafka:
         image: confluentinc/cp-kafka:7.6.0
         env:
@@ -356,25 +356,25 @@ jobs:
           KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
         ports:
           - 9092:9092
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
-      
+
       - name: Run integration tests
         run: ./gradlew integrationTest --no-daemon
         env:
           POSTGRES_HOST: localhost
           POSTGRES_PORT: 5432
           KAFKA_BOOTSTRAP_SERVERS: localhost:9092
-      
+
       - name: Generate integration test report
         if: always()
         uses: dorny/test-reporter@v1
@@ -386,42 +386,42 @@ jobs:
   validate-architecture:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
-      
+
       - name: Validate architecture rules
         run: ./gradlew validateArchitecture --no-daemon
-      
+
       - name: Validate documentation
         run: pwsh -File scripts/validate-docs.ps1
 
   security-scan:
     runs-on: ubuntu-latest
     needs: build
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: 21
           cache: 'gradle'
-      
+
       - name: Dependency check
         run: ./gradlew dependencyCheckAnalyze --no-daemon
-      
+
       - name: Upload security report
         if: always()
         uses: actions/upload-artifact@v4
@@ -523,7 +523,7 @@ CREATE TABLE gl_journal_entry_lines (
     description TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT chk_debit_or_credit CHECK (
-        (debit_amount > 0 AND credit_amount = 0) OR 
+        (debit_amount > 0 AND credit_amount = 0) OR
         (credit_amount > 0 AND debit_amount = 0)
     ),
     UNIQUE(journal_entry_id, line_number)
@@ -588,7 +588,7 @@ CREATE INDEX idx_audit_changed_at ON gl_audit_log(changed_at);
 - [ ] `platform-shared/org-model/` - Organizational hierarchy value objects (OrgUnit, AuthorizationContext)
 - [ ] `platform-shared/workflow-model/` - Workflow definitions (WorkflowDefinition, WorkflowStep, ApprovalRoute)
 
-**Why Now?**: 
+**Why Now?**:
 - Week 2 is when we implement first domain module (finance-gl)
 - That module needs to post journal entries → needs PostingRulesEngine interface
 - Better to create interfaces NOW than refactor in Phase 1
@@ -613,7 +613,7 @@ interface DomainEventPublisher {
      * @param partitionKey Key for partitioning (typically tenantId or aggregateId)
      */
     suspend fun publish(event: DomainEvent, partitionKey: UUID)
-    
+
     /**
      * Publish event to specific topic
      * @param topic Target topic name
@@ -696,7 +696,7 @@ interface PricingRulesEngine {
      * @return Final price with breakdown of applied rules
      */
     fun calculatePrice(context: PricingContext): PricingResult
-    
+
     /**
      * Get applicable tax rate
      * @param context Tax context
@@ -753,18 +753,18 @@ interface OrgHierarchyService {
      * Used for data visibility filtering
      */
     fun getAuthorizedOrgUnits(userId: UUID): List<UUID>
-    
+
     /**
      * Check if user has specific permission in org unit
      * Examples: "GL_POST", "PO_APPROVE", "INV_ADJUST"
      */
     fun hasPermission(userId: UUID, orgUnitId: UUID, permission: String): Boolean
-    
+
     /**
      * Get parent org unit (for hierarchical rollups)
      */
     fun getParent(orgUnitId: UUID): UUID?
-    
+
     /**
      * Get all child org units recursively
      */
@@ -814,12 +814,12 @@ interface WorkflowEngine {
      * @return Workflow instance ID
      */
     suspend fun submitForApproval(context: ApprovalContext): UUID
-    
+
     /**
      * Get pending approvals for user
      */
     suspend fun getPendingApprovals(userId: UUID): List<ApprovalTask>
-    
+
     /**
      * Approve/reject a task
      */
@@ -864,7 +864,7 @@ plugins {
 dependencies {
     // Only depend on common-types (shared value objects)
     implementation(project(":platform-shared:common-types"))
-    
+
     // No external dependencies - pure interfaces and value objects
 }
 ```
@@ -881,14 +881,14 @@ dependencies {
     implementation(project(":platform-shared:config-model"))
     implementation(project(":platform-shared:org-model"))
     implementation(project(":platform-shared:workflow-model"))
-    
+
     // Quarkus (existing)
     implementation(enforcedPlatform("io.quarkus.platform:quarkus-bom:3.31.1"))
     // ... rest of dependencies
 }
 ```
 
-**Success Metric**: 
+**Success Metric**:
 - All 4 platform-shared modules compile successfully
 - No implementation code, only interfaces and value objects
 - scaffold-module.ps1 generates domains with platform dependencies
@@ -928,7 +928,7 @@ dependencies {
   - Account number validation: `^[0-9]{4,10}(-[0-9]{3})?$`
   - Hierarchical structure via `parentAccount`
   - Cost/profit center assignment
-  
+
 - `JournalEntry.kt` (205 lines): Double-entry bookkeeping
   - Double-entry validation: `totalDebit() == totalCredit()`
   - Immutability after posting (DRAFT → POSTED → REVERSED)
@@ -1064,7 +1064,7 @@ import java.util.UUID
 
 @ApplicationScoped
 class GLAccountRepository : PanacheRepository<GLAccountEntity> {
-    
+
     fun findByTenantAndAccountNumber(tenantId: UUID, accountNumber: String): GLAccount? {
         return find("tenantId = ?1 and accountNumber = ?2", tenantId, accountNumber)
             .firstResult()
@@ -1127,7 +1127,7 @@ data class CreateGLAccountCommand(
 class CreateGLAccountService(
     private val repository: GLAccountRepository
 ) {
-    
+
     @Transactional
     fun execute(command: CreateGLAccountCommand): GLAccount {
         // Business rule: Account number must be unique per tenant
@@ -1139,7 +1139,7 @@ class CreateGLAccountService(
         if (command.parentAccountId != null) {
             val parent = repository.findById(command.parentAccountId)
                 ?: throw ParentAccountNotFoundException(command.parentAccountId)
-            
+
             // Business rule: Parent must be same account type
             if (parent.accountType != command.accountType) {
                 throw InvalidParentAccountTypeException(command.accountType, parent.accountType)

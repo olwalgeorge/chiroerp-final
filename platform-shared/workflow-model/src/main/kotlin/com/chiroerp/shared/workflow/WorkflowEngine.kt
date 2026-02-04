@@ -4,51 +4,51 @@ import java.time.Instant
 
 /**
  * Interface for workflow and approval routing.
- * 
+ *
  * Phase 0: Hardcoded approval rules (e.g., >$10K needs manager approval)
  * Phase 1: Configuration-driven workflow definitions (BPMN-style)
  * Phase 2: AI-powered workflow optimization and intelligent routing
- * 
+ *
  * Related ADRs: ADR-006, ADR-046
  */
 interface WorkflowEngine {
     /**
      * Start a new workflow instance.
-     * 
+     *
      * @param context Workflow initiation context
      * @return Workflow instance ID and initial tasks
      */
     suspend fun startWorkflow(context: WorkflowContext): Result<WorkflowInstance>
-    
+
     /**
      * Get current approval tasks for a workflow instance.
-     * 
+     *
      * @param instanceId Workflow instance ID
      * @return List of pending approval tasks
      */
     suspend fun getApprovalTasks(instanceId: String): Result<List<ApprovalTask>>
-    
+
     /**
      * Complete an approval task (approve/reject).
-     * 
+     *
      * @param taskId Task identifier
      * @param decision Approval decision
      * @param userId User making the decision
      * @return Updated workflow state
      */
     suspend fun completeTask(taskId: String, decision: ApprovalDecision, userId: String): Result<WorkflowInstance>
-    
+
     /**
      * Get workflow instance status.
-     * 
+     *
      * @param instanceId Workflow instance ID
      * @return Current workflow state
      */
     suspend fun getWorkflowInstance(instanceId: String): Result<WorkflowInstance?>
-    
+
     /**
      * Cancel a workflow instance.
-     * 
+     *
      * @param instanceId Workflow instance ID
      * @param userId User requesting cancellation
      * @param reason Cancellation reason

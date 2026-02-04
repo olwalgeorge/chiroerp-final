@@ -71,10 +71,10 @@ class GLAccountEntity : PanacheEntityBase {
 
     @Column(name = "profit_center_id")
     var profitCenter: String? = null
-    
+
     @Column(name = "company_code", nullable = false, length = 20)
     var companyCode: String = "1000"
-    
+
     @Column(name = "description")
     var description: String? = null
 

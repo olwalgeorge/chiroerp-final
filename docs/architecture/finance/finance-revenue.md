@@ -1,8 +1,8 @@
 # Finance Revenue Recognition - ADR-022
 
-> **Bounded Context:** `finance-revenue`  
-> **Port:** `8086`  
-> **Database:** `chiroerp_finance_revenue`  
+> **Bounded Context:** `finance-revenue`
+> **Port:** `8086`
+> **Database:** `chiroerp_finance_revenue`
 > **Kafka Consumer Group:** `finance-revenue-cg`
 
 ## Overview

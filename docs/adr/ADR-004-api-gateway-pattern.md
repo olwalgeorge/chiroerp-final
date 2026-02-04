@@ -1,11 +1,11 @@
 # ADR-004: API Gateway Pattern
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-05  
-**Deciders**: Architecture Team, Platform Team  
-**Tier**: Core  
-**Tags**: api-gateway, security, routing, cross-cutting  
-**Updated**: 2026-02-01 (Implementation Status Reset)  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-05
+**Deciders**: Architecture Team, Platform Team
+**Tier**: Core
+**Tags**: api-gateway, security, routing, cross-cutting
+**Updated**: 2026-02-01 (Implementation Status Reset)
 
 ## Context
 Our microservices architecture exposes multiple bounded contexts, each with their own APIs. External clients (web, mobile, third-party integrations) need a consistent entry point with unified authentication, rate limiting, and routing logic.
@@ -108,11 +108,11 @@ Accept: application/vnd.erp.v1+json
 class ResponseCache(
     private val redisClient: RedisClient
 ) {
-    
+
     fun cache(key: String, response: Response, ttlSeconds: Int) {
         redisClient.setex(key, ttlSeconds, response.toJson())
     }
-    
+
     fun get(key: String): Response? {
         return redisClient.get(key)?.let { Response.fromJson(it) }
     }
@@ -123,9 +123,9 @@ class ResponseCache(
 @Path("/api/v1/products/{id}")
 fun getProduct(@PathParam("id") id: String): Response {
     val cacheKey = "product:${id}"
-    
+
     return responseCache.get(cacheKey)
-        ?: fetchFromBackend(id).also { 
+        ?: fetchFromBackend(id).also {
             responseCache.cache(cacheKey, it, ttlSeconds = 300)
         }
 }
@@ -289,13 +289,13 @@ Examples:
 // api-gateway/src/main/kotlin/config/RouteConfiguration.kt
 @ApplicationScoped
 class RouteConfiguration {
-    
+
     @ConfigProperty(name = "gateway.services.commerce.url")
     lateinit var commerceServiceUrl: String
-    
+
     @ConfigProperty(name = "gateway.services.financial.url")
     lateinit var financialServiceUrl: String
-    
+
     fun routes(): List<Route> = listOf(
         Route("/api/v1/commerce/*", commerceServiceUrl),
         Route("/api/v1/financial/*", financialServiceUrl),
@@ -314,13 +314,13 @@ class AuthenticationFilter(
     private val jwtValidator: JwtValidator,
     private val tenantContext: TenantContext
 ) : ContainerRequestFilter {
-    
+
     override fun filter(requestContext: ContainerRequestContext) {
         val token = extractToken(requestContext)
             ?: throw UnauthorizedException("Missing authentication token")
-        
+
         val claims = jwtValidator.validate(token)
-        
+
         // Set tenant context
         tenantContext.setTenantId(claims.tenantId)
         tenantContext.setUserId(claims.userId)
@@ -337,13 +337,13 @@ rate-limits:
   default:
     requests-per-minute: 100
     burst: 20
-  
+
   per-endpoint:
     - path: "/api/v1/commerce/orders"
       requests-per-minute: 50
     - path: "/api/v1/financial/accounts"
       requests-per-minute: 30
-  
+
   per-tenant:
     - tier: "free"
       requests-per-minute: 50
@@ -359,16 +359,16 @@ class RateLimiter(
     private val redisClient: RedisClient,
     private val rateLimitConfig: RateLimitConfig
 ) {
-    
+
     fun checkRateLimit(tenantId: TenantId, endpoint: String): Boolean {
         val key = "ratelimit:${tenantId}:${endpoint}"
         val limit = rateLimitConfig.getLimit(tenantId, endpoint)
-        
+
         val current = redisClient.incr(key)
         if (current == 1L) {
             redisClient.expire(key, 60) // 60 seconds
         }
-        
+
         return current <= limit
     }
 }
@@ -381,11 +381,11 @@ class RateLimiter(
 class TracingFilter(
     private val tracer: Tracer
 ) : ContainerRequestFilter {
-    
+
     override fun filter(requestContext: ContainerRequestContext) {
         val correlationId = requestContext.getHeaderString("X-Correlation-ID")
             ?: UUID.randomUUID().toString()
-        
+
         // Create span
         val span = tracer.spanBuilder("api-gateway-request")
             .setAttribute("http.method", requestContext.method)
@@ -393,7 +393,7 @@ class TracingFilter(
             .setAttribute("correlation.id", correlationId)
             .setAttribute("tenant.id", tenantContext.getTenantId())
             .startSpan()
-        
+
         requestContext.setProperty("trace-span", span)
         requestContext.headers.putSingle("X-Correlation-ID", correlationId)
     }
@@ -405,7 +405,7 @@ class TracingFilter(
 ```kotlin
 @Provider
 class GlobalExceptionMapper : ExceptionMapper<Exception> {
-    
+
     override fun toResponse(exception: Exception): Response {
         val errorResponse = when (exception) {
             is UnauthorizedException -> ErrorResponse(
@@ -429,7 +429,7 @@ class GlobalExceptionMapper : ExceptionMapper<Exception> {
                 status = 500
             )
         }
-        
+
         return Response
             .status(errorResponse.status)
             .entity(errorResponse)
@@ -440,9 +440,9 @@ class GlobalExceptionMapper : ExceptionMapper<Exception> {
 
 ### Implementation Status
 
-**Current Phase:** Planning (Not Implemented)  
-**Status:** ❌ NOT IMPLEMENTED  
-**Implementation Plan:** [docs/SPRINT3_API_GATEWAY_PLAN.md](../SPRINT3_API_GATEWAY_PLAN.md)  
+**Current Phase:** Planning (Not Implemented)
+**Status:** ❌ NOT IMPLEMENTED
+**Implementation Plan:** [docs/SPRINT3_API_GATEWAY_PLAN.md](../SPRINT3_API_GATEWAY_PLAN.md)
 **README:** [api-gateway/README.md](../../api-gateway/README.md)
 
 ### Planned (Not Started)
@@ -516,14 +516,14 @@ class GlobalExceptionMapper : ExceptionMapper<Exception> {
 
 ### Post-Sprint 3 Roadmap
 
-**Sprint 4:** Expand routing to additional contexts (commerce, inventory)  
-**Sprint 5:** API versioning and backward compatibility  
-**Sprint 6:** GraphQL gateway implementation (optional)  
+**Sprint 4:** Expand routing to additional contexts (commerce, inventory)
+**Sprint 5:** API versioning and backward compatibility
+**Sprint 6:** GraphQL gateway implementation (optional)
 **Sprint 7:** API composition patterns (BFF)
 
 ### Monitoring & Operations
 
-**Deployment Target:** Kubernetes (multi-instance HA)  
+**Deployment Target:** Kubernetes (multi-instance HA)
 **Observability:**
 - Health: `/health/live`, `/health/ready`
 - Metrics: `/metrics` (Prometheus)

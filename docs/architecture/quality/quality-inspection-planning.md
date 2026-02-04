@@ -1,8 +1,8 @@
 # Quality Inspection Planning - ADR-039
 
-> **Bounded Context:** `quality-inspection-planning`  
-> **Port:** `9501`  
-> **Database:** `chiroerp_quality_inspection_planning`  
+> **Bounded Context:** `quality-inspection-planning`
+> **Port:** `9501`
+> **Database:** `chiroerp_quality_inspection_planning`
 > **Kafka Consumer Group:** `quality-inspection-planning-cg`
 
 ## Overview

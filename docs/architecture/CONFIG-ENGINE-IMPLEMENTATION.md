@@ -1,9 +1,9 @@
 # Configuration Engine Implementation Guide
 
-**Version**: 1.0  
-**Last Updated**: 2026-02-03  
-**ADR Reference**: ADR-044 (Configuration Rules Framework)  
-**Status**: MVP Implementation Phase  
+**Version**: 1.0
+**Last Updated**: 2026-02-03
+**ADR Reference**: ADR-044 (Configuration Rules Framework)
+**Status**: MVP Implementation Phase
 **Owner**: Platform Team
 
 ---
@@ -203,12 +203,12 @@ CREATE TABLE config_engine.rule_execution_log_2026_02 PARTITION OF config_engine
   "rule_definition": {
     "drl": "
       package com.chiroerp.finance.gl.posting;
-      
+
       import com.chiroerp.finance.gl.model.PostingRequest;
       import com.chiroerp.finance.gl.model.JournalEntry;
       import com.chiroerp.finance.gl.model.JournalLine;
       import com.chiroerp.sales.model.SalesOrder;
-      
+
       rule \"Kenya Sales Order GL Posting\"
         when
           $request : PostingRequest(
@@ -222,28 +222,28 @@ CREATE TABLE config_engine.rule_execution_log_2026_02 PARTITION OF config_engine
           entry.setDocumentNumber($order.getOrderNumber());
           entry.setPostingDate($order.getOrderDate());
           entry.setCurrency($order.getCurrency());
-          
+
           // Line 1: Debit Customer AR
           entry.addLine(new JournalLine()
             .setAccount(getAccountByCode(\"120100\")) // AR - Trade Receivables
             .setDebit($order.getTotalAmount())
             .setCostCenter($order.getSalesOffice())
           );
-          
+
           // Line 2: Credit Revenue
           entry.addLine(new JournalLine()
             .setAccount(getAccountByCode(\"400100\")) // Revenue - Product Sales
             .setCredit($order.getNetAmount())
             .setProfitCenter($order.getProductLine())
           );
-          
+
           // Line 3: Credit VAT Output (16%)
           entry.addLine(new JournalLine()
             .setAccount(getAccountByCode(\"240100\")) // VAT Output
             .setCredit($order.getVatAmount())
             .setTaxCode(\"VAT-STD-16\")
           );
-          
+
           $request.setJournalEntry(entry);
           update($request);
       end
@@ -281,11 +281,11 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class PostDocumentUseCase {
-    
+
     private final ConfigurationEngine configEngine;
     private final JournalEntryRepository journalRepo;
     private final PostingValidator validator;
-    
+
     @Transactional
     public String execute(PostDocumentCommand command) {
         // 1. Build posting request context
@@ -295,7 +295,7 @@ public class PostDocumentUseCase {
             .transactionType(command.getTransactionType())
             .salesOrder(command.getSalesOrder())
             .build();
-        
+
         // 2. Query configuration engine for applicable posting rules
         JournalEntry entry = configEngine.executeRule(
             "finance-gl",
@@ -303,19 +303,19 @@ public class PostDocumentUseCase {
             request,
             JournalEntry.class
         );
-        
+
         if (entry == null) {
             throw new PostingRuleNotFoundException(
                 "No posting rule found for: " + request
             );
         }
-        
+
         // 3. Validate journal entry (balanced, accounts exist, etc.)
         validator.validate(entry);
-        
+
         // 4. Persist journal entry
         JournalEntry savedEntry = journalRepo.save(entry);
-        
+
         // 5. Publish domain event
         domainEvents.publish(new DocumentPostedEvent(
             savedEntry.getEntryId(),
@@ -323,7 +323,7 @@ public class PostDocumentUseCase {
             savedEntry.getDocumentNumber(),
             savedEntry.getTotalDebit()
         ));
-        
+
         return savedEntry.getEntryId();
     }
 }
@@ -358,16 +358,16 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class ConfigurationEngine {
-    
+
     private final ConfigurationRuleRepository ruleRepo;
     private final TenantConfigurationRepository tenantConfigRepo;
     private final RuleExecutionLogger executionLogger;
     private final ObjectMapper objectMapper;
     private final KieServices kieServices = KieServices.Factory.get();
-    
+
     /**
      * Execute a configuration rule for a given domain and category.
-     * 
+     *
      * @param domain Domain name (e.g., "finance-gl", "sales", "inventory")
      * @param category Rule category (e.g., "posting-rules", "pricing-rules")
      * @param context Input context object
@@ -377,82 +377,82 @@ public class ConfigurationEngine {
     @Cacheable(value = "rule-results", key = "#domain + ':' + #category + ':' + #context.hashCode()")
     public <T> T executeRule(String domain, String category, Object context, Class<T> resultType) {
         long startTime = System.currentTimeMillis();
-        
+
         try {
             // 1. Load applicable rules (tenant-specific overrides take precedence)
             UUID tenantId = extractTenantId(context);
             List<ConfigurationRule> rules = loadRules(tenantId, domain, category);
-            
+
             if (rules.isEmpty()) {
                 log.warn("No configuration rules found for domain={}, category={}", domain, category);
                 return null;
             }
-            
+
             // 2. Build Drools knowledge base
             KieSession kieSession = buildKieSession(rules);
-            
+
             // 3. Insert context and fire rules
             kieSession.insert(context);
             int rulesFired = kieSession.fireAllRules();
-            
+
             log.debug("Executed {} rules for domain={}, category={}", rulesFired, domain, category);
-            
+
             // 4. Extract result from modified context
             T result = extractResult(context, resultType);
-            
+
             // 5. Cleanup
             kieSession.dispose();
-            
+
             // 6. Log execution (async)
-            executionLogger.logExecution(tenantId, rules.get(0).getRuleId(), context, result, 
+            executionLogger.logExecution(tenantId, rules.get(0).getRuleId(), context, result,
                 System.currentTimeMillis() - startTime, false);
-            
+
             return result;
-            
+
         } catch (Exception e) {
             log.error("Configuration rule execution failed for domain={}, category={}", domain, category, e);
             throw new ConfigurationEngineException("Rule execution failed", e);
         }
     }
-    
+
     private List<ConfigurationRule> loadRules(UUID tenantId, String domain, String category) {
         // Priority: Tenant overrides → Domain defaults
         List<TenantConfiguration> tenantOverrides = tenantConfigRepo.findByTenantAndDomainAndCategory(
             tenantId, domain, category, LocalDateTime.now()
         );
-        
+
         if (!tenantOverrides.isEmpty()) {
             return tenantOverrides.stream()
                 .map(tc -> mergeWithBaseRule(tc))
                 .toList();
         }
-        
+
         return ruleRepo.findByDomainAndCategoryAndActive(domain, category, true, LocalDateTime.now());
     }
-    
+
     private KieSession buildKieSession(List<ConfigurationRule> rules) {
         KieFileSystem kfs = kieServices.newKieFileSystem();
-        
+
         for (ConfigurationRule rule : rules) {
             String drl = rule.getRuleDefinition().get("drl").asText();
             String resourcePath = "src/main/resources/rules/" + rule.getRuleCode() + ".drl";
             kfs.write(resourcePath, drl);
         }
-        
+
         KieBuilder kieBuilder = kieServices.newKieBuilder(kfs).buildAll();
         Results results = kieBuilder.getResults();
-        
+
         if (results.hasMessages(org.kie.api.builder.Message.Level.ERROR)) {
             throw new ConfigurationEngineException("Drools compilation failed: " + results.getMessages());
         }
-        
+
         KieContainer kieContainer = kieServices.newKieContainer(
             kieServices.getRepository().getDefaultReleaseId()
         );
-        
+
         return kieContainer.newKieSession();
     }
-    
+
     private UUID extractTenantId(Object context) {
         // Use reflection to extract tenantId from context object
         try {
@@ -462,7 +462,7 @@ public class ConfigurationEngine {
             throw new ConfigurationEngineException("Context must have getTenantId() method", e);
         }
     }
-    
+
     private <T> T extractResult(Object context, Class<T> resultType) {
         // Extract result from modified context (e.g., PostingRequest.getJournalEntry())
         try {
@@ -508,7 +508,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
   const [form] = Form.useForm();
   const [drlContent, setDrlContent] = useState(initialRule?.ruleDefinition.drl || '');
   const [testing, setTesting] = useState(false);
-  
+
   const handleTest = async () => {
     setTesting(true);
     try {
@@ -525,13 +525,13 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
           currency: 'KES'
         }
       };
-      
+
       const result = await testRule({
         ...values,
         ruleDefinition: { drl: drlContent },
         testContext
       });
-      
+
       message.success('Rule test passed! Journal entry created with ' + result.lines.length + ' lines');
       console.log('Test result:', result);
     } catch (error) {
@@ -540,7 +540,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
       setTesting(false);
     }
   };
-  
+
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
@@ -553,18 +553,18 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
       message.error('Failed to save rule: ' + error.message);
     }
   };
-  
+
   return (
     <Card title={mode === 'create' ? 'Create Configuration Rule' : 'Edit Configuration Rule'}>
       <Form form={form} layout="vertical" initialValues={initialRule}>
         <Form.Item name="ruleCode" label="Rule Code" rules={[{ required: true }]}>
           <Input placeholder="kenya-etims-sales-posting" />
         </Form.Item>
-        
+
         <Form.Item name="ruleName" label="Rule Name" rules={[{ required: true }]}>
           <Input placeholder="Kenya eTIMS Sales Order GL Posting" />
         </Form.Item>
-        
+
         <Form.Item name="domain" label="Domain" rules={[{ required: true }]}>
           <Select>
             <Select.Option value="finance-gl">Finance GL</Select.Option>
@@ -572,7 +572,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
             <Select.Option value="inventory">Inventory</Select.Option>
           </Select>
         </Form.Item>
-        
+
         <Form.Item name="category" label="Category" rules={[{ required: true }]}>
           <Select>
             <Select.Option value="posting-rules">Posting Rules</Select.Option>
@@ -580,7 +580,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
             <Select.Option value="atp-rules">ATP Rules</Select.Option>
           </Select>
         </Form.Item>
-        
+
         <Form.Item label="Rule Definition (Drools DRL)">
           <MonacoEditor
             height="400px"
@@ -594,7 +594,7 @@ export const RuleEditor: React.FC<RuleEditorProps> = ({ mode, initialRule }) => 
             }}
           />
         </Form.Item>
-        
+
         <Form.Item>
           <Space>
             <Button type="primary" onClick={handleSave}>

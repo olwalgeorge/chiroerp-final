@@ -1,8 +1,8 @@
 # Master Data Analytics - ADR-027
 
-> **Bounded Context:** `mdm-analytics`  
-> **Port:** `9705` (logical, part of mdm-data-quality service)  
-> **Database:** `chiroerp_mdm_quality`  
+> **Bounded Context:** `mdm-analytics`
+> **Port:** `9705` (logical, part of mdm-data-quality service)
+> **Database:** `chiroerp_mdm_quality`
 > **Kafka Consumer Group:** `mdm-quality-cg`
 
 ## Overview
@@ -83,7 +83,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | DataQualityScoreUpdatedEvent (consumed) | `mdm.quality.score.updated` | 6 | 30d |
 | ChangeRequestApprovedEvent (consumed) | `mdm.stewardship.changerequest.approved` | 6 | 30d |
 
-**Consumer Group:** `mdm-quality-cg`  
+**Consumer Group:** `mdm-quality-cg`
 **Partition Key:** `domain` (ensures all events for a domain are processed in order)
 
 ## API Endpoints (Examples)

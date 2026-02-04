@@ -1,8 +1,8 @@
 # CRM Pipeline - ADR-043
 
-> **Bounded Context:** `crm-pipeline`  
-> **Port:** `9402`  
-> **Database:** `chiroerp_crm_pipeline`  
+> **Bounded Context:** `crm-pipeline`
+> **Port:** `9402`
+> **Database:** `chiroerp_crm_pipeline`
 > **Kafka Consumer Group:** `crm-pipeline-cg`
 
 ## Overview

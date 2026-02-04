@@ -1,10 +1,10 @@
 # ADR-002: Database Per Bounded Context
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-05  
-**Deciders**: Architecture Team, Platform Team  
-**Tier**: Core  
-**Tags**: database, persistence, bounded-contexts, microservices  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-05
+**Deciders**: Architecture Team, Platform Team
+**Tier**: Core
+**Tags**: database, persistence, bounded-contexts, microservices
 
 ## Context
 In a microservices architecture with 11 bounded contexts, we must decide on our database isolation strategy. The choice impacts data autonomy, scalability, deployment independence, and operational complexity.

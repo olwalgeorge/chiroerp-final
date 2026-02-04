@@ -1,10 +1,10 @@
 # ADR-048: Frontend Architecture & Design System
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team, UX Team  
-**Priority**: P2 (Medium - User Experience Critical)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team, UX Team
+**Priority**: P2 (Medium - User Experience Critical)
+**Tier**: Core
 **Tags**: frontend, ui, react, design-system, web, components
 
 ## Context
@@ -201,7 +201,7 @@ export const colors = {
     700: '#1976D2',
     900: '#0D47A1',
   },
-  
+
   // Semantic
   success: {
     50: '#E8F5E9',
@@ -218,7 +218,7 @@ export const colors = {
     500: '#FF9800',
     700: '#F57C00',
   },
-  
+
   // Neutral (UI)
   gray: {
     50: '#FAFAFA',
@@ -400,7 +400,7 @@ export function DataTable<TData>({
           ))}
         </tbody>
       </table>
-      
+
       {enablePagination && <TablePagination table={table} />}
     </div>
   );
@@ -453,7 +453,7 @@ export const SalesOrderForm = () => {
             <CustomerSelect {...field} />
           )}
         />
-        
+
         <FormField
           name="orderDate"
           label="Order Date"
@@ -461,7 +461,7 @@ export const SalesOrderForm = () => {
             <DatePicker {...field} />
           )}
         />
-        
+
         <FormField
           name="paymentTerms"
           label="Payment Terms"
@@ -473,9 +473,9 @@ export const SalesOrderForm = () => {
             </Select>
           )}
         />
-        
+
         <LineItemsFieldArray name="lineItems" />
-        
+
         <Button type="submit" isLoading={form.formState.isSubmitting}>
           Create Order
         </Button>
@@ -507,7 +507,7 @@ export const useGLAccounts = (filters?: GLAccountFilters) => {
 
 export const useCreateGLAccount = () => {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: glAccountsApi.create,
     onSuccess: () => {
@@ -524,10 +524,10 @@ export const useCreateGLAccount = () => {
 const GLAccountList = () => {
   const { data, isLoading, error } = useGLAccounts({ accountType: 'ASSET' });
   const createMutation = useCreateGLAccount();
-  
+
   if (isLoading) return <Spinner />;
   if (error) return <ErrorState error={error} />;
-  
+
   return (
     <DataTable
       columns={glAccountColumns}
@@ -550,11 +550,11 @@ interface AppState {
   currentUser: User | null;
   currentTenant: Tenant | null;
   currentCompanyCode: CompanyCode | null;
-  
+
   // UI state
   sidebarOpen: boolean;
   theme: 'light' | 'dark';
-  
+
   // Actions
   setCurrentUser: (user: User) => void;
   setCurrentTenant: (tenant: Tenant) => void;
@@ -571,7 +571,7 @@ export const useAppStore = create<AppState>()(
       currentCompanyCode: null,
       sidebarOpen: true,
       theme: 'light',
-      
+
       setCurrentUser: (user) => set({ currentUser: user }),
       setCurrentTenant: (tenant) => set({ currentTenant: tenant }),
       setCurrentCompanyCode: (companyCode) => set({ currentCompanyCode: companyCode }),
@@ -601,24 +601,24 @@ import { io } from 'socket.io-client';
 
 export const useRealtimeUpdates = (entityType: string, entityId: string) => {
   const queryClient = useQueryClient();
-  
+
   useEffect(() => {
     const socket = io('wss://api.chiroerp.com', {
       auth: { token: getAuthToken() },
     });
-    
+
     socket.on('connect', () => {
       socket.emit('subscribe', { entityType, entityId });
     });
-    
+
     socket.on('entity-updated', (data) => {
       // Invalidate React Query cache
       queryClient.invalidateQueries({ queryKey: [entityType, entityId] });
-      
+
       // Show toast notification
       toast.info(`${entityType} ${entityId} was updated`);
     });
-    
+
     return () => {
       socket.emit('unsubscribe', { entityType, entityId });
       socket.disconnect();
@@ -629,9 +629,9 @@ export const useRealtimeUpdates = (entityType: string, entityId: string) => {
 // Usage: Real-time sales order updates
 const SalesOrderDetail = ({ orderId }: { orderId: string }) => {
   useRealtimeUpdates('sales-order', orderId);
-  
+
   const { data: order } = useSalesOrder(orderId);
-  
+
   return <OrderDetailView order={order} />;
 };
 ```
@@ -688,7 +688,7 @@ export const useOfflineMutation = <TData, TVariables>(
   mutationFn: (variables: TVariables) => Promise<TData>
 ) => {
   const { isOnline } = useNetworkState();
-  
+
   return useMutation({
     mutationFn: async (variables: TVariables) => {
       if (!isOnline) {
@@ -696,7 +696,7 @@ export const useOfflineMutation = <TData, TVariables>(
         await queueOfflineMutation(mutationFn.name, variables);
         return null as TData; // Optimistic UI
       }
-      
+
       return mutationFn(variables);
     },
   });
@@ -724,7 +724,7 @@ import { Card } from '@chiroerp/design-system';
 
 export const RevenueChart = () => {
   const { data } = useRevenueData();
-  
+
   return (
     <Card title="Revenue Trend">
       <LineChart width={600} height={300} data={data}>
@@ -752,7 +752,7 @@ export const FinanceDashboard = () => {
         <KPICard title="Outstanding AR" value="$340K" trend="-5%" />
         <KPICard title="Open Invoices" value="142" trend="+8%" />
         <KPICard title="Days Sales Outstanding" value="38 days" trend="-2 days" />
-        
+
         <RevenueChart />
         <ARAgingChart />
         <TopCustomersTable />
@@ -775,13 +775,13 @@ import { FocusTrap } from '@headlessui/react';
 
 export const Modal = ({ isOpen, onClose, children }: ModalProps) => {
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  
+
   useEffect(() => {
     if (isOpen) {
       closeButtonRef.current?.focus();
     }
   }, [isOpen]);
-  
+
   return (
     <FocusTrap active={isOpen}>
       <div role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -817,7 +817,7 @@ export const DataTable = () => {
         break;
     }
   };
-  
+
   return (
     <table role="grid">
       {rows.map((row, index) => (
@@ -880,14 +880,14 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 
 export const VirtualizedTable = ({ data }: { data: any[] }) => {
   const parentRef = useRef<HTMLDivElement>(null);
-  
+
   const virtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 50, // Row height
     overscan: 10, // Render 10 extra rows
   });
-  
+
   return (
     <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
       <div style={{ height: `${virtualizer.getTotalSize()}px` }}>
@@ -954,7 +954,7 @@ i18n
 // Usage in component
 const SalesOrderForm = () => {
   const { t } = useTranslation('sales');
-  
+
   return (
     <form>
       <label>{t('sales.order.customer')}</label>
@@ -990,7 +990,7 @@ const SalesOrderForm = () => {
 // Mobile-specific layouts
 const SalesOrderDetail = () => {
   const isMobile = useMediaQuery('(max-width: 768px)');
-  
+
   return isMobile ? (
     <MobileSalesOrderView />
   ) : (
@@ -1014,7 +1014,7 @@ const SwipeableCard = () => {
     onSwipedLeft: () => archiveItem(),
     onSwipedRight: () => favoriteItem(),
   });
-  
+
   return <div {...handlers}>Swipe me!</div>;
 };
 ```
@@ -1034,14 +1034,14 @@ describe('Button', () => {
     render(<Button>Click me</Button>);
     expect(screen.getByText('Click me')).toBeInTheDocument();
   });
-  
+
   it('calls onClick when clicked', () => {
     const handleClick = vi.fn();
     render(<Button onClick={handleClick}>Click me</Button>);
     fireEvent.click(screen.getByText('Click me'));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
-  
+
   it('shows loading spinner when isLoading', () => {
     render(<Button isLoading>Click me</Button>);
     expect(screen.getByRole('button')).toBeDisabled();
@@ -1056,17 +1056,17 @@ import { test, expect } from '@playwright/test';
 
 test('create sales order', async ({ page }) => {
   await page.goto('/sales/orders/new');
-  
+
   // Fill form
   await page.selectOption('[name="customerId"]', 'CUST-001');
   await page.fill('[name="orderDate"]', '2026-02-03');
   await page.click('button:text("Add Line Item")');
   await page.selectOption('[name="lineItems[0].materialId"]', 'MAT-001');
   await page.fill('[name="lineItems[0].quantity"]', '10');
-  
+
   // Submit
   await page.click('button:text("Create Order")');
-  
+
   // Verify success
   await expect(page.locator('.toast-success')).toContainText('Order created successfully');
   await expect(page).toHaveURL(/\/sales\/orders\/SO-/);
@@ -1149,13 +1149,13 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: 20
-      
+
       - name: Install dependencies
         run: npm ci
-      
+
       - name: Build
         run: npm run build
-      
+
       - name: Deploy to CloudFlare Pages
         uses: cloudflare/pages-action@v1
         with:
@@ -1235,28 +1235,28 @@ trackEvent('sales_order_created', {
 ## Alternatives Considered
 
 ### 1. Angular
-**Pros**: Enterprise-focused, TypeScript-native, comprehensive framework  
-**Cons**: Steeper learning curve, larger bundle, slower ecosystem evolution  
+**Pros**: Enterprise-focused, TypeScript-native, comprehensive framework
+**Cons**: Steeper learning curve, larger bundle, slower ecosystem evolution
 **Decision**: Rejected—React ecosystem more mature for ERP
 
 ### 2. Vue 3
-**Pros**: Lightweight, intuitive, good DX  
-**Cons**: Smaller ecosystem, fewer ERP-grade components, smaller talent pool  
+**Pros**: Lightweight, intuitive, good DX
+**Cons**: Smaller ecosystem, fewer ERP-grade components, smaller talent pool
 **Decision**: Rejected—React has better ERP libraries
 
 ### 3. Server-Side Rendering (Next.js)
-**Pros**: SEO, faster initial load  
-**Cons**: ERP is authenticated app (no SEO benefit), SSR adds complexity  
+**Pros**: SEO, faster initial load
+**Cons**: ERP is authenticated app (no SEO benefit), SSR adds complexity
 **Decision**: Deferred—use Vite for now, can migrate to Next.js later if needed
 
 ### 4. Native Mobile (React Native)
-**Pros**: True native experience  
-**Cons**: Maintenance burden (3 codebases: web, iOS, Android)  
+**Pros**: True native experience
+**Cons**: Maintenance burden (3 codebases: web, iOS, Android)
 **Decision**: Deferred—PWA sufficient for v1, React Native for v2 if needed
 
 ### 5. Single-Page Monolith (No Micro-Frontends)
-**Pros**: Simpler deployment  
-**Cons**: Cannot scale dev teams, all-or-nothing deployments  
+**Pros**: Simpler deployment
+**Cons**: Cannot scale dev teams, all-or-nothing deployments
 **Decision**: Rejected—micro-frontends enable team autonomy
 
 ---

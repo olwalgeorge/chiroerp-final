@@ -1,10 +1,10 @@
 # ADR-042: Field Service Operations (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: Medium  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Operations Team
+**Priority**: Medium
+**Tier**: Add-on
 **Tags**: field-service, dispatch, work-orders, SLA, mobile
 
 ## Context
@@ -77,7 +77,7 @@ Utility companies (electric, gas, water) require industry-specific capabilities 
   - Manual readings, AMR (automated meter reading), AMI (advanced metering infrastructure).
   - Consumption calculations (current reading - previous reading, multiplier adjustments).
   - Estimated bills (when meter not accessible, based on historical consumption).
-  
+
 - **Tariff & Rate Management**:
   - Rate schedules (residential, commercial, industrial).
   - Tiered pricing (e.g., first 500 kWh @ $0.10, next 500 kWh @ $0.12).
@@ -85,27 +85,27 @@ Utility companies (electric, gas, water) require industry-specific capabilities 
   - Demand charges for commercial customers (kW vs kWh).
   - Seasonal rate adjustments.
   - Regulatory rate case tracking and approvals.
-  
+
 - **Utility Billing**:
   - Bill calculation engine (consumption × tariff + fixed charges + taxes).
   - Bill formatting per regulatory requirements (itemized charges, usage graphs).
   - Budget billing (average monthly payment plans).
   - Payment plans and installment agreements.
   - Late fees and disconnect notices.
-  
+
 - **Network Asset Registry**:
   - Asset hierarchy (substation → feeder → transformer → service line → meter).
   - GIS integration (asset location, service territory mapping).
   - Asset condition tracking (age, inspection results, failure history).
   - Load analysis (transformer capacity, feeder loading).
-  
+
 - **Outage Management System (OMS)**:
   - Outage detection (customer calls, AMI last-gasp signals, SCADA alarms).
   - Outage prediction models (weather, asset condition).
   - Crew dispatch optimization (location, skills, equipment availability).
   - Restoration tracking and customer ETR (estimated time to restore).
   - Outage analytics (frequency, duration, SAIDI/SAIFI/CAIDI metrics).
-  
+
 - **Service Order Types**:
   - Connect service (new customer, turn-on).
   - Disconnect service (non-payment, customer request).

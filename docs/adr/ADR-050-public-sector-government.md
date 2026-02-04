@@ -1,10 +1,10 @@
 # ADR-050: Public Sector & Government Accounting (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P3 (Niche Market)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P3 (Niche Market)
+**Tier**: Add-on
 **Tags**: public-sector, fund-accounting, grants, budgetary-control, government, non-profit
 
 ## Context
@@ -65,7 +65,7 @@ Adopt a **Public Sector & Government Accounting** domain as an add-on to enable 
   - Fund segments in chart of accounts (Fund-Department-Program-Project-Account).
   - Fund-level financial statements (balance sheet by fund, statement of revenues/expenditures).
   - Interfund transaction recording (due to/from, transfers in/out).
-  
+
 - **Fund Balance Management**:
   - Classification per GASB 54 (nonspendable, restricted, committed, assigned, unassigned).
   - Fund balance policies (minimum reserve requirements).
@@ -76,12 +76,12 @@ Adopt a **Public Sector & Government Accounting** domain as an add-on to enable 
   - Budget templates by fund, department, program.
   - Line-item budgets with justifications.
   - Budget approval workflows (department → finance → executive → legislative).
-  
+
 - **Budget Monitoring**:
   - Real-time budget vs actual dashboards.
   - Variance analysis (favorable/unfavorable).
   - Budget consumption alerts (e.g., 80% spent, 90% spent).
-  
+
 - **Budget Enforcement**:
   - Hard stops: Block PR/PO/invoice if exceeds available budget.
   - Soft warnings: Alert user but allow override with justification.
@@ -93,7 +93,7 @@ Adopt a **Public Sector & Government Accounting** domain as an add-on to enable 
   - Convert to encumbrance when PO issued.
   - Liquidate encumbrance when invoice received (replace with expenditure).
   - Release encumbrance if PO cancelled.
-  
+
 - **Encumbrance Reporting**:
   - Budget reports showing: Budget | Encumbrances | Expenditures | Available.
   - Open encumbrances report (outstanding POs/contracts).
@@ -104,17 +104,17 @@ Adopt a **Public Sector & Government Accounting** domain as an add-on to enable 
   - Grant master record (grantor, award number, CFDA, amount, period, terms).
   - Cost categories and budget by category.
   - Match requirements (cash, in-kind).
-  
+
 - **Grant Expenditure Tracking**:
   - Charge expenditures to grants (personnel, supplies, travel, equipment).
   - Direct vs indirect cost allocation.
   - F&A rate application (facilities & administrative overhead).
-  
+
 - **Grant Drawdowns**:
   - Reimbursement-based: Request funds after expenditure.
   - Advance-based: Request funds upfront, reconcile later.
   - Drawdown schedules and grantor reporting.
-  
+
 - **Grant Compliance**:
   - Unallowable cost detection (alcohol, lobbying, entertainment per 2 CFR 200).
   - Time-and-effort reporting for personnel charges.
@@ -125,7 +125,7 @@ Adopt a **Public Sector & Government Accounting** domain as an add-on to enable 
   - Record appropriations by fiscal year, Treasury Appropriation Fund Symbol (TAFS).
   - Track apportionments (OMB allocations).
   - Monitor obligations against appropriation authority.
-  
+
 - **USSGL Posting**:
   - Federal accounting standard accounts (1000-9999 range).
   - Budgetary and proprietary account integration.

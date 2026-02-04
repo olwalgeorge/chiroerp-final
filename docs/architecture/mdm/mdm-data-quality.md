@@ -1,8 +1,8 @@
 # Master Data Quality Rules - ADR-027
 
-> **Bounded Context:** `mdm-data-quality`  
-> **Port:** `9702`  
-> **Database:** `chiroerp_mdm_quality`  
+> **Bounded Context:** `mdm-data-quality`
+> **Port:** `9702`
+> **Database:** `chiroerp_mdm_quality`
 > **Kafka Consumer Group:** `mdm-quality-cg`
 
 ## Overview

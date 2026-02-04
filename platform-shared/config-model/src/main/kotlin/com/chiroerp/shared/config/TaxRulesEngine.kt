@@ -5,33 +5,33 @@ import java.time.LocalDate
 
 /**
  * Interface for tax calculation and compliance.
- * 
+ *
  * Phase 0: Hardcoded tax rates (simple percentage-based)
  * Phase 1: Configuration-driven (jurisdiction mapping, Avalara/Vertex integration)
  * Phase 2: AI-powered compliance checks with regulatory updates
- * 
+ *
  * Related ADRs: ADR-006, ADR-030, ADR-047
  */
 interface TaxRulesEngine {
     /**
      * Calculate tax for a transaction.
-     * 
+     *
      * @param context Tax calculation context
      * @return Tax calculation result with jurisdiction breakdown
      */
     suspend fun calculateTax(context: TaxContext): Result<TaxCalculation>
-    
+
     /**
      * Determine tax jurisdiction for a transaction.
-     * 
+     *
      * @param context Tax context
      * @return Jurisdiction(s) with applicable tax codes
      */
     suspend fun determineJurisdiction(context: TaxContext): Result<List<TaxJurisdiction>>
-    
+
     /**
      * Validate tax exemption certificate.
-     * 
+     *
      * @param certificateNumber Certificate ID
      * @param context Transaction context
      * @return Validation result

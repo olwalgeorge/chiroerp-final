@@ -1,8 +1,8 @@
 # Performance Testing Guide - ChiroERP
 
-**Status**: Draft  
-**Priority**: P2 (Medium - Quality Critical)  
-**Last Updated**: February 3, 2026  
+**Status**: Draft
+**Priority**: P2 (Medium - Quality Critical)
+**Last Updated**: February 3, 2026
 **Scope**: Validate 10,000 concurrent users across Kenya + Tanzania deployments
 
 ---
@@ -72,22 +72,22 @@ requests:
     weight: 30%
     payload: salesOrderKenyaVAT16.json
     sla: < 500ms (P95)
-  
+
   - POST /api/v1/sales/orders/{id}/approve
     weight: 25%
     sla: < 300ms (P95)
-  
+
   - POST /api/v1/finance/invoices/generate
     weight: 20%
     payload: invoiceWithKRAETIMS.json
     sla: < 2000ms (P95)  # Includes eTIMS Cu retrieval
     externalDependency: KRA_ETIMS_API
-  
+
   - POST /api/v1/treasury/payments/mpesa/callback
     weight: 15%
     payload: mpesaC2BCallback.json
     sla: < 200ms (P95)  # Webhook must respond fast
-  
+
   - GET /api/v1/finance/invoices/{id}
     weight: 10%
     sla: < 200ms (P95)
@@ -145,30 +145,30 @@ requests:
   - POST /api/v1/procurement/requisitions
     weight: 20%
     sla: < 300ms
-  
+
   - POST /api/v1/procurement/requisitions/{id}/approve
     weight: 15%
     sla: < 200ms (workflow)
-  
+
   - POST /api/v1/procurement/orders
     weight: 20%
     payload: purchaseOrderKenya.json
     sla: < 500ms
-  
+
   - POST /api/v1/procurement/orders/{id}/approve
     weight: 10%
     sla: < 200ms
-  
+
   - POST /api/v1/inventory/goods-receipts
     weight: 15%
     sla: < 400ms
-  
+
   - POST /api/v1/finance/ap/invoices/verify
     weight: 15%
     payload: supplierInvoiceWithCu.json
     sla: < 1500ms  # KRA eTIMS Cu validation
     externalDependency: KRA_ETIMS_API
-  
+
   - POST /api/v1/treasury/payments/mpesa-b2b
     weight: 5%
     payload: mpesaB2BPayment.json
@@ -210,17 +210,17 @@ requests:
   - POST /api/v1/sales/orders
     weight: 35%
     payload: salesOrderTanzaniaVAT18.json
-  
+
   - POST /api/v1/finance/invoices/generate
     weight: 30%
     payload: invoiceWithTRAVFD.json
     sla: < 2500ms  # TRA VFD slower than KRA eTIMS
     externalDependency: TRA_VFD_API
-  
+
   - POST /api/v1/treasury/payments/mpesa-tz/callback
     weight: 25%
     sla: < 300ms
-  
+
   - GET /api/v1/finance/invoices/{id}
     weight: 10%
 
@@ -265,11 +265,11 @@ requests:
   - POST /api/v1/sales/orders/intercompany
     weight: 40%
     payload: intercompanyOrderKenyaToTanzania.json
-  
+
   - POST /api/v1/customs/eac/documents
     weight: 30%
     sla: < 500ms
-  
+
   - POST /api/v1/treasury/payments/swift
     weight: 30%
     sla: < 1000ms
@@ -290,9 +290,9 @@ criticalPaths:
 ### 3.1 Test Types
 
 #### 3.1.1 Smoke Test (Dev Environment)
-**Purpose**: Verify system is ready for load testing  
-**Duration**: 10 minutes  
-**Users**: 100 concurrent  
+**Purpose**: Verify system is ready for load testing
+**Duration**: 10 minutes
+**Users**: 100 concurrent
 **Success Criteria**:
 - ✅ All APIs respond (no 500 errors)
 - ✅ KRA eTIMS sandbox connectivity
@@ -300,9 +300,9 @@ criticalPaths:
 - ✅ Database queries execute
 
 #### 3.1.2 Load Test (Staging Environment)
-**Purpose**: Validate target performance (10,000 users)  
-**Duration**: 2 hours  
-**Users**: 10,000 concurrent (ramp up over 15 min)  
+**Purpose**: Validate target performance (10,000 users)
+**Duration**: 2 hours
+**Users**: 10,000 concurrent (ramp up over 15 min)
 **Success Criteria**:
 - ✅ API response time < 500ms (P95)
 - ✅ KRA eTIMS Cu retrieval < 2s (P95)
@@ -313,9 +313,9 @@ criticalPaths:
 - ✅ Error rate < 0.1%
 
 #### 3.1.3 Stress Test (Staging Environment)
-**Purpose**: Find breaking point (when does system fail?)  
-**Duration**: 1 hour  
-**Users**: 10,000 → 20,000 (double target)  
+**Purpose**: Find breaking point (when does system fail?)
+**Duration**: 1 hour
+**Users**: 10,000 → 20,000 (double target)
 **Success Criteria**:
 - ✅ Identify bottleneck (database? Kafka? KRA API?)
 - ✅ System degrades gracefully (no cascading failures)
@@ -323,9 +323,9 @@ criticalPaths:
 - ✅ Queues prevent data loss
 
 #### 3.1.4 Soak Test (Pre-Prod Environment)
-**Purpose**: Validate stability over 24 hours  
-**Duration**: 24 hours  
-**Users**: 10,000 concurrent (sustained)  
+**Purpose**: Validate stability over 24 hours
+**Duration**: 24 hours
+**Users**: 10,000 concurrent (sustained)
 **Success Criteria**:
 - ✅ No memory leaks (JVM heap stable)
 - ✅ No connection pool exhaustion
@@ -335,9 +335,9 @@ criticalPaths:
 - ✅ No disk space issues (logs rotated)
 
 #### 3.1.5 Spike Test (Staging Environment)
-**Purpose**: Validate sudden traffic burst (e.g., month-end closing)  
-**Duration**: 30 minutes  
-**Users**: 1,000 → 15,000 (instant spike) → 1,000  
+**Purpose**: Validate sudden traffic burst (e.g., month-end closing)
+**Duration**: 30 minutes
+**Users**: 1,000 → 15,000 (instant spike) → 1,000
 **Success Criteria**:
 - ✅ Auto-scaling triggers (Kubernetes HPA)
 - ✅ Circuit breakers protect downstream services

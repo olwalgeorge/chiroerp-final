@@ -1,8 +1,8 @@
 # Sales Commissions - ADR-025
 
-> **Bounded Context:** `sales-commissions`  
-> **Port:** `9206` (logical, part of sales-core service)  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-commissions`
+> **Port:** `9206` (logical, part of sales-core service)
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview

@@ -1,8 +1,8 @@
 # Sales Returns & RMA - ADR-025
 
-> **Bounded Context:** `sales-returns`  
-> **Port:** `9204` (logical, part of sales-core service)  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-returns`
+> **Port:** `9204` (logical, part of sales-core service)
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview

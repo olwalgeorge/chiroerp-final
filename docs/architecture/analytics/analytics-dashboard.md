@@ -1,8 +1,8 @@
 # Analytics Dashboard Builder - ADR-016
 
-> **Bounded Context:** `analytics-dashboard`  
-> **Port:** `9804` (logical, part of analytics-olap service)  
-> **Database:** `chiroerp_analytics_olap`  
+> **Bounded Context:** `analytics-dashboard`
+> **Port:** `9804` (logical, part of analytics-olap service)
+> **Database:** `chiroerp_analytics_olap`
 > **Kafka Consumer Group:** `analytics-olap-cg`
 
 ## Overview
@@ -83,7 +83,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | KpiCalculatedEvent (consumed) | `analytics.kpi.calculated` | 6 | 30d |
 | CubeRefreshedEvent (consumed) | `analytics.olap.cube.refreshed` | 6 | 30d |
 
-**Consumer Group:** `analytics-olap-cg`  
+**Consumer Group:** `analytics-olap-cg`
 **Partition Key:** `dashboardId` (ensures all events for a dashboard are processed in order)
 
 ## API Endpoints (Examples)

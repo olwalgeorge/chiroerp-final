@@ -1,8 +1,8 @@
 # Plant Maintenance Scheduling - ADR-040
 
-> **Bounded Context:** `maintenance-scheduling`  
-> **Port:** `9605` (logical, part of maintenance-preventive service)  
-> **Database:** `chiroerp_maintenance_preventive`  
+> **Bounded Context:** `maintenance-scheduling`
+> **Port:** `9605` (logical, part of maintenance-preventive service)
+> **Database:** `chiroerp_maintenance_preventive`
 > **Kafka Consumer Group:** `maintenance-preventive-cg`
 
 ## Overview
@@ -83,7 +83,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | MaintenanceScheduleGeneratedEvent (consumed) | `maintenance.preventive.schedule.generated` | 6 | 30d |
 | ProductionScheduleUpdatedEvent (consumed) | `manufacturing.production.schedule.updated` | 6 | 30d |
 
-**Consumer Group:** `maintenance-preventive-cg`  
+**Consumer Group:** `maintenance-preventive-cg`
 **Partition Key:** `plantId` / `scheduleId` (ensures all events for a plant are processed in order)
 
 ## API Endpoints (Examples)

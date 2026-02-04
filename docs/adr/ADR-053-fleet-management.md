@@ -1,10 +1,10 @@
 # ADR-053: Fleet Management (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: P3 (Optional Add-on)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Operations Team
+**Priority**: P3 (Optional Add-on)
+**Tier**: Add-on
 **Tags**: fleet, vehicles, telematics, driver-management, fuel, maintenance
 
 ## Context
@@ -42,17 +42,17 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Current status (active, idle, maintenance, retired, sold).
   - Home location/garage assignment.
   - Ownership entity (legal entity, cost center).
-  
+
 - **Vehicle Hierarchy**:
   - Fleet → Pool (delivery, sales, service) → Vehicle → Component.
   - Multi-level classification for reporting and allocation.
-  
+
 - **Technical Specifications**:
   - Engine type (gasoline, diesel, hybrid, electric, CNG).
   - Fuel capacity, fuel efficiency (MPG, L/100km).
   - Payload capacity, towing capacity, seating.
   - Tire specifications and replacement cycles.
-  
+
 - **Asset Integration**:
   - Link to Fixed Asset register (ADR-021) for depreciation.
   - Link to Lease Accounting (ADR-033) if leased vehicle.
@@ -65,13 +65,13 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Endorsements and certifications (CDL, hazmat, passenger).
   - Medical certification status (DOT physical).
   - Background check and MVR (motor vehicle record) status.
-  
+
 - **Driver Assignments**:
   - Assign driver to vehicle (permanent or temporary).
   - Multi-driver vehicles (pool vehicles).
   - Driver availability calendar and time off.
   - Driver home location and territory.
-  
+
 - **Driver Safety**:
   - Safety score (based on telematics: speeding, harsh braking, rapid acceleration).
   - Incident history (accidents, violations, claims).
@@ -84,19 +84,19 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Historical trip playback and route analysis.
   - Geofencing (alerts for unauthorized zones).
   - Mileage capture (odometer reading sync).
-  
+
 - **Vehicle Diagnostics**:
   - Engine hours, idle time, fuel level.
   - Diagnostic trouble codes (DTCs) and alerts.
   - Battery voltage, tire pressure (TPMS).
   - Oil life, brake wear, maintenance reminders.
-  
+
 - **Driver Behavior**:
   - Speeding events (over posted limit or threshold).
   - Harsh braking, rapid acceleration, sharp cornering.
   - Seatbelt usage, distracted driving (if supported).
   - Idling time and fuel waste.
-  
+
 - **Telematics Vendor Integration**:
   - API connectors for Geotab, Samsara, Verizon Connect, Teletrac Navman.
   - Standardized telematics event schema.
@@ -109,13 +109,13 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Import fuel transactions (date, location, gallons/liters, cost, vehicle, driver).
   - Card assignment to vehicles and drivers.
   - Card limits and restrictions (fuel type, merchant category).
-  
+
 - **Fuel Transaction Processing**:
   - Match transaction to vehicle (by card or VIN).
   - Validate odometer reading and location.
   - Flag anomalies (duplicate purchases, off-hours, geographic outliers).
   - Calculate fuel efficiency (MPG = miles / gallons).
-  
+
 - **Fuel Cost Allocation**:
   - Allocate fuel cost to cost center, project, or customer job.
   - Fuel surcharge calculation for billing.
@@ -128,19 +128,19 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Oil changes, tire rotations, inspections, brake service.
   - Telematics-triggered maintenance alerts (engine hours, DTC codes).
   - Integration with Plant Maintenance (ADR-040) for work orders.
-  
+
 - **Service History**:
   - Maintenance records (date, mileage, service type, vendor, cost).
   - Parts replaced and warranty tracking.
   - Recalls and safety campaigns.
   - Service provider network (dealerships, fleet shops, mobile mechanics).
-  
+
 - **Inspections**:
   - Pre-trip and post-trip inspections (DVIR - Driver Vehicle Inspection Report).
   - Annual safety inspections (state requirements).
   - DOT inspections (commercial vehicles).
   - Failed inspection follow-up and out-of-service tracking.
-  
+
 - **Downtime Tracking**:
   - Vehicle availability status (in service, maintenance, repair, awaiting parts).
   - Downtime duration and impact on fleet capacity.
@@ -153,14 +153,14 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Trips and stops per vehicle.
   - Idle time percentage.
   - Utilization rate (actual use / available time).
-  
+
 - **Cost Tracking**:
   - Fuel cost per vehicle, per mile, per trip.
   - Maintenance cost (scheduled + unscheduled).
   - Insurance, registration, tolls, parking.
   - Total Cost of Ownership (TCO) per vehicle.
   - Cost per mile/km benchmarking.
-  
+
 - **Fleet KPIs**:
   - Fleet size and composition.
   - Average vehicle age and replacement cycle.
@@ -175,14 +175,14 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - License plate renewals and state fees.
   - Multi-state registration (IRP - International Registration Plan).
   - Title and lien tracking.
-  
+
 - **Insurance**:
   - Policy master data (carrier, policy number, coverage limits).
   - Coverage by vehicle (comprehensive, collision, liability).
   - Insurance expiration alerts.
   - Claims tracking (date, description, cost, status).
   - Certificate of Insurance (COI) generation for customers.
-  
+
 - **DOT Compliance** (Commercial Fleets):
   - FMCSA carrier number and safety rating.
   - Hours of Service (HOS) tracking for drivers.
@@ -190,7 +190,7 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Drug and alcohol testing program.
   - Driver qualification files (DQ files).
   - Annual vehicle inspections and documentation.
-  
+
 - **Environmental Compliance**:
   - Emissions testing and certification.
   - CARB compliance (California Air Resources Board).
@@ -204,18 +204,18 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
   - Purchase order integration (ADR-023).
   - Fixed asset capitalization (ADR-021).
   - Lease setup if applicable (ADR-033).
-  
+
 - **Deployment**:
   - Vehicle assignment to pool, driver, or location.
   - Initial inspection and documentation.
   - Telematics device installation.
   - Fuel card and toll tag issuance.
-  
+
 - **Transfer**:
   - Inter-location transfers (branch to branch).
   - Re-assignment to different pool or driver.
   - Cost center reallocation.
-  
+
 - **Disposal**:
   - Retirement decision (age, mileage, condition, TCO).
   - Disposal method (sell, trade-in, auction, scrap, donate).
@@ -256,12 +256,12 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
 1. **Initiate Purchase**:
    - Fleet manager creates vehicle requisition.
    - Approval workflow (budget, fleet size limits).
-   
+
 2. **Procure Vehicle**:
    - Create purchase order (ADR-023).
    - Receive vehicle and inspection.
    - Capitalize as fixed asset (ADR-021).
-   
+
 3. **Setup Vehicle**:
    - Register in fleet master data.
    - Install telematics device.
@@ -272,12 +272,12 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
 1. **Import Fuel Data**:
    - Daily import from fuel card provider.
    - Parse transactions and map to vehicles.
-   
+
 2. **Validation**:
    - Match odometer to telematics reading.
    - Check for duplicate or fraudulent transactions.
    - Flag anomalies for review.
-   
+
 3. **Cost Allocation**:
    - Post fuel expense to cost center or project.
    - Update fuel efficiency metrics.
@@ -287,12 +287,12 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
 1. **Maintenance Schedule**:
    - Define PM schedule (e.g., every 5,000 miles or 6 months).
    - Monitor odometer and date triggers.
-   
+
 2. **Generate Work Order**:
    - Create maintenance work order (ADR-040 integration).
    - Schedule appointment with service provider.
    - Reserve vehicle (mark as unavailable).
-   
+
 3. **Complete Service**:
    - Record service completion and costs.
    - Update next service due mileage/date.
@@ -302,11 +302,11 @@ Implement a **Fleet Management** add-on module that provides vehicle lifecycle m
 1. **Capture Events**:
    - Ingest telematics events (speeding, harsh braking).
    - Calculate daily/weekly safety scores.
-   
+
 2. **Alert & Review**:
    - Alert fleet manager for severe events (excessive speeding, accident).
    - Driver coaching and remedial training.
-   
+
 3. **Performance Tracking**:
    - Monthly safety scorecards.
    - Recognition for safe drivers.

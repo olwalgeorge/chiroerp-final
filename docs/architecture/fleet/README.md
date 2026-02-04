@@ -152,7 +152,7 @@ Telematics Device -> Telematics Platform (Geotab, Samsara, Verizon Connect)
   -> FleetTelematics.CalculateSafetyScore
   -> DriverManagement.SafetyScoreUpdatedEvent
   -> (If critical violation) HR.ComplianceViolationEvent
-  
+
   -> FleetTelematics.ProcessVehicleDiagnostics (engine codes, fuel level, odometer)
   -> (If maintenance alert) PlantMaintenance.MaintenanceDueEvent
 ```

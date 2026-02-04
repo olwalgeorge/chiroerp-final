@@ -1,8 +1,8 @@
 # Analytics Data Warehouse - ADR-016
 
-> **Bounded Context:** `analytics-warehouse`  
-> **Port:** `9801`  
-> **Database:** `chiroerp_analytics_warehouse`  
+> **Bounded Context:** `analytics-warehouse`
+> **Port:** `9801`
+> **Database:** `chiroerp_analytics_warehouse`
 > **Kafka Consumer Group:** `analytics-warehouse-cg`
 
 ## Overview

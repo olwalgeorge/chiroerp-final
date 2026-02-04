@@ -1,7 +1,7 @@
 # ChiroERP AI Strategy: Pragmatic, ROI-Driven Approach
 
-**Date**: 2026-02-03  
-**Status**: Approved  
+**Date**: 2026-02-03
+**Status**: Approved
 **Assessment Grade**: 8/10 — Pragmatic, Not Overengineered
 
 ## Executive Summary
@@ -35,7 +35,7 @@ ChiroERP applies AI/ML strategically in areas with clear ROI and measurable busi
 
 ### ✅ ADR-052: Resume Parsing & Skills Matching (Contingent Workforce)
 - **Technology**: Natural Language Processing (NLP), Machine Learning
-- **Use Case**: 
+- **Use Case**:
   - NLP-based resume parsing (extract skills, certifications, work history)
   - Semantic search ("senior Java developer with AWS experience")
   - ML-based candidate-job matching (skills match score, success prediction)

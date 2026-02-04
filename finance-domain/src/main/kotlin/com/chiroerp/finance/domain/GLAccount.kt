@@ -5,10 +5,10 @@ import java.time.LocalDate
 
 /**
  * General Ledger Account
- * 
+ *
  * Represents a GL account in the chart of accounts.
  * Tracks account metadata, balances, and posting rules.
- * 
+ *
  * Related ADRs: ADR-009 (Financial Accounting Domain)
  */
 data class GLAccount(
@@ -37,7 +37,7 @@ data class GLAccount(
             AccountType.EQUITY
         )
     }
-    
+
     /**
      * Check if this is an income statement account.
      */
@@ -47,7 +47,7 @@ data class GLAccount(
             AccountType.EXPENSE
         )
     }
-    
+
     /**
      * Validate account number format.
      */
@@ -70,22 +70,22 @@ enum class AccountType {
      * Assets (1000-1999): Cash, Accounts Receivable, Inventory, Fixed Assets
      */
     ASSET,
-    
+
     /**
      * Liabilities (2000-2999): Accounts Payable, Loans, Accrued Expenses
      */
     LIABILITY,
-    
+
     /**
      * Equity (3000-3999): Common Stock, Retained Earnings
      */
     EQUITY,
-    
+
     /**
      * Revenue (4000-4999): Sales, Service Revenue, Interest Income
      */
     REVENUE,
-    
+
     /**
      * Expenses (5000-9999): COGS, Salaries, Rent, Utilities
      */
@@ -100,7 +100,7 @@ enum class BalanceType {
      * Debit balance (Assets, Expenses)
      */
     DEBIT,
-    
+
     /**
      * Credit balance (Liabilities, Equity, Revenue)
      */
@@ -128,7 +128,7 @@ data class AccountBalance(
     fun netChange(): BigDecimal {
         return debitAmount - creditAmount
     }
-    
+
     /**
      * Verify balance calculation is correct.
      */

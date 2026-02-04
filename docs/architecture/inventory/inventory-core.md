@@ -1,8 +1,8 @@
 # Inventory Core (MM-IM) - ADR-024
 
-> **Bounded Context:** `inventory-core`  
-> **Port:** `9001`  
-> **Database:** `chiroerp_inventory_core`  
+> **Bounded Context:** `inventory-core`
+> **Port:** `9001`
+> **Database:** `chiroerp_inventory_core`
 > **Kafka Consumer Group:** `inventory-core-cg`
 
 ## Overview

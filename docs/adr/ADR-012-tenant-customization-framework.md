@@ -1,11 +1,11 @@
 # ADR-012: Tenant Customization Framework
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
-**Tags**: multi-tenancy, customization, configuration, extensibility, governance  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Product Team
+**Priority**: P1 (High)
+**Tier**: Core
+**Tags**: multi-tenancy, customization, configuration, extensibility, governance
 
 ## Context
 ChiroERP must support tenant-specific customization comparable to SAP "Customizing" (SPRO) without forking code or weakening isolation. Tenants need to configure processes, fields, validations, approvals, numbering, and integrations while remaining upgrade-safe and compliant. This ADR defines the standardized mechanism for controlled variation (configuration + metadata extensions + governance) across tenants and organizational units.
@@ -54,16 +54,16 @@ import java.time.Instant
 
 @ApplicationScoped
 class CustomFieldRegistry {
-    
+
     @Inject
     lateinit var repository: CustomFieldRepository
-    
+
     @Inject
     lateinit var validator: CustomFieldValidator
-    
+
     @Inject
     lateinit var cache: CustomFieldCache
-    
+
     /**
      * Register a new custom field for a tenant
      */
@@ -80,17 +80,17 @@ class CustomFieldRegistry {
                 "custom fields for $entityType"
             )
         }
-        
+
         // Validate field definition
         validator.validateDefinition(definition)
-        
+
         // Check for name conflicts
         if (repository.existsByName(tenantId, entityType, definition.name)) {
             throw CustomFieldConflictException(
                 "Custom field '${definition.name}' already exists for $entityType"
             )
         }
-        
+
         // Create metadata
         val metadata = CustomFieldMetadata(
             id = UUID.randomUUID(),
@@ -108,21 +108,21 @@ class CustomFieldRegistry {
             createdAt = Instant.now(),
             createdBy = getCurrentUser()
         )
-        
+
         // Persist
         repository.save(metadata)
-        
+
         // Create database schema changes if indexed
         if (metadata.indexed) {
             createIndexedField(metadata)
         }
-        
+
         // Invalidate cache
         cache.invalidate(tenantId, entityType)
-        
+
         return metadata
     }
-    
+
     /**
      * Get all custom fields for a tenant and entity
      */
@@ -132,7 +132,7 @@ class CustomFieldRegistry {
                 .filter { it.status == FieldStatus.ACTIVE }
         }
     }
-    
+
     /**
      * Validate custom field value
      */
@@ -145,10 +145,10 @@ class CustomFieldRegistry {
         val metadata = getCustomFields(tenantId, entityType)
             .find { it.fieldKey == fieldKey }
             ?: return ValidationResult.invalid("Unknown custom field: $fieldKey")
-        
+
         return validator.validateValue(metadata, value)
     }
-    
+
     private fun getMaxFieldsForEntity(entityType: EntityType): Int {
         return when (entityType) {
             EntityType.CUSTOMER, EntityType.VENDOR -> 50
@@ -157,14 +157,14 @@ class CustomFieldRegistry {
             else -> 15
         }
     }
-    
+
     private fun generateFieldKey(name: String): String {
         return "custom_" + name.lowercase()
             .replace(Regex("[^a-z0-9_]"), "_")
             .replace(Regex("_{2,}"), "_")
             .trim('_')
     }
-    
+
     private fun createIndexedField(metadata: CustomFieldMetadata) {
         // Create extension table column or index on JSONB path
         when (metadata.dataType) {
@@ -173,7 +173,7 @@ class CustomFieldRegistry {
                 val sql = """
                     ALTER TABLE ${metadata.entityType.extensionTable}
                     ADD COLUMN IF NOT EXISTS ${metadata.fieldKey} ${metadata.dataType.sqlType};
-                    
+
                     CREATE INDEX IF NOT EXISTS idx_${metadata.fieldKey}
                     ON ${metadata.entityType.extensionTable}(tenant_id, ${metadata.fieldKey})
                     WHERE ${metadata.fieldKey} IS NOT NULL;
@@ -273,21 +273,21 @@ CREATE TABLE customers_ext (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id VARCHAR(50) NOT NULL,
     customer_id UUID NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
-    
+
     -- Pre-allocated indexed custom fields (populated dynamically)
     custom_field_1 VARCHAR(500),
     custom_field_2 DECIMAL(19,4),
     custom_field_3 DATE,
     -- ... up to 20 pre-allocated indexed fields
-    
+
     -- JSONB for non-indexed custom fields
     custom_data JSONB,
-    
+
     -- Metadata
     version INT NOT NULL DEFAULT 1,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     modified_at TIMESTAMP,
-    
+
     CONSTRAINT uk_customers_ext_tenant_customer UNIQUE(tenant_id, customer_id)
 );
 
@@ -298,8 +298,8 @@ CREATE INDEX idx_customers_ext_tenant ON customers_ext(tenant_id);
 CREATE INDEX idx_customers_ext_custom_data ON customers_ext USING gin(custom_data);
 
 -- Partial indexes on commonly queried indexed fields
-CREATE INDEX idx_customers_ext_field1 
-ON customers_ext(tenant_id, custom_field_1) 
+CREATE INDEX idx_customers_ext_field1
+ON customers_ext(tenant_id, custom_field_1)
 WHERE custom_field_1 IS NOT NULL;
 ```
 
@@ -311,13 +311,13 @@ WHERE custom_field_1 IS NOT NULL;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 class CustomerResource {
-    
+
     @Inject
     lateinit var customerService: CustomerService
-    
+
     @Inject
     lateinit var customFieldRegistry: CustomFieldRegistry
-    
+
     @GET
     @Path("/{id}")
     fun getCustomer(
@@ -326,10 +326,10 @@ class CustomerResource {
     ): Response {
         val customer = customerService.findById(tenantId, customerId)
             ?: return Response.status(404).build()
-        
+
         // Load custom field values
         val customFields = loadCustomFields(tenantId, customer.id)
-        
+
         // Build response with custom fields namespaced
         val response = CustomerResponse(
             id = customer.id,
@@ -339,10 +339,10 @@ class CustomerResource {
             // ... standard fields
             custom = customFields
         )
-        
+
         return Response.ok(response).build()
     }
-    
+
     @POST
     fun createCustomer(
         @HeaderParam("X-Tenant-ID") tenantId: String,
@@ -353,7 +353,7 @@ class CustomerResource {
         if (violations.isNotEmpty()) {
             return Response.status(400).entity(violations).build()
         }
-        
+
         // Validate custom fields
         if (request.custom != null) {
             val customFieldViolations = validateCustomFields(
@@ -365,23 +365,23 @@ class CustomerResource {
                 return Response.status(400).entity(customFieldViolations).build()
             }
         }
-        
+
         // Create customer with custom fields
         val customer = customerService.create(tenantId, request)
-        
+
         return Response.status(201)
             .entity(customer)
             .header("Location", "/api/v1/customers/${customer.id}")
             .build()
     }
-    
+
     private fun validateCustomFields(
         tenantId: String,
         entityType: EntityType,
         customFields: Map<String, Any?>
     ): List<ValidationViolation> {
         val violations = mutableListOf<ValidationViolation>()
-        
+
         customFields.forEach { (fieldKey, value) ->
             val result = customFieldRegistry.validateValue(
                 tenantId,
@@ -393,7 +393,7 @@ class CustomerResource {
                 violations.addAll(result.violations)
             }
         }
-        
+
         return violations
     }
 }
@@ -450,16 +450,16 @@ workflow:
   version: 1.0
   tenant_id: tenant-001
   entity_type: PurchaseOrder
-  
+
   variables:
     - name: po_amount
       type: decimal
       source: entity.total_amount
-    
+
     - name: requestor_department
       type: string
       source: entity.requestor.department
-  
+
   steps:
     - id: manager_approval
       name: "Department Manager Approval"
@@ -479,7 +479,7 @@ workflow:
         - approve
         - reject
         - request_more_info
-    
+
     - id: director_approval
       name: "Director Approval"
       type: approval
@@ -494,7 +494,7 @@ workflow:
           - after: 48h
             action: notify_escalation
             recipients: [CFO]
-    
+
     - id: cfo_approval
       name: "CFO Approval"
       type: approval
@@ -510,7 +510,7 @@ workflow:
             action: notify_escalation
             recipients: [CEO]
       compliance_required: true  # Cannot be skipped
-    
+
     - id: procurement_review
       name: "Procurement Review"
       type: review
@@ -519,15 +519,15 @@ workflow:
         type: role
         role: PROCUREMENT_SPECIALIST
       parallel: true  # Can run alongside other steps
-  
+
   completion_conditions:
     all_approvals: true
     compliance_met: true
-  
+
   notification_channels:
     - email
     - slack
-  
+
   audit_level: FULL  # Log all state transitions
 
 ```
@@ -543,19 +543,19 @@ import jakarta.inject.Inject
 
 @ApplicationScoped
 class WorkflowEngine {
-    
+
     @Inject
     lateinit var definitionRepository: WorkflowDefinitionRepository
-    
+
     @Inject
     lateinit var instanceRepository: WorkflowInstanceRepository
-    
+
     @Inject
     lateinit var evaluator: ConditionEvaluator
-    
+
     @Inject
     lateinit var notificationService: NotificationService
-    
+
     /**
      * Start a workflow instance for an entity
      */
@@ -569,12 +569,12 @@ class WorkflowEngine {
         // Load workflow definition
         val definition = definitionRepository.findByIdAndTenant(workflowId, tenantId)
             ?: throw WorkflowNotFoundException("Workflow $workflowId not found for tenant $tenantId")
-        
+
         // Validate definition is active
         if (definition.status != WorkflowStatus.ACTIVE) {
             throw IllegalStateException("Workflow $workflowId is not active")
         }
-        
+
         // Create instance
         val instance = WorkflowInstance(
             id = UUID.randomUUID(),
@@ -589,15 +589,15 @@ class WorkflowEngine {
             startedAt = Instant.now(),
             startedBy = getCurrentUser()
         )
-        
+
         instanceRepository.save(instance)
-        
+
         // Evaluate and activate initial steps
         evaluateAndActivateSteps(instance, definition)
-        
+
         return instance
     }
-    
+
     /**
      * Process a workflow action (approve, reject, etc.)
      */
@@ -610,57 +610,57 @@ class WorkflowEngine {
     ): WorkflowInstance {
         val instance = instanceRepository.findById(instanceId)
             ?: throw WorkflowInstanceNotFoundException("Instance $instanceId not found")
-        
+
         // Validate tenant ownership
         if (instance.tenantId != tenantId) {
             throw UnauthorizedException("Instance belongs to different tenant")
         }
-        
+
         // Validate instance is in progress
         if (instance.status != InstanceStatus.IN_PROGRESS) {
             throw IllegalStateException("Instance is not in progress")
         }
-        
+
         // Find step
         val step = instance.steps.find { it.id == stepId }
             ?: throw StepNotFoundException("Step $stepId not found")
-        
+
         // Validate step is active
         if (step.status != StepStatus.ACTIVE) {
             throw IllegalStateException("Step is not active")
         }
-        
+
         // Validate user is assigned
         val currentUser = getCurrentUser()
         if (!isUserAssignedToStep(step, currentUser)) {
             throw UnauthorizedException("User not assigned to step")
         }
-        
+
         // Process action
         when (action) {
             WorkflowAction.APPROVE -> approveStep(instance, step, comment)
             WorkflowAction.REJECT -> rejectStep(instance, step, comment)
             WorkflowAction.REQUEST_MORE_INFO -> requestInfo(instance, step, comment)
         }
-        
+
         // Persist
         instanceRepository.update(instance)
-        
+
         // Evaluate next steps
         val definition = definitionRepository.findByIdAndTenant(
             instance.workflowId,
             instance.tenantId
         )!!
         evaluateAndActivateSteps(instance, definition)
-        
+
         // Check completion
         if (isWorkflowComplete(instance, definition)) {
             completeWorkflow(instance)
         }
-        
+
         return instance
     }
-    
+
     private fun evaluateAndActivateSteps(
         instance: WorkflowInstance,
         definition: WorkflowDefinition
@@ -671,19 +671,19 @@ class WorkflowEngine {
                 stepDef.condition,
                 instance.context
             )
-            
+
             if (!shouldActivate) return@forEach
-            
+
             // Check dependencies
             val dependenciesMet = stepDef.dependsOn.all { depId ->
                 instance.steps.any { it.id == depId && it.status == StepStatus.COMPLETED }
             }
-            
+
             if (!dependenciesMet) return@forEach
-            
+
             // Check if already exists
             if (instance.steps.any { it.id == stepDef.id }) return@forEach
-            
+
             // Create and activate step
             val step = WorkflowStep(
                 id = stepDef.id,
@@ -694,19 +694,19 @@ class WorkflowEngine {
                 activatedAt = Instant.now(),
                 sla = calculateSLA(stepDef.sla)
             )
-            
+
             instance.steps.add(step)
-            
+
             // Send notifications
             notificationService.notifyStepActivated(instance, step)
-            
+
             // Schedule SLA reminder
             if (step.sla != null) {
                 scheduleEscalation(instance, step)
             }
         }
     }
-    
+
     private fun isWorkflowComplete(
         instance: WorkflowInstance,
         definition: WorkflowDefinition
@@ -715,17 +715,17 @@ class WorkflowEngine {
         val allStepsCompleted = definition.steps
             .filter { !it.optional }
             .all { stepDef ->
-                instance.steps.any { 
-                    it.id == stepDef.id && it.status == StepStatus.COMPLETED 
+                instance.steps.any {
+                    it.id == stepDef.id && it.status == StepStatus.COMPLETED
                 }
             }
-        
+
         // Completion conditions met
         val conditionsMet = evaluator.evaluateCondition(
             definition.completionConditions,
             instance.context
         )
-        
+
         return allStepsCompleted && conditionsMet
     }
 }
@@ -828,7 +828,7 @@ sealed class CustomValidationRule {
     abstract val fieldKey: String
     abstract val message: Map<String, String>  // Localized messages
     abstract val severity: ValidationSeverity
-    
+
     /**
      * Required field validation
      */
@@ -841,7 +841,7 @@ sealed class CustomValidationRule {
         override val severity: ValidationSeverity = ValidationSeverity.ERROR,
         val condition: String? = null  // Optional conditional requirement
     ) : CustomValidationRule()
-    
+
     /**
      * Format/Pattern validation
      */
@@ -855,7 +855,7 @@ sealed class CustomValidationRule {
         val pattern: String,  // Regex pattern
         val examples: List<String> = emptyList()
     ) : CustomValidationRule()
-    
+
     /**
      * Range validation (min/max)
      */
@@ -870,7 +870,7 @@ sealed class CustomValidationRule {
         val maxValue: BigDecimal? = null,
         val inclusive: Boolean = true
     ) : CustomValidationRule()
-    
+
     /**
      * Cross-field validation
      */
@@ -885,7 +885,7 @@ sealed class CustomValidationRule {
         val operator: ComparisonOperator,
         val condition: String
     ) : CustomValidationRule()
-    
+
     /**
      * Conditional validation (if/then)
      */
@@ -926,16 +926,16 @@ import jakarta.inject.Inject
 
 @ApplicationScoped
 class CustomValidationEngine {
-    
+
     @Inject
     lateinit var ruleRepository: ValidationRuleRepository
-    
+
     @Inject
     lateinit var expressionEvaluator: SafeExpressionEvaluator
-    
+
     @Inject
     lateinit var cache: ValidationRuleCache
-    
+
     /**
      * Validate entity with custom rules
      */
@@ -949,9 +949,9 @@ class CustomValidationEngine {
         val rules = cache.get(tenantId, entityType) {
             ruleRepository.findActiveRules(tenantId, entityType)
         }
-        
+
         val violations = mutableListOf<ValidationViolation>()
-        
+
         // Apply each rule
         rules.forEach { rule ->
             val result = applyRule(rule, entity, locale)
@@ -959,13 +959,13 @@ class CustomValidationEngine {
                 violations.addAll(result.violations)
             }
         }
-        
+
         return ValidationResult(
             isValid = violations.none { it.severity == ValidationSeverity.ERROR },
             violations = violations
         )
     }
-    
+
     private fun applyRule(
         rule: CustomValidationRule,
         entity: Map<String, Any?>,
@@ -979,7 +979,7 @@ class CustomValidationEngine {
             is CustomValidationRule.ConditionalRule -> validateConditional(rule, entity, locale)
         }
     }
-    
+
     private fun validateRequired(
         rule: CustomValidationRule.RequiredRule,
         entity: Map<String, Any?>,
@@ -992,31 +992,31 @@ class CustomValidationEngine {
                 return ValidationResult.valid()
             }
         }
-        
+
         // Check if field is present and not empty
         val value = entity[rule.fieldKey]
         if (value == null || (value is String && value.isBlank())) {
             return ValidationResult.invalid(
                 ValidationViolation(
                     field = rule.fieldKey,
-                    message = rule.message[locale] ?: rule.message["en-US"] 
+                    message = rule.message[locale] ?: rule.message["en-US"]
                         ?: "Field is required",
                     severity = rule.severity,
                     ruleId = rule.id
                 )
             )
         }
-        
+
         return ValidationResult.valid()
     }
-    
+
     private fun validateFormat(
         rule: CustomValidationRule.FormatRule,
         entity: Map<String, Any?>,
         locale: String
     ): ValidationResult {
         val value = entity[rule.fieldKey]?.toString() ?: return ValidationResult.valid()
-        
+
         val regex = Regex(rule.pattern)
         if (!regex.matches(value)) {
             return ValidationResult.invalid(
@@ -1033,32 +1033,32 @@ class CustomValidationEngine {
                 )
             )
         }
-        
+
         return ValidationResult.valid()
     }
-    
+
     private fun validateRange(
         rule: CustomValidationRule.RangeRule,
         entity: Map<String, Any?>,
         locale: String
     ): ValidationResult {
-        val value = entity[rule.fieldKey]?.let { 
+        val value = entity[rule.fieldKey]?.let {
             when (it) {
                 is Number -> it.toBigDecimal()
                 is String -> it.toBigDecimalOrNull()
                 else -> null
             }
         } ?: return ValidationResult.valid()
-        
+
         val violations = mutableListOf<ValidationViolation>()
-        
+
         if (rule.minValue != null) {
             val valid = if (rule.inclusive) {
                 value >= rule.minValue
             } else {
                 value > rule.minValue
             }
-            
+
             if (!valid) {
                 violations.add(ValidationViolation(
                     field = rule.fieldKey,
@@ -1069,14 +1069,14 @@ class CustomValidationEngine {
                 ))
             }
         }
-        
+
         if (rule.maxValue != null) {
             val valid = if (rule.inclusive) {
                 value <= rule.maxValue
             } else {
                 value < rule.maxValue
             }
-            
+
             if (!valid) {
                 violations.add(ValidationViolation(
                     field = rule.fieldKey,
@@ -1087,14 +1087,14 @@ class CustomValidationEngine {
                 ))
             }
         }
-        
+
         return if (violations.isEmpty()) {
             ValidationResult.valid()
         } else {
             ValidationResult(isValid = false, violations = violations)
         }
     }
-    
+
     private fun validateCrossField(
         rule: CustomValidationRule.CrossFieldRule,
         entity: Map<String, Any?>,
@@ -1102,11 +1102,11 @@ class CustomValidationEngine {
     ): ValidationResult {
         val value1 = entity[rule.fieldKey]
         val value2 = entity[rule.relatedField]
-        
+
         if (value1 == null || value2 == null) {
             return ValidationResult.valid()
         }
-        
+
         val conditionMet = expressionEvaluator.evaluate(
             rule.condition,
             mapOf(
@@ -1114,7 +1114,7 @@ class CustomValidationEngine {
                 rule.relatedField to value2
             )
         )
-        
+
         return if (conditionMet) {
             ValidationResult.valid()
         } else {
@@ -1164,7 +1164,7 @@ import jakarta.enterprise.context.ApplicationScoped
  */
 @ApplicationScoped
 class SafeExpressionEvaluator {
-    
+
     private val allowedOperators = setOf(
         "==", "!=", ">", "<", ">=", "<=",
         "&&", "||", "!",
@@ -1172,7 +1172,7 @@ class SafeExpressionEvaluator {
         "contains", "startsWith", "endsWith",
         "isEmpty", "isNotEmpty"
     )
-    
+
     /**
      * Evaluate a safe expression with given context
      * Expressions are parsed and evaluated WITHOUT code execution
@@ -1180,26 +1180,26 @@ class SafeExpressionEvaluator {
     fun evaluate(expression: String, context: Map<String, Any?>): Boolean {
         // Parse expression into AST
         val ast = parseExpression(expression)
-        
+
         // Validate only allowed operators
         validateAST(ast)
-        
+
         // Evaluate AST with context
         return evaluateAST(ast, context)
     }
-    
+
     private fun parseExpression(expression: String): ExpressionNode {
         // Simplified parser - production would use proper expression grammar
         // Examples:
         // "amount > 1000"
         // "status == 'PENDING' && amount > 5000"
         // "country in ['US', 'CA', 'MX']"
-        
+
         // For now, return placeholder
         // Production implementation would use ANTLR or similar
         return PlaceholderNode(expression)
     }
-    
+
     private fun validateAST(node: ExpressionNode) {
         when (node) {
             is BinaryOperator -> {
@@ -1222,7 +1222,7 @@ class SafeExpressionEvaluator {
             // Other node types...
         }
     }
-    
+
     private fun evaluateAST(node: ExpressionNode, context: Map<String, Any?>): Boolean {
         // Evaluate AST nodes recursively
         // This is safe because we've validated operators and don't execute arbitrary code
@@ -1363,16 +1363,16 @@ import jakarta.inject.Inject
 
 @ApplicationScoped
 class UIConfigurationService {
-    
+
     @Inject
     lateinit var configRepository: UIConfigurationRepository
-    
+
     @Inject
     lateinit var authService: AuthorizationService  // From ADR-014
-    
+
     @Inject
     lateinit var cache: UIConfigCache
-    
+
     /**
      * Get effective form layout for tenant and user
      * Applies role-based visibility rules
@@ -1390,11 +1390,11 @@ class UIConfigurationService {
             configRepository.findPublishedLayout(tenantId, entityType, screenKey)
                 ?: getDefaultLayout(entityType, screenKey)
         }
-        
+
         // Apply role-based visibility
         return applyVisibilityRules(baseLayout, userId, roles, tenantId)
     }
-    
+
     /**
      * Apply role-based visibility rules
      */
@@ -1407,7 +1407,7 @@ class UIConfigurationService {
         val filteredSections = layout.sections
             .filter { section ->
                 // Check section visibility
-                section.visibilityRule == null || 
+                section.visibilityRule == null ||
                     evaluateVisibilityRule(section.visibilityRule, userId, roles, tenantId)
             }
             .map { section ->
@@ -1419,10 +1419,10 @@ class UIConfigurationService {
                 section.copy(fields = filteredFields)
             }
             .filter { it.fields.isNotEmpty() }  // Remove empty sections
-        
+
         return layout.copy(sections = filteredSections)
     }
-    
+
     /**
      * Evaluate visibility rule using Authorization Objects (ADR-014)
      */
@@ -1449,7 +1449,7 @@ class UIConfigurationService {
             else -> true  // Unknown rule = visible by default
         }
     }
-    
+
     /**
      * Publish UI configuration
      */
@@ -1460,13 +1460,13 @@ class UIConfigurationService {
     ): FormLayout {
         val layout = configRepository.findById(tenantId, layoutId)
             ?: throw NotFoundException("Layout not found: $layoutId")
-        
+
         // Validate configuration
         validateLayout(layout)
-        
+
         // Archive current published version (if any)
         configRepository.archivePublished(tenantId, layout.entityType, layout.screenKey)
-        
+
         // Publish new version
         val published = layout.copy(
             status = ConfigStatus.PUBLISHED,
@@ -1474,22 +1474,22 @@ class UIConfigurationService {
             modifiedAt = Instant.now(),
             modifiedBy = publishedBy
         )
-        
+
         configRepository.save(published)
-        
+
         // Invalidate cache
         cache.invalidate(tenantId, layout.entityType, layout.screenKey)
-        
+
         return published
     }
-    
+
     private fun validateLayout(layout: FormLayout) {
         // Validate section order uniqueness
         val sectionOrders = layout.sections.map { it.order }
         require(sectionOrders.distinct().size == sectionOrders.size) {
             "Section orders must be unique"
         }
-        
+
         // Validate field order uniqueness within sections
         layout.sections.forEach { section ->
             val fieldOrders = section.fields.map { it.order }
@@ -1497,7 +1497,7 @@ class UIConfigurationService {
                 "Field orders must be unique within section: ${section.id}"
             }
         }
-        
+
         // Validate field keys reference valid fields
         layout.sections.flatMap { it.fields }.forEach { field ->
             // Check if custom field exists (if custom.*)
@@ -1505,12 +1505,12 @@ class UIConfigurationService {
                 // Validation logic for custom fields
             }
         }
-        
+
         // Validate max sections
         require(layout.sections.size <= 20) {
             "Maximum 20 sections allowed per form"
         }
-        
+
         // Validate max fields per section
         layout.sections.forEach { section ->
             require(section.fields.size <= 50) {
@@ -1518,7 +1518,7 @@ class UIConfigurationService {
             }
         }
     }
-    
+
     private fun getDefaultLayout(
         entityType: EntityType,
         screenKey: String
@@ -1689,33 +1689,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      
+
       - name: Set up JDK 21
         uses: actions/setup-java@v3
         with:
           java-version: '21'
-      
+
       - name: Run custom field tests
         run: ./gradlew test --tests "*CustomField*"
-      
+
       - name: Run workflow engine tests
         run: ./gradlew test --tests "*Workflow*"
-      
+
       - name: Run validation rule tests
         run: ./gradlew test --tests "*Validation*"
-      
+
       - name: Run UI config tests
         run: ./gradlew test --tests "*UIConfiguration*"
-      
+
       - name: Performance regression tests
         run: ./gradlew performanceTest
-      
+
       - name: Security scan (expression evaluator)
         run: ./gradlew securityScan
-      
+
       - name: Generate coverage report
         run: ./gradlew jacocoTestReport
-      
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
 ```

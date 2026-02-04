@@ -1,8 +1,8 @@
 # CRM Dispatch - ADR-042
 
-> **Bounded Context:** `crm-dispatch`  
-> **Port:** `9405`  
-> **Database:** `chiroerp_crm_dispatch`  
+> **Bounded Context:** `crm-dispatch`
+> **Port:** `9405`
+> **Database:** `chiroerp_crm_dispatch`
 > **Kafka Consumer Group:** `crm-dispatch-cg`
 
 ## Overview

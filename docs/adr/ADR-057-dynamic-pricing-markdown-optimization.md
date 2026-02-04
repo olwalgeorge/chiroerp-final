@@ -1,10 +1,10 @@
 # ADR-057: Dynamic Pricing & Markdown Optimization
 
-**Status**: Proposed (Phase 3 - Year 3)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Merchandising Team, Data Science Team  
-**Priority**: P2 (Medium)  
-**Tier**: Add-on (Advanced)  
+**Status**: Proposed (Phase 3 - Year 3)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Merchandising Team, Data Science Team
+**Priority**: P2 (Medium)
+**Tier**: Add-on (Advanced)
 **Tags**: ai, ml, pricing, markdown, clearance, optimization, retail, revenue-management
 
 ## Context
@@ -156,16 +156,16 @@ for markdown in markdown_depths:
     # Estimate sales uplift from elasticity model
     uplift_factor = 1 + (markdown * 2.0)  # Assume elasticity = -2.0
     forecasted_sales = forecasted_demand * uplift_factor
-    
+
     # Cap sales at available inventory
     actual_sales = min(forecasted_sales, on_hand_stock)
-    
+
     # Calculate gross margin
     revenue = actual_sales * discounted_price
     cogs = actual_sales * cost
     holding_cost = (on_hand_stock - actual_sales) * 2  # $2 per unit holding cost
     gross_margin = revenue - cogs - holding_cost
-    
+
     if gross_margin > best_margin:
         best_margin = gross_margin
         best_markdown = markdown

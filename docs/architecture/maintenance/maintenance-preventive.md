@@ -1,8 +1,8 @@
 # Plant Maintenance Preventive Maintenance - ADR-040
 
-> **Bounded Context:** `maintenance-preventive`  
-> **Port:** `9603`  
-> **Database:** `chiroerp_maintenance_preventive`  
+> **Bounded Context:** `maintenance-preventive`
+> **Port:** `9603`
+> **Database:** `chiroerp_maintenance_preventive`
 > **Kafka Consumer Group:** `maintenance-preventive-cg`
 
 ## Overview

@@ -1,10 +1,10 @@
 # ADR-027: Master Data Governance (MDG)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Data Governance Team  
-**Priority**: P2 (Medium)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Data Governance Team
+**Priority**: P2 (Medium)
+**Tier**: Advanced
 **Tags**: master-data, governance, data-quality, mdg
 
 ## Context

@@ -1,10 +1,10 @@
 # ADR-019: Testing Standards (E2E, UAT, Regression)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, QA Team, Product Team  
-**Tier**: Core  
-**Tags**: testing, e2e, uat, regression, qa  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, QA Team, Product Team
+**Tier**: Core
+**Tags**: testing, e2e, uat, regression, qa
 
 ## Context
 SAP-grade ERPs require comprehensive testing beyond unit and integration tests, including end-to-end business process validation, structured UAT, and regression suites. This ADR defines the testing standards and target coverage model for enterprise workflows and continuous delivery.
@@ -78,37 +78,37 @@ import java.util.UUID
 @QuarkusTest
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 abstract class E2ETestBase {
-    
+
     companion object {
         val postgres = PostgreSQLContainer(DockerImageName.parse("postgres:15"))
             .withDatabaseName("chiroerp_test")
             .withUsername("test")
             .withPassword("test")
-        
+
         val kafka = KafkaContainer(DockerImageName.parse("confluentinc/cp-kafka:7.5.0"))
     }
-    
+
     protected val tenantId = "tenant-e2e-test"
     protected val userId = "user-e2e-test"
     protected lateinit var authToken: String
-    
+
     @BeforeAll
     fun setupInfrastructure() {
         if (!postgres.isRunning) postgres.start()
         if (!kafka.isRunning) kafka.start()
-        
+
         // Configure RestAssured
         RestAssured.baseURI = "http://localhost"
         RestAssured.port = 8080
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails()
-        
+
         // Authenticate and get token
         authToken = authenticateTestUser()
-        
+
         // Seed test data
         seedTestData()
     }
-    
+
     protected fun authenticateTestUser(): String {
         val response = RestAssured.given()
             .contentType(ContentType.JSON)
@@ -124,10 +124,10 @@ abstract class E2ETestBase {
             .statusCode(200)
             .extract()
             .response()
-        
+
         return response.jsonPath().getString("accessToken")
     }
-    
+
     protected fun seedTestData() {
         // Seed chart of accounts
         createAccount("1000", "Cash", "ASSET")
@@ -135,12 +135,12 @@ abstract class E2ETestBase {
         createAccount("5000", "COGS", "EXPENSE")
         createAccount("2000", "Accounts Receivable", "ASSET")
         createAccount("2100", "Accounts Payable", "LIABILITY")
-        
+
         // Seed customers and vendors
         createCustomer("CUST-001", "Acme Corp")
         createVendor("VEND-001", "Supplier Inc")
     }
-    
+
     protected fun createAccount(code: String, name: String, type: String): String {
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -159,10 +159,10 @@ abstract class E2ETestBase {
             .statusCode(201)
             .extract()
             .response()
-        
+
         return response.jsonPath().getString("id")
     }
-    
+
     protected fun createCustomer(code: String, name: String): String {
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -181,10 +181,10 @@ abstract class E2ETestBase {
             .statusCode(201)
             .extract()
             .response()
-        
+
         return response.jsonPath().getString("id")
     }
-    
+
     protected fun createVendor(code: String, name: String): String {
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -203,10 +203,10 @@ abstract class E2ETestBase {
             .statusCode(201)
             .extract()
             .response()
-        
+
         return response.jsonPath().getString("id")
     }
-    
+
     protected fun waitForEvent(eventType: String, maxWaitSeconds: Int = 30): Boolean {
         // Poll for event in Kafka or event store
         val startTime = System.currentTimeMillis()
@@ -216,7 +216,7 @@ abstract class E2ETestBase {
         }
         return false
     }
-    
+
     private fun eventExists(eventType: String): Boolean {
         // Check event store or Kafka topic
         // Implementation depends on event infrastructure
@@ -243,12 +243,12 @@ import java.math.BigDecimal
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class OrderToCashE2ETest : E2ETestBase() {
-    
+
     private var salesOrderId: String = ""
     private var invoiceId: String = ""
     private var paymentId: String = ""
     private var journalEntryId: String = ""
-    
+
     /**
      * Complete Order-to-Cash flow:
      * 1. Create Sales Order
@@ -257,7 +257,7 @@ class OrderToCashE2ETest : E2ETestBase() {
      * 4. Customer Payment received → Posts to GL (DR Cash, CR AR)
      * 5. Verify final balances
      */
-    
+
     @Test
     @Order(1)
     fun `step 1 - create sales order`() {
@@ -296,11 +296,11 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("totalAmount", equalTo(2000.00f))
             .extract()
             .response()
-        
+
         salesOrderId = response.jsonPath().getString("id")
         println("✓ Sales Order Created: $salesOrderId")
     }
-    
+
     @Test
     @Order(2)
     fun `step 2 - fulfill sales order and generate invoice`() {
@@ -313,10 +313,10 @@ class OrderToCashE2ETest : E2ETestBase() {
             .then()
             .statusCode(200)
             .body("status", equalTo("FULFILLED"))
-        
+
         // Wait for invoice creation event
         assert(waitForEvent("InvoiceCreated", 10)) { "Invoice creation event not received" }
-        
+
         // Get generated invoice
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -327,11 +327,11 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("items", hasSize<Int>(1))
             .extract()
             .response()
-        
+
         invoiceId = response.jsonPath().getString("items[0].id")
         println("✓ Invoice Generated: $invoiceId")
     }
-    
+
     @Test
     @Order(3)
     fun `step 3 - invoice posts to general ledger`() {
@@ -344,12 +344,12 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("posted", equalTo(true))
             .extract()
             .response()
-        
+
         journalEntryId = response.jsonPath().getString("journalEntryId")
-        
+
         // Wait for GL posting event
         assert(waitForEvent("JournalEntryPosted", 10)) { "GL posting event not received" }
-        
+
         // Verify journal entry
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -360,12 +360,12 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("lineItems", hasSize<Int>(2))
             .body("lineItems.find { it.accountCode == '2000' }.debit", equalTo(2000.00f)) // DR AR
             .body("lineItems.find { it.accountCode == '4000' }.credit", equalTo(2000.00f)) // CR Revenue
-        
+
         println("✓ Journal Entry Posted: $journalEntryId")
         println("  - DR Accounts Receivable (2000): $2,000.00")
         println("  - CR Revenue (4000): $2,000.00")
     }
-    
+
     @Test
     @Order(4)
     fun `step 4 - receive customer payment`() {
@@ -396,13 +396,13 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("appliedAmount", equalTo(2000.00f))
             .extract()
             .response()
-        
+
         paymentId = response.jsonPath().getString("id")
         val paymentJournalEntryId = response.jsonPath().getString("journalEntryId")
-        
+
         // Wait for payment posting event
         assert(waitForEvent("PaymentPosted", 10)) { "Payment posting event not received" }
-        
+
         // Verify payment journal entry
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -413,12 +413,12 @@ class OrderToCashE2ETest : E2ETestBase() {
             .body("lineItems", hasSize<Int>(2))
             .body("lineItems.find { it.accountCode == '1000' }.debit", equalTo(2000.00f)) // DR Cash
             .body("lineItems.find { it.accountCode == '2000' }.credit", equalTo(2000.00f)) // CR AR
-        
+
         println("✓ Payment Received: $paymentId")
         println("  - DR Cash (1000): $2,000.00")
         println("  - CR Accounts Receivable (2000): $2,000.00")
     }
-    
+
     @Test
     @Order(5)
     fun `step 5 - verify final account balances`() {
@@ -431,7 +431,7 @@ class OrderToCashE2ETest : E2ETestBase() {
             .statusCode(200)
             .body("balance", equalTo(2000.00f))
             .body("balanceType", equalTo("DEBIT"))
-        
+
         // Check AR balance (should be $0 - invoice and payment offset)
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -440,7 +440,7 @@ class OrderToCashE2ETest : E2ETestBase() {
             .then()
             .statusCode(200)
             .body("balance", equalTo(0.00f))
-        
+
         // Check Revenue balance (should be +$2,000)
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -450,7 +450,7 @@ class OrderToCashE2ETest : E2ETestBase() {
             .statusCode(200)
             .body("balance", equalTo(2000.00f))
             .body("balanceType", equalTo("CREDIT"))
-        
+
         // Verify invoice is fully paid
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -459,7 +459,7 @@ class OrderToCashE2ETest : E2ETestBase() {
             .statusCode(200)
             .body("status", equalTo("PAID"))
             .body("remainingBalance", equalTo(0.00f))
-        
+
         println("✓ Order-to-Cash Complete - All Balances Verified")
         println("  - Cash: $2,000.00 DR")
         println("  - Accounts Receivable: $0.00")
@@ -485,11 +485,11 @@ import org.hamcrest.Matchers.*
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
 class ProcureToPayE2ETest : E2ETestBase() {
-    
+
     private var purchaseOrderId: String = ""
     private var billId: String = ""
     private var paymentId: String = ""
-    
+
     /**
      * Complete Procure-to-Pay flow:
      * 1. Create Purchase Order
@@ -498,7 +498,7 @@ class ProcureToPayE2ETest : E2ETestBase() {
      * 4. Vendor Payment → Posts to GL (DR AP, CR Cash)
      * 5. Verify final balances
      */
-    
+
     @Test
     @Order(1)
     fun `step 1 - create purchase order`() {
@@ -528,11 +528,11 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("status", equalTo("PENDING"))
             .extract()
             .response()
-        
+
         purchaseOrderId = response.jsonPath().getString("id")
         println("✓ Purchase Order Created: $purchaseOrderId")
     }
-    
+
     @Test
     @Order(2)
     fun `step 2 - receive goods and generate bill`() {
@@ -545,10 +545,10 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .then()
             .statusCode(200)
             .body("status", equalTo("RECEIVED"))
-        
+
         // Wait for bill creation event
         assert(waitForEvent("BillCreated", 10)) { "Bill creation event not received" }
-        
+
         // Get generated bill
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -559,11 +559,11 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("items", hasSize<Int>(1))
             .extract()
             .response()
-        
+
         billId = response.jsonPath().getString("items[0].id")
         println("✓ Bill Generated: $billId")
     }
-    
+
     @Test
     @Order(3)
     fun `step 3 - bill posts to general ledger`() {
@@ -576,9 +576,9 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("posted", equalTo(true))
             .extract()
             .response()
-        
+
         val journalEntryId = response.jsonPath().getString("journalEntryId")
-        
+
         // Verify journal entry
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -588,12 +588,12 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("lineItems", hasSize<Int>(2))
             .body("lineItems.find { it.accountCode == '5000' }.debit", equalTo(500.00f)) // DR Expense
             .body("lineItems.find { it.accountCode == '2100' }.credit", equalTo(500.00f)) // CR AP
-        
+
         println("✓ Bill Posted to GL")
         println("  - DR Expense (5000): $500.00")
         println("  - CR Accounts Payable (2100): $500.00")
     }
-    
+
     @Test
     @Order(4)
     fun `step 4 - pay vendor`() {
@@ -623,10 +623,10 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("status", equalTo("POSTED"))
             .extract()
             .response()
-        
+
         paymentId = response.jsonPath().getString("id")
         val paymentJournalEntryId = response.jsonPath().getString("journalEntryId")
-        
+
         // Verify payment journal entry
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -636,12 +636,12 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .body("lineItems", hasSize<Int>(2))
             .body("lineItems.find { it.accountCode == '2100' }.debit", equalTo(500.00f)) // DR AP
             .body("lineItems.find { it.accountCode == '1000' }.credit", equalTo(500.00f)) // CR Cash
-        
+
         println("✓ Vendor Payment Made: $paymentId")
         println("  - DR Accounts Payable (2100): $500.00")
         println("  - CR Cash (1000): $500.00")
     }
-    
+
     @Test
     @Order(5)
     fun `step 5 - verify final account balances`() {
@@ -653,7 +653,7 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .then()
             .statusCode(200)
             .body("balance", equalTo(0.00f))
-        
+
         // Check Expense balance (should be +$500 DR)
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -663,7 +663,7 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .statusCode(200)
             .body("balance", equalTo(500.00f))
             .body("balanceType", equalTo("DEBIT"))
-        
+
         // Verify bill is fully paid
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -672,7 +672,7 @@ class ProcureToPayE2ETest : E2ETestBase() {
             .statusCode(200)
             .body("status", equalTo("PAID"))
             .body("remainingBalance", equalTo(0.00f))
-        
+
         println("✓ Procure-to-Pay Complete - All Balances Verified")
     }
 }
@@ -811,13 +811,13 @@ import java.time.Instant
 
 @ApplicationScoped
 class UATTestExecutor {
-    
+
     @Inject
     lateinit var testRepository: UATTestRepository
-    
+
     @Inject
     lateinit var notificationService: NotificationService
-    
+
     fun createUATSession(
         releaseVersion: String,
         features: List<String>,
@@ -836,9 +836,9 @@ class UATTestExecutor {
             testScenarios = generateTestScenarios(features),
             createdAt = Instant.now()
         )
-        
+
         testRepository.save(session)
-        
+
         // Notify business owners
         businessOwners.forEach { owner ->
             notificationService.sendEmail(
@@ -847,10 +847,10 @@ class UATTestExecutor {
                 body = generateUATInvitation(session)
             )
         }
-        
+
         return session
     }
-    
+
     fun recordTestResult(
         sessionId: UUID,
         scenarioId: String,
@@ -867,25 +867,25 @@ class UATTestExecutor {
             tester = tester,
             executedAt = Instant.now()
         )
-        
+
         testRepository.saveResult(testResult)
-        
+
         // Check if session complete
         val session = testRepository.findSession(sessionId)
         if (isSessionComplete(session)) {
             session.status = UATStatus.COMPLETED
             session.completedAt = Instant.now()
             testRepository.update(session)
-            
+
             notificationService.sendSlack(
                 channel = "#releases",
                 message = "🎉 UAT Complete for ${session.releaseVersion}: ${getPassRate(session)}% pass rate"
             )
         }
-        
+
         return testResult
     }
-    
+
     fun logDefect(
         sessionId: UUID,
         scenarioId: String,
@@ -903,9 +903,9 @@ class UATTestExecutor {
             reporter = reporter,
             createdAt = Instant.now()
         )
-        
+
         testRepository.saveDefect(defect)
-        
+
         // Alert dev team for P0/P1
         if (severity in listOf(DefectSeverity.CRITICAL, DefectSeverity.HIGH)) {
             notificationService.sendSlack(
@@ -913,31 +913,31 @@ class UATTestExecutor {
                 message = "🚨 ${severity} UAT Defect: ${defect.id} - $description"
             )
         }
-        
+
         return defect
     }
-    
+
     fun requestSignoff(sessionId: UUID): Boolean {
         val session = testRepository.findSession(sessionId)
-        
+
         // Verify all tests executed
         val allTestsRun = session.testScenarios.all { scenario ->
             testRepository.hasResult(sessionId, scenario.id)
         }
-        
+
         if (!allTestsRun) {
             throw IllegalStateException("Cannot request sign-off: Not all tests executed")
         }
-        
+
         // Check for blocking defects
         val blockingDefects = testRepository.findDefects(sessionId)
             .filter { it.severity in listOf(DefectSeverity.CRITICAL, DefectSeverity.HIGH) }
             .filter { it.status != DefectStatus.RESOLVED }
-        
+
         if (blockingDefects.isNotEmpty()) {
             throw IllegalStateException("Cannot request sign-off: ${blockingDefects.size} blocking defects remain")
         }
-        
+
         // Request sign-off from business owners
         session.businessOwners.forEach { owner ->
             notificationService.sendEmail(
@@ -946,10 +946,10 @@ class UATTestExecutor {
                 body = generateSignoffRequest(session)
             )
         }
-        
+
         session.status = UATStatus.AWAITING_SIGNOFF
         testRepository.update(session)
-        
+
         return true
     }
 }
@@ -1069,10 +1069,10 @@ import org.hamcrest.Matchers.*
 @Tag("regression")
 @Tag("critical")
 class JournalEntryRegressionTest {
-    
+
     /**
      * Regression Test: Journal Entry Posting
-     * 
+     *
      * Validates:
      * - Debit/credit balance
      * - Account code validation
@@ -1080,11 +1080,11 @@ class JournalEntryRegressionTest {
      * - Period close enforcement
      * - Audit trail creation
      */
-    
+
     @Test
     fun `journal entry with balanced debits and credits posts successfully`() {
         val authToken = authenticate()
-        
+
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
             .contentType(ContentType.JSON)
@@ -1116,11 +1116,11 @@ class JournalEntryRegressionTest {
             .body("totalDebit", equalTo(1000.00f))
             .body("totalCredit", equalTo(1000.00f))
     }
-    
+
     @Test
     fun `journal entry with unbalanced debits and credits is rejected`() {
         val authToken = authenticate()
-        
+
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
             .contentType(ContentType.JSON)
@@ -1149,11 +1149,11 @@ class JournalEntryRegressionTest {
             .body("error", equalTo("UNBALANCED_ENTRY"))
             .body("message", containsString("Debits and credits must balance"))
     }
-    
+
     @Test
     fun `journal entry with invalid account code is rejected`() {
         val authToken = authenticate()
-        
+
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
             .contentType(ContentType.JSON)
@@ -1182,14 +1182,14 @@ class JournalEntryRegressionTest {
             .body("error", equalTo("INVALID_ACCOUNT"))
             .body("invalidAccountCodes", hasItem("9999"))
     }
-    
+
     @Test
     fun `journal entry in closed period is rejected`() {
         val authToken = authenticate()
-        
+
         // Close period 2026-01
         closePeriod(authToken, "2026-01")
-        
+
         // Attempt to post entry in closed period
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -1219,11 +1219,11 @@ class JournalEntryRegressionTest {
             .body("error", equalTo("PERIOD_CLOSED"))
             .body("message", containsString("Period 2026-01 is closed"))
     }
-    
+
     @Test
     fun `journal entry creates complete audit trail`() {
         val authToken = authenticate()
-        
+
         val response = RestAssured.given()
             .header("Authorization", "Bearer $authToken")
             .contentType(ContentType.JSON)
@@ -1251,9 +1251,9 @@ class JournalEntryRegressionTest {
             .statusCode(201)
             .extract()
             .response()
-        
+
         val journalEntryId = response.jsonPath().getString("id")
-        
+
         // Verify audit trail
         RestAssured.given()
             .header("Authorization", "Bearer $authToken")
@@ -1266,12 +1266,12 @@ class JournalEntryRegressionTest {
             .body("items[0].timestamp", notNullValue())
             .body("items[0].changes", notNullValue())
     }
-    
+
     private fun authenticate(): String {
         // Authentication helper
         return "test-token"
     }
-    
+
     private fun closePeriod(token: String, period: String) {
         RestAssured.given()
             .header("Authorization", "Bearer $token")
@@ -1331,7 +1331,7 @@ regression:high:
     - if: '$CI_PIPELINE_SOURCE == "merge_request"'
       when: always
   allow_failure: true  # Don't block but alert on failure
-  
+
 regression:medium:
   stage: test:regression
   image: maven:3.8-openjdk-17
@@ -1370,9 +1370,9 @@ import kotlin.random.Random
 
 @ApplicationScoped
 class DataAnonymizer {
-    
+
     private val faker = Faker()
-    
+
     fun anonymizeCustomer(customer: Customer): Customer {
         return customer.copy(
             name = generateFakeName(customer.id),
@@ -1389,7 +1389,7 @@ class DataAnonymizer {
             currency = customer.currency
         )
     }
-    
+
     fun anonymizeVendor(vendor: Vendor): Vendor {
         return vendor.copy(
             name = generateFakeCompanyName(vendor.id),
@@ -1401,7 +1401,7 @@ class DataAnonymizer {
             contactPerson = generateFakeName(vendor.id + "_contact")
         )
     }
-    
+
     fun anonymizeTransaction(transaction: GLTransaction): GLTransaction {
         return transaction.copy(
             // Keep financial data for testing
@@ -1416,28 +1416,28 @@ class DataAnonymizer {
             metadata = anonymizeMetadata(transaction.metadata)
         )
     }
-    
+
     private fun generateFakeName(seed: String): String {
         // Deterministic fake names for repeatability
         val hash = md5(seed).take(8)
         val firstNames = listOf("Alice", "Bob", "Charlie", "Diana", "Eve", "Frank")
         val lastNames = listOf("Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia")
-        
+
         val firstIdx = hash.take(4).toInt(16) % firstNames.size
         val lastIdx = hash.takeLast(4).toInt(16) % lastNames.size
-        
+
         return "${firstNames[firstIdx]} ${lastNames[lastIdx]}"
     }
-    
+
     private fun generateFakeEmail(seed: String): String {
         val hash = md5(seed).take(8)
         return "test_${hash}@example.com"
     }
-    
+
     private fun generateFakePhone(): String {
         return "+1-555-${Random.nextInt(100, 999)}-${Random.nextInt(1000, 9999)}"
     }
-    
+
     private fun anonymizeAddress(address: Address): Address {
         return Address(
             street = "${Random.nextInt(1, 9999)} Test Street",
@@ -1447,7 +1447,7 @@ class DataAnonymizer {
             country = address.country  // Keep for compliance testing
         )
     }
-    
+
     private fun generateFakeTaxId(country: String): String {
         return when (country) {
             "US" -> "XX-XXXXXXX${Random.nextInt(10, 99)}"
@@ -1456,7 +1456,7 @@ class DataAnonymizer {
             else -> "TEST-${Random.nextInt(100000, 999999)}"
         }
     }
-    
+
     private fun generateFakeIBAN(country: String): String {
         return when (country) {
             "DE" -> "DE89370400440532013000"
@@ -1465,7 +1465,7 @@ class DataAnonymizer {
             else -> "TEST${Random.nextInt(10000000, 99999999)}"
         }
     }
-    
+
     private fun anonymizeDescription(description: String): String {
         // Remove potential PII while keeping business context
         return description
@@ -1473,7 +1473,7 @@ class DataAnonymizer {
             .replace(Regex("\\b\\d{3}-\\d{2}-\\d{4}\\b"), "XXX-XX-XXXX")
             .replace(Regex("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b"), "test@example.com")
     }
-    
+
     private fun md5(input: String): String {
         return MessageDigest.getInstance("MD5")
             .digest(input.toByteArray())
@@ -1496,16 +1496,16 @@ import kotlin.random.Random
 
 @ApplicationScoped
 class TestDataGenerator {
-    
+
     @Inject
     lateinit var glService: GeneralLedgerService
-    
+
     @Inject
     lateinit var arService: AccountsReceivableService
-    
+
     @Inject
     lateinit var apService: AccountsPayableService
-    
+
     /**
      * Generate realistic test data for a full fiscal month
      */
@@ -1517,9 +1517,9 @@ class TestDataGenerator {
     ): TestDataSet {
         val startDate = LocalDate.of(year, month, 1)
         val endDate = startDate.plusMonths(1).minusDays(1)
-        
+
         val transactions = mutableListOf<Transaction>()
-        
+
         // Generate daily transactions
         var currentDate = startDate
         while (currentDate <= endDate) {
@@ -1528,28 +1528,28 @@ class TestDataGenerator {
             repeat(invoiceCount) {
                 transactions.add(generateARInvoice(tenantId, currentDate))
             }
-            
+
             // AP: 10-30 bills per day
             val billCount = (Random.nextInt(10, 30) * volumeMultiplier).toInt()
             repeat(billCount) {
                 transactions.add(generateAPBill(tenantId, currentDate))
             }
-            
+
             // Payments: 15-40 per day
             val paymentCount = (Random.nextInt(15, 40) * volumeMultiplier).toInt()
             repeat(paymentCount) {
                 transactions.add(generatePayment(tenantId, currentDate))
             }
-            
+
             // GL adjustments: 5-10 per day
             val adjustmentCount = (Random.nextInt(5, 10) * volumeMultiplier).toInt()
             repeat(adjustmentCount) {
                 transactions.add(generateGLAdjustment(tenantId, currentDate))
             }
-            
+
             currentDate = currentDate.plusDays(1)
         }
-        
+
         return TestDataSet(
             tenantId = tenantId,
             period = "$year-${month.toString().padStart(2, '0')}",
@@ -1562,10 +1562,10 @@ class TestDataGenerator {
             )
         )
     }
-    
+
     private fun generateARInvoice(tenantId: String, date: LocalDate): Transaction {
         val amount = BigDecimal(Random.nextDouble(100.0, 10000.0)).setScale(2, RoundingMode.HALF_UP)
-        
+
         return Transaction(
             type = "AR_INVOICE",
             tenantId = tenantId,
@@ -1577,10 +1577,10 @@ class TestDataGenerator {
             currency = "USD"
         )
     }
-    
+
     private fun generateAPBill(tenantId: String, date: LocalDate): Transaction {
         val amount = BigDecimal(Random.nextDouble(50.0, 5000.0)).setScale(2, RoundingMode.HALF_UP)
-        
+
         return Transaction(
             type = "AP_BILL",
             tenantId = tenantId,
@@ -1591,7 +1591,7 @@ class TestDataGenerator {
             currency = "USD"
         )
     }
-    
+
     private fun generateProductName(): String {
         val products = listOf(
             "Professional Services",
@@ -1603,7 +1603,7 @@ class TestDataGenerator {
         )
         return products.random()
     }
-    
+
     private fun generateExpenseCategory(): String {
         val categories = listOf(
             "Office Supplies",
@@ -1674,7 +1674,7 @@ spec:
             - -c
             - |
               echo "Starting test data refresh..."
-              
+
               # 1. Export production data (readonly replica)
               echo "Step 1: Exporting production snapshot..."
               pg_dump --host=$PROD_DB_HOST \
@@ -1684,27 +1684,27 @@ spec:
                       --table=vendors \
                       --table=gl_accounts \
                       --file=/tmp/prod_snapshot.sql
-              
+
               # 2. Anonymize PII
               echo "Step 2: Anonymizing PII..."
               java -jar /app/data-anonymizer.jar \
                    --input /tmp/prod_snapshot.sql \
                    --output /tmp/anonymized.sql \
                    --key $ANONYMIZATION_KEY
-              
+
               # 3. Load to test environment
               echo "Step 3: Loading to test database..."
               psql --host=$TEST_DB_HOST \
                    --username=$TEST_DB_USER \
                    --dbname=chiroerp_test \
                    --file=/tmp/anonymized.sql
-              
+
               # 4. Generate synthetic transactions
               echo "Step 4: Generating synthetic transactions..."
               curl -X POST http://test-api:8080/api/v1/test-data/generate \
                    -H "Authorization: Bearer $TEST_API_TOKEN" \
                    -d '{"period": "2026-02", "volumeMultiplier": 1.0}'
-              
+
               # 5. Validate data quality
               echo "Step 5: Validating data quality..."
               java -jar /app/data-validator.jar \
@@ -1712,7 +1712,7 @@ spec:
                    --check-pii \
                    --check-referential-integrity \
                    --check-volumes
-              
+
               echo "Test data refresh complete!"
           restartPolicy: OnFailure
 ```
@@ -1728,40 +1728,40 @@ import java.util.regex.Pattern
 
 @ApplicationScoped
 class PIIDetector {
-    
+
     private val ssnPattern = Pattern.compile("\\b\\d{3}-\\d{2}-\\d{4}\\b")
     private val emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@(?!example\\.com)[A-Za-z0-9.-]+\\.[A-Z|a-z]{2,}\\b")
     private val phonePattern = Pattern.compile("\\b(?!555)\\d{3}-\\d{3}-\\d{4}\\b")
     private val creditCardPattern = Pattern.compile("\\b\\d{4}[- ]?\\d{4}[- ]?\\d{4}[- ]?\\d{4}\\b")
-    
+
     fun detectPII(text: String): List<PIIViolation> {
         val violations = mutableListOf<PIIViolation>()
-        
+
         if (ssnPattern.matcher(text).find()) {
             violations.add(PIIViolation("SSN", "Social Security Number detected"))
         }
-        
+
         if (emailPattern.matcher(text).find()) {
             violations.add(PIIViolation("EMAIL", "Real email address detected (non-example.com)"))
         }
-        
+
         if (phonePattern.matcher(text).find()) {
             violations.add(PIIViolation("PHONE", "Real phone number detected (non-555)"))
         }
-        
+
         if (creditCardPattern.matcher(text).find()) {
             violations.add(PIIViolation("CREDIT_CARD", "Credit card number detected"))
         }
-        
+
         return violations
     }
-    
+
     fun scanDatabase(jdbcUrl: String): PIIScanReport {
         val violations = mutableListOf<PIIViolation>()
-        
+
         // Scan all text columns
         val tables = listOf("customers", "vendors", "transactions", "users")
-        
+
         tables.forEach { table ->
             val rows = queryTable(jdbcUrl, table)
             rows.forEach { row ->
@@ -1776,7 +1776,7 @@ class PIIDetector {
                 }
             }
         }
-        
+
         return PIIScanReport(
             totalTables = tables.size,
             violations = violations,
@@ -1820,18 +1820,18 @@ import org.junit.jupiter.api.extension.ExtendWith
 @Provider("customer-service")
 @PactBroker(host = "pact-broker.chiroerp.internal", port = "443", scheme = "https")
 class CustomerServiceContractTest {
-    
+
     @BeforeEach
     fun setupTest Target(context: PactVerificationContext) {
         context.target = HttpTestTarget("localhost", 8080, "/")
     }
-    
+
     @TestTemplate
     @ExtendWith(PactVerificationInvocationContextProvider::class)
     fun verifyPact(context: PactVerificationContext) {
         context.verifyInteraction()
     }
-    
+
     @State("customer with ID CUST-001 exists")
     fun customerExists() {
         // Setup test data
@@ -1842,13 +1842,13 @@ class CustomerServiceContractTest {
             creditLimit = BigDecimal("10000.00")
         )
     }
-    
+
     @State("no customers exist")
     fun noCustomers() {
         // Clean database
         deleteAllCustomers()
     }
-    
+
     @State("customer CUST-001 has outstanding invoices")
     fun customerHasInvoices() {
         createCustomer(id = "CUST-001", name = "Test Customer")
@@ -1881,7 +1881,7 @@ import org.hamcrest.Matchers.*
 @ExtendWith(PactConsumerTestExt::class)
 @PactTestFor(providerName = "customer-service", pactVersion = PactSpecVersion.V4)
 class ARServiceConsumerContractTest {
-    
+
     @Pact(consumer = "ar-service")
     fun getCustomerById(builder: PactDslWithProvider): V4Pact {
         return builder
@@ -1905,7 +1905,7 @@ class ARServiceConsumerContractTest {
             """)
             .toPact(V4Pact::class.java)
     }
-    
+
     @Test
     @PactTestFor(pactMethod = "getCustomerById")
     fun testGetCustomerById() {
@@ -1918,7 +1918,7 @@ class ARServiceConsumerContractTest {
             .body("name", equalTo("Test Customer"))
             .body("creditLimit", equalTo(10000.00f))
     }
-    
+
     @Pact(consumer = "ar-service")
     fun getCustomerNotFound(builder: PactDslWithProvider): V4Pact {
         return builder
@@ -1954,8 +1954,8 @@ class ARServiceConsumerContractTest {
 | Phase 7 | Months 13-14 | 2 FTE | 1.2 FTE | - | 3.2 FTE |
 | Phase 8 | Months 15-16 | 2 FTE | - | 2 DevOps (1 FTE) + 1 SRE (0.3 FTE) | 3.3 FTE |
 
-**Peak Resources**: 4.3 FTE (Phase 3)  
-**Average Resources**: 3.3 FTE  
+**Peak Resources**: 4.3 FTE (Phase 3)
+**Average Resources**: 3.3 FTE
 **Total Effort**: ~52 person-months over 16 months
 
 ### Success Metrics & KPIs
@@ -2459,9 +2459,9 @@ This testing strategy provides comprehensive coverage across unit, integration, 
 
 ### Status
 
-**Decision Status**: APPROVED  
-**Implementation Status**: NOT IMPLEMENTED  
-**Last Updated**: 2026-02-01  
+**Decision Status**: APPROVED
+**Implementation Status**: NOT IMPLEMENTED
+**Last Updated**: 2026-02-01
 **Next Review**: 2026-03-01 (pre-Phase 1 kickoff)
 
 ## References

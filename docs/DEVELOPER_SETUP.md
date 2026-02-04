@@ -282,10 +282,10 @@ docker exec -it chiroerp-postgres-finance-1 psql -U chiroerp -d finance -c "SELE
 **Expected output**:
 ```
 Listening for transport dt_socket at address: 5005
-__  ____  __  _____   ___  __ ____  ______ 
- --/ __ \/ / / / _ | / _ \/ //_/ / / / __/ 
- -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \   
---\___\_\____/_/ |_/_/|_/_/|_|\____/___/   
+__  ____  __  _____   ___  __ ____  ______
+ --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
+ -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
+--\___\_\____/_/ |_/_/|_/_/|_|\____/___/
 2026-02-03 10:00:00,000 INFO  [io.quarkus] (Quarkus Main Thread) finance-domain 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.31.1) started in 2.345s. Listening on: http://localhost:8081
 
 2026-02-03 10:00:00,001 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.

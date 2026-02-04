@@ -1,10 +1,10 @@
 # ADR-023: Procurement (MM-PUR)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Procurement Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Procurement Team
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: procurement, purchasing, approvals, compliance, supplier
 
 ## Context

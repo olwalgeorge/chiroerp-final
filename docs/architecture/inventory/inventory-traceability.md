@@ -1,8 +1,8 @@
 # Inventory Traceability (Lot & Serial) - ADR-024
 
-> **Bounded Context:** `inventory-traceability`  
-> **Port:** `9007` (logical, part of inventory-core service)  
-> **Database:** `chiroerp_inventory_core`  
+> **Bounded Context:** `inventory-traceability`
+> **Port:** `9007` (logical, part of inventory-core service)
+> **Database:** `chiroerp_inventory_core`
 > **Kafka Consumer Group:** `inventory-core-cg`
 
 ## Overview

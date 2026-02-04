@@ -1,8 +1,8 @@
 # Retail AI Architecture - ChiroERP
 
-**Status**: Optional Enhancement (Post-Phase 3)  
-**Priority**: P2 (High Value - Competitive Differentiation)  
-**Last Updated**: February 3, 2026  
+**Status**: Optional Enhancement (Post-Phase 3)
+**Priority**: P2 (High Value - Competitive Differentiation)
+**Last Updated**: February 3, 2026
 **Target Market**: $50M-$500M revenue retailers (50-500 stores)
 
 ---
@@ -52,10 +52,10 @@
 
 **Purpose**: Implement AI-powered demand forecasting and automatic replenishment recommendations to minimize stockouts and excess inventory.
 
-**ADR Reference**: ADR-056 (AI Demand Forecasting & Replenishment)  
-**Investment**: $500K-$1M  
-**Headcount**: 2-3 data scientists (time series expertise)  
-**Timeline**: 9 months (3 phases)  
+**ADR Reference**: ADR-056 (AI Demand Forecasting & Replenishment)
+**Investment**: $500K-$1M
+**Headcount**: 2-3 data scientists (time series expertise)
+**Timeline**: 9 months (3 phases)
 **ROI**: 3-5X in Year 1 = $5M-$8M savings (100-store chain)
 
 ### Core Capabilities
@@ -445,11 +445,11 @@ data class ScenarioAnalysis(
 
 **Purpose**: Implement AI-powered dynamic pricing and markdown optimization to maximize gross margin and minimize clearance inventory.
 
-**ADR Reference**: ADR-057 (Dynamic Pricing & Markdown Optimization)  
-**Investment**: $300K-$500K  
-**Headcount**: 1-2 data scientists (pricing/elasticity expertise)  
-**Timeline**: 9 months (3 phases)  
-**ROI**: 2-3X in Year 1 = $4M-$6M margin improvement (100-store chain)  
+**ADR Reference**: ADR-057 (Dynamic Pricing & Markdown Optimization)
+**Investment**: $300K-$500K
+**Headcount**: 1-2 data scientists (pricing/elasticity expertise)
+**Timeline**: 9 months (3 phases)
+**ROI**: 2-3X in Year 1 = $4M-$6M margin improvement (100-store chain)
 **Prerequisites**: **ADR-056 (demand forecasting) REQUIRED** — pricing optimization needs demand forecasts for elasticity modeling
 
 ### Core Capabilities
@@ -845,8 +845,8 @@ data class PriceHistory(
 | **Year 2** | $7M-$10M | $6M-$9M | **$13M-$19M** | **$10M-$16M** (net of investment) |
 | **Year 3** | $8M-$11M | $7M-$10M | **$15M-$21M** | **$10M-$16M** (sustained) |
 
-**Total Investment**: $800K-$1.5M (ADR-056 + ADR-057)  
-**Total ROI**: **3-4X** in 18 months  
+**Total Investment**: $800K-$1.5M (ADR-056 + ADR-057)
+**Total ROI**: **3-4X** in 18 months
 **Payback Period**: **2-3 months**
 
 ### Competitive Positioning Matrix

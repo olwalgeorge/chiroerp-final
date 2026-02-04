@@ -14,22 +14,22 @@ enum class ApprovalAction {
      * Approve the request.
      */
     APPROVE,
-    
+
     /**
      * Reject the request.
      */
     REJECT,
-    
+
     /**
      * Return to submitter for corrections.
      */
     RETURN_FOR_REVISION,
-    
+
     /**
      * Delegate to another user.
      */
     DELEGATE,
-    
+
     /**
      * Escalate to higher authority.
      */

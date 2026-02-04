@@ -1,8 +1,8 @@
 # Finance Period Close - ADR-031
 
-> **Bounded Context:** `finance-close`  
-> **Port:** `8091`  
-> **Database:** `chiroerp_finance_close`  
+> **Bounded Context:** `finance-close`
+> **Port:** `8091`
+> **Database:** `chiroerp_finance_close`
 > **Kafka Consumer Group:** `finance-close-cg`
 
 ## Overview

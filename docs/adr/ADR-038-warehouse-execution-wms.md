@@ -1,10 +1,10 @@
 # ADR-038: Warehouse Execution System (WES/WMS)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: P2 (Medium)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Operations Team
+**Priority**: P2 (Medium)
+**Tier**: Add-on
 **Tags**: warehouse, wms, wes, execution, logistics
 
 ## Context

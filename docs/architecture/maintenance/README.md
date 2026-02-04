@@ -125,7 +125,7 @@ This directory contains hexagonal architecture specifications for Plant Maintena
 ### Physical ALM Event Flow
 ```
 Commissioning Flow:
-  Procurement.GoodsReceivedEvent 
+  Procurement.GoodsReceivedEvent
     -> Commissioning.AssetReceivedForCommissioning
     -> Commissioning.PreCommissioningChecklistCompleted
     -> Commissioning.TestingAndAcceptanceCompleted

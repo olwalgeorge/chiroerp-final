@@ -1,10 +1,10 @@
 # ADR-047: Localization & Regulatory Framework
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team, Compliance Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team, Compliance Team
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: localization, compliance, country-packs, tax, e-invoicing, legal
 
 ## Context
@@ -43,7 +43,7 @@ data class CountryPack(
     val effectiveFrom: LocalDate,
     val effectiveTo: LocalDate?,
     val status: CountryPackStatus, // ACTIVE, DEPRECATED, SUPERSEDED
-    
+
     // Regulatory Components
     val taxRules: TaxRuleSet,
     val eInvoicingConfig: EInvoicingConfig?,
@@ -51,18 +51,18 @@ data class CountryPack(
     val bankingFormats: List<BankingFormat>,
     val statutoryReports: List<StatutoryReportTemplate>,
     val legalEntitiesConfig: LegalEntityConfig,
-    
+
     // Localization Components
     val localeConfig: LocaleConfig,
     val addressFormat: AddressFormat,
     val dateFormats: DateFormats,
     val numberFormats: NumberFormats,
-    
+
     // Compliance Rules
     val dataRetentionRules: DataRetentionRules,
     val auditFileFormats: List<AuditFileFormat>, // SAF-T, GDPdU, etc.
     val fiscalYearRules: FiscalYearRules,
-    
+
     // Metadata
     val maintainer: String, // ChiroERP, Partner, or Customer
     val certifications: List<Certification>, // e.g., "Certified for German GoBD"
@@ -126,19 +126,19 @@ data class ReverseChargeRule(
 // Finance Tax module calls localization service
 @ApplicationScoped
 class TaxDeterminationService {
-    
+
     @Inject
     lateinit var countryPackRepository: CountryPackRepository
-    
+
     fun determineTax(context: TaxContext): TaxResult {
         val countryPack = countryPackRepository.getActiveCountryPack(
             context.billingAddress.countryCode
         )
-        
+
         val applicableRules = countryPack.taxRules.jurisdictionRules.filter {
             it.applicableTo(context)
         }
-        
+
         // Evaluate tax rates (standard, reduced, exempt)
         return TaxCalculationEngine.calculate(applicableRules, context)
     }
@@ -521,10 +521,10 @@ data class DataRetentionRules(
 ```kotlin
 @Path("/admin/country-packs")
 class CountryPackAdminResource {
-    
+
     @Inject
     lateinit var countryPackService: CountryPackService
-    
+
     @POST
     @Path("/install")
     fun installCountryPack(
@@ -535,16 +535,16 @@ class CountryPackAdminResource {
             countryCode = request.countryCode,
             version = request.version
         )
-        
+
         // Validate compatibility
         countryPackService.validateCompatibility(countryPack)
-        
+
         // Install (creates tax rules, CoA templates, etc.)
         countryPackService.install(countryPack)
-        
+
         return Response.ok().build()
     }
-    
+
     @GET
     @Path("/available")
     fun getAvailableCountryPacks(): List<CountryPackMetadata> {
@@ -564,12 +564,12 @@ fun activateCountryPack(
 ): Response {
     // Associate tenant with country pack
     tenantService.activateCountryPack(tenantId, request.countryCode)
-    
+
     // Initialize CoA from template (if new tenant)
     if (request.initializeCoA) {
         financeService.initializeCoA(tenantId, request.coaTemplateId)
     }
-    
+
     return Response.ok().build()
 }
 ```
@@ -583,14 +583,14 @@ fun activateCountryPack(
 // Finance GL uses CoA template
 @ApplicationScoped
 class GLAccountService {
-    
+
     fun initializeCoA(tenantId: TenantId, templateId: String) {
         val countryPack = countryPackRepository.getActiveCountryPack(
             tenantId.defaultCountry
         )
-        
+
         val template = countryPack.chartOfAccountsTemplate
-        
+
         template.accounts.forEach { accountTemplate ->
             glAccountRepository.save(
                 GLAccount(
@@ -611,13 +611,13 @@ class GLAccountService {
 // Finance Tax uses tax rules from country pack
 @ApplicationScoped
 class TaxCalculationService {
-    
+
     fun calculateTax(invoiceId: InvoiceId): TaxResult {
         val invoice = invoiceRepository.findById(invoiceId)
         val countryPack = countryPackRepository.getActiveCountryPack(
             invoice.billingAddress.countryCode
         )
-        
+
         // Use country pack tax rules
         return TaxEngine.calculate(
             taxRules = countryPack.taxRules,
@@ -632,16 +632,16 @@ class TaxCalculationService {
 // Treasury uses banking formats from country pack
 @ApplicationScoped
 class PaymentFileGeneratorService {
-    
+
     fun generatePaymentFile(paymentBatch: PaymentBatch): ByteArray {
         val countryPack = countryPackRepository.getActiveCountryPack(
             paymentBatch.companyCode.country
         )
-        
+
         val format = countryPack.bankingFormats.first {
             it.formatType == PAYMENT_FILE && it.formatId == paymentBatch.requestedFormat
         }
-        
+
         // Delegate to format-specific generator
         return when (format.formatId) {
             "SEPA-XML" -> sepaGenerator.generate(paymentBatch)
@@ -674,21 +674,21 @@ Example: DE Country Pack 2.1.3
 ```kotlin
 @ApplicationScoped
 class CountryPackUpgradeService {
-    
+
     fun upgrade(countryCode: String, toVersion: SemanticVersion) {
         val currentPack = countryPackRepository.getActiveCountryPack(countryCode)
         val newPack = countryPackRepository.findByVersion(countryCode, toVersion)
-        
+
         // Run migration scripts
         val migrations = newPack.getMigrations(fromVersion = currentPack.version)
         migrations.forEach { migration ->
             migration.execute()
         }
-        
+
         // Mark old pack as superseded
         currentPack.status = SUPERSEDED
         newPack.status = ACTIVE
-        
+
         countryPackRepository.save(currentPack)
         countryPackRepository.save(newPack)
     }
@@ -703,7 +703,7 @@ class CountryPackUpgradeService {
 ```kotlin
 @ApplicationScoped
 class CountryPackCacheService {
-    
+
     @CacheResult(cacheName = "country-packs")
     fun getCountryPack(countryCode: String): CountryPack {
         return countryPackRepository.getActiveCountryPack(countryCode)
@@ -729,23 +729,23 @@ quarkus.cache.caffeine.country-packs.expire-after-write=1h
 ## Alternatives Considered
 
 ### 1. Hardcoded Regulatory Logic in Core Domains
-**Pros**: Simple initially  
-**Cons**: High cost of change; difficult versioning/certification; poor scalability across jurisdictions  
+**Pros**: Simple initially
+**Cons**: High cost of change; difficult versioning/certification; poor scalability across jurisdictions
 **Decision**: Rejected in favor of versioned country packs
 
 ### 2. Partner Localization (SAP LSP Model)
-**Pros**: Outsource complexity to local partners  
-**Cons**: Quality inconsistency, dependency on partners  
+**Pros**: Outsource complexity to local partners
+**Cons**: Quality inconsistency, dependency on partners
 **Decision**: Deferred—can be added later for niche markets
 
 ### 3. Multi-Instance (Separate Deployment per Country)
-**Pros**: Total isolation  
-**Cons**: High operational overhead; fragments global reporting and cross-company processes  
+**Pros**: Total isolation
+**Cons**: High operational overhead; fragments global reporting and cross-company processes
 **Decision**: Rejected—violates multi-tenancy architecture (ADR-005)
 
 ### 4. Runtime Customization Only (ADR-012)
-**Pros**: Flexible  
-**Cons**: Customers shouldn't need to know tax laws  
+**Pros**: Flexible
+**Cons**: Customers shouldn't need to know tax laws
 **Decision**: Rejected—regulatory compliance is our responsibility
 
 ---

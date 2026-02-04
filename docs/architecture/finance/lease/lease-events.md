@@ -8,7 +8,7 @@
 
 ### LeaseActivatedEvent
 
-**Trigger**: Lease activated  
+**Trigger**: Lease activated
 **Consumers**: Assets, GL
 
 ```json
@@ -26,7 +26,7 @@
 
 ### LeaseAmortizationPostedEvent
 
-**Trigger**: Lease amortization posted  
+**Trigger**: Lease amortization posted
 **Consumers**: GL
 
 ```json

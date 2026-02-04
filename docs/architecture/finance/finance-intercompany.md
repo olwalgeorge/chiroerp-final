@@ -1,8 +1,8 @@
 # Finance Intercompany - ADR-029
 
-> **Bounded Context:** `finance-intercompany`  
-> **Port:** `8090`  
-> **Database:** `chiroerp_finance_intercompany`  
+> **Bounded Context:** `finance-intercompany`
+> **Port:** `8090`
+> **Database:** `chiroerp_finance_intercompany`
 > **Kafka Consumer Group:** `finance-intercompany-cg`
 
 ## Overview

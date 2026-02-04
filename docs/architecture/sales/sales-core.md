@@ -1,8 +1,8 @@
 # Sales Core - ADR-025
 
-> **Bounded Context:** `sales-core`  
-> **Port:** `9201`  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-core`
+> **Port:** `9201`
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview

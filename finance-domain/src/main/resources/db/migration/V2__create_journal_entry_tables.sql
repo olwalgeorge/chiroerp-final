@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS finance.journal_entries (
     posted_at TIMESTAMP WITH TIME ZONE,
     reversed_by VARCHAR(100),
     reversal_entry_id VARCHAR(50),
-    CONSTRAINT fk_reversal_entry FOREIGN KEY (reversal_entry_id) 
+    CONSTRAINT fk_reversal_entry FOREIGN KEY (reversal_entry_id)
         REFERENCES finance.journal_entries(entry_id)
 );
 
@@ -43,10 +43,10 @@ CREATE TABLE IF NOT EXISTS finance.journal_entry_lines (
     tax_code VARCHAR(20),
     quantity NUMERIC(18, 4),
     uom VARCHAR(10),
-    CONSTRAINT fk_journal_entry FOREIGN KEY (entry_id) 
-        REFERENCES finance.journal_entries(entry_id) 
+    CONSTRAINT fk_journal_entry FOREIGN KEY (entry_id)
+        REFERENCES finance.journal_entries(entry_id)
         ON DELETE CASCADE,
-    CONSTRAINT fk_gl_account FOREIGN KEY (account_number) 
+    CONSTRAINT fk_gl_account FOREIGN KEY (account_number)
         REFERENCES finance.gl_accounts(account_number)
 );
 

@@ -5,7 +5,7 @@ version: '3.8'
 
 services:
   # PostgreSQL Databases (Database-per-Bounded-Context)
-  
+
   postgres-finance:
     image: postgres:16-alpine
     container_name: chiroerp-postgres-finance
@@ -124,7 +124,7 @@ services:
   # Redpanda - Kafka API-compatible Event Streaming Platform
   # NOTE: For local development only. Production uses Apache Kafka with Strimzi.
   # Redpanda is 10x faster startup, uses less memory, and has built-in Schema Registry.
-  
+
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.2.11
     container_name: chiroerp-redpanda
@@ -174,7 +174,7 @@ services:
       - chiroerp-network
 
   # Redis - Caching & Session Management
-  
+
   redis:
     image: redis:7-alpine
     container_name: chiroerp-redis
@@ -204,7 +204,7 @@ services:
       - chiroerp-network
 
   # Temporal - Workflow Engine
-  
+
   temporal:
     image: temporalio/auto-setup:1.22.4
     container_name: chiroerp-temporal
@@ -246,7 +246,7 @@ services:
       - chiroerp-network
 
   # Observability Stack
-  
+
   jaeger:
     image: jaegertracing/all-in-one:1.53
     container_name: chiroerp-jaeger
@@ -304,7 +304,7 @@ services:
       - chiroerp-network
 
   # pgAdmin - Database Management UI
-  
+
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: chiroerp-pgadmin

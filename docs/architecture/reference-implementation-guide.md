@@ -1,9 +1,9 @@
 # ChiroERP Reference Implementation Guide
 
-**Status**: Implementation Roadmap  
-**Date**: 2026-02-03  
-**Purpose**: Validate architecture with two end-to-end flows (O2C + P2P) across two countries (US + Germany)  
-**Target Duration**: 6 months  
+**Status**: Implementation Roadmap
+**Date**: 2026-02-03
+**Purpose**: Validate architecture with two end-to-end flows (O2C + P2P) across two countries (US + Germany)
+**Target Duration**: 6 months
 **Team Size**: 8-10 engineers (2 flows × 4-5 devs)
 
 ---
@@ -587,7 +587,7 @@ val kenyaCountryPack = CountryPack(
             GLAccountTemplate("1320", "Withholding Tax Receivable", AccountType.ASSET, "BALANCE_SHEET"),
             GLAccountTemplate("1500", "Property, Plant and Equipment", AccountType.ASSET, "BALANCE_SHEET"),
             GLAccountTemplate("1510", "Accumulated Depreciation", AccountType.ASSET, "BALANCE_SHEET"),
-            
+
             // Liabilities
             GLAccountTemplate("2000", "Trade Payables", AccountType.LIABILITY, "BALANCE_SHEET"),
             GLAccountTemplate("2010", "Other Payables", AccountType.LIABILITY, "BALANCE_SHEET"),
@@ -599,23 +599,23 @@ val kenyaCountryPack = CountryPack(
             GLAccountTemplate("2150", "NHIF Payable", AccountType.LIABILITY, "BALANCE_SHEET"),
             GLAccountTemplate("2200", "Bank Loans", AccountType.LIABILITY, "BALANCE_SHEET"),
             GLAccountTemplate("2300", "Accrued Expenses", AccountType.LIABILITY, "BALANCE_SHEET"),
-            
+
             // Equity
             GLAccountTemplate("3000", "Share Capital", AccountType.EQUITY, "BALANCE_SHEET"),
             GLAccountTemplate("3100", "Retained Earnings", AccountType.EQUITY, "BALANCE_SHEET"),
             GLAccountTemplate("3200", "Current Year Profit/Loss", AccountType.EQUITY, "BALANCE_SHEET"),
-            
+
             // Revenue
             GLAccountTemplate("4000", "Sales Revenue", AccountType.REVENUE, "INCOME_STATEMENT"),
             GLAccountTemplate("4010", "Export Sales", AccountType.REVENUE, "INCOME_STATEMENT"),
             GLAccountTemplate("4100", "Service Revenue", AccountType.REVENUE, "INCOME_STATEMENT"),
             GLAccountTemplate("4200", "Other Income", AccountType.REVENUE, "INCOME_STATEMENT"),
-            
+
             // Cost of Sales
             GLAccountTemplate("5000", "Cost of Goods Sold", AccountType.EXPENSE, "INCOME_STATEMENT"),
             GLAccountTemplate("5100", "Direct Labor", AccountType.EXPENSE, "INCOME_STATEMENT"),
             GLAccountTemplate("5200", "Manufacturing Overheads", AccountType.EXPENSE, "INCOME_STATEMENT"),
-            
+
             // Operating Expenses
             GLAccountTemplate("6000", "Salaries and Wages", AccountType.EXPENSE, "INCOME_STATEMENT"),
             GLAccountTemplate("6100", "Rent Expense", AccountType.EXPENSE, "INCOME_STATEMENT"),
@@ -1056,24 +1056,24 @@ interface PurchaseOrderApprovalWorkflow {
 
 @WorkflowImpl
 class PurchaseOrderApprovalWorkflowImpl : PurchaseOrderApprovalWorkflow {
-    
+
     private val poService = Workflow.newActivityStub(
         PurchaseOrderService::class.java,
         ActivityOptions.newBuilder()
             .setStartToCloseTimeout(Duration.ofMinutes(5))
             .build()
     )
-    
+
     override fun approvePurchaseOrder(poId: UUID): ApprovalResult {
         // Fetch PO
         val po = poService.getPurchaseOrder(poId)
-        
+
         // Fetch approval schema (ADR-044)
         val approvalSchema = poService.getApprovalSchema(
             companyCodeId = po.companyCodeId,
             documentType = "PURCHASE_ORDER",
         )
-        
+
         // Multi-level approval
         for (level in approvalSchema.levels.sortedBy { it.levelNumber }) {
             val approvers = poService.determineApprovers(
@@ -1081,27 +1081,27 @@ class PurchaseOrderApprovalWorkflowImpl : PurchaseOrderApprovalWorkflow {
                 amount = po.totalAmount,
                 companyCodeId = po.companyCodeId,
             )
-            
+
             if (approvers.isEmpty()) continue
-            
+
             // Parallel approval within level
             val levelResult = if (level.approvalMode == ApprovalMode.ALL_REQUIRED) {
                 approveAllRequired(poId, level, approvers)
             } else {
                 approveAnyRequired(poId, level, approvers)
             }
-            
+
             if (!levelResult.approved) {
                 poService.rejectPurchaseOrder(poId, levelResult.reason)
                 return ApprovalResult(approved = false, reason = levelResult.reason)
             }
         }
-        
+
         // All levels approved
         poService.approvePurchaseOrder(poId)
         return ApprovalResult(approved = true)
     }
-    
+
     private fun approveAllRequired(
         poId: UUID,
         level: ApprovalLevel,
@@ -1110,15 +1110,15 @@ class PurchaseOrderApprovalWorkflowImpl : PurchaseOrderApprovalWorkflow {
         val tasks = approvers.map { approverId ->
             Async.function { poService.createApprovalTask(poId, level.levelNumber, approverId) }
         }
-        
+
         // Wait for all approvals (with timeout)
         val results = Async.await(
             tasks,
             Duration.ofDays(level.escalationTimeoutDays.toLong()),
         )
-        
+
         val allApproved = results.all { it.approved }
-        
+
         return if (allApproved) {
             LevelApprovalResult(approved = true)
         } else {
@@ -1147,7 +1147,7 @@ import { salesOrderSchema } from '@/schemas/sales-order';
 
 export const SalesOrderCreate = () => {
   const createMutation = useCreateSalesOrder();
-  
+
   const form = useForm({
     resolver: zodResolver(salesOrderSchema),
     defaultValues: {
@@ -1156,7 +1156,7 @@ export const SalesOrderCreate = () => {
       lineItems: [{ materialId: '', quantity: 1 }],
     },
   });
-  
+
   const onSubmit = async (data: SalesOrderFormData) => {
     try {
       const order = await createMutation.mutateAsync(data);
@@ -1166,11 +1166,11 @@ export const SalesOrderCreate = () => {
       toast.error(error.message);
     }
   };
-  
+
   return (
     <div className="max-w-4xl mx-auto p-6">
       <h1 className="text-2xl font-bold mb-6">Create Sales Order</h1>
-      
+
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           name="customerId"
@@ -1183,14 +1183,14 @@ export const SalesOrderCreate = () => {
             />
           )}
         />
-        
+
         <FormField
           name="orderDate"
           label="Order Date"
           required
           render={({ field }) => <DatePicker {...field} />}
         />
-        
+
         <FormField
           name="paymentTerms"
           label="Payment Terms"
@@ -1202,9 +1202,9 @@ export const SalesOrderCreate = () => {
             </Select>
           )}
         />
-        
+
         <LineItemsFieldArray name="lineItems" />
-        
+
         <div className="flex gap-4">
           <Button type="submit" isLoading={createMutation.isLoading}>
             Create Order
@@ -1226,7 +1226,7 @@ export const SalesOrderCreate = () => {
 ## Implementation Phases
 
 ### Phase 1: Infrastructure & Master Data (Months 1-2)
-**Duration**: 8 weeks  
+**Duration**: 8 weeks
 **Team**: Platform Team (2 devs) + All hands (8 devs)
 
 #### Week 1-2: Core Infrastructure
@@ -1284,8 +1284,8 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 2: Kenya O2C 🇰🇪 (Month 3) **[HIGHEST PRIORITY]**
-**Duration**: 4 weeks  
-**Team**: Team A (4 devs) + Platform (1 dev)  
+**Duration**: 4 weeks
+**Team**: Team A (4 devs) + Platform (1 dev)
 **Goal**: First customer demo-ready flow for Kenyan market
 
 #### Week 9-10: Sales Order → Invoice
@@ -1344,8 +1344,8 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 3: Tanzania O2C 🇹🇿 (Month 4)
-**Duration**: 4 weeks  
-**Team**: Team A (4 devs) + Platform (1 dev)  
+**Duration**: 4 weeks
+**Team**: Team A (4 devs) + Platform (1 dev)
 **Goal**: Validate EAC harmonization and fiscal device diversity
 
 #### Week 14-15: Sales Order → Invoice (Tanzania)
@@ -1381,8 +1381,8 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 4: Kenya P2P 🇰🇪 (Month 5)
-**Duration**: 4 weeks  
-**Team**: Team B (4 devs) + Platform (1 dev)  
+**Duration**: 4 weeks
+**Team**: Team B (4 devs) + Platform (1 dev)
 **Goal**: Complete Kenya coverage with procurement flow
 
 #### Week 19-20: Purchase Requisition → PO
@@ -1425,7 +1425,7 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 5: Tanzania P2P 🇹🇿 (Month 6)
-**Duration**: 2 weeks  
+**Duration**: 2 weeks
 **Team**: Team B (4 devs)
 
 #### Week 25-26: Tanzania P2P
@@ -1441,7 +1441,7 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 6: Testing & Documentation (Month 6)
-**Duration**: 2 weeks  
+**Duration**: 2 weeks
 **Team**: All hands (8 devs)
 
 #### Week 27-28: Final Validation
@@ -1475,7 +1475,7 @@ export const SalesOrderCreate = () => {
 ---
 
 ### Phase 7: US & Germany Validation (Optional - Post-Launch)
-**Duration**: 2 weeks each country  
+**Duration**: 2 weeks each country
 **Team**: 2 devs
 
 #### Week 29-30: US O2C + P2P (Simplified)
@@ -1683,5 +1683,5 @@ This reference implementation **validates the entire ChiroERP architecture** wit
 5. Iterate based on feedback
 6. Scale to remaining modules + countries (12-18 months)
 
-**Total Investment**: $600K-$800K (6 months × 10 engineers × $10K-$13K/engineer/month)  
+**Total Investment**: $600K-$800K (6 months × 10 engineers × $10K-$13K/engineer/month)
 **Expected ROI**: First $5M deal closed with O2C + P2P demo (3-6 months post-implementation)

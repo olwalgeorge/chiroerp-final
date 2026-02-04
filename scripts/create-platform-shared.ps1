@@ -92,7 +92,7 @@ plugins {
 dependencies {
     // Only depend on common-types (shared value objects)
     implementation(project(":platform-shared:common-types"))
-    
+
     // No external dependencies - pure interfaces and value objects
     // Implementations will be in domain modules (hardcoded) or platform-infrastructure (config-driven)
 }
@@ -231,7 +231,7 @@ $($modulesToAdd -join "`n")
 "@
         $settingsContent += $newSection
     }
-    
+
     Set-Content -Path $settingsFile -Value $settingsContent -NoNewline
     Write-Host "  ✅ settings.gradle.kts updated" -ForegroundColor Green
 } else {

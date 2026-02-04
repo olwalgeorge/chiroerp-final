@@ -410,21 +410,21 @@ quarkus:
       db-kind: postgresql
       jdbc:
         url: jdbc:postgresql://${DB_HOST}:5432/chiroerp_ap
-  
+
   kafka:
     ap-events:
       bootstrap-servers: ${KAFKA_BOOTSTRAP}
-      
+
 ap:
   matching:
     price-tolerance-percent: 2.0
     quantity-tolerance-percent: 1.0
     auto-match-enabled: true
-    
+
   payment-run:
     require-approval: true
     min-approval-amount: 10000
-    
+
   bank:
     ach-format: NACHA
     wire-format: SWIFT_MT103

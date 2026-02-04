@@ -31,13 +31,13 @@
 param(
     [Parameter(Mandatory=$true)]
     [string]$ModuleName,
-    
+
     [Parameter(Mandatory=$true)]
     [string]$PackageName,
-    
+
     [Parameter(Mandatory=$true)]
     [string]$DatabaseName,
-    
+
     [Parameter(Mandatory=$true)]
     [int]$Port
 )
@@ -208,7 +208,7 @@ quarkus:
       origins: "*"
       methods: GET,POST,PUT,DELETE,PATCH,OPTIONS
       headers: accept,content-type,authorization,x-tenant-id
-  
+
   datasource:
     db-kind: postgresql
     username: chiroerp
@@ -217,37 +217,37 @@ quarkus:
       url: jdbc:postgresql://localhost:5432/$DatabaseName
       max-size: 20
       min-size: 5
-  
+
   hibernate-orm:
     database:
       generation: none
     log:
       sql: true
       format-sql: true
-  
+
   flyway:
     migrate-at-start: true
     baseline-on-migrate: true
     baseline-version: 0
     locations: classpath:db/migration
     table: flyway_schema_history
-  
+
   kafka:
     bootstrap-servers: localhost:9092
-  
+
   redis:
     hosts: redis://localhost:6379
-  
+
   smallrye-openapi:
     path: /openapi
     info-title: $ModuleName API
     info-version: 1.0.0
     info-description: ChiroERP $ModuleName REST API
-  
+
   swagger-ui:
     always-include: true
     path: /swagger-ui
-  
+
   log:
     level: INFO
     category:

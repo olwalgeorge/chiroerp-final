@@ -1,10 +1,10 @@
 # ADR-024: Inventory Management (MM-IM)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Operations Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Operations Team
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: inventory, stock, valuation, warehousing, omnichannel
 
 ## Context
@@ -645,13 +645,13 @@ Reason Codes: NOT_REPAIRABLE, UNECONOMIC, BEYOND_REPAIR
 ### Data Model Extensions
 ```
 InventoryLocation:
-  - locationType: enum (...existing..., REPAIR_QUEUE, REPAIR_IN_PROGRESS, 
+  - locationType: enum (...existing..., REPAIR_QUEUE, REPAIR_IN_PROGRESS,
                         TEST_STATION, REFURBISHED_AVAILABLE, REPAIR_QUARANTINE,
                         LOANER_POOL, LOANER_ON_LOAN)
 
 StockLedger:
   - stockType: enum (NEW, USED, REFURBISHED, LOANER, DAMAGED, SCRAP)
-  - movementType: enum (...existing..., REPAIR_RECEIPT, REPAIR_ISSUE, 
+  - movementType: enum (...existing..., REPAIR_RECEIPT, REPAIR_ISSUE,
                         REFURBISH_RECEIPT, LOANER_ISSUE, LOANER_RETURN, REPAIR_SCRAP)
   - linkedWorkOrder: string (repair work order number from ADR-040)
   - refurbishedCostBasis: decimal (original + repair costs)

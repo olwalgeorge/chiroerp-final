@@ -1,10 +1,10 @@
 # ADR-043: CRM & Customer Management (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: Medium  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Product Team
+**Priority**: Medium
+**Tier**: Add-on
 **Tags**: crm, customer, pipeline, interactions, service
 
 ## Context

@@ -1,10 +1,10 @@
 # ADR-016: Analytics & Reporting Architecture
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Data Platform Team, Product Team  
-**Tier**: Advanced  
-**Tags**: analytics, reporting, bi, data-warehouse, dashboards  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Data Platform Team, Product Team
+**Tier**: Advanced
+**Tags**: analytics, reporting, bi, data-warehouse, dashboards
 
 ## Context
 SAP-grade ERPs provide embedded analytics and enterprise reporting (financial statements, operational KPIs, ad-hoc queries). This ADR defines a standardized analytics/reporting architecture that avoids fragmentation and protects transactional performance while enabling operational and enterprise reporting.
@@ -59,7 +59,7 @@ data class ARAgingSummaryView(
 // Materialized view SQL
 """
 CREATE MATERIALIZED VIEW accounts_receivable_reporting.mv_ar_aging_summary AS
-SELECT 
+SELECT
     gen_random_uuid() as id,
     i.tenant_id,
     i.customer_id,
@@ -76,7 +76,7 @@ JOIN customer_relation.customer c ON i.customer_id = c.id
 WHERE i.status IN ('POSTED', 'PARTIALLY_PAID')
 GROUP BY i.tenant_id, i.customer_id, c.customer_name;
 
-CREATE UNIQUE INDEX idx_ar_aging_tenant_customer 
+CREATE UNIQUE INDEX idx_ar_aging_tenant_customer
 ON accounts_receivable_reporting.mv_ar_aging_summary(tenant_id, customer_id);
 """
 
@@ -87,7 +87,7 @@ class ARAgingRefreshJob {
         jdbcTemplate.execute(
             "REFRESH MATERIALIZED VIEW CONCURRENTLY accounts_receivable_reporting.mv_ar_aging_summary"
         )
-        
+
         // Update cache
         redisCache.del("ar:aging:*")
     }
@@ -434,7 +434,7 @@ sales.sales_order.cdc
 // Kafka Consumer → Data Warehouse ETL
 @Component
 class InvoiceFactETLConsumer {
-    
+
     @KafkaListener(
         topics = ["accounts-receivable.invoice.cdc"],
         groupId = "data-warehouse-etl"
@@ -443,14 +443,14 @@ class InvoiceFactETLConsumer {
         try {
             // 1. Data quality checks
             validateInvoiceData(message)
-            
+
             // 2. Lookup dimension keys
             val customerKey = lookupOrCreateCustomerDimension(message.customerId)
             val productKey = lookupOrCreateProductDimension(message.productId)
             val dateKey = getDateKey(message.invoiceDate)
             val timeKey = getTimeKey(message.createdAt)
             val companyKey = lookupCompanyDimension(message.companyCode)
-            
+
             // 3. Transform to fact record
             val factInvoice = FactInvoice(
                 invoiceId = message.invoiceId,
@@ -476,25 +476,25 @@ class InvoiceFactETLConsumer {
                 postingDate = message.postingDate,
                 paymentDate = message.paymentDate
             )
-            
+
             // 4. Upsert to warehouse
             dataWarehouseRepository.upsertFactInvoice(factInvoice)
-            
+
             // 5. Update metrics
             etlMetrics.recordSuccess("fact_invoice")
-            
+
         } catch (e: DataQualityException) {
             // Quarantine bad records
             quarantineRecord(message, e.message)
             etlMetrics.recordQuarantine("fact_invoice")
-            
+
         } catch (e: Exception) {
             logger.error("ETL failed for invoice ${message.invoiceId}", e)
             etlMetrics.recordFailure("fact_invoice")
             throw e // Kafka will retry
         }
     }
-    
+
     private fun validateInvoiceData(message: InvoiceCDCMessage) {
         require(message.amount > BigDecimal.ZERO) {
             "Invoice amount must be positive"
@@ -516,7 +516,7 @@ class InvoiceFactETLConsumer {
 
 ```kotlin
 class CustomerDimensionService {
-    
+
     /**
      * Lookup or create customer dimension with SCD Type 2 support
      */
@@ -527,17 +527,17 @@ class CustomerDimensionService {
     ): Long {
         // Find current dimension record
         val currentDim = findCurrentCustomerDimension(customerId, tenantId)
-        
+
         if (currentDim == null) {
             // First time seeing this customer, create new dimension
             return createCustomerDimension(customerId, tenantId, customerData)
         }
-        
+
         // Check if attributes have changed
         if (hasCustomerChanged(currentDim, customerData)) {
             // Close current record
             closeCustomerDimension(currentDim)
-            
+
             // Create new version
             return createCustomerDimension(
                 customerId = customerId,
@@ -546,11 +546,11 @@ class CustomerDimensionService {
                 version = currentDim.version + 1
             )
         }
-        
+
         // No change, return existing key
         return currentDim.customerKey
     }
-    
+
     private suspend fun createCustomerDimension(
         customerId: String,
         tenantId: String,
@@ -576,7 +576,7 @@ class CustomerDimensionService {
             version
         )
     }
-    
+
     private suspend fun closeCustomerDimension(dim: DimCustomer) {
         jdbcTemplate.update("""
             UPDATE dw.dim_customer
@@ -584,7 +584,7 @@ class CustomerDimensionService {
             WHERE customer_key = ?
         """, dim.customerKey)
     }
-    
+
     private fun hasCustomerChanged(current: DimCustomer, new: CustomerData): Boolean {
         return current.customerName != new.name ||
                current.creditLimit != new.creditLimit ||
@@ -599,7 +599,7 @@ class CustomerDimensionService {
 
 ```kotlin
 class HistoricalDataBackfillJob {
-    
+
     /**
      * Backfill historical invoices from source database to warehouse
      */
@@ -610,10 +610,10 @@ class HistoricalDataBackfillJob {
         batchSize: Int = 10000
     ) {
         logger.info("Starting invoice backfill for tenant $tenantId from $startDate to $endDate")
-        
+
         var offset = 0
         var totalProcessed = 0
-        
+
         while (true) {
             // Fetch batch from source
             val batch = sourceDatabase.query("""
@@ -623,23 +623,23 @@ class HistoricalDataBackfillJob {
                 ORDER BY invoice_date, id
                 LIMIT ? OFFSET ?
             """, tenantId, startDate, endDate, batchSize, offset)
-            
+
             if (batch.isEmpty()) break
-            
+
             // Process batch
             batch.forEach { invoice ->
                 processInvoiceForWarehouse(invoice)
             }
-            
+
             totalProcessed += batch.size
             offset += batchSize
-            
+
             logger.info("Backfilled $totalProcessed invoices...")
-            
+
             // Rate limiting to avoid overloading source DB
             delay(100.milliseconds)
         }
-        
+
         logger.info("Backfill complete: $totalProcessed invoices processed")
     }
 }
@@ -667,7 +667,7 @@ enum class QualityCheckType {
 }
 
 class DataQualityService {
-    
+
     private val rules = listOf(
         DataQualityRule("invoice_amount_positive", "invoice", "amount", QualityCheckType.RANGE, null, true),
         DataQualityRule("invoice_customer_exists", "invoice", "customer_id", QualityCheckType.REFERENTIAL_INTEGRITY, null, true),
@@ -675,36 +675,36 @@ class DataQualityService {
         DataQualityRule("payment_amount_positive", "payment", "amount", QualityCheckType.RANGE, null, true),
         DataQualityRule("journal_entry_balanced", "journal_entry", "net_amount", QualityCheckType.BUSINESS_LOGIC, 0.01, true)
     )
-    
+
     suspend fun validateRecord(entityType: String, record: Map<String, Any?>): List<QualityViolation> {
         val violations = mutableListOf<QualityViolation>()
-        
+
         rules.filter { it.entityType == entityType }.forEach { rule ->
             val violation = checkRule(rule, record)
             if (violation != null) {
                 violations.add(violation)
             }
         }
-        
+
         return violations
     }
-    
+
     private fun checkRule(rule: DataQualityRule, record: Map<String, Any?>): QualityViolation? {
         val fieldValue = record[rule.fieldName]
-        
+
         return when (rule.checkType) {
             QualityCheckType.NOT_NULL -> {
                 if (fieldValue == null) {
                     QualityViolation(rule.ruleName, "Field ${rule.fieldName} is null")
                 } else null
             }
-            
+
             QualityCheckType.RANGE -> {
                 if (fieldValue is BigDecimal && fieldValue <= BigDecimal.ZERO) {
                     QualityViolation(rule.ruleName, "Field ${rule.fieldName} must be positive")
                 } else null
             }
-            
+
             QualityCheckType.BUSINESS_LOGIC -> {
                 when (rule.ruleName) {
                     "invoice_date_not_future" -> {
@@ -722,7 +722,7 @@ class DataQualityService {
                     else -> null
                 }
             }
-            
+
             else -> null
         }
     }
@@ -855,21 +855,21 @@ data class PLAccount(
 )
 
 class ProfitLossReportService {
-    
+
     suspend fun generateProfitLoss(
         tenantId: String,
         companyCode: String,
         fiscalYear: Int,
         fiscalPeriod: Int
     ): ProfitLossStatement {
-        
+
         // Query journal entries for the period
         val journalEntries = jdbcTemplate.query("""
-            SELECT 
+            SELECT
                 je.account_number,
                 je.account_name,
                 SUM(je.net_amount) as period_amount,
-                (SELECT SUM(net_amount) 
+                (SELECT SUM(net_amount)
                  FROM dw.fact_journal_entry ytd
                  WHERE ytd.account_number = je.account_number
                    AND ytd.fiscal_year = ?
@@ -890,12 +890,12 @@ class ProfitLossReportService {
               AND je.posting_status = 'POSTED'
             GROUP BY je.account_number, je.account_name
             ORDER BY je.account_number
-        """, 
+        """,
             fiscalYear, fiscalPeriod, tenantId, // YTD
             fiscalYear, fiscalPeriod, tenantId, // Prior year
             tenantId, companyCode, fiscalYear, fiscalPeriod
         )
-        
+
         // Group accounts by P&L section
         val revenue = filterAccountsByRange(journalEntries, "4000", "4999")
         val cogs = filterAccountsByRange(journalEntries, "5000", "5999")
@@ -903,11 +903,11 @@ class ProfitLossReportService {
         val otherIncome = filterAccountsByRange(journalEntries, "7000", "7499")
         val otherExpenses = filterAccountsByRange(journalEntries, "7500", "7999")
         val tax = filterAccountsByRange(journalEntries, "8000", "8099")
-        
+
         // Calculate net income
-        val netIncome = revenue.subtotal - cogs.subtotal - opex.subtotal + 
+        val netIncome = revenue.subtotal - cogs.subtotal - opex.subtotal +
                        otherIncome.subtotal - otherExpenses.subtotal - tax.subtotal
-        
+
         return ProfitLossStatement(
             companyCode = companyCode,
             companyName = getCompanyName(companyCode),
@@ -923,41 +923,41 @@ class ProfitLossReportService {
             netIncome = netIncome
         )
     }
-    
+
     suspend fun exportToPDF(statement: ProfitLossStatement): ByteArray {
         // Use iText or similar library to generate PDF
         return PdfGenerator.generate {
             title("Profit & Loss Statement")
             subtitle("${statement.companyName} - FY${statement.fiscalYear} Period ${statement.fiscalPeriod}")
-            
+
             table {
                 header("Account", "Account Name", "Current Period", "Year to Date", "Prior Year")
-                
+
                 section("Revenue") {
                     statement.revenue.accounts.forEach { account ->
-                        row(account.accountNumber, account.accountName, 
-                            account.currentPeriod.format(), 
+                        row(account.accountNumber, account.accountName,
+                            account.currentPeriod.format(),
                             account.yearToDate.format(),
                             account.priorYearSamePeriod.format())
                     }
                     subtotal("Total Revenue", statement.revenue.subtotal.format())
                 }
-                
+
                 section("Cost of Goods Sold") {
                     statement.costOfGoodsSold.accounts.forEach { account ->
-                        row(account.accountNumber, account.accountName, 
-                            account.currentPeriod.format(), 
+                        row(account.accountNumber, account.accountName,
+                            account.currentPeriod.format(),
                             account.yearToDate.format(),
                             account.priorYearSamePeriod.format())
                     }
                     subtotal("Total COGS", statement.costOfGoodsSold.subtotal.format())
                 }
-                
-                grossProfit("Gross Profit", 
+
+                grossProfit("Gross Profit",
                     (statement.revenue.subtotal - statement.costOfGoodsSold.subtotal).format())
-                
+
                 // ... remaining sections
-                
+
                 netIncome("Net Income", statement.netIncome.format())
             }
         }
@@ -997,36 +997,36 @@ data class ARAgingTotals(
 )
 
 class ARAgingReportService {
-    
+
     suspend fun generateARAgingReport(
         tenantId: String,
         asOfDate: LocalDate = LocalDate.now()
     ): ARAgingReport {
-        
+
         val customers = jdbcTemplate.query("""
             WITH invoice_aging AS (
-                SELECT 
+                SELECT
                     i.customer_key,
                     c.customer_id,
                     c.customer_name,
                     i.amount_outstanding,
-                    CASE 
+                    CASE
                         WHEN ? - i.due_date <= 0 THEN i.amount_outstanding
                         ELSE 0
                     END as current,
-                    CASE 
+                    CASE
                         WHEN ? - i.due_date BETWEEN 1 AND 30 THEN i.amount_outstanding
                         ELSE 0
                     END as days_30,
-                    CASE 
+                    CASE
                         WHEN ? - i.due_date BETWEEN 31 AND 60 THEN i.amount_outstanding
                         ELSE 0
                     END as days_60,
-                    CASE 
+                    CASE
                         WHEN ? - i.due_date BETWEEN 61 AND 90 THEN i.amount_outstanding
                         ELSE 0
                     END as days_90,
-                    CASE 
+                    CASE
                         WHEN ? - i.due_date > 90 THEN i.amount_outstanding
                         ELSE 0
                     END as over_90
@@ -1036,7 +1036,7 @@ class ARAgingReportService {
                   AND i.invoice_status IN ('POSTED', 'PARTIALLY_PAID')
                   AND i.amount_outstanding > 0
             )
-            SELECT 
+            SELECT
                 customer_id,
                 customer_name,
                 SUM(amount_outstanding) as total_outstanding,
@@ -1045,8 +1045,8 @@ class ARAgingReportService {
                 SUM(days_60) as days_60,
                 SUM(days_90) as days_90,
                 SUM(over_90) as over_90,
-                CASE 
-                    WHEN SUM(amount_outstanding) > 0 
+                CASE
+                    WHEN SUM(amount_outstanding) > 0
                     THEN (SUM(days_30) + SUM(days_60) + SUM(days_90) + SUM(over_90)) / SUM(amount_outstanding) * 100
                     ELSE 0
                 END as percent_over_30
@@ -1054,7 +1054,7 @@ class ARAgingReportService {
             GROUP BY customer_id, customer_name
             HAVING SUM(amount_outstanding) > 0
             ORDER BY SUM(amount_outstanding) DESC
-        """, 
+        """,
             asOfDate, asOfDate, asOfDate, asOfDate, asOfDate, tenantId
         ).map { rs ->
             ARAgingCustomer(
@@ -1069,7 +1069,7 @@ class ARAgingReportService {
                 percentOver30 = rs.getDouble("percent_over_30")
             )
         }
-        
+
         val totals = ARAgingTotals(
             totalOutstanding = customers.sumOf { it.totalOutstanding },
             current = customers.sumOf { it.current },
@@ -1078,7 +1078,7 @@ class ARAgingReportService {
             days90 = customers.sumOf { it.days90 },
             over90 = customers.sumOf { it.over90 }
         )
-        
+
         return ARAgingReport(
             tenantId = tenantId,
             reportDate = asOfDate,

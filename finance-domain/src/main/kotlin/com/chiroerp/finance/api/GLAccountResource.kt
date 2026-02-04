@@ -16,7 +16,7 @@ import java.util.UUID
 
 /**
  * REST API for GL Account management.
- * 
+ *
  * Provides endpoints for creating, reading, and managing general ledger accounts.
  * All operations are tenant-aware and enforce isolation.
  */
@@ -25,13 +25,13 @@ import java.util.UUID
 @Consumes(MediaType.APPLICATION_JSON)
 @Tag(name = "GL Accounts", description = "General Ledger Account Management")
 class GLAccountResource {
-    
+
     @Inject
     lateinit var repository: GLAccountRepository
-    
+
     /**
      * Get all active GL accounts for the current tenant.
-     * 
+     *
      * TODO: Extract tenant ID from security context
      */
     @GET
@@ -43,7 +43,7 @@ class GLAccountResource {
         return repository.findActiveByTenant(tid)
             .map { it.toDomain().toDTO() }
     }
-    
+
     /**
      * Get a specific GL account by account number.
      */
@@ -57,10 +57,10 @@ class GLAccountResource {
         val tid = tenantId ?: UUID.fromString("00000000-0000-0000-0000-000000000001")
         val entity = repository.findByTenantAndAccountNumber(tid, accountNumber)
             ?: return Response.status(Response.Status.NOT_FOUND).build()
-        
+
         return Response.ok(entity.toDomain().toDTO()).build()
     }
-    
+
     /**
      * Create a new GL account.
      */
@@ -73,26 +73,26 @@ class GLAccountResource {
     ): Response {
         val tid = tenantId ?: UUID.fromString("00000000-0000-0000-0000-000000000001")
         val userId = UUID.fromString("00000000-0000-0000-0000-000000000002") // TODO: From security context
-        
+
         // Check if account already exists
         if (repository.existsByTenantAndAccountNumber(tid, request.accountNumber)) {
             return Response.status(Response.Status.CONFLICT)
                 .entity(mapOf("error" to "Account number already exists"))
                 .build()
         }
-        
+
         // Create domain model
         val account = request.toDomain()
-        
+
         // Convert to entity and persist
         val entity = GLAccountEntity.fromDomain(account, tid, userId)
         repository.persist(entity)
-        
+
         return Response.status(Response.Status.CREATED)
             .entity(entity.toDomain().toDTO())
             .build()
     }
-    
+
     /**
      * Update an existing GL account.
      */
@@ -107,17 +107,17 @@ class GLAccountResource {
     ): Response {
         val tid = tenantId ?: UUID.fromString("00000000-0000-0000-0000-000000000001")
         val userId = UUID.fromString("00000000-0000-0000-0000-000000000002")
-        
+
         val entity = repository.findByTenantAndAccountNumber(tid, accountNumber)
             ?: return Response.status(Response.Status.NOT_FOUND).build()
-        
+
         // Update from request
         val updatedAccount = request.applyTo(entity.toDomain())
         entity.updateFromDomain(updatedAccount, userId)
-        
+
         return Response.ok(entity.toDomain().toDTO()).build()
     }
-    
+
     /**
      * Deactivate a GL account (soft delete).
      */
@@ -130,12 +130,12 @@ class GLAccountResource {
         @QueryParam("tenantId") tenantId: UUID? = null
     ): Response {
         val tid = tenantId ?: UUID.fromString("00000000-0000-0000-0000-000000000001")
-        
+
         val entity = repository.findByTenantAndAccountNumber(tid, accountNumber)
             ?: return Response.status(Response.Status.NOT_FOUND).build()
-        
+
         entity.isActive = false
-        
+
         return Response.noContent().build()
     }
 }

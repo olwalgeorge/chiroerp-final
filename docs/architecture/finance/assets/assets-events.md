@@ -8,7 +8,7 @@
 
 ### AssetCapitalizedEvent
 
-**Trigger**: Asset capitalization posted to GL  
+**Trigger**: Asset capitalization posted to GL
 **Consumers**: General Ledger, Controlling, Treasury
 
 ```json
@@ -38,7 +38,7 @@
 
 ### AssetPlacedInServiceEvent
 
-**Trigger**: Asset becomes depreciable  
+**Trigger**: Asset becomes depreciable
 **Consumers**: Depreciation Scheduler, Reporting
 
 ```json
@@ -57,7 +57,7 @@
 
 ### DepreciationPostedEvent
 
-**Trigger**: Depreciation run posted  
+**Trigger**: Depreciation run posted
 **Consumers**: General Ledger, Controlling
 
 ```json
@@ -81,7 +81,7 @@
 
 ### AssetTransferredEvent
 
-**Trigger**: Asset transfer posted  
+**Trigger**: Asset transfer posted
 **Consumers**: Controlling, HR/Facilities
 
 ```json
@@ -103,7 +103,7 @@
 
 ### AssetDisposedEvent
 
-**Trigger**: Asset disposal posted  
+**Trigger**: Asset disposal posted
 **Consumers**: General Ledger, Tax, Reporting
 
 ```json
@@ -131,7 +131,7 @@
 
 ### AssetRevaluedEvent
 
-**Trigger**: Asset revaluation posted  
+**Trigger**: Asset revaluation posted
 **Consumers**: General Ledger, Reporting
 
 ```json
@@ -155,7 +155,7 @@
 
 ### AssetImpairedEvent
 
-**Trigger**: Asset impairment posted  
+**Trigger**: Asset impairment posted
 **Consumers**: General Ledger, Reporting
 
 ```json
@@ -177,7 +177,7 @@
 
 ### PhysicalInventoryCompletedEvent
 
-**Trigger**: Physical inventory reconciliation completed  
+**Trigger**: Physical inventory reconciliation completed
 **Consumers**: Audit, Facilities
 
 ```json

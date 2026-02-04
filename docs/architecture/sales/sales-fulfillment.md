@@ -1,8 +1,8 @@
 # Sales Fulfillment - ADR-025
 
-> **Bounded Context:** `sales-fulfillment`  
-> **Port:** `9203` (logical, part of sales-core service)  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-fulfillment`
+> **Port:** `9203` (logical, part of sales-core service)
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview

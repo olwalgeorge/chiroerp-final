@@ -98,7 +98,7 @@ class VendorInvoice private constructor(
     fun performThreeWayMatch(po: PurchaseOrder, grn: GoodsReceipt): MatchResult
     fun applyPayment(amount: Money): PaymentAppliedEvent
     fun cancel(reason: String): VendorInvoiceCancelledEvent
-    
+
     val totalAmount: Money
     val taxAmount: Money
     val withholdingAmount: Money

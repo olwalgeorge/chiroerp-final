@@ -1,8 +1,8 @@
 # Finance Assets (Fixed Assets) - ADR-021
 
-> **Bounded Context:** `finance-assets`  
-> **Port:** `8084`  
-> **Database:** `chiroerp_finance_assets`  
+> **Bounded Context:** `finance-assets`
+> **Port:** `8084`
+> **Database:** `chiroerp_finance_assets`
 > **Kafka Consumer Group:** `finance-assets-cg`
 
 ## Overview

@@ -1,8 +1,8 @@
 # Inventory Warehouse Execution (WMS) - ADR-038
 
-> **Bounded Context:** `inventory-warehouse`  
-> **Port:** `9002`  
-> **Database:** `chiroerp_inventory_warehouse`  
+> **Bounded Context:** `inventory-warehouse`
+> **Port:** `9002`
+> **Database:** `chiroerp_inventory_warehouse`
 > **Kafka Consumer Group:** `inventory-warehouse-cg`
 
 ## Overview

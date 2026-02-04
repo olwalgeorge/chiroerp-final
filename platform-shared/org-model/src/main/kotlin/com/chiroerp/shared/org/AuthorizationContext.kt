@@ -3,10 +3,10 @@ package com.chiroerp.shared.org
 /**
  * Authorization context combining user identity and organizational scope.
  * Used for data filtering and authorization checks.
- * 
+ *
  * Phase 0: Minimal context with single tenant
  * Phase 1: Full multi-tenant context from JWT
- * 
+ *
  * Related ADRs: ADR-006, ADR-007, ADR-014, ADR-045
  */
 data class AuthorizationContext(
@@ -23,21 +23,21 @@ data class AuthorizationContext(
     fun canAccessOrgUnit(orgUnitId: String): Boolean {
         return orgUnitId in accessibleOrgUnits
     }
-    
+
     /**
      * Check if user has specific role.
      */
     fun hasRole(role: String): Boolean {
         return role in roles
     }
-    
+
     /**
      * Check if user has specific permission.
      */
     fun hasPermission(permission: String): Boolean {
         return permission in permissions
     }
-    
+
     companion object {
         /**
          * Phase 0: Development context with full access.

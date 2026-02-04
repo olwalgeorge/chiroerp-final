@@ -1,8 +1,8 @@
 # Quality Certificates - ADR-039
 
-> **Bounded Context:** `quality-certificates`  
-> **Port:** `9506` (logical, part of quality-execution service)  
-> **Database:** `chiroerp_quality_execution`  
+> **Bounded Context:** `quality-certificates`
+> **Port:** `9506` (logical, part of quality-execution service)
+> **Database:** `chiroerp_quality_execution`
 > **Kafka Consumer Group:** `quality-execution-cg`
 
 ## Overview
@@ -96,7 +96,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | InspectionCompletedEvent (consumed) | `quality.execution.inspection.completed` | 6 | 30d |
 | ShipmentConfirmedEvent (consumed) | `sales.fulfillment.shipment.confirmed` | 6 | 30d |
 
-**Consumer Group:** `quality-execution-cg`  
+**Consumer Group:** `quality-execution-cg`
 **Partition Key:** `lotNumber` / `certificateId` (ensures all events for a lot are processed in order)
 
 ## API Endpoints (Examples)

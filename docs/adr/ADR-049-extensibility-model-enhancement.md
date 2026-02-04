@@ -1,10 +1,10 @@
 # ADR-049: Extensibility Model Enhancement
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: P1 (High - Competitive Requirement)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team
+**Priority**: P1 (High - Competitive Requirement)
+**Tier**: Core
 **Tags**: extensibility, customization, hooks, plugins, versioning, upgrades
 
 ## Context
@@ -50,10 +50,10 @@ Implement a **multi-layered extensibility model** with explicit hook points, ver
 // Domain services expose explicit hook points
 @ApplicationScoped
 class SalesOrderService {
-    
+
     @Inject
     lateinit var extensionRegistry: ExtensionRegistry
-    
+
     fun createSalesOrder(command: CreateSalesOrderCommand): SalesOrder {
         // PRE-HOOK: Allow extensions to validate/modify command
         val modifiedCommand = extensionRegistry.executeHook(
@@ -64,11 +64,11 @@ class SalesOrderService {
                 userId = command.userId
             )
         )
-        
+
         // Core business logic
         val order = SalesOrder.create(modifiedCommand)
         salesOrderRepository.save(order)
-        
+
         // POST-HOOK: Allow extensions to perform additional actions
         extensionRegistry.executeHook(
             hookPoint = "sales.order.post_create",
@@ -78,7 +78,7 @@ class SalesOrderService {
                 userId = command.userId
             )
         )
-        
+
         return order
     }
 }
@@ -109,19 +109,19 @@ enum class HookPhase {
 
 @ApplicationScoped
 class ExtensionRegistry {
-    
+
     private val hookPoints = mutableMapOf<String, List<Extension>>()
-    
+
     fun registerExtension(extension: Extension) {
         val hookPoint = extension.hookPoint
         hookPoints[hookPoint] = hookPoints.getOrDefault(hookPoint, emptyList()) + extension
     }
-    
+
     fun executeHook(hookPoint: String, context: HookContext): Any? {
         val extensions = hookPoints[hookPoint] ?: return context.input
-        
+
         var result = context.input
-        
+
         for (extension in extensions.sortedBy { it.priority }) {
             try {
                 result = when (extension.type) {
@@ -138,7 +138,7 @@ class ExtensionRegistry {
                 }
             }
         }
-        
+
         return result
     }
 }
@@ -251,7 +251,7 @@ def customerCategory = api.getCustomerCategory(order.customerId)
 if (customerCategory == "HIGH_RISK") {
     def creditLimit = api.getCreditLimit(order.customerId)
     def outstandingBalance = api.getOutstandingBalance(order.customerId)
-    
+
     if (outstandingBalance + order.totalAmount > creditLimit) {
         api.addError("Credit limit exceeded for high-risk customer")
         return null // Block order creation
@@ -269,25 +269,25 @@ return order // Return modified command
 ```kotlin
 @ScriptAPI
 class SalesOrderScriptAPI(private val context: HookContext) {
-    
+
     fun getCustomerCategory(customerId: CustomerId): String {
         // Read-only access to customer data
         val customer = customerRepository.findById(customerId)
         return customer.category
     }
-    
+
     fun getCreditLimit(customerId: CustomerId): BigDecimal {
         return creditRepository.getCreditLimit(customerId)
     }
-    
+
     fun getOutstandingBalance(customerId: CustomerId): BigDecimal {
         return arRepository.getOutstandingBalance(customerId)
     }
-    
+
     fun addError(message: String) {
         context.errors.add(ValidationError(message))
     }
-    
+
     // LIMITED: No access to delete operations, admin APIs, etc.
 }
 ```
@@ -352,7 +352,7 @@ interface ExtensionPlugin {
     val extensionId: String
     val version: SemanticVersion
     val supportedHooks: List<String>
-    
+
     fun execute(hookPoint: String, context: HookContext): Any?
     fun initialize(config: ExtensionConfig)
     fun shutdown()
@@ -360,11 +360,11 @@ interface ExtensionPlugin {
 
 // Customer implementation (compiled JAR)
 class CustomPricingExtension : ExtensionPlugin {
-    
+
     override val extensionId = "acme-custom-pricing"
     override val version = SemanticVersion.parse("1.0.0")
     override val supportedHooks = listOf("sales.pricing.calculate")
-    
+
     override fun execute(hookPoint: String, context: HookContext): Any? {
         return when (hookPoint) {
             "sales.pricing.calculate" -> {
@@ -374,29 +374,29 @@ class CustomPricingExtension : ExtensionPlugin {
             else -> context.input
         }
     }
-    
+
     private fun calculateCustomPrice(context: PricingContext): Price {
         // Customer-specific pricing logic
         val basePrice = context.basePrice
         val customerTier = getCustomerTier(context.customerId)
-        
+
         val discount = when (customerTier) {
             "GOLD" -> 0.15
             "SILVER" -> 0.10
             "BRONZE" -> 0.05
             else -> 0.0
         }
-        
+
         return Price(
             amount = basePrice * (1 - discount),
             currency = context.currency
         )
     }
-    
+
     override fun initialize(config: ExtensionConfig) {
         // Load configuration
     }
-    
+
     override fun shutdown() {
         // Cleanup resources
     }
@@ -468,20 +468,20 @@ val salesOrderPreCreateV2 = HookPointVersion(
 ```kotlin
 @ApplicationScoped
 class ExtensionUpgradeService {
-    
+
     fun checkCompatibility(
         tenantId: TenantId,
         targetVersion: SemanticVersion
     ): CompatibilityReport {
         val extensions = extensionRepository.findByTenant(tenantId)
         val incompatible = mutableListOf<IncompatibleExtension>()
-        
+
         extensions.forEach { extension ->
             val hookPointVersion = hookRegistry.getHookPointVersion(
                 extension.hookPoint,
                 targetVersion
             )
-            
+
             if (hookPointVersion.status == REMOVED) {
                 incompatible.add(
                     IncompatibleExtension(
@@ -493,7 +493,7 @@ class ExtensionUpgradeService {
                 )
             }
         }
-        
+
         return CompatibilityReport(
             compatible = incompatible.isEmpty(),
             incompatibleExtensions = incompatible
@@ -511,14 +511,14 @@ class ExtensionUpgradeService {
 ```kotlin
 @ApplicationScoped
 class SandboxedScriptExecutor {
-    
+
     fun executeGroovyScript(
         script: String,
         context: HookContext,
         limits: ResourceLimits
     ): Any? {
         val sandbox = GroovySandbox(limits)
-        
+
         return try {
             sandbox.execute(script, context)
         } catch (e: TimeoutException) {
@@ -530,9 +530,9 @@ class SandboxedScriptExecutor {
 }
 
 class GroovySandbox(private val limits: ResourceLimits) {
-    
+
     private val shell = GroovyShell(createSecureBinding())
-    
+
     fun execute(script: String, context: HookContext): Any? {
         // Enforce execution time limit
         val future = CompletableFuture.supplyAsync {
@@ -540,13 +540,13 @@ class GroovySandbox(private val limits: ResourceLimits) {
             shell.setVariable("api", createSandboxedAPI(context))
             shell.evaluate(script)
         }
-        
+
         return future.get(limits.maxExecutionTimeMs, TimeUnit.MILLISECONDS)
     }
-    
+
     private fun createSecureBinding(): Binding {
         val binding = Binding()
-        
+
         // Whitelist allowed classes
         val secureConfig = CompilerConfiguration()
         secureConfig.addCompilationCustomizers(
@@ -558,12 +558,12 @@ class GroovySandbox(private val limits: ResourceLimits) {
                     "java.lang.System",
                     "java.lang.Runtime"
                 ))
-                
+
                 // Block direct database access
                 setStarImportsBlacklist(listOf("java.sql.*"))
             }
         )
-        
+
         return binding
     }
 }
@@ -575,18 +575,18 @@ class GroovySandbox(private val limits: ResourceLimits) {
 // Extensions respect tenant isolation
 @ApplicationScoped
 class ExtensionAuthorizationService {
-    
+
     fun canExecute(extension: Extension, context: HookContext): Boolean {
         // 1. Tenant isolation
         if (extension.tenantId != context.tenantId) {
             return false
         }
-        
+
         // 2. Extension enabled
         if (!extension.enabled) {
             return false
         }
-        
+
         // 3. User has permission to trigger extension (if required)
         if (extension.requiresUserConsent) {
             return userConsentRepository.hasConsent(
@@ -594,7 +594,7 @@ class ExtensionAuthorizationService {
                 extension.extensionId
             )
         }
-        
+
         return true
     }
 }
@@ -666,10 +666,10 @@ data class Certification(
 ```kotlin
 @ApplicationScoped
 class ExtensionMetricsService {
-    
+
     @Inject
     lateinit var meterRegistry: MeterRegistry
-    
+
     fun recordExtensionExecution(
         extension: Extension,
         hookPoint: String,
@@ -682,7 +682,7 @@ class ExtensionMetricsService {
             "hook_point", hookPoint,
             "status", if (success) "success" else "failure"
         ).increment()
-        
+
         meterRegistry.timer(
             "extension.execution.duration",
             "extension_id", extension.extensionId.value,
@@ -710,10 +710,10 @@ Extension Performance Dashboard
 ```kotlin
 @QuarkusTest
 class ExtensionTestHarness {
-    
+
     @Inject
     lateinit var extensionRegistry: ExtensionRegistry
-    
+
     @Test
     fun testCustomPricingExtension() {
         // Load extension
@@ -737,9 +737,9 @@ class ExtensionTestHarness {
             createdAt = Instant.now(),
             updatedAt = Instant.now()
         )
-        
+
         extensionRegistry.registerExtension(extension)
-        
+
         // Execute hook
         val result = extensionRegistry.executeHook(
             hookPoint = "sales.pricing.calculate",
@@ -752,7 +752,7 @@ class ExtensionTestHarness {
                 userId = UserId("test-user")
             )
         ) as Price
-        
+
         // Verify
         assertEquals(BigDecimal("90.00"), result.amount)
     }
@@ -804,23 +804,23 @@ fun getCompiledExtension(extensionId: ExtensionId): CompiledScript {
 ## Alternatives Considered
 
 ### 1. No Extensibility (Configuration Only)
-**Pros**: Simple, secure  
-**Cons**: Cannot handle complex business logic  
+**Pros**: Simple, secure
+**Cons**: Cannot handle complex business logic
 **Decision**: Rejected—insufficient for enterprise customers
 
 ### 2. Direct Database Access for Extensions
-**Pros**: Maximum flexibility  
-**Cons**: Security risk, no API stability  
+**Pros**: Maximum flexibility
+**Cons**: Security risk, no API stability
 **Decision**: Rejected—violates encapsulation
 
 ### 3. Microservice-Only Extensions
-**Pros**: Full isolation  
-**Cons**: High latency (network calls), complex deployment  
+**Pros**: Full isolation
+**Cons**: High latency (network calls), complex deployment
 **Decision**: Partial—webhooks support this pattern
 
 ### 4. Plugin-Only (No Scripts)
-**Pros**: Type-safe, compiled  
-**Cons**: High barrier to entry, requires JVM knowledge  
+**Pros**: Type-safe, compiled
+**Cons**: High barrier to entry, requires JVM knowledge
 **Decision**: Rejected—hybrid approach (scripts + plugins) better
 
 ---

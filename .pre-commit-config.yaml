@@ -1,0 +1,100 @@
+# Pre-commit hooks for ChiroERP
+# Install: pip install pre-commit && pre-commit install
+# Run manually: pre-commit run --all-files
+
+repos:
+  # Architecture compliance checks
+  - repo: local
+    hooks:
+      # Hexagonal Architecture: Domain layer must not depend on infrastructure
+      - id: hexagonal-domain-isolation
+        name: Hexagonal - Domain Layer Isolation
+        entry: python scripts/hooks/hook-wrapper.py check-hexagonal-architecture.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/domain/.*\.kt$'
+        pass_filenames: true
+
+      # Hexagonal Architecture: Use cases must depend on ports, not adapters
+      - id: hexagonal-usecase-ports
+        name: Hexagonal - Use Cases Depend on Ports
+        entry: python scripts/hooks/hook-wrapper.py check-usecase-dependencies.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/application/usecase/.*\.kt$'
+        pass_filenames: true
+
+      # DDD: Entities must have domain behavior, not anemic models
+      - id: ddd-rich-domain-model
+        name: DDD - Rich Domain Models
+        entry: python scripts/hooks/hook-wrapper.py check-domain-behavior.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/domain/.*\.kt$'
+        pass_filenames: true
+
+      # EDA: Domain events must follow naming convention
+      - id: eda-event-naming
+        name: EDA - Domain Event Naming Convention
+        entry: python scripts/hooks/hook-wrapper.py check-event-naming.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/domain/event/.*\.kt$'
+        pass_filenames: true
+
+      # CQRS: Commands must have validation annotations
+      - id: cqrs-command-validation
+        name: CQRS - Command Validation
+        entry: python scripts/hooks/hook-wrapper.py check-command-validation.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/application/port/input/command/.*\.kt$'
+        pass_filenames: true
+
+      # Multi-tenancy: Repository queries must filter by tenantId
+      - id: multi-tenancy-isolation
+        name: Multi-Tenancy - Repository Isolation
+        entry: python scripts/hooks/hook-wrapper.py check-tenant-isolation.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/infrastructure/.*Repository.*\.kt$'
+        pass_filenames: true
+
+      # REST: Resources must depend on use cases, not repositories
+      - id: rest-usecase-dependency
+        name: REST - Use Case Dependency
+        entry: python scripts/hooks/hook-wrapper.py check-rest-dependencies.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/infrastructure/adapter/input/rest/.*Resource\.kt$'
+        pass_filenames: true
+
+      # Outbox Pattern: Events must use transactional outbox
+      - id: event-outbox-pattern
+        name: EDA - Transactional Outbox Pattern
+        entry: python scripts/hooks/hook-wrapper.py check-outbox-pattern.ps1
+        language: system
+        files: '.*-domain/src/main/kotlin/.*/infrastructure/adapter/output/event/.*\.kt$'
+        pass_filenames: true
+
+  # General file checks
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: ['--maxkb=1000']
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Gradle wrapper validation
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-executables-have-shebangs
+        files: 'gradlew'
+
+  # Documentation validation
+  - repo: local
+    hooks:
+      - id: validate-adrs
+        name: Validate ADR References
+        entry: scripts/validate-docs.ps1
+        language: system
+        pass_filenames: false
+        files: 'docs/.*\.md$'

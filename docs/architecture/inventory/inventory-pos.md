@@ -1,8 +1,8 @@
 # Inventory POS Synchronization - ADR-024
 
-> **Bounded Context:** `inventory-pos`  
-> **Port:** `9003` (logical, part of inventory-core service)  
-> **Database:** `chiroerp_inventory_core`  
+> **Bounded Context:** `inventory-pos`
+> **Port:** `9003` (logical, part of inventory-core service)
+> **Database:** `chiroerp_inventory_core`
 > **Kafka Consumer Group:** `inventory-core-cg`
 
 ## Overview

@@ -1,10 +1,10 @@
 # ADR-007: Authentication & Authorization Strategy
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-08  
-**Tier**: Core  
-**Tags**: authn, authz, security, rbac, jwt  
-**Context**: Tenancy-Identity, API Gateway, Platform-Shared  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-08
+**Tier**: Core
+**Tags**: authn, authz, security, rbac, jwt
+**Context**: Tenancy-Identity, API Gateway, Platform-Shared
 
 ## Context
 ChiroERP is multi-tenant and spans multiple bounded contexts. We need a consistent authentication and authorization strategy that centralizes token validation, enforces tenant scoping, and provides uniform RBAC semantics while keeping services decoupled.

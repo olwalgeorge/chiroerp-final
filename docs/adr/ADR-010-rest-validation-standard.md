@@ -1,10 +1,10 @@
 # ADR-010: REST Validation Standard - Enterprise Grade
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11  
-**Tier**: Core  
-**Impact Level**: Platform-Wide  
-**Compliance**: SOX, GDPR, OWASP Top 10  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11
+**Tier**: Core
+**Impact Level**: Platform-Wide
+**Compliance**: SOX, GDPR, OWASP Top 10
 
 ## Context
 Each bounded context historically exposed REST APIs with inconsistent validation approaches:
@@ -41,7 +41,7 @@ Use this decision tree to determine the correct approach:
 ```
 START
   │
-  ├─> Is this a health/metrics/static endpoint? 
+  ├─> Is this a health/metrics/static endpoint?
   │   └─> YES → Use direct parameters (NO BeanParam)
   │   └─> NO → Continue
   │
@@ -140,7 +140,7 @@ APIs have 3-5 year lifecycles; architecture should support enhancement without b
 
 **Problem**: Single-parameter endpoints frequently evolve to multi-parameter over time.
 
-**Consequence**: 
+**Consequence**:
 - Adding parameters later requires API version bump (breaking change)
 - Inconsistent validation patterns confuse API consumers
 - Technical debt accumulates requiring eventual refactoring
@@ -151,7 +151,7 @@ APIs have 3-5 year lifecycles; architecture should support enhancement without b
 
 **Problem**: Assuming internal microservices don't need same rigor as external APIs.
 
-**Consequence**: 
+**Consequence**:
 - HTTP 500 errors from `UUID.fromString()` failures obscure real system issues
 - Monitoring dashboards show false positives (validation errors as server errors)
 - Difficult to distinguish validation failures from actual bugs in metrics
@@ -205,14 +205,14 @@ When deciding NOT to use BeanParam (rare cases), the exception MUST be documente
 ```kotlin
 /**
  * [Endpoint description]
- * 
+ *
  * VALIDATION EXCEPTION: This endpoint uses direct parameters instead of @BeanParam
- * 
+ *
  * Justification: [Specific technical or business reason]
- * 
+ *
  * Approved: [Date] by [Architecture Review Board / Tech Lead]
  * Review Date: [Date + 6 months]
- * 
+ *
  * @exception [List specific risks accepted]
  */
 ```
@@ -221,16 +221,16 @@ When deciding NOT to use BeanParam (rare cases), the exception MUST be documente
 ```kotlin
 /**
  * Get system health status for Kubernetes readiness probes.
- * 
+ *
  * VALIDATION EXCEPTION: This endpoint uses direct parameters instead of @BeanParam
- * 
- * Justification: Health check endpoint must have minimal overhead for rapid 
+ *
+ * Justification: Health check endpoint must have minimal overhead for rapid
  * readiness probes (Kubernetes requires <100ms response time). No business logic,
  * no tenant isolation, no validation required. Framework-standard health check.
- * 
+ *
  * Approved: 2025-11-15 by Architecture Review Board
  * Review Date: 2026-05-15 (6 months)
- * 
+ *
  * @exception No audit logging (intentional - high frequency endpoint)
  * @exception No metrics (handled by Prometheus /metrics scraping)
  */
@@ -484,13 +484,13 @@ All validation operations MUST meet the following performance targets:
 Prometheus queries for SLO monitoring:
 ```promql
 # Latency P95
-histogram_quantile(0.95, 
+histogram_quantile(0.95,
   rate(validation_duration_seconds_bucket[5m])
 ) > 0.1
 
 # Error rate
-sum(rate(validation_errors_total{type="unexpected"}[5m])) 
-/ sum(rate(validation_requests_total[5m])) 
+sum(rate(validation_errors_total{type="unexpected"}[5m]))
+/ sum(rate(validation_requests_total[5m]))
 > 0.001
 
 # Availability
@@ -575,7 +575,7 @@ lifecycle-policy:
     - transition-to-warm: 90 days
     - transition-to-cold: 730 days (2 years)
     - delete: 2555 days (7 years)
-  
+
   audit-logs:
     - transition-to-warm: 90 days
     - transition-to-cold: 730 days
@@ -772,7 +772,7 @@ class RegionalCircuitBreaker {
         Region.EU_WEST to CircuitBreaker.of("eu-west-validation", config),
         Region.APAC_SOUTHEAST to CircuitBreaker.of("apac-validation", config)
     )
-    
+
     fun executeValidation(region: Region, block: () -> Result): Result {
         return breakers[region]?.executeSupplier(block)
             ?: throw IllegalStateException("Unknown region: $region")
@@ -908,7 +908,7 @@ class ValidationCacheBackup {
         val snapshot = redis.dump()
         s3.upload("validation-cache-backup/${Instant.now()}.rdb", snapshot)
     }
-    
+
     fun restoreCache(timestamp: Instant) {
         val snapshot = s3.download("validation-cache-backup/${timestamp}.rdb")
         redis.restore(snapshot)
@@ -1031,7 +1031,7 @@ class ComplianceReporter {
             accessReviews = iamService.getAccessReviews(quarter)
         )
     }
-    
+
     fun generateGDPRReport(month: Month): GDPRComplianceReport {
         return GDPRComplianceReport(
             processingActivities = auditService.getProcessingLog(month),
@@ -1112,13 +1112,13 @@ scaling-rules:
       duration: 5 minutes
       action: add 2 pods
       cooldown: 10 minutes
-    
+
     - metric: request_rate
       threshold: 5000 req/s
       duration: 2 minutes
       action: add 3 pods
       cooldown: 10 minutes
-    
+
     - metric: validation_latency_p95
       threshold: 150ms
       duration: 5 minutes

@@ -1,10 +1,10 @@
 # ADR-018: Deployment & Operations Strategy
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Platform Team, SRE Team  
-**Tier**: Core  
-**Tags**: deployment, operations, sre, resiliency, config-management  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Platform Team, SRE Team
+**Tier**: Core
+**Tags**: deployment, operations, sre, resiliency, config-management
 
 ## Context
 SAP-grade ERP platforms define standardized deployment approaches, zero-downtime maintenance, configuration governance, and operational runbooks. This ADR defines the unified deployment and operations strategy for ChiroERP, including safe rollouts, maintenance practices, and operational runbooks.
@@ -37,19 +37,19 @@ metadata:
     version: v1.2.3
 spec:
   replicas: 5
-  
+
   strategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 2         # Add 2 new pods before removing old
       maxUnavailable: 1   # Max 1 pod down at a time
-  
+
   minReadySeconds: 30     # Wait 30s before considering pod ready
-  
+
   selector:
     matchLabels:
       app: financial-accounting-api
-  
+
   template:
     metadata:
       labels:
@@ -59,21 +59,21 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
         prometheus.io/path: "/q/metrics"
-    
+
     spec:
       # Graceful shutdown
       terminationGracePeriodSeconds: 60
-      
+
       containers:
       - name: api
         image: chiroerp/financial-accounting-api:v1.2.3
         imagePullPolicy: IfNotPresent
-        
+
         ports:
         - name: http
           containerPort: 8080
           protocol: TCP
-        
+
         # Health checks
         livenessProbe:
           httpGet:
@@ -83,7 +83,7 @@ spec:
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
-        
+
         readinessProbe:
           httpGet:
             path: /q/health/ready
@@ -92,7 +92,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 3
-        
+
         # Startup probe (for slow starting apps)
         startupProbe:
           httpGet:
@@ -102,7 +102,7 @@ spec:
           periodSeconds: 5
           timeoutSeconds: 3
           failureThreshold: 30  # 30 * 5s = 150s max startup time
-        
+
         # Resources
         resources:
           requests:
@@ -111,7 +111,7 @@ spec:
           limits:
             memory: "2Gi"
             cpu: "2000m"
-        
+
         # Environment variables
         env:
         - name: QUARKUS_PROFILE
@@ -120,24 +120,24 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.annotations['tenant-id']
-        
+
         # Secrets from Vault
         envFrom:
         - secretRef:
             name: financial-accounting-secrets
-        
+
         # Config from ConfigMap
         volumeMounts:
         - name: config
           mountPath: /config
           readOnly: true
-        
+
         # Graceful shutdown hook
         lifecycle:
           preStop:
             exec:
               command: ["/bin/sh", "-c", "sleep 15"]  # Allow load balancer to deregister
-      
+
       volumes:
       - name: config
         configMap:
@@ -155,26 +155,26 @@ metadata:
   namespace: chiroerp
 spec:
   replicas: 5
-  
+
   strategy:
     blueGreen:
       # Active service
       activeService: financial-accounting-api
       # Preview service for testing
       previewService: financial-accounting-api-preview
-      
+
       # Auto-promotion after 5 minutes if no issues
       autoPromotionEnabled: true
       autoPromotionSeconds: 300
-      
+
       # Scale down old version after promotion
       scaleDownDelaySeconds: 300
       scaleDownDelayRevisionLimit: 1
-  
+
   selector:
     matchLabels:
       app: financial-accounting-api
-  
+
   template:
     metadata:
       labels:
@@ -229,35 +229,35 @@ metadata:
   namespace: chiroerp
 spec:
   replicas: 10
-  
+
   strategy:
     canary:
       # Canary steps
       steps:
       - setWeight: 10      # Route 10% traffic to canary
       - pause: {duration: 5m}  # Monitor for 5 minutes
-      
+
       - setWeight: 25      # Increase to 25%
       - pause: {duration: 5m}
-      
+
       - setWeight: 50      # Increase to 50%
       - pause: {duration: 10m}
-      
+
       - setWeight: 75      # Increase to 75%
       - pause: {duration: 5m}
-      
+
       # If all steps pass, promote to 100%
-      
+
       # Canary service for monitoring
       canaryService: financial-accounting-api-canary
       stableService: financial-accounting-api
-      
+
       # Traffic routing (using Istio/Nginx)
       trafficRouting:
         istio:
           virtualService:
             name: financial-accounting-api
-      
+
       # Analysis during canary
       analysis:
         templates:
@@ -266,11 +266,11 @@ spec:
         args:
         - name: service
           value: financial-accounting-api
-  
+
   selector:
     matchLabels:
       app: financial-accounting-api
-  
+
   template:
     # ... same as rolling deployment
 ```
@@ -317,7 +317,7 @@ spec:
       prometheus:
         address: http://prometheus:9090
         query: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             sum(rate(http_request_duration_bucket{service="{{args.service}}"}[5m])) by (le)
           )
 ```
@@ -393,21 +393,21 @@ spec:
 // src/main/resources/db/migration/V1.2.3__add_customer_credit_limit.sql
 
 -- Step 1: Add new column (nullable initially for backward compatibility)
-ALTER TABLE ar.customers 
+ALTER TABLE ar.customers
 ADD COLUMN credit_limit DECIMAL(19,4) NULL;
 
 -- Step 2: Backfill existing data with default value
-UPDATE ar.customers 
-SET credit_limit = 10000.00 
+UPDATE ar.customers
+SET credit_limit = 10000.00
 WHERE credit_limit IS NULL;
 
 -- Step 3: Add index for query performance
-CREATE INDEX idx_customers_credit_limit 
-ON ar.customers(tenant_id, credit_limit) 
+CREATE INDEX idx_customers_credit_limit
+ON ar.customers(tenant_id, credit_limit)
 WHERE credit_limit IS NOT NULL;
 
 -- Step 4: Add comment for documentation
-COMMENT ON COLUMN ar.customers.credit_limit IS 
+COMMENT ON COLUMN ar.customers.credit_limit IS
 'Maximum credit allowed for customer. Default 10000.00. Added in v1.2.3';
 ```
 
@@ -425,7 +425,7 @@ quarkus:
       tenant_id: SYSTEM
     validate-on-migrate: true
     out-of-order: false
-    
+
     # Connection pool for migrations
     flyway-datasource:
       jdbc-url: ${DATABASE_URL}
@@ -438,11 +438,11 @@ quarkus:
 ```sql
 -- Phase 1: EXPAND (Deploy v1.2.0)
 -- Add new column alongside old column
-ALTER TABLE ar.invoices 
+ALTER TABLE ar.invoices
 ADD COLUMN customer_id_v2 UUID NULL;
 
 -- Create dual-write trigger to keep columns in sync
-CREATE OR REPLACE FUNCTION sync_customer_id() 
+CREATE OR REPLACE FUNCTION sync_customer_id()
 RETURNS TRIGGER AS $$
 BEGIN
   IF NEW.customer_id IS NOT NULL THEN
@@ -472,12 +472,12 @@ BEGIN
     WHERE i.customer_id = c.legacy_id
       AND i.customer_id_v2 IS NULL
       AND i.invoice_id IN (
-        SELECT invoice_id 
-        FROM ar.invoices 
+        SELECT invoice_id
+        FROM ar.invoices
         WHERE customer_id_v2 IS NULL
         LIMIT batch_size OFFSET offset_val
       );
-    
+
     EXIT WHEN NOT FOUND;
     offset_val := offset_val + batch_size;
     COMMIT;  -- Commit each batch
@@ -489,15 +489,15 @@ END $$;
 
 -- Phase 3: CONTRACT (Deploy v1.3.0)
 -- Make new column NOT NULL
-ALTER TABLE ar.invoices 
+ALTER TABLE ar.invoices
 ALTER COLUMN customer_id_v2 SET NOT NULL;
 
 -- Drop old column
-ALTER TABLE ar.invoices 
+ALTER TABLE ar.invoices
 DROP COLUMN customer_id;
 
 -- Rename new column
-ALTER TABLE ar.invoices 
+ALTER TABLE ar.invoices
 RENAME COLUMN customer_id_v2 TO customer_id;
 
 -- Drop trigger (no longer needed)
@@ -513,29 +513,29 @@ class MigrationMonitor(
     private val flyway: Flyway,
     private val meterRegistry: MeterRegistry
 ) {
-    
+
     @PostConstruct
     fun registerMetrics() {
         Gauge.builder("flyway.migrations.pending") { getPendingMigrations() }
             .register(meterRegistry)
-        
+
         Gauge.builder("flyway.migrations.applied") { getAppliedMigrations() }
             .register(meterRegistry)
     }
-    
+
     fun getPendingMigrations(): Int {
         return flyway.info().pending().size
     }
-    
+
     fun getAppliedMigrations(): Int {
         return flyway.info().applied().size
     }
-    
+
     fun validateMigrations(): MigrationReport {
         val info = flyway.info()
         val failed = info.all().filter { it.state.isFailed }
         val pending = info.pending()
-        
+
         return MigrationReport(
             totalApplied = info.applied().size,
             totalPending = pending.size,
@@ -583,11 +583,11 @@ spring:
           default-label: main
           search-paths: '{application}/{profile}'
           clone-on-start: true
-          
+
         # Encryption for sensitive values
         encrypt:
           enabled: true
-        
+
         # Composite configuration (git + vault)
         composite:
         - type: git
@@ -613,7 +613,7 @@ management:
 spring:
   application:
     name: financial-accounting-api
-  
+
   cloud:
     config:
       uri: http://config-server:8888
@@ -625,7 +625,7 @@ spring:
         initial-interval: 1000
         multiplier: 1.1
         max-interval: 2000
-      
+
       # Enable config refresh via /actuator/refresh
       enabled: true
 ```
@@ -706,10 +706,10 @@ tenants:
 class FeatureFlags(
     @Value("\${features.new-journal-entry-validation:false}")
     var newJournalEntryValidation: Boolean,
-    
+
     @Value("\${features.async-posting:false}")
     var asyncPosting: Boolean,
-    
+
     @Value("\${features.multi-currency-support:false}")
     var multiCurrencySupport: Boolean
 ) {
@@ -755,12 +755,12 @@ quarkus:
     authentication:
       kubernetes:
         role: financial-accounting-api
-    
+
     secret:
       config-prefixes:
         - secret/financial-accounting-api
         - secret/shared
-    
+
     # Dynamic database credentials
     credentials-provider:
       database:
@@ -772,7 +772,7 @@ quarkus:
 class DatabaseConfig(
     @ConfigProperty(name = "database.username")
     val username: String,  // Injected from Vault
-    
+
     @ConfigProperty(name = "database.password")
     val password: String   // Injected from Vault
 )
@@ -803,17 +803,17 @@ spec:
   secretStoreRef:
     name: vault-backend
     kind: SecretStore
-  
+
   target:
     name: financial-accounting-secrets
     creationPolicy: Owner
-  
+
   data:
   - secretKey: database-password
     remoteRef:
       key: secret/financial-accounting-api/database
       property: password
-  
+
   - secretKey: jwt-signing-key
     remoteRef:
       key: secret/financial-accounting-api/jwt
@@ -828,28 +828,28 @@ class SecretRotationService(
     private val vaultClient: VaultClient,
     private val dataSource: DataSource
 ) {
-    
+
     @Scheduled(every = "24h")
     fun rotateDbCredentials() {
         logger.info("Starting database credential rotation")
-        
+
         try {
             // 1. Request new credentials from Vault
             val newCreds = vaultClient.getDatabaseCredentials(
                 role = "financial-accounting-rw"
             )
-            
+
             // 2. Test new credentials
             testConnection(newCreds)
-            
+
             // 3. Update datasource configuration
             updateDataSource(newCreds)
-            
+
             // 4. Revoke old credentials (after grace period)
             scheduleRevocation(oldLease = currentLease, delayMinutes = 60)
-            
+
             logger.info("Database credential rotation completed successfully")
-            
+
         } catch (e: Exception) {
             logger.error("Failed to rotate database credentials", e)
             alerting.sendAlert("SECRET_ROTATION_FAILED", e.message)
@@ -921,9 +921,9 @@ graph TD
 
 ### Check Database Connections
 ```sql
-SELECT count(*), state 
-FROM pg_stat_activity 
-WHERE datname = 'financial' 
+SELECT count(*), state
+FROM pg_stat_activity
+WHERE datname = 'financial'
 GROUP BY state;
 ```
 
@@ -946,15 +946,15 @@ kafka-consumer-groups --bootstrap-server kafka:9092 \
 1. Verify connection pool metrics in Grafana
 2. Check for long-running queries:
    ```sql
-   SELECT pid, now() - query_start as duration, query 
-   FROM pg_stat_activity 
-   WHERE state = 'active' 
+   SELECT pid, now() - query_start as duration, query
+   FROM pg_stat_activity
+   WHERE state = 'active'
    ORDER BY duration DESC;
    ```
 3. Kill blocking queries if necessary:
    ```sql
-   SELECT pg_terminate_backend(pid) 
-   FROM pg_stat_activity 
+   SELECT pg_terminate_backend(pid)
+   FROM pg_stat_activity
    WHERE pid = <pid>;
    ```
 4. Increase connection pool size temporarily:
@@ -1166,7 +1166,7 @@ If root cause unclear, implement quick wins:
 ### Check Slow Queries
 ```sql
 -- PostgreSQL slow query log
-SELECT 
+SELECT
   pid,
   now() - query_start AS duration,
   query,
@@ -1180,7 +1180,7 @@ LIMIT 10;
 
 ### Check Blocking Locks
 ```sql
-SELECT 
+SELECT
   blocked_locks.pid AS blocked_pid,
   blocked_activity.usename AS blocked_user,
   blocking_locks.pid AS blocking_pid,
@@ -1202,7 +1202,7 @@ kubectl exec -it <api-pod> -n chiroerp -- curl localhost:8080/q/metrics | grep d
 
 ### Check Table Bloat
 ```sql
-SELECT 
+SELECT
   schemaname,
   tablename,
   pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size,
@@ -1230,7 +1230,7 @@ WHERE state = 'idle'
 ### 2. Add Missing Indexes
 ```sql
 -- Check missing indexes
-SELECT 
+SELECT
   schemaname,
   tablename,
   seq_scan,
@@ -1244,7 +1244,7 @@ ORDER BY seq_tup_read DESC
 LIMIT 10;
 
 -- Create index (example)
-CREATE INDEX CONCURRENTLY idx_invoices_tenant_date 
+CREATE INDEX CONCURRENTLY idx_invoices_tenant_date
 ON ar.invoices(tenant_id, invoice_date);
 ```
 
@@ -1291,7 +1291,7 @@ schedules:
       - alice@chiroerp.com
       - bob@chiroerp.com
       - carol@chiroerp.com
-    
+
   - name: SRE Secondary On-Call
     type: weekly
     rotation_type: weekly
@@ -1309,17 +1309,17 @@ escalation_policies:
         targets:
           - type: schedule_reference
             id: SRE Primary On-Call
-      
+
       - escalation_delay_in_minutes: 15
         targets:
           - type: schedule_reference
             id: SRE Secondary On-Call
-      
+
       - escalation_delay_in_minutes: 30
         targets:
           - type: user_reference
             id: engineering-manager
-      
+
       - escalation_delay_in_minutes: 60
         targets:
           - type: user_reference
@@ -1357,7 +1357,7 @@ regions:
       role: primary
       replication: synchronous to eu-west-1
     traffic_weight: 80%
-  
+
   secondary:
     name: eu-west-1
     services:
@@ -1447,7 +1447,7 @@ primary_slot_name = 'standby_eu_west_1'
 restore_command = 'aws s3 cp s3://chiroerp-wal-archive/%f %p'
 
 -- Monitor replication lag
-SELECT 
+SELECT
   client_addr,
   state,
   sent_lsn,
@@ -1724,7 +1724,7 @@ echo "=== Restore Complete ==="
 **Scenario**: [Description of simulated disaster]
 **Expected RTO**: XX minutes
 **Expected RPO**: XX minutes
-**Success Criteria**: 
+**Success Criteria**:
 - Services restored within RTO
 - Data loss within RPO
 - All monitoring functional
@@ -1772,14 +1772,14 @@ echo "=== Restore Complete ==="
 ### Observations
 
 ### What Went Well
-- 
-- 
-- 
+-
+-
+-
 
 ### What Went Wrong
-- 
-- 
-- 
+-
+-
+-
 
 ### Improvement Actions
 | Action | Owner | Due Date | Priority |
@@ -1831,19 +1831,19 @@ import org.jboss.logging.Logger
 
 @ApplicationScoped
 class BackupVerificationService {
-    
+
     @Inject
     lateinit var s3Client: S3Client
-    
+
     @ConfigProperty(name = "backup.bucket.name")
     lateinit var backupBucket: String
-    
+
     @Inject
     lateinit var logger: Logger
-    
+
     @Inject
     lateinit var alertService: AlertService
-    
+
     /**
      * Verify backups exist for last 7 days
      * Runs daily at 4 AM
@@ -1851,24 +1851,24 @@ class BackupVerificationService {
     @Scheduled(cron = "0 0 4 * * ?")
     fun verifyBackups() {
         logger.info("Starting backup verification")
-        
+
         val now = Instant.now()
         val missingBackups = mutableListOf<String>()
-        
+
         // Check last 7 days
         for (daysAgo in 0..6) {
             val date = now.minus(daysAgo.toLong(), ChronoUnit.DAYS)
             val dateStr = date.toString().substring(0, 10).replace("-", "")
-            
+
             val backupPath = "postgresql/base-${dateStr}/"
             val exists = checkBackupExists(backupPath)
-            
+
             if (!exists) {
                 missingBackups.add(dateStr)
                 logger.warn("Missing backup for date: $dateStr")
             }
         }
-        
+
         // Alert if any backups missing
         if (missingBackups.isNotEmpty()) {
             alertService.sendAlert(
@@ -1879,13 +1879,13 @@ class BackupVerificationService {
         } else {
             logger.info("All backups present for last 7 days")
         }
-        
+
         // Verify backup integrity (sample test restore)
         if (now.epochSecond % (7 * 24 * 3600) < 3600) {  // Once per week
             verifyBackupIntegrity()
         }
     }
-    
+
     private fun checkBackupExists(path: String): Boolean {
         return try {
             val response = s3Client.listObjectsV2(
@@ -1901,15 +1901,15 @@ class BackupVerificationService {
             false
         }
     }
-    
+
     private fun verifyBackupIntegrity() {
         logger.info("Performing weekly backup integrity check")
-        
+
         // Download latest backup to temp location
         // Attempt restore to test database
         // Run validation queries
         // Clean up
-        
+
         // Implementation details omitted for brevity
         // This should restore to a test environment and validate
     }
@@ -1943,14 +1943,14 @@ import javax.sql.DataSource
 @Liveness
 @ApplicationScoped
 class LivenessCheck : HealthCheck {
-    
+
     override fun call(): HealthCheckResponse {
         return HealthCheckResponse.named("financial-accounting-api-live")
             .up()
             .withData("uptime", getUptime())
             .build()
     }
-    
+
     private fun getUptime(): Long {
         return ManagementFactory.getRuntimeMXBean().uptime
     }
@@ -1959,16 +1959,16 @@ class LivenessCheck : HealthCheck {
 @Readiness
 @ApplicationScoped
 class ReadinessCheck : HealthCheck {
-    
+
     @Inject
     lateinit var dataSource: DataSource
-    
+
     @Inject
     lateinit var kafkaHealthCheck: KafkaHealthCheck
-    
+
     override fun call(): HealthCheckResponse {
         val builder = HealthCheckResponse.named("financial-accounting-api-ready")
-        
+
         try {
             // Check database connectivity
             dataSource.connection.use { conn ->
@@ -1979,19 +1979,19 @@ class ReadinessCheck : HealthCheck {
                         .build()
                 }
             }
-            
+
             // Check Kafka connectivity
             if (!kafkaHealthCheck.isHealthy()) {
                 return builder.down()
                     .withData("kafka", "unreachable")
                     .build()
             }
-            
+
             return builder.up()
                 .withData("database", "connected")
                 .withData("kafka", "connected")
                 .build()
-                
+
         } catch (e: Exception) {
             return builder.down()
                 .withData("error", e.message)
@@ -2003,30 +2003,30 @@ class ReadinessCheck : HealthCheck {
 @Startup
 @ApplicationScoped
 class StartupCheck : HealthCheck {
-    
+
     @Inject
     lateinit var migrationService: MigrationService
-    
+
     @Inject
     lateinit var cacheWarmupService: CacheWarmupService
-    
+
     override fun call(): HealthCheckResponse {
         val builder = HealthCheckResponse.named("financial-accounting-api-startup")
-        
+
         // Check Flyway migrations completed
         if (!migrationService.isMigrationComplete()) {
             return builder.down()
                 .withData("migrations", "pending")
                 .build()
         }
-        
+
         // Check cache warmup completed
         if (!cacheWarmupService.isWarmupComplete()) {
             return builder.down()
                 .withData("cache", "warming")
                 .build()
         }
-        
+
         return builder.up()
             .withData("migrations", "complete")
             .withData("cache", "ready")
@@ -2043,19 +2043,19 @@ filebeat.inputs:
   - type: container
     paths:
       - '/var/lib/docker/containers/*/*.log'
-    
+
     processors:
       - add_kubernetes_metadata:
           host: ${NODE_NAME}
           matchers:
           - logs_path:
               logs_path: "/var/lib/docker/containers/"
-      
+
       - decode_json_fields:
           fields: ["message"]
           target: ""
           overwrite_keys: true
-      
+
       - drop_fields:
           fields: ["agent", "ecs", "input", "log"]
 
@@ -2068,7 +2068,7 @@ output.elasticsearch:
   username: "${ELASTICSEARCH_USERNAME}"
   password: "${ELASTICSEARCH_PASSWORD}"
   index: "chiroerp-logs-%{+yyyy.MM.dd}"
-  
+
 setup.template.name: "chiroerp-logs"
 setup.template.pattern: "chiroerp-logs-*"
 setup.ilm.enabled: true
@@ -2090,13 +2090,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 
 @ApplicationScoped
 class StructuredLogger {
-    
+
     @Inject
     lateinit var logger: Logger
-    
+
     @Inject
     lateinit var objectMapper: ObjectMapper
-    
+
     fun logEvent(
         level: LogLevel,
         eventType: String,
@@ -2113,9 +2113,9 @@ class StructuredLogger {
             spanId = MDC.get("spanId") as? String,
             metadata = metadata
         )
-        
+
         val json = objectMapper.writeValueAsString(logEntry)
-        
+
         when (level) {
             LogLevel.INFO -> logger.info(json)
             LogLevel.WARN -> logger.warn(json)
@@ -2142,10 +2142,10 @@ enum class LogLevel {
 
 // Usage example
 class JournalEntryService {
-    
+
     @Inject
     lateinit var structuredLogger: StructuredLogger
-    
+
     fun createJournalEntry(request: JournalEntryRequest) {
         structuredLogger.logEvent(
             level = LogLevel.INFO,
@@ -2180,23 +2180,23 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-      
+
       jaeger:
         protocols:
           grpc:
             endpoint: 0.0.0.0:14250
           thrift_http:
             endpoint: 0.0.0.0:14268
-    
+
     processors:
       batch:
         timeout: 10s
         send_batch_size: 1024
-      
+
       memory_limiter:
         check_interval: 1s
         limit_mib: 512
-      
+
       resource:
         attributes:
           - key: environment
@@ -2205,27 +2205,27 @@ data:
           - key: cluster
             value: us-east-1
             action: upsert
-    
+
     exporters:
       jaeger:
         endpoint: jaeger-collector:14250
         tls:
           insecure: false
-      
+
       prometheus:
         endpoint: 0.0.0.0:8889
         namespace: chiroerp
-      
+
       logging:
         loglevel: debug
-    
+
     service:
       pipelines:
         traces:
           receivers: [otlp, jaeger]
           processors: [memory_limiter, batch, resource]
           exporters: [jaeger, logging]
-        
+
         metrics:
           receivers: [otlp]
           processors: [memory_limiter, batch, resource]
@@ -2239,7 +2239,7 @@ data:
 quarkus:
   application:
     name: financial-accounting-api
-  
+
   opentelemetry:
     enabled: true
     tracer:
@@ -2248,12 +2248,12 @@ quarkus:
           endpoint: http://otel-collector:4317
       sampler:
         ratio: 1.0  # 100% sampling in production (adjust based on volume)
-    
+
     propagators:
       - tracecontext
       - baggage
       - b3
-    
+
     resource:
       attributes:
         service.name: financial-accounting-api
@@ -2275,10 +2275,10 @@ import jakarta.inject.Inject
 
 @ApplicationScoped
 class TracingService {
-    
+
     @Inject
     lateinit var tracer: Tracer
-    
+
     fun <T> traceOperation(
         operationName: String,
         attributes: Map<String, String> = emptyMap(),
@@ -2287,13 +2287,13 @@ class TracingService {
         val span = tracer.spanBuilder(operationName)
             .setParent(Context.current())
             .startSpan()
-        
+
         try {
             // Add attributes
             attributes.forEach { (key, value) ->
                 span.setAttribute(key, value)
             }
-            
+
             // Make span current
             return Context.current().with(span).makeCurrent().use {
                 block(span)
@@ -2310,10 +2310,10 @@ class TracingService {
 
 // Usage example
 class JournalEntryService {
-    
+
     @Inject
     lateinit var tracingService: TracingService
-    
+
     fun createJournalEntry(request: JournalEntryRequest): JournalEntry {
         return tracingService.traceOperation(
             operationName = "create_journal_entry",
@@ -2324,19 +2324,19 @@ class JournalEntryService {
                 "line_items.count" to request.lineItems.size.toString()
             )
         ) { span ->
-            
+
             // Add custom events
             span.addEvent("validating_journal_entry")
             validateJournalEntry(request)
-            
+
             span.addEvent("persisting_journal_entry")
             val entry = persistJournalEntry(request)
-            
+
             span.addEvent("publishing_event")
             publishJournalEntryCreatedEvent(entry)
-            
+
             span.setAttribute("journal_entry.id", entry.id.toString())
-            
+
             entry
         }
     }
@@ -2360,12 +2360,12 @@ import java.util.concurrent.TimeUnit
 
 @ApplicationScoped
 class MetricsService {
-    
+
     @Inject
     lateinit var registry: MeterRegistry
-    
+
     private val activeRequests = ConcurrentHashMap<String, Int>()
-    
+
     init {
         // Register custom gauges
         Gauge.builder("active_requests_total", activeRequests) { map ->
@@ -2374,7 +2374,7 @@ class MetricsService {
         .description("Total number of active requests across all tenants")
         .register(registry)
     }
-    
+
     fun recordRequestDuration(
         endpoint: String,
         method: String,
@@ -2391,21 +2391,21 @@ class MetricsService {
             .register(registry)
             .record(durationMs, TimeUnit.MILLISECONDS)
     }
-    
+
     fun incrementCounter(
         name: String,
         tags: Map<String, String> = emptyMap()
     ) {
         var counter = Counter.builder(name)
             .description("Custom counter metric")
-        
+
         tags.forEach { (key, value) ->
             counter = counter.tag(key, value)
         }
-        
+
         counter.register(registry).increment()
     }
-    
+
     fun recordBusinessMetric(
         eventType: String,
         value: Double,
@@ -2413,27 +2413,27 @@ class MetricsService {
     ) {
         var gauge = Gauge.builder("business_metric_${eventType}", { value })
             .description("Business metric: $eventType")
-        
+
         tags.forEach { (key, value) ->
             gauge = gauge.tag(key, value)
         }
-        
+
         gauge.register(registry)
     }
 }
 
 // Usage example
 class JournalEntryService {
-    
+
     @Inject
     lateinit var metricsService: MetricsService
-    
+
     fun createJournalEntry(request: JournalEntryRequest): JournalEntry {
         val startTime = System.currentTimeMillis()
-        
+
         try {
             val entry = // ... create journal entry
-            
+
             // Record business metrics
             metricsService.recordBusinessMetric(
                 eventType = "journal_entry_amount",
@@ -2444,7 +2444,7 @@ class JournalEntryService {
                     "type" to entry.type
                 )
             )
-            
+
             metricsService.incrementCounter(
                 name = "journal_entries_created_total",
                 tags = mapOf(
@@ -2452,9 +2452,9 @@ class JournalEntryService {
                     "type" to entry.type
                 )
             )
-            
+
             return entry
-            
+
         } finally {
             val duration = System.currentTimeMillis() - startTime
             metricsService.recordRequestDuration(
@@ -2477,7 +2477,7 @@ groups:
   - name: deployment_health
     interval: 30s
     rules:
-      
+
       # Deployment rollout failures
       - alert: DeploymentRolloutFailed
         expr: |
@@ -2490,7 +2490,7 @@ groups:
           summary: "Deployment {{ $labels.deployment }} rollout failed"
           description: "Deployment {{ $labels.deployment }} in namespace {{ $labels.namespace }} has failed to progress for 5 minutes"
           runbook: "https://runbooks.chiroerp.com/deployment-rollout-failed"
-      
+
       # Pod crash loops
       - alert: PodCrashLooping
         expr: |
@@ -2503,7 +2503,7 @@ groups:
           summary: "Pod {{ $labels.pod }} crash looping"
           description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is crash looping (> 3 restarts in 15 minutes)"
           runbook: "https://runbooks.chiroerp.com/pod-crash-loop"
-      
+
       # Health check failures
       - alert: HealthCheckFailing
         expr: |
@@ -2516,7 +2516,7 @@ groups:
           summary: "Health check failing for {{ $labels.pod }}"
           description: "Health check for {{ $labels.pod }} in namespace {{ $labels.namespace }} has been failing for 2 minutes"
           runbook: "https://runbooks.chiroerp.com/health-check-failed"
-      
+
       # High memory usage (approaching OOMKill)
       - alert: HighMemoryUsage
         expr: |
@@ -2529,7 +2529,7 @@ groups:
           summary: "High memory usage in {{ $labels.pod }}"
           description: "Container {{ $labels.container }} in pod {{ $labels.pod }} is using {{ $value | humanizePercentage }} of memory limit"
           runbook: "https://runbooks.chiroerp.com/high-memory-usage"
-      
+
       # PVC filling up
       - alert: PersistentVolumeFillingUp
         expr: |
@@ -2542,7 +2542,7 @@ groups:
           summary: "PVC {{ $labels.persistentvolumeclaim }} filling up"
           description: "PVC {{ $labels.persistentvolumeclaim }} in namespace {{ $labels.namespace }} is {{ $value | humanizePercentage }} full"
           runbook: "https://runbooks.chiroerp.com/pvc-filling-up"
-      
+
       # Deployment replica mismatch
       - alert: DeploymentReplicasMismatch
         expr: |

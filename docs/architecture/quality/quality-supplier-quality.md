@@ -1,8 +1,8 @@
 # Quality Supplier Quality - ADR-039
 
-> **Bounded Context:** `quality-supplier-quality`  
-> **Port:** `9505` (logical, part of quality-execution service)  
-> **Database:** `chiroerp_quality_execution`  
+> **Bounded Context:** `quality-supplier-quality`
+> **Port:** `9505` (logical, part of quality-execution service)
+> **Database:** `chiroerp_quality_execution`
 > **Kafka Consumer Group:** `quality-execution-cg`
 
 ## Overview
@@ -95,7 +95,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | InspectionCompletedEvent (consumed) | `quality.execution.inspection.completed` | 6 | 30d |
 | NonconformanceCreatedEvent (consumed) | `quality.nonconformance.created` | 6 | 30d |
 
-**Consumer Group:** `quality-execution-cg`  
+**Consumer Group:** `quality-execution-cg`
 **Partition Key:** `supplierId` (ensures all events for a supplier are processed in order)
 
 ## API Endpoints (Examples)

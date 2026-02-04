@@ -1,8 +1,8 @@
 # Inventory Valuation & Costing - ADR-024
 
-> **Bounded Context:** `inventory-valuation`  
-> **Port:** `9005`  
-> **Database:** `chiroerp_inventory_valuation`  
+> **Bounded Context:** `inventory-valuation`
+> **Port:** `9005`
+> **Database:** `chiroerp_inventory_valuation`
 > **Kafka Consumer Group:** `inventory-valuation-cg`
 
 ## Overview

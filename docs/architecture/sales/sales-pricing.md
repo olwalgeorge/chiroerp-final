@@ -1,8 +1,8 @@
 # Sales Pricing & Promotions - ADR-025
 
-> **Bounded Context:** `sales-pricing`  
-> **Port:** `9202`  
-> **Database:** `chiroerp_sales_pricing`  
+> **Bounded Context:** `sales-pricing`
+> **Port:** `9202`
+> **Database:** `chiroerp_sales_pricing`
 > **Kafka Consumer Group:** `sales-pricing-cg`
 
 ## Overview

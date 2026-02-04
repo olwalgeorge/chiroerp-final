@@ -66,15 +66,15 @@ function Test-CommandExists {
 
 Write-Host @"
 
-   _____ _     _          ______ _____  _____  
-  / ____| |   (_)        |  ____|  __ \|  __ \ 
+   _____ _     _          ______ _____  _____
+  / ____| |   (_)        |  ____|  __ \|  __ \
  | |    | |__  _ _ __ ___| |__  | |__) | |__) |
- | |    | '_ \| | '__/ _ \  __| |  _  /|  ___/ 
- | |____| | | | | | | (_) | |____| | \ \| |     
-  \_____|_| |_|_|_|  \___/|______|_|  \_\_|     
-                                                 
+ | |    | '_ \| | '__/ _ \  __| |  _  /|  ___/
+ | |____| | | | | | | (_) | |____| | \ \| |
+  \_____|_| |_|_|_|  \___/|______|_|  \_\_|
+
   Development Environment Setup
-  
+
 "@ -ForegroundColor Cyan
 
 $rootDir = Split-Path -Parent $PSScriptRoot
@@ -94,7 +94,7 @@ Write-Info "Found: $javaVersion"
 if ($javaVersion -notmatch "version `"21\.") {
     Write-Warning-Custom "Java 21 required, but found: $javaVersion"
     Write-Info "Please install Java 21 (Eclipse Adoptium): https://adoptium.net/"
-    
+
     $response = Read-Host "Continue anyway? (yes/no)"
     if ($response -ne "yes") {
         exit 1
@@ -191,7 +191,7 @@ if (-not $SkipDocker) {
 
     # Check service health
     Write-Info "Checking service health..."
-    
+
     $services = @(
         @{ Name = "PostgreSQL (Finance)"; Port = 5432 }
         @{ Name = "PostgreSQL (Sales)"; Port = 5433 }

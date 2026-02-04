@@ -1,8 +1,8 @@
 # Certification & Compliance Guide - ChiroERP
 
-**Status**: Draft  
-**Priority**: P2 (Medium - Compliance Critical)  
-**Last Updated**: February 3, 2026  
+**Status**: Draft
+**Priority**: P2 (Medium - Compliance Critical)
+**Last Updated**: February 3, 2026
 **Scope**: Kenya KRA eTIMS, M-Pesa Daraja API, Tanzania TRA VFD, Security Audits
 
 ---
@@ -35,16 +35,16 @@ This guide provides step-by-step certification processes for:
 
 ### 2.1 Overview
 
-**What is KRA eTIMS?**  
+**What is KRA eTIMS?**
 Kenya Revenue Authority's **Electronic Tax Invoice Management System** - mandatory since January 1, 2023 for all VAT-registered businesses.
 
-**Why is it mandatory?**  
+**Why is it mandatory?**
 - Real-time invoice submission to KRA
 - **Cu (Control Unit) number** issued for each invoice (proof of tax compliance)
 - Prevents tax evasion (KRA tracks all B2B/B2C transactions)
 - Non-compliance penalty: **KES 1,000,000 fine or 5 years imprisonment**
 
-**Key Requirement**:  
+**Key Requirement**:
 Every invoice must have a **Cu number** from KRA before it can be issued to a customer.
 
 ---
@@ -95,7 +95,7 @@ Every invoice must have a **Cu number** from KRA before it can be issued to a cu
 **Option B: Virtual Device (Software SDC) - RECOMMENDED FOR CHIROERP**
 - **Integration**: API-based (no physical device)
 - **Cost**: Free (API access only)
-- **Requirements**: 
+- **Requirements**:
   - Server with internet connectivity
   - HTTPS endpoint (SSL certificate)
   - JSON API integration
@@ -200,19 +200,19 @@ class KraEtimsService(
     fun submitInvoice(invoice: Invoice): CuNumber {
         val internalData = buildInternalData(invoice)
         val signature = generateSignature(internalData)
-        
+
         val request = InvoiceSubmissionRequest(
             deviceSerialNumber = etimsConfig.deviceSerialNumber,
             internalData = internalData,
             receiptSignature = signature
         )
-        
+
         val response = restTemplate.postForEntity(
             "${etimsConfig.baseUrl}/invoice/submit",
             request,
             EtimsResponse::class.java
         )
-        
+
         if (response.statusCode == HttpStatus.OK) {
             val cuNumber = response.body?.cuNumber
             return cuNumber ?: throw EtimsException("Cu number not received")
@@ -220,13 +220,13 @@ class KraEtimsService(
             throw EtimsException("eTIMS submission failed: ${response.statusCode}")
         }
     }
-    
+
     private fun generateSignature(internalData: InternalData): String {
         // Signature = SHA256(deviceSerialNumber + internalData JSON + devicePin)
         val dataToSign = etimsConfig.deviceSerialNumber +
                          objectMapper.writeValueAsString(internalData) +
                          etimsConfig.devicePin
-        
+
         return MessageDigest.getInstance("SHA-256")
             .digest(dataToSign.toByteArray())
             .joinToString("") { "%02x".format(it) }
@@ -340,10 +340,10 @@ kra:
 
 ### 3.1 Overview
 
-**What is M-Pesa Daraja API?**  
+**What is M-Pesa Daraja API?**
 Safaricom's **mobile money API** for integrating M-Pesa payments into ChiroERP.
 
-**Why is it critical?**  
+**Why is it critical?**
 - **80%+ of B2B/B2C payments in Kenya via M-Pesa**
 - Real-time payment notifications (C2B callback)
 - Automated invoice application
@@ -400,30 +400,30 @@ class MPesaDarajaService(
 ) {
     private var accessToken: String? = null
     private var tokenExpiryTime: Instant? = null
-    
+
     fun getAccessToken(): String {
         // Check if token is still valid (expires in 3600s)
         if (accessToken != null && tokenExpiryTime?.isAfter(Instant.now()) == true) {
             return accessToken!!
         }
-        
+
         // Generate Basic Auth header
         val credentials = "${mpesaConfig.consumerKey}:${mpesaConfig.consumerSecret}"
         val encodedCredentials = Base64.getEncoder().encodeToString(credentials.toByteArray())
-        
+
         val headers = HttpHeaders()
         headers["Authorization"] = "Basic $encodedCredentials"
-        
+
         val response = restTemplate.exchange(
             "${mpesaConfig.baseUrl}/oauth/v1/generate?grant_type=client_credentials",
             HttpMethod.GET,
             HttpEntity<String>(headers),
             MPesaTokenResponse::class.java
         )
-        
+
         accessToken = response.body?.access_token
         tokenExpiryTime = Instant.now().plusSeconds(3500) // 3500s (100s buffer)
-        
+
         return accessToken!!
     }
 }
@@ -439,23 +439,23 @@ data class MPesaTokenResponse(
 ```kotlin
 fun registerC2BUrls() {
     val token = getAccessToken()
-    
+
     val request = C2BRegistrationRequest(
         ShortCode = mpesaConfig.shortcode,  // 174379 (sandbox)
         ResponseType = "Completed",
         ConfirmationURL = "${mpesaConfig.callbackBaseUrl}/api/v1/treasury/payments/mpesa/confirmation",
         ValidationURL = "${mpesaConfig.callbackBaseUrl}/api/v1/treasury/payments/mpesa/validation"
     )
-    
+
     val headers = HttpHeaders()
     headers["Authorization"] = "Bearer $token"
-    
+
     val response = restTemplate.postForEntity(
         "${mpesaConfig.baseUrl}/mpesa/c2b/v1/registerurl",
         HttpEntity(request, headers),
         MPesaRegistrationResponse::class.java
     )
-    
+
     logger.info("C2B registration: ${response.body}")
 }
 ```
@@ -465,7 +465,7 @@ fun registerC2BUrls() {
 ```kotlin
 fun simulateC2BPayment(invoiceId: String, amount: Double, phoneNumber: String) {
     val token = getAccessToken()
-    
+
     val request = C2BSimulateRequest(
         ShortCode = mpesaConfig.shortcode,
         CommandID = "CustomerPayBillOnline",
@@ -473,16 +473,16 @@ fun simulateC2BPayment(invoiceId: String, amount: Double, phoneNumber: String) {
         Msisdn = phoneNumber,  // e.g., 254712345678
         BillRefNumber = invoiceId  // Invoice ID: INV-2026-001
     )
-    
+
     val headers = HttpHeaders()
     headers["Authorization"] = "Bearer $token"
-    
+
     val response = restTemplate.postForEntity(
         "${mpesaConfig.baseUrl}/mpesa/c2b/v1/simulate",
         HttpEntity(request, headers),
         MPesaSimulateResponse::class.java
     )
-    
+
     logger.info("Payment simulation: ${response.body}")
 }
 ```
@@ -498,11 +498,11 @@ class MPesaCallbackController(
     @PostMapping("/confirmation")
     fun confirmationCallback(@RequestBody callback: MPesaC2BCallback): ResponseEntity<MPesaCallbackResponse> {
         logger.info("M-Pesa C2B confirmation: $callback")
-        
+
         try {
             // Extract invoice ID from BillRefNumber
             val invoiceId = callback.BillRefNumber
-            
+
             // Create payment record
             val payment = Payment(
                 id = UUID.randomUUID(),
@@ -513,10 +513,10 @@ class MPesaCallbackController(
                 phoneNumber = callback.MSISDN,
                 receivedAt = Instant.now()
             )
-            
+
             // Apply payment to invoice
             paymentService.applyPayment(payment)
-            
+
             // Respond to Safaricom (MUST respond within 30 seconds)
             return ResponseEntity.ok(MPesaCallbackResponse(
                 ResultCode = "0",
@@ -530,12 +530,12 @@ class MPesaCallbackController(
             ))
         }
     }
-    
+
     @PostMapping("/validation")
     fun validationCallback(@RequestBody callback: MPesaC2BCallback): ResponseEntity<MPesaCallbackResponse> {
         // Validate invoice exists and amount matches
         val invoice = invoiceService.findById(callback.BillRefNumber)
-        
+
         return if (invoice != null && invoice.totalAmount == callback.TransAmount) {
             ResponseEntity.ok(MPesaCallbackResponse(ResultCode = "0", ResultDesc = "Accepted"))
         } else {
@@ -666,7 +666,7 @@ mpesa:
 
 ### 4.1 Overview
 
-**What is TRA VFD/EFD?**  
+**What is TRA VFD/EFD?**
 Tanzania Revenue Authority's **Virtual/Electronic Fiscal Device** - mandatory since 2019 for all VAT-registered businesses.
 
 **Difference from Kenya eTIMS**:
@@ -709,8 +709,8 @@ Tanzania Revenue Authority's **Virtual/Electronic Fiscal Device** - mandatory si
 
 **Purpose**: Enterprise customers require ISO 27001 certification
 
-**Timeline**: 6-12 months  
-**Cost**: $15,000 - $50,000  
+**Timeline**: 6-12 months
+**Cost**: $15,000 - $50,000
 **Audit Firm**: Bureau Veritas, BSI, SGS
 
 **Certification Steps**:
@@ -734,8 +734,8 @@ Tanzania Revenue Authority's **Virtual/Electronic Fiscal Device** - mandatory si
 
 **Purpose**: If ChiroERP processes credit card payments
 
-**Timeline**: 3-6 months  
-**Cost**: $10,000 - $30,000  
+**Timeline**: 3-6 months
+**Cost**: $10,000 - $30,000
 **Level**: Level 4 (< 1M transactions/year) - Self-Assessment Questionnaire (SAQ)
 
 **Certification Steps**:
@@ -755,8 +755,8 @@ Tanzania Revenue Authority's **Virtual/Electronic Fiscal Device** - mandatory si
 
 **Purpose**: US enterprise customers require SOC 2
 
-**Timeline**: 6-12 months  
-**Cost**: $20,000 - $100,000  
+**Timeline**: 6-12 months
+**Cost**: $20,000 - $100,000
 **Audit Firm**: Deloitte, PwC, EY, KPMG
 
 **Trust Service Criteria**:
@@ -811,10 +811,10 @@ Tanzania Revenue Authority's **Virtual/Electronic Fiscal Device** - mandatory si
 | **SOC 2 Type II** | 12 months | $50,000 | $20,000 (audit) | ❌ NO |
 | **TOTAL** | 24 months | **$98,500** | **$30,800/year** | |
 
-**Critical Path (Go-Live)**:  
+**Critical Path (Go-Live)**:
 KRA eTIMS (8 weeks) → M-Pesa Daraja (4 weeks) → **Go-Live** (Month 3)
 
-**Nice-to-Have (Enterprise Sales)**:  
+**Nice-to-Have (Enterprise Sales)**:
 ISO 27001 (12 months) → SOC 2 (12 months) → **Enterprise-Ready** (Month 24)
 
 ---

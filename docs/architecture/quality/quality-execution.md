@@ -1,8 +1,8 @@
 # Quality Execution - ADR-039
 
-> **Bounded Context:** `quality-execution`  
-> **Port:** `9502`  
-> **Database:** `chiroerp_quality_execution`  
+> **Bounded Context:** `quality-execution`
+> **Port:** `9502`
+> **Database:** `chiroerp_quality_execution`
 > **Kafka Consumer Group:** `quality-execution-cg`
 
 ## Overview

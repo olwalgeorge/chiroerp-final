@@ -1,8 +1,8 @@
 # Plant Maintenance Breakdown Maintenance - ADR-040
 
-> **Bounded Context:** `maintenance-breakdown`  
-> **Port:** `9604` (logical, part of maintenance-work-orders service)  
-> **Database:** `chiroerp_maintenance_work_orders`  
+> **Bounded Context:** `maintenance-breakdown`
+> **Port:** `9604` (logical, part of maintenance-work-orders service)
+> **Database:** `chiroerp_maintenance_work_orders`
 > **Kafka Consumer Group:** `maintenance-work-orders-cg`
 
 ## Overview
@@ -93,7 +93,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | CorrectiveWorkOrderCreatedEvent | `maintenance.breakdown.workorder.created` | 6 | 30d |
 | EquipmentStatusChangedEvent (consumed) | `maintenance.equipment.status.changed` | 6 | 30d |
 
-**Consumer Group:** `maintenance-work-orders-cg`  
+**Consumer Group:** `maintenance-work-orders-cg`
 **Partition Key:** `equipmentId` (ensures all events for equipment are processed in order)
 
 ## API Endpoints (Examples)

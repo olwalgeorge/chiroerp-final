@@ -1,10 +1,10 @@
 # ADR-021: Fixed Asset Accounting (FI-AA)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: finance, fixed-assets, depreciation, compliance
 
 ## Context

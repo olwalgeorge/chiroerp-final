@@ -74,7 +74,7 @@ function Get-ADRCount {
 function Get-HighestADRNumber {
     $adrFiles = Get-ADRFiles
     if ($adrFiles.Count -eq 0) { return 0 }
-    
+
     $numbers = $adrFiles | ForEach-Object {
         if ($_.Name -match '^ADR-(\d+)') {
             [int]$matches[1]
@@ -91,19 +91,19 @@ function Get-FileContent {
     return $null
 }
 
-function Extract-ADRReferences {
+function Get-ADRReferences {
     param([string]$Content)
     if (-not $Content) { return @() }
-    
+
     # Match patterns: ADR-001, ADR-057, (ADR-042), [ADR-001], etc.
-    $matches = [regex]::Matches($Content, 'ADR-(\d{3})')
-    return $matches | ForEach-Object { $_.Value } | Select-Object -Unique | Sort-Object
+    $regexMatches = [regex]::Matches($Content, 'ADR-(\d{3})')
+    return $regexMatches | ForEach-Object { $_.Value } | Select-Object -Unique | Sort-Object
 }
 
-function Extract-DocumentDate {
+function Get-DocumentDate {
     param([string]$Content)
     if (-not $Content) { return $null }
-    
+
     # Match patterns: "Last Updated: 2026-02-03", "**Last Updated**: 2026-02-03"
     if ($Content -match '(?:\*{0,2})?(?:Last Updated|Date)(?:\*{0,2})?\s*:\s*(\d{4}-\d{2}-\d{2})') {
         return $matches[1]
@@ -111,10 +111,10 @@ function Extract-DocumentDate {
     return $null
 }
 
-function Extract-ADRCount {
+function Get-ADRCountFromContent {
     param([string]$Content)
     if (-not $Content) { return $null }
-    
+
     # Match patterns: "57+ ADRs", "57 ADRs", "ADR-001 through ADR-057"
     if ($Content -match '(\d+)\+?\s*ADRs?' -or $Content -match 'ADR-\d+\s+through\s+ADR-(\d+)') {
         return [int]$matches[1]
@@ -122,10 +122,10 @@ function Extract-ADRCount {
     return $null
 }
 
-function Extract-ModuleCount {
+function Get-ModuleCount {
     param([string]$Content)
     if (-not $Content) { return $null }
-    
+
     # Match patterns: "92 modules", "92 Modules"
     if ($Content -match '(\d+)\s+[Mm]odules') {
         return [int]$matches[1]
@@ -133,10 +133,10 @@ function Extract-ModuleCount {
     return $null
 }
 
-function Extract-DomainCount {
+function Get-DomainCount {
     param([string]$Content)
     if (-not $Content) { return $null }
-    
+
     # Match patterns: "12 domains", "12 Major Domains"
     if ($Content -match '(\d+)\s+(?:Major\s+)?[Dd]omains') {
         return [int]$matches[1]
@@ -144,13 +144,13 @@ function Extract-DomainCount {
     return $null
 }
 
-function Extract-PortAssignments {
+function Get-PortAssignments {
     param([string]$Content)
     if (-not $Content) { return @() }
-    
+
     # Extract port numbers from tables (e.g., "| finance-gl | 8081 |")
-    $matches = [regex]::Matches($Content, '\|\s*[^|]+\s*\|\s*(\d{4,5})\s*\|')
-    return $matches | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object
+    $portMatches = [regex]::Matches($Content, '\|\s*[^|]+\s*\|\s*(\d{4,5})\s*\|')
+    return $portMatches | ForEach-Object { [int]$_.Groups[1].Value } | Sort-Object
 }
 
 #endregion
@@ -194,14 +194,14 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
     Write-ValidationError "WORKSPACE-STRUCTURE.md not found at $WORKSPACE_STRUCTURE"
 } else {
     $wsContent = Get-FileContent $WORKSPACE_STRUCTURE
-    
+
     # Check ADR count
-    $wsADRCount = Extract-ADRCount $wsContent
+    $wsADRCount = Get-ADRCountFromContent $wsContent
     if (-not $wsADRCount) {
         Write-ValidationError "WORKSPACE-STRUCTURE.md: Cannot extract ADR count"
     } elseif ($wsADRCount -ne $highestADR) {
         Write-ValidationError "WORKSPACE-STRUCTURE.md: ADR count mismatch (claims $wsADRCount, actual $highestADR)"
-        
+
         if ($Fix) {
             $highestADRFormatted = $highestADR.ToString("000")
             $wsContent = $wsContent -replace '(\d+)\+?\s*ADRs?', "$highestADR+ ADRs"
@@ -213,9 +213,9 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
     } else {
         Write-Success "ADR count correct ($wsADRCount)"
     }
-    
+
     # Check date
-    $wsDate = Extract-DocumentDate $wsContent
+    $wsDate = Get-DocumentDate $wsContent
     if (-not $wsDate) {
         Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract last updated date"
     } else {
@@ -225,7 +225,7 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
         } else {
             Write-Success "Last updated date: $wsDate ($daysDiff days ago)"
         }
-        
+
         if ($Fix -and $daysDiff -gt 7) {
             $wsContent = $wsContent -replace 'Last Updated:\s*\d{4}-\d{2}-\d{2}', "Last Updated: $CURRENT_DATE"
             Set-Content -Path $WORKSPACE_STRUCTURE -Value $wsContent -NoNewline
@@ -233,17 +233,17 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
             Write-Success "Fixed: Updated date to $CURRENT_DATE"
         }
     }
-    
+
     # Check module/domain counts
-    $wsModuleCount = Extract-ModuleCount $wsContent
-    $wsDomainCount = Extract-DomainCount $wsContent
-    
+    $wsModuleCount = Get-ModuleCount $wsContent
+    $wsDomainCount = Get-DomainCount $wsContent
+
     if ($wsModuleCount) {
         Write-Success "Module count: $wsModuleCount"
     } else {
         Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract module count"
     }
-    
+
     if ($wsDomainCount) {
         Write-Success "Domain count: $wsDomainCount"
     } else {
@@ -261,14 +261,14 @@ if (-not (Test-Path $ARCH_README)) {
     Write-ValidationError "Architecture README.md not found at $ARCH_README"
 } else {
     $readmeContent = Get-FileContent $ARCH_README
-    
+
     # Check ADR count
-    $readmeADRCount = Extract-ADRCount $readmeContent
+    $readmeADRCount = Get-ADRCountFromContent $readmeContent
     if (-not $readmeADRCount) {
         Write-ValidationWarning "Architecture README.md: Cannot extract ADR count"
     } elseif ($readmeADRCount -ne $highestADR) {
         Write-ValidationError "Architecture README.md: ADR count mismatch (claims $readmeADRCount, actual $highestADR)"
-        
+
         if ($Fix) {
             $readmeContent = $readmeContent -replace '(\d+)\+?\s*ADRs?', "$highestADR ADRs"
             Set-Content -Path $ARCH_README -Value $readmeContent -NoNewline
@@ -278,17 +278,17 @@ if (-not (Test-Path $ARCH_README)) {
     } else {
         Write-Success "ADR count correct ($readmeADRCount)"
     }
-    
+
     # Check module/domain counts match WORKSPACE-STRUCTURE.md
-    $readmeModuleCount = Extract-ModuleCount $readmeContent
-    $readmeDomainCount = Extract-DomainCount $readmeContent
-    
+    $readmeModuleCount = Get-ModuleCount $readmeContent
+    $readmeDomainCount = Get-DomainCount $readmeContent
+
     if ($readmeModuleCount -and $wsModuleCount -and $readmeModuleCount -ne $wsModuleCount) {
         Write-ValidationError "Module count mismatch: README=$readmeModuleCount, WORKSPACE-STRUCTURE=$wsModuleCount"
     } elseif ($readmeModuleCount) {
         Write-Success "Module count matches: $readmeModuleCount"
     }
-    
+
     if ($readmeDomainCount -and $wsDomainCount -and $readmeDomainCount -ne $wsDomainCount) {
         Write-ValidationError "Domain count mismatch: README=$readmeDomainCount, WORKSPACE-STRUCTURE=$wsDomainCount"
     } elseif ($readmeDomainCount) {
@@ -307,15 +307,15 @@ $brokenReferences = @()
 
 foreach ($doc in $allArchDocs) {
     $content = Get-FileContent $doc.FullName
-    $references = Extract-ADRReferences $content
-    
+    $references = Get-ADRReferences $content
+
     foreach ($ref in $references) {
         if ($ref -match 'ADR-(\d+)') {
             $adrNum = [int]$matches[1]
             $adrNumFormatted = $adrNum.ToString("000")
             $expectedFile = "ADR-$adrNumFormatted-*.md"
             $adrFile = Get-ChildItem -Path $ADR_DIR -Filter $expectedFile -ErrorAction SilentlyContinue
-            
+
             if (-not $adrFile) {
                 $brokenReferences += @{
                     Document = $doc.Name
@@ -344,13 +344,13 @@ Write-Host "`n[5/7] Validating microservices port assignments..." -ForegroundCol
 
 if (Test-Path $WORKSPACE_STRUCTURE) {
     $wsContent = Get-FileContent $WORKSPACE_STRUCTURE
-    $ports = Extract-PortAssignments $wsContent
-    
+    $ports = Get-PortAssignments $wsContent
+
     if ($ports.Count -eq 0) {
         Write-ValidationWarning "No port assignments found in WORKSPACE-STRUCTURE.md"
     } else {
         Write-Info "Found $($ports.Count) port assignments"
-        
+
         # Check for duplicates
         $duplicates = $ports | Group-Object | Where-Object { $_.Count -gt 1 }
         if ($duplicates) {
@@ -361,7 +361,7 @@ if (Test-Path $WORKSPACE_STRUCTURE) {
         } else {
             Write-Success "No duplicate port assignments"
         }
-        
+
         # Check port ranges (8000-10999 for microservices)
         $invalidPorts = $ports | Where-Object { $_ -lt 8000 -or $_ -gt 10999 }
         if ($invalidPorts) {
@@ -372,7 +372,7 @@ if (Test-Path $WORKSPACE_STRUCTURE) {
         } else {
             Write-Success "All ports in valid range (8000-10999)"
         }
-        
+
         # Check for gaps (potential missing services)
         $portGaps = @()
         for ($i = 0; $i -lt $ports.Count - 1; $i++) {
@@ -503,12 +503,12 @@ if ($script:ValidationIssues.Count -eq 0 -and $script:ValidationWarnings.Count -
     Write-Host "║  ✗ VALIDATION FAILED                                       ║" -ForegroundColor Red
     Write-Host "║  Fix errors above or run with -Fix flag                    ║" -ForegroundColor Red
     Write-Host "╚════════════════════════════════════════════════════════════╝" -ForegroundColor Red
-    
+
     if (-not $Fix) {
         Write-Host "`nTip: Run with -Fix flag to automatically fix some issues:" -ForegroundColor Cyan
         Write-Host "  .\scripts\validate-docs.ps1 -Fix" -ForegroundColor Cyan
     }
-    
+
     exit 1
 }
 

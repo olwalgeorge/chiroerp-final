@@ -1,10 +1,10 @@
 # ADR-017: Performance Standards & Monitoring
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Platform Team, SRE Team  
-**Tier**: Core  
-**Tags**: performance, monitoring, slos, observability, scalability  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Platform Team, SRE Team
+**Tier**: Core
+**Tags**: performance, monitoring, slos, observability, scalability
 
 ## Context
 SAP-grade ERP systems define clear performance standards, monitor them continuously, and enforce capacity planning. This ADR defines platform-wide performance targets, monitoring baselines, and optimization guidance to ensure predictable user experience and scaling behavior.
@@ -90,19 +90,19 @@ observability:
     storage: Prometheus (30 days retention) + Thanos (long-term)
     visualization: Grafana
     alerting: Prometheus Alertmanager + PagerDuty
-  
+
   tracing:
     instrumentation: OpenTelemetry
     backend: Jaeger / Tempo
     sampling: 1% baseline, 100% on errors
     retention: 7 days traces, 90 days aggregated
-  
+
   logging:
     collection: Logback + Fluentd
     storage: Elasticsearch / Loki
     visualization: Kibana / Grafana
     retention: 30 days hot, 90 days warm, 1 year cold
-  
+
   apm:
     tool: Elastic APM / Datadog
     coverage: All Tier 1 and Tier 2 services
@@ -121,41 +121,41 @@ class ServiceMetrics(
         .description("Total HTTP requests")
         .tags("service", "financial-accounting", "context", "fi")
         .register(meterRegistry)
-    
+
     val errorCounter = Counter.builder("http.errors.total")
         .description("Total HTTP errors")
         .tags("service", "financial-accounting", "status", "5xx")
         .register(meterRegistry)
-    
+
     val businessErrorCounter = Counter.builder("business.errors.total")
         .description("Business validation errors")
         .tags("service", "financial-accounting", "error_code", "")
         .register(meterRegistry)
-    
+
     // Timers (automatically track count, sum, max, percentiles)
     val requestTimer = Timer.builder("http.request.duration")
         .description("HTTP request duration")
         .tags("service", "financial-accounting", "endpoint", "", "method", "")
         .publishPercentiles(0.5, 0.95, 0.99)
         .register(meterRegistry)
-    
+
     val databaseTimer = Timer.builder("database.query.duration")
         .description("Database query duration")
         .tags("service", "financial-accounting", "query", "")
         .publishPercentiles(0.5, 0.95, 0.99)
         .register(meterRegistry)
-    
+
     // Gauges
     val activeConnections = Gauge.builder("database.connections.active") { getActiveConnections() }
         .description("Active database connections")
         .tags("service", "financial-accounting", "pool", "default")
         .register(meterRegistry)
-    
+
     val queueDepth = Gauge.builder("kafka.consumer.lag") { getConsumerLag() }
         .description("Kafka consumer lag")
         .tags("service", "financial-accounting", "topic", "", "group", "")
         .register(meterRegistry)
-    
+
     // Histograms
     val payloadSize = DistributionSummary.builder("http.request.payload.size")
         .description("HTTP request payload size in bytes")
@@ -171,23 +171,23 @@ class JournalEntryController(
     private val journalEntryService: JournalEntryService,
     private val metrics: ServiceMetrics
 ) {
-    
+
     @PostMapping
     @Timed(value = "journal.entry.post", percentiles = [0.5, 0.95, 0.99])
     suspend fun postJournalEntry(@RequestBody request: PostJournalEntryRequest): JournalEntryResponse {
         val timer = Timer.start(metrics.meterRegistry)
-        
+
         try {
             metrics.requestCounter.increment()
-            
+
             val result = journalEntryService.post(request)
-            
+
             timer.stop(metrics.requestTimer.tag("endpoint", "post-journal-entry")
                                           .tag("method", "POST")
                                           .tag("status", "200"))
-            
+
             return result
-            
+
         } catch (e: BusinessValidationException) {
             metrics.businessErrorCounter.tag("error_code", e.errorCode).increment()
             timer.stop(metrics.requestTimer.tag("status", "400"))
@@ -226,7 +226,7 @@ quarkus:
 class JournalEntryService(
     private val tracer: Tracer
 ) {
-    
+
     suspend fun post(request: PostJournalEntryRequest): JournalEntryResponse {
         val span = tracer.spanBuilder("journal-entry-post")
             .setSpanKind(SpanKind.SERVER)
@@ -234,30 +234,30 @@ class JournalEntryService(
             .setAttribute("document.type", request.documentType)
             .setAttribute("amount", request.totalAmount.toString())
             .startSpan()
-        
+
         return span.makeCurrent().use {
             try {
                 // Validation span
                 val validationSpan = tracer.spanBuilder("validate-journal-entry").startSpan()
                 validateJournalEntry(request)
                 validationSpan.end()
-                
+
                 // Authorization span
                 val authzSpan = tracer.spanBuilder("check-authorization").startSpan()
                 checkAuthorization(request)
                 authzSpan.end()
-                
+
                 // Database span (auto-instrumented)
                 val result = repository.save(request)
-                
+
                 // Event publishing span
                 val eventSpan = tracer.spanBuilder("publish-event").startSpan()
                 publishEvent(result)
                 eventSpan.end()
-                
+
                 span.setStatus(StatusCode.OK)
                 result
-                
+
             } catch (e: Exception) {
                 span.recordException(e)
                 span.setStatus(StatusCode.ERROR, e.message ?: "Unknown error")
@@ -379,7 +379,7 @@ groups:
       # Latency alerts
       - alert: HighLatencyTier1
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(http_request_duration_bucket{tier="1"}[5m])
           ) > 0.3
         for: 5m
@@ -389,10 +389,10 @@ groups:
         annotations:
           summary: "Tier 1 API latency p95 > 300ms"
           description: "{{ $labels.service }} {{ $labels.endpoint }} has p95 latency of {{ $value }}s"
-      
+
       - alert: HighLatencyTier2
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(http_request_duration_bucket{tier="2"}[5m])
           ) > 0.5
         for: 10m
@@ -402,12 +402,12 @@ groups:
         annotations:
           summary: "Tier 2 API latency p95 > 500ms"
           description: "{{ $labels.service }} has elevated latency"
-      
+
       # Error rate alerts
       - alert: HighErrorRate
         expr: |
           100 * (
-            rate(http_errors_total[5m]) / 
+            rate(http_errors_total[5m]) /
             rate(http_requests_total[5m])
           ) > 5
         for: 5m
@@ -416,11 +416,11 @@ groups:
         annotations:
           summary: "Error rate > 5%"
           description: "{{ $labels.service }} error rate is {{ $value }}%"
-      
+
       # Database alerts
       - alert: DatabaseConnectionPoolExhausted
         expr: |
-          database_connections_active / 
+          database_connections_active /
           database_connections_max > 0.9
         for: 5m
         labels:
@@ -428,10 +428,10 @@ groups:
         annotations:
           summary: "Database connection pool > 90% utilized"
           description: "{{ $labels.service }} pool {{ $labels.pool }} at {{ $value }}%"
-      
+
       - alert: SlowDatabaseQueries
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(database_query_duration_bucket[5m])
           ) > 0.1
         for: 10m
@@ -440,7 +440,7 @@ groups:
         annotations:
           summary: "Database query p95 > 100ms"
           description: "{{ $labels.service }} queries are slow"
-      
+
       # Kafka alerts
       - alert: KafkaConsumerLagHigh
         expr: kafka_consumer_lag > 10000
@@ -450,7 +450,7 @@ groups:
         annotations:
           summary: "Kafka consumer lag > 10k messages"
           description: "{{ $labels.service }} topic {{ $labels.topic }} lag is {{ $value }}"
-      
+
       - alert: KafkaConsumerLagCritical
         expr: kafka_consumer_lag > 100000
         for: 5m
@@ -459,12 +459,12 @@ groups:
         annotations:
           summary: "Kafka consumer lag > 100k messages"
           description: "{{ $labels.service }} is severely behind"
-      
+
       # JVM alerts
       - alert: HighHeapUsage
         expr: |
           100 * (
-            jvm_memory_used_bytes{area="heap"} / 
+            jvm_memory_used_bytes{area="heap"} /
             jvm_memory_max_bytes{area="heap"}
           ) > 85
         for: 10m
@@ -473,10 +473,10 @@ groups:
         annotations:
           summary: "JVM heap usage > 85%"
           description: "{{ $labels.service }} heap at {{ $value }}%"
-      
+
       - alert: LongGCPauses
         expr: |
-          histogram_quantile(0.95, 
+          histogram_quantile(0.95,
             rate(jvm_gc_pause_seconds_bucket[5m])
           ) > 0.5
         for: 10m
@@ -485,7 +485,7 @@ groups:
         annotations:
           summary: "GC pause p95 > 500ms"
           description: "{{ $labels.service }} experiencing long GC pauses"
-      
+
       # Availability alerts
       - alert: ServiceDown
         expr: up{job=~".*-service"} == 0
@@ -544,7 +544,7 @@ enum class BudgetStatus {
 
 @ApplicationScoped
 class ErrorBudgetService {
-    
+
     fun calculateErrorBudget(
         service: String,
         slo: SLOConfig,
@@ -552,25 +552,25 @@ class ErrorBudgetService {
         windowStart: Instant,
         windowEnd: Instant
     ): ErrorBudgetStatus {
-        
+
         val totalBudget = slo.errorBudget
         val actualViolations = (slo.target - actualPerformance).coerceAtLeast(0.0)
         val budgetConsumed = actualViolations / totalBudget
         val budgetRemaining = 1.0 - budgetConsumed
-        
+
         // Calculate burn rate (% budget consumed per day)
         val windowDuration = Duration.between(windowStart, windowEnd)
         val daysElapsed = windowDuration.toDays().toDouble()
         val burnRatePerDay = budgetConsumed / daysElapsed
         val projectedBurnRate = burnRatePerDay * slo.windowDays
-        
+
         val status = when {
             budgetRemaining <= 0.0 -> BudgetStatus.EXHAUSTED
             budgetRemaining < 0.25 -> BudgetStatus.CRITICAL
             budgetRemaining < 0.50 -> BudgetStatus.WARNING
             else -> BudgetStatus.HEALTHY
         }
-        
+
         return ErrorBudgetStatus(
             service = service,
             sli = slo.sli,
@@ -580,19 +580,19 @@ class ErrorBudgetService {
             projectedBurnRate = projectedBurnRate
         )
     }
-    
+
     fun getErrorBudgetPolicy(status: BudgetStatus): String {
         return when (status) {
-            BudgetStatus.HEALTHY -> 
+            BudgetStatus.HEALTHY ->
                 "Normal operations. Focus on new features and improvements."
-            
-            BudgetStatus.WARNING -> 
+
+            BudgetStatus.WARNING ->
                 "Elevated risk. Review reliability. Consider postponing risky deployments."
-            
-            BudgetStatus.CRITICAL -> 
+
+            BudgetStatus.CRITICAL ->
                 "High risk. Freeze non-critical changes. Focus on reliability improvements."
-            
-            BudgetStatus.EXHAUSTED -> 
+
+            BudgetStatus.EXHAUSTED ->
                 "Budget exhausted. Deployment freeze except for reliability fixes. Root cause analysis required."
         }
     }
@@ -648,14 +648,14 @@ performance_testing:
       - stress: 100 → 500 VUs, 20 minutes (find limits)
       - spike: 100 → 1000 VUs sudden, 5 minutes (elasticity)
       - soak: 100 VUs, 4 hours (memory leaks)
-  
+
   database_testing:
     tool: pgbench (PostgreSQL), custom JMeter SQL
     scenarios:
       - concurrent_reads: 500 connections, read-only
       - concurrent_writes: 100 connections, write-heavy
       - mixed_workload: 80% reads, 20% writes
-  
+
   integration_testing:
     tool: k6 + Docker Compose
     scenarios:
@@ -856,7 +856,7 @@ WHERE je.tenant_id = 'TENANT-001'
 ORDER BY je.posting_date DESC
 LIMIT 100;
 
--- Index: CREATE INDEX idx_je_tenant_fy_fp_status 
+-- Index: CREATE INDEX idx_je_tenant_fy_fp_status
 --        ON journal_entries(tenant_id, fiscal_year, fiscal_period, posting_status);
 
 -- BAD: Unindexed function in WHERE clause
@@ -881,18 +881,18 @@ CREATE INDEX idx_invoice_tenant_date ON invoices(tenant_id, invoice_date DESC);
 CREATE INDEX idx_invoice_tenant_status ON invoices(tenant_id, invoice_status);
 
 -- 4. Covering indexes (include frequently selected columns)
-CREATE INDEX idx_invoice_tenant_date_covering 
-ON invoices(tenant_id, invoice_date DESC) 
+CREATE INDEX idx_invoice_tenant_date_covering
+ON invoices(tenant_id, invoice_date DESC)
 INCLUDE (invoice_number, customer_id, total_amount);
 
 -- 5. Partial indexes (for specific conditions)
-CREATE INDEX idx_invoice_unpaid 
-ON invoices(tenant_id, due_date) 
+CREATE INDEX idx_invoice_unpaid
+ON invoices(tenant_id, due_date)
 WHERE invoice_status IN ('POSTED', 'PARTIALLY_PAID');
 
 -- 6. Expression indexes (for computed columns)
-CREATE INDEX idx_invoice_amount_outstanding 
-ON invoices((total_amount - paid_amount)) 
+CREATE INDEX idx_invoice_amount_outstanding
+ON invoices((total_amount - paid_amount))
 WHERE (total_amount - paid_amount) > 0;
 ```
 
@@ -907,12 +907,12 @@ quarkus:
       # For 4 cores + 1 SSD: (4 * 2) + 1 = 9, use 10-20 for safety margin
       min-size: 10
       max-size: 20
-      
+
       # Connection lifecycle
       initial-size: 10
       max-lifetime: 30m          # Close connections after 30 min
       idle-timeout: 10m          # Remove idle connections after 10 min
-      
+
       # Performance tuning
       acquisition-timeout: 5s    # Max wait for connection
       leak-detection-interval: 30s
@@ -926,23 +926,23 @@ class DataSourceMetrics(
     @Inject private val dataSource: AgroalDataSource,
     private val meterRegistry: MeterRegistry
 ) {
-    
+
     @PostConstruct
     fun registerMetrics() {
-        Gauge.builder("datasource.connections.active") { 
-            dataSource.metrics.activeCount() 
+        Gauge.builder("datasource.connections.active") {
+            dataSource.metrics.activeCount()
         }.register(meterRegistry)
-        
-        Gauge.builder("datasource.connections.idle") { 
-            dataSource.metrics.idleCount() 
+
+        Gauge.builder("datasource.connections.idle") {
+            dataSource.metrics.idleCount()
         }.register(meterRegistry)
-        
-        Gauge.builder("datasource.connections.max") { 
-            dataSource.metrics.maxUsedCount() 
+
+        Gauge.builder("datasource.connections.max") {
+            dataSource.metrics.maxUsedCount()
         }.register(meterRegistry)
-        
-        Gauge.builder("datasource.connections.awaiting") { 
-            dataSource.metrics.awaitingCount() 
+
+        Gauge.builder("datasource.connections.awaiting") {
+            dataSource.metrics.awaitingCount()
         }.register(meterRegistry)
     }
 }
@@ -953,23 +953,23 @@ class DataSourceMetrics(
 ```kotlin
 @ApplicationScoped
 class QueryPerformanceInterceptor : StatementInspector {
-    
+
     private val slowQueryThreshold = Duration.ofMillis(100)
     private val logger = LoggerFactory.getLogger(javaClass)
-    
+
     override fun inspect(sql: String): String {
         val startTime = System.nanoTime()
-        
+
         return sql.also {
             val duration = Duration.ofNanos(System.nanoTime() - startTime)
-            
+
             if (duration > slowQueryThreshold) {
                 logger.warn(
                     "Slow query detected: {}ms - SQL: {}",
                     duration.toMillis(),
                     sql.take(500) // Truncate for logging
                 )
-                
+
                 // Emit metric
                 meterRegistry.counter(
                     "database.slow.queries",
@@ -1016,7 +1016,7 @@ log_lock_waits = on
 ```kotlin
 @ApplicationScoped
 class CacheConfiguration {
-    
+
     @Produces
     @Named("authorizationCache")
     fun authorizationCache(): Cache<String, AuthorizationResult> {
@@ -1026,7 +1026,7 @@ class CacheConfiguration {
             .recordStats()
             .build()
     }
-    
+
     @Produces
     @Named("customerCache")
     fun customerCache(): Cache<String, Customer> {
@@ -1036,7 +1036,7 @@ class CacheConfiguration {
             .recordStats()
             .build()
     }
-    
+
     @Produces
     @Named("productCache")
     fun productCache(): Cache<String, Product> {
@@ -1052,24 +1052,24 @@ class CacheConfiguration {
 class CustomerService(
     @Named("customerCache") private val cache: Cache<String, Customer>
 ) {
-    
+
     suspend fun getCustomer(tenantId: String, customerId: String): Customer {
         val cacheKey = "$tenantId:$customerId"
-        
+
         return cache.get(cacheKey) {
             // Cache miss - fetch from database
             repository.findByIdAndTenant(customerId, tenantId)
                 ?: throw CustomerNotFoundException(customerId)
         }
     }
-    
+
     suspend fun updateCustomer(customer: Customer) {
         repository.save(customer)
-        
+
         // Invalidate cache
         val cacheKey = "${customer.tenantId}:${customer.customerId}"
         cache.invalidate(cacheKey)
-        
+
         // Publish cache invalidation event for other instances
         eventPublisher.publish(CacheInvalidationEvent(
             cacheType = "customer",
@@ -1086,26 +1086,26 @@ class CustomerService(
 class RedisCustomerCache(
     private val redisClient: RedisClient
 ) {
-    
+
     private val ttl = Duration.ofMinutes(15)
-    
+
     suspend fun get(tenantId: String, customerId: String): Customer? {
         val key = "customer:$tenantId:$customerId"
         val json = redisClient.get(key) ?: return null
         return Json.decodeFromString<Customer>(json)
     }
-    
+
     suspend fun set(customer: Customer) {
         val key = "customer:${customer.tenantId}:${customer.customerId}"
         val json = Json.encodeToString(customer)
         redisClient.setex(key, ttl.seconds.toInt(), json)
     }
-    
+
     suspend fun invalidate(tenantId: String, customerId: String) {
         val key = "customer:$tenantId:$customerId"
         redisClient.del(key)
     }
-    
+
     suspend fun invalidatePattern(pattern: String) {
         // Use with caution - KEYS command blocks Redis in production
         // Better: use Redis keyspace notifications or maintain key sets
@@ -1122,19 +1122,19 @@ class CacheWarmer(
     private val customerCache: RedisCustomerCache,
     private val productCache: RedisProductCache
 ) {
-    
+
     @Scheduled(cron = "0 0 2 * * ?") // 2 AM daily
     fun warmCaches() {
         logger.info("Starting cache warming...")
-        
+
         // Warm top 1000 customers
         val topCustomers = customerRepository.findTopByOrderVolume(limit = 1000)
         topCustomers.forEach { customerCache.set(it) }
-        
+
         // Warm active products
         val activeProducts = productRepository.findActive()
         activeProducts.forEach { productCache.set(it) }
-        
+
         logger.info("Cache warming completed")
     }
 }
@@ -1149,14 +1149,14 @@ class CacheInvalidationHandler(
     private val redisClient: RedisClient,
     @Named("customerCache") private val l1Cache: Cache<String, Customer>
 ) {
-    
+
     @Incoming("cache-invalidation-events")
     suspend fun handleInvalidation(event: CacheInvalidationEvent) {
         when (event.cacheType) {
             "customer" -> {
                 // Invalidate L1 cache
                 l1Cache.invalidate(event.key)
-                
+
                 // Invalidate L2 cache
                 redisClient.del("customer:${event.key}")
             }
@@ -1164,7 +1164,7 @@ class CacheInvalidationHandler(
                 // Similar logic
             }
         }
-        
+
         logger.debug("Cache invalidated: ${event.cacheType}:${event.key}")
     }
 }
@@ -1177,18 +1177,18 @@ class CustomerServiceWithCache(
     private val l2Cache: RedisCustomerCache,
     private val eventPublisher: EventPublisher
 ) {
-    
+
     suspend fun updateCustomer(customer: Customer) {
         // 1. Update database
         repository.save(customer)
-        
+
         // 2. Update L2 cache (write-through)
         l2Cache.set(customer)
-        
+
         // 3. Invalidate L1 cache (safer than updating)
         val cacheKey = "${customer.tenantId}:${customer.customerId}"
         l1Cache.invalidate(cacheKey)
-        
+
         // 4. Publish invalidation event for other instances
         eventPublisher.publish(CacheInvalidationEvent(
             cacheType = "customer",
@@ -1207,44 +1207,44 @@ class CacheMetrics(
     @Named("customerCache") private val customerCache: Cache<String, Customer>,
     private val meterRegistry: MeterRegistry
 ) {
-    
+
     @Scheduled(every = "30s")
     fun recordCacheMetrics() {
         recordCacheStats("authorization", authzCache.stats())
         recordCacheStats("customer", customerCache.stats())
     }
-    
+
     private fun recordCacheStats(cacheName: String, stats: CacheStats) {
         meterRegistry.gauge(
             "cache.size",
             Tags.of("cache", cacheName),
             stats.requestCount()
         )
-        
+
         meterRegistry.gauge(
             "cache.hit.ratio",
             Tags.of("cache", cacheName),
             stats.hitRate()
         )
-        
+
         meterRegistry.gauge(
             "cache.miss.ratio",
             Tags.of("cache", cacheName),
             stats.missRate()
         )
-        
+
         meterRegistry.gauge(
             "cache.eviction.count",
             Tags.of("cache", cacheName),
             stats.evictionCount().toDouble()
         )
-        
+
         meterRegistry.gauge(
             "cache.load.success.count",
             Tags.of("cache", cacheName),
             stats.loadSuccessCount().toDouble()
         )
-        
+
         meterRegistry.gauge(
             "cache.load.failure.count",
             Tags.of("cache", cacheName),
@@ -1313,11 +1313,11 @@ resources:
 // Programmatic JFR control
 @ApplicationScoped
 class PerformanceProfiler {
-    
+
     fun startProfiling(durationSeconds: Int = 60): Path {
         val recording = FlightRecorderMXBean.getFlightRecorderMXBean()
             .newRecording()
-        
+
         recording.apply {
             setName("performance-profile-${Instant.now()}")
             setDuration(Duration.ofSeconds(durationSeconds.toLong()))
@@ -1325,7 +1325,7 @@ class PerformanceProfiler {
             setDestination("/tmp/profile-${UUID.randomUUID()}.jfr")
             start()
         }
-        
+
         return Paths.get(recording.destination.toString())
     }
 }
@@ -1372,7 +1372,7 @@ spec:
         target:
           type: Utilization
           averageUtilization: 70
-    
+
     # Memory-based scaling
     - type: Resource
       resource:
@@ -1380,7 +1380,7 @@ spec:
         target:
           type: Utilization
           averageUtilization: 80
-    
+
     # Custom metric: request rate
     - type: Pods
       pods:
@@ -1389,7 +1389,7 @@ spec:
         target:
           type: AverageValue
           averageValue: "100"
-  
+
   behavior:
     scaleDown:
       stabilizationWindowSeconds: 300  # Wait 5 min before scale down
@@ -1425,7 +1425,7 @@ spec:
   maxReplicaCount: 15
   pollingInterval: 30
   cooldownPeriod: 300
-  
+
   triggers:
     # Scale based on Kafka consumer lag
     - type: kafka
@@ -1435,7 +1435,7 @@ spec:
         topic: financial.journal-entry.events
         lagThreshold: "1000"  # Scale up if lag > 1000 per partition
         offsetResetPolicy: latest
-    
+
     # Fallback CPU trigger
     - type: cpu
       metricType: Utilization
@@ -1466,22 +1466,22 @@ data class Metrics(
 
 @ApplicationScoped
 class CapacityPlanner {
-    
+
     fun forecastCapacity(
         service: String,
         historicalData: List<Metrics>,
         growthRate: Double = 0.20  // Default 20% MoM growth
     ): CapacityForecast {
-        
+
         val current = historicalData.last()
-        
+
         // Linear growth forecast
         val forecastedRequests = (current.requests * (1 + growthRate)).toLong()
-        
+
         // Estimate resource needs based on current utilization
         val forecastedCpu = current.cpuUtilization * (1 + growthRate)
         val forecastedMemory = current.memoryUtilization * (1 + growthRate)
-        
+
         val forecasted = Metrics(
             requests = forecastedRequests,
             avgLatency = current.avgLatency,
@@ -1490,19 +1490,19 @@ class CapacityPlanner {
             cpuUtilization = forecastedCpu,
             memoryUtilization = forecastedMemory
         )
-        
+
         // Calculate headroom (target 30% headroom for spikes)
         val cpuHeadroom = 1.0 - (forecastedCpu / 70.0)  // 70% target
         val memoryHeadroom = 1.0 - (forecastedMemory / 80.0)  // 80% target
         val capacityHeadroom = minOf(cpuHeadroom, memoryHeadroom)
-        
+
         val recommendation = when {
             capacityHeadroom < 0.10 -> "URGENT: Scale up immediately. <10% headroom remaining."
             capacityHeadroom < 0.20 -> "WARNING: Plan scaling within 2 weeks. <20% headroom."
             capacityHeadroom < 0.30 -> "ADVISORY: Monitor closely. Approaching target utilization."
             else -> "HEALTHY: Sufficient capacity for forecasted growth."
         }
-        
+
         return CapacityForecast(
             service = service,
             currentMonthly = current,
@@ -1512,7 +1512,7 @@ class CapacityPlanner {
             recommendedAction = recommendation
         )
     }
-    
+
     fun calculateRequiredReplicas(
         currentReplicas: Int,
         currentCpuUtilization: Double,
@@ -1522,7 +1522,7 @@ class CapacityPlanner {
         val requiredReplicas = ceil(
             currentReplicas * (currentCpuUtilization / targetCpuUtilization)
         ).toInt()
-        
+
         return requiredReplicas.coerceAtLeast(currentReplicas)
     }
 }
@@ -1530,7 +1530,7 @@ class CapacityPlanner {
 // Quarterly capacity review report
 @ApplicationScoped
 class CapacityReportGenerator {
-    
+
     @Scheduled(cron = "0 0 9 1 */3 *") // 9 AM on 1st of every 3rd month
     fun generateQuarterlyReport() {
         val services = listOf(
@@ -1540,18 +1540,18 @@ class CapacityReportGenerator {
             "sales-order-api",
             "inventory-api"
         )
-        
+
         val report = services.map { service ->
             val historicalData = metricsRepository.getLastNMonths(service, 3)
             capacityPlanner.forecastCapacity(service, historicalData)
         }
-        
+
         // Generate report
         val markdown = buildString {
             appendLine("# Quarterly Capacity Planning Report")
             appendLine("**Date**: ${LocalDate.now()}")
             appendLine()
-            
+
             report.forEach { forecast ->
                 appendLine("## ${forecast.service}")
                 appendLine("- **Current Monthly Requests**: ${forecast.currentMonthly.requests:N0}")
@@ -1562,7 +1562,7 @@ class CapacityReportGenerator {
                 appendLine()
             }
         }
-        
+
         // Send report to Slack/Email
         notificationService.sendReport(markdown)
     }
@@ -1581,7 +1581,7 @@ database_scaling:
     iops: 3000
     max_connections: 100
     use_case: Development, small tenants
-  
+
   tier_2_medium:
     cpu: 4
     memory: 16GB
@@ -1589,7 +1589,7 @@ database_scaling:
     iops: 6000
     max_connections: 200
     use_case: Production, standard tenants
-  
+
   tier_3_large:
     cpu: 8
     memory: 32GB
@@ -1597,7 +1597,7 @@ database_scaling:
     iops: 12000
     max_connections: 500
     use_case: High-volume tenants
-  
+
   tier_4_xlarge:
     cpu: 16
     memory: 64GB
@@ -1631,39 +1631,39 @@ data class CostForecast(
 
 @ApplicationScoped
 class CostOptimizer {
-    
+
     fun analyzeCosts(service: String, metrics: Metrics): CostForecast {
         // AWS pricing (example)
         val costPerPodHour = BigDecimal("0.05") // $0.05/pod/hour
         val costPerGBStorage = BigDecimal("0.10") // $0.10/GB/month
         val costPerMillionRequests = BigDecimal("0.20")
-        
+
         val currentReplicas = getCurrentReplicas(service)
         val hoursPerMonth = 24 * 30
-        
+
         val computeCost = costPerPodHour * currentReplicas.toBigDecimal() * hoursPerMonth.toBigDecimal()
         val requestCost = (metrics.requests.toBigDecimal() / BigDecimal("1_000_000")) * costPerMillionRequests
         val currentCost = computeCost + requestCost
-        
+
         // Analyze optimization opportunities
         val opportunities = mutableListOf<String>()
-        
+
         if (metrics.cpuUtilization < 30) {
             opportunities.add("LOW_UTILIZATION: CPU < 30%. Consider reducing replica count or downsizing instances.")
         }
-        
+
         if (metrics.memoryUtilization < 40) {
             opportunities.add("OVERPROVISIONED_MEMORY: Memory < 40%. Reduce memory requests by 25%.")
         }
-        
+
         if (metrics.avgLatency < Duration.ofMillis(50)) {
             opportunities.add("OVERPROVISIONED_COMPUTE: Avg latency < 50ms. May be able to reduce resources.")
         }
-        
+
         // Forecasted cost with 20% growth
         val forecastedCost = currentCost * BigDecimal("1.20")
         val costPerRequest = currentCost / metrics.requests.toBigDecimal()
-        
+
         return CostForecast(
             service = service,
             currentMonthlyCost = currentCost,

@@ -1,8 +1,8 @@
 # Manufacturing Shop Floor Execution - ADR-037
 
-> **Bounded Context:** `manufacturing-shopfloor`  
-> **Port:** `9303`  
-> **Database:** `chiroerp_manufacturing_shopfloor`  
+> **Bounded Context:** `manufacturing-shopfloor`
+> **Port:** `9303`
+> **Database:** `chiroerp_manufacturing_shopfloor`
 > **Kafka Consumer Group:** `manufacturing-shopfloor-cg`
 
 ## Overview

@@ -1,8 +1,8 @@
 # CRM Service Orders - ADR-042
 
-> **Bounded Context:** `crm-service-orders`  
-> **Port:** `9403`  
-> **Database:** `chiroerp_crm_service_orders`  
+> **Bounded Context:** `crm-service-orders`
+> **Port:** `9403`
+> **Database:** `chiroerp_crm_service_orders`
 > **Kafka Consumer Group:** `crm-service-orders-cg`
 
 ## Overview

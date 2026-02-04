@@ -7,18 +7,18 @@ import java.util.UUID
 
 /**
  * Repository for GL Account persistence operations.
- * 
+ *
  * Provides tenant-aware queries for GL accounts with support for:
  * - Account lookup by number
  * - Hierarchical parent-child relationships
  * - Active account filtering
  * - Cost center and profit center queries
- * 
+ *
  * All queries enforce tenant isolation.
  */
 @ApplicationScoped
 class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
-    
+
     /**
      * Find an active GL account by tenant and account number.
      */
@@ -26,7 +26,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and accountNumber = ?2 and isActive = true", tenantId, accountNumber)
             .firstResult()
     }
-    
+
     /**
      * Find all active GL accounts for a tenant.
      */
@@ -34,7 +34,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and isActive = true", tenantId)
             .list()
     }
-    
+
     /**
      * Find active accounts by type and tenant.
      */
@@ -45,7 +45,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and accountType = ?2 and isActive = true", tenantId, accountType)
             .list()
     }
-    
+
     /**
      * Find child accounts of a parent account.
      */
@@ -53,7 +53,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and parentAccountId = ?2 and isActive = true", tenantId, parentAccountId)
             .list()
     }
-    
+
     /**
      * Find accounts assigned to a cost center.
      */
@@ -61,7 +61,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and costCenter = ?2 and isActive = true", tenantId, costCenter)
             .list()
     }
-    
+
     /**
      * Find accounts assigned to a profit center.
      */
@@ -69,14 +69,14 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
         return find("tenantId = ?1 and profitCenter = ?2 and isActive = true", tenantId, profitCenter)
             .list()
     }
-    
+
     /**
      * Check if an account number already exists for a tenant.
      */
     fun existsByTenantAndAccountNumber(tenantId: UUID, accountNumber: String): Boolean {
         return count("tenantId = ?1 and accountNumber = ?2", tenantId, accountNumber) > 0
     }
-    
+
     /**
      * Find all posting-allowed accounts for a tenant.
      */
@@ -86,7 +86,7 @@ class GLAccountRepository : PanacheRepositoryBase<GLAccountEntity, UUID> {
             tenantId
         ).list()
     }
-    
+
     /**
      * Find control accounts (summary accounts) for a tenant.
      */

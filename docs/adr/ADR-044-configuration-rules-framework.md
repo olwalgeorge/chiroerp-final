@@ -1,10 +1,10 @@
 # ADR-044: Configuration & Rules Framework
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: P0 (Critical)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team
+**Priority**: P0 (Critical)
+**Tier**: Core
 **Tags**: configuration, rules-engine, customization, scalability
 
 ## Context
@@ -252,12 +252,12 @@ class PricingEngine : RuleEngine<PricingContext, PricingResult> {
     override fun evaluate(context: PricingContext, rules: List<Rule>): PricingResult {
         val schema = configRepository.getPricingSchema(context.schemaId)
         var price = BigDecimal.ZERO
-        
+
         schema.steps.sortedBy { it.stepNumber }.forEach { step ->
             val conditionValue = evaluateCondition(step, context)
             price = applyStep(price, step, conditionValue)
         }
-        
+
         return PricingResult(price, appliedConditions, breakdownByStep)
     }
 }
@@ -271,10 +271,10 @@ class PricingEngine : RuleEngine<PricingContext, PricingResult> {
 class CreateSalesOrderUseCase {
     @Inject
     lateinit var pricingEngine: PricingEngine
-    
+
     @Inject
     lateinit var taxEngine: TaxEngine
-    
+
     fun execute(command: CreateSalesOrderCommand): SalesOrderId {
         // Use configuration instead of hardcoded logic
         val pricingResult = pricingEngine.evaluate(
@@ -286,7 +286,7 @@ class CreateSalesOrderUseCase {
             ),
             configRepository.getPricingSchema(command.tenantId)
         )
-        
+
         val taxResult = taxEngine.calculate(
             TaxContext(
                 shipToAddress = command.shipToAddress,
@@ -294,7 +294,7 @@ class CreateSalesOrderUseCase {
                 netAmount = pricingResult.netPrice
             )
         )
-        
+
         // Create order with calculated values
     }
 }
@@ -355,23 +355,23 @@ Sales Org Schema (tenant-001, sales org 0001)
 ## Alternatives Considered
 
 ### 1. Drools Rule Engine
-**Pros**: Mature, RETE algorithm, DMN support  
-**Cons**: JVM memory overhead, learning curve, overkill for simple conditions  
+**Pros**: Mature, RETE algorithm, DMN support
+**Cons**: JVM memory overhead, learning curve, overkill for simple conditions
 **Decision**: Use for complex decision tables (credit scoring), not for all rules
 
 ### 2. External Rules Service (e.g., Amazon Fraud Detector)
-**Pros**: Managed service, ML-powered  
-**Cons**: Vendor lock-in, latency, not suitable for ERP deterministic logic  
+**Pros**: Managed service, ML-powered
+**Cons**: Vendor lock-in, latency, not suitable for ERP deterministic logic
 **Decision**: Rejected
 
 ### 3. Groovy/Script-Based Rules
-**Pros**: Flexibility, can handle any logic  
-**Cons**: Security risk, hard to audit, performance unpredictable  
+**Pros**: Flexibility, can handle any logic
+**Cons**: Security risk, hard to audit, performance unpredictable
 **Decision**: Limit to specific extension points (ADR-012), not core config
 
 ### 4. Code-First Policies (No Shared Configuration Framework)
-**Pros**: Low initial complexity; straightforward implementation in domain code  
-**Cons**: Policy variation management becomes expensive (upgrades, testing, and tenant drift); reduces self-service and operational scalability  
+**Pros**: Low initial complexity; straightforward implementation in domain code
+**Cons**: Policy variation management becomes expensive (upgrades, testing, and tenant drift); reduces self-service and operational scalability
 **Decision**: Rejected in favor of a configuration-first model
 
 ## Consequences

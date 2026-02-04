@@ -1,8 +1,8 @@
 # Analytics KPI Engine - ADR-016
 
-> **Bounded Context:** `analytics-kpi`  
-> **Port:** `9803`  
-> **Database:** `chiroerp_analytics_kpi`  
+> **Bounded Context:** `analytics-kpi`
+> **Port:** `9803`
+> **Database:** `chiroerp_analytics_kpi`
 > **Kafka Consumer Group:** `analytics-kpi-cg`
 
 ## Overview

@@ -1,10 +1,10 @@
 # ADR-028: Controlling / Management Accounting (CO)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P0 (Critical)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P0 (Critical)
+**Tier**: Advanced
 **Tags**: controlling, management-accounting, cost-center, profit-center, copa
 
 ## Context

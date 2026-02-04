@@ -1,8 +1,8 @@
 # Manufacturing Analytics - ADR-037
 
-> **Bounded Context:** `manufacturing-analytics`  
-> **Port:** `9308` (logical, part of manufacturing-production service)  
-> **Database:** `chiroerp_manufacturing_production`  
+> **Bounded Context:** `manufacturing-analytics`
+> **Port:** `9308` (logical, part of manufacturing-production service)
+> **Database:** `chiroerp_manufacturing_production`
 > **Kafka Consumer Group:** `manufacturing-production-cg`
 
 ## Overview
@@ -99,7 +99,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | ScrapRecordedEvent (consumed) | `manufacturing.shopfloor.scrap.recorded` | 6 | 30d |
 | WIPPostedEvent (consumed) | `finance.costing.wip.posted` | 6 | 30d |
 
-**Consumer Group:** `manufacturing-production-cg`  
+**Consumer Group:** `manufacturing-production-cg`
 **Partition Key:** `plantId` / `workCenterId` (ensures all events for a plant are processed in order)
 
 ## API Endpoints (Examples)

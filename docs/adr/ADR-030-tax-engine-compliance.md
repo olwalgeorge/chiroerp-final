@@ -1,10 +1,10 @@
 # ADR-030: Tax Engine & Compliance
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team, Tax Team  
-**Priority**: P1 (High)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team, Tax Team
+**Priority**: P1 (High)
+**Tier**: Core
 **Tags**: tax, vat, gst, withholding, compliance
 
 ## Context

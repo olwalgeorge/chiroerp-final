@@ -1,10 +1,10 @@
 # ADR-022: Revenue Recognition (ASC 606 / IFRS 15)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P1 (High)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P1 (High)
+**Tier**: Advanced
 **Tags**: finance, revenue-recognition, compliance
 
 ## Context

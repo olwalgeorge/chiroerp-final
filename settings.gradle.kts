@@ -14,7 +14,7 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
-    
+
     // Include convention plugins from build-logic
     includeBuild("build-logic")
 }
@@ -33,10 +33,10 @@ dependencyResolutionManagement {
     // FAIL_ON_PROJECT_REPOS prevents modules from declaring their own repositories
     // All repositories must be declared here for consistency and security
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-    
+
     repositories {
         mavenCentral()
-        
+
         // Confluent for Kafka/Avro if needed
         maven {
             name = "ConfluentRepository"
@@ -60,7 +60,7 @@ fun includeModulesRecursively(dir: File, parentPath: String = "") {
     dir.listFiles()?.forEach { file ->
         if (file.isDirectory && file.name !in excludedDirs) {
             val buildFile = File(file, "build.gradle.kts")
-            
+
             if (buildFile.exists()) {
                 // Module found - include it
                 val modulePath = if (parentPath.isEmpty()) {
@@ -71,7 +71,7 @@ fun includeModulesRecursively(dir: File, parentPath: String = "") {
                 include(modulePath)
                 println("✓ Discovered module: $modulePath")
             }
-            
+
             // Recurse into subdirectories
             val nextPath = if (parentPath.isEmpty()) {
                 ":${file.name}"

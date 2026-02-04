@@ -1,8 +1,8 @@
 # Plant Maintenance Analytics - ADR-040
 
-> **Bounded Context:** `maintenance-analytics`  
-> **Port:** `9607` (logical, part of maintenance-preventive service)  
-> **Database:** `chiroerp_maintenance_preventive`  
+> **Bounded Context:** `maintenance-analytics`
+> **Port:** `9607` (logical, part of maintenance-preventive service)
+> **Database:** `chiroerp_maintenance_preventive`
 > **Kafka Consumer Group:** `maintenance-preventive-cg`
 
 ## Overview
@@ -95,7 +95,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | WorkOrderCompletedEvent (consumed) | `maintenance.workorders.order.completed` | 6 | 30d |
 | BreakdownReportedEvent (consumed) | `maintenance.breakdown.reported` | 6 | 30d |
 
-**Consumer Group:** `maintenance-preventive-cg`  
+**Consumer Group:** `maintenance-preventive-cg`
 **Partition Key:** `equipmentId` / `plantId` (ensures all events for equipment are processed in order)
 
 ## API Endpoints (Examples)

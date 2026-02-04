@@ -1,8 +1,8 @@
 # CRM Contracts - ADR-043
 
-> **Bounded Context:** `crm-contracts`  
-> **Port:** `9404`  
-> **Database:** `chiroerp_crm_contracts`  
+> **Bounded Context:** `crm-contracts`
+> **Port:** `9404`
+> **Database:** `chiroerp_crm_contracts`
 > **Kafka Consumer Group:** `crm-contracts-cg`
 
 ## Overview

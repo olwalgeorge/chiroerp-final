@@ -1,8 +1,8 @@
 # Manufacturing BOM Management - ADR-037
 
-> **Bounded Context:** `manufacturing-bom`  
-> **Port:** `9304`  
-> **Database:** `chiroerp_manufacturing_bom`  
+> **Bounded Context:** `manufacturing-bom`
+> **Port:** `9304`
+> **Database:** `chiroerp_manufacturing_bom`
 > **Kafka Consumer Group:** `manufacturing-bom-cg`
 
 ## Overview

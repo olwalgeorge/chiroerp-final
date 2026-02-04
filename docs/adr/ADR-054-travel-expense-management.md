@@ -1,10 +1,10 @@
 # ADR-054: Travel & Expense Management (T&E)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Finance Team, HR Team  
-**Priority**: P2 (High Value)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Finance Team, HR Team
+**Priority**: P2 (High Value)
+**Tier**: Advanced
 **Tags**: travel, expense, reimbursement, per-diem, compliance, spend-management
 
 ## Context
@@ -39,13 +39,13 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Employee initiates travel request (destination, dates, purpose, budget).
   - Business justification and cost estimate.
   - Approval workflow (manager → travel coordinator → finance).
-  
+
 - **Travel Policy Checks**:
   - Booking window (e.g., flights must be booked 14+ days in advance).
   - Class of service restrictions (economy for domestic, business for international > 6 hours).
   - Preferred suppliers and negotiated rates.
   - Advance approval for exceptions.
-  
+
 - **Budget Control**:
   - Check against travel budget (cost center, project, department).
   - Hard stop or soft warning for over-budget requests.
@@ -56,13 +56,13 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - SSO to Concur Travel, Egencia, TripActions, or corporate TMC portal.
   - Pass travel request details to TMC (pre-filled itinerary).
   - Import booked itinerary back to ERP (flights, hotels, car rentals).
-  
+
 - **Booking Data Capture**:
   - Itinerary details (flights, hotels, car rentals).
   - Booking references (PNR, confirmation numbers).
   - Costs and payment method (corporate card, central billing).
   - Traveler details and travel policy compliance.
-  
+
 - **Direct Booking**:
   - For users without TMC access, manual itinerary entry.
   - Upload booking confirmations and receipts.
@@ -72,7 +72,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Upcoming trips, current trips, past trips.
   - Itinerary details (flight times, hotel addresses, car rental pickups).
   - Export to calendar (Outlook, Google Calendar).
-  
+
 - **Trip Modifications**:
   - Change requests (flight changes, hotel cancellations).
   - Approval for change fees and fare differences.
@@ -85,15 +85,15 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Snap photo of receipt (OCR extraction: vendor, date, amount, category).
   - Attach to expense line item.
   - Offline mode (sync when online).
-  
+
 - **Email Import**:
   - Forward e-receipts to dedicated email address.
   - Auto-parse and create draft expense.
-  
+
 - **Web Upload**:
   - Drag-and-drop PDF/image receipts.
   - Bulk upload for multiple receipts.
-  
+
 - **OCR Validation**:
   - Extract merchant, date, total, tax, payment method.
   - Auto-categorize based on merchant (e.g., Starbucks → Meals, Shell → Fuel).
@@ -104,13 +104,13 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Airfare, hotel, meals, ground transportation, car rental, fuel, parking, tolls.
   - Entertainment, client gifts, office supplies, conference fees.
   - Mileage, per diem, communication (phone, internet).
-  
+
 - **Expense Attributes**:
   - Expense date, merchant, amount, currency, payment method.
   - Business purpose and attendees (for meals/entertainment).
   - Project/customer allocation (billable vs non-billable).
   - Cost center, GL account, tax code.
-  
+
 - **Split Transactions**:
   - Split single receipt across multiple projects or attendees.
   - Allocate percentages (e.g., 60% Project A, 40% Project B).
@@ -120,11 +120,11 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Start/end locations or total distance.
   - Date, purpose, vehicle type (personal, company, rental).
   - Automatic rate application (IRS standard mileage rate or company policy).
-  
+
 - **GPS Integration**:
   - Import mileage from GPS/telematics (company vehicles).
   - Mobile app GPS tracking (opt-in for personal vehicles).
-  
+
 - **Calculation**:
   - Total mileage × rate = reimbursement amount.
   - Daily/monthly mileage caps if applicable.
@@ -134,17 +134,17 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Meals & Incidentals (M&IE) per diem.
   - Lodging per diem (if no hotel receipt).
   - Full per diem (meals + lodging).
-  
+
 - **Rate Tables**:
   - GSA rates (US federal government standard).
   - Custom corporate rates by location.
   - International rates by city/country.
-  
+
 - **Automatic Calculation**:
   - Based on travel destination and dates from itinerary.
   - Pro-rated for partial days (e.g., 75% for departure/arrival days).
   - Reduced per diem if meals provided (conference, client dinner).
-  
+
 - **Per Diem vs Actual**:
   - Option to claim actual expenses (with receipts) or per diem (no receipts).
   - Policy rules (e.g., per diem for domestic, actual for international).
@@ -158,12 +158,12 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Advance approval requirements (entertainment, gifts, high-value items).
   - Restricted categories (alcohol, personal items).
   - Spending caps (daily, trip, monthly).
-  
+
 - **Real-Time Validation**:
   - Check expense against policy during entry.
   - Flag violations (out-of-policy) with explanation.
   - Allow exceptions with business justification.
-  
+
 - **Multi-Level Policies**:
   - Global corporate policy.
   - Country/region-specific policies.
@@ -174,13 +174,13 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - **Level 1: Manager** - Validates business purpose and necessity.
   - **Level 2: Finance** - Reviews policy compliance and coding.
   - **Level 3: Executive** - For high-value or out-of-policy expenses.
-  
+
 - **Approval Rules**:
   - Auto-approve for in-policy expenses < threshold (e.g., $500).
   - Manager approval for standard expenses.
   - Additional approval for out-of-policy or high-value.
   - Delegation during manager absence.
-  
+
 - **Approval Actions**:
   - Approve, reject, send back for clarification.
   - Add comments and request additional documentation.
@@ -202,12 +202,12 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
 - **Supported Providers**:
   - American Express Corporate, Visa Commercial, Mastercard Corporate.
   - Direct integration (Amex Global Business Travel) or feed aggregators (Yodlee, Plaid).
-  
+
 - **Transaction Feed**:
   - Daily import of card transactions (merchant, date, amount, card holder).
   - Map transactions to employees by card number.
   - Create pending expense items for reconciliation.
-  
+
 - **Transaction Matching**:
   - Auto-match imported transactions to submitted expense line items.
   - Match criteria: amount, date, merchant, cardholder.
@@ -217,17 +217,17 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
 - **Expense Linking**:
   - Employee matches card transaction to expense line item (attaches receipt, adds details).
   - For itemized expenses (hotel with multiple charges), split transaction.
-  
+
 - **Personal Charges**:
   - Flag personal charges on corporate card.
   - Employee repays via payroll deduction or direct payment.
   - Track personal charge balances and aging.
-  
+
 - **Disputed Charges**:
   - Employee disputes fraudulent or incorrect charges.
   - Dispute workflow (submit to card issuer, track resolution).
   - Adjust expense report when resolved.
-  
+
 - **Reconciliation Status**:
   - **Reconciled**: Transaction matched to expense with receipt.
   - **Pending**: Transaction imported, awaiting employee action.
@@ -239,11 +239,11 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Alert employees for card transactions without receipts (> threshold).
   - Escalate to manager for unresolved items.
   - Policy for missing receipt affidavits.
-  
+
 - **Aging Reports**:
   - Unreconciled transactions report (30, 60, 90+ days old).
   - Personal charge aging and collections.
-  
+
 - **Card Controls**:
   - Spending limits by employee level.
   - Merchant category restrictions (block cash advances, gambling).
@@ -256,11 +256,11 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Employee requests cash advance before trip (amount, justification).
   - Approval workflow (manager → finance).
   - Payment via wire transfer, check, or payroll.
-  
+
 - **Advance Tracking**:
   - Record advance as employee liability (due from employee).
   - Link advance to travel request and expense report.
-  
+
 - **Advance Settlement**:
   - Deduct advance from expense reimbursement.
   - If expenses < advance, employee repays difference.
@@ -275,7 +275,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Minus: Travel advance, personal charges.
   - Plus: Mileage, per diem.
   - Currency conversion for foreign expenses.
-  
+
 - **Multi-Currency**:
   - Convert foreign currency expenses to home currency.
   - Use corporate exchange rate or daily rate at transaction date.
@@ -286,12 +286,12 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Direct deposit (ACH, SEPA, BACS) to employee bank account.
   - Payroll integration (add to next paycheck).
   - Check or wire transfer for exceptions.
-  
+
 - **Payment Batching**:
   - Batch approved expense reports for payment run.
   - AP integration (ADR-009) for payment processing.
   - Payment file generation (NACHA, SEPA XML).
-  
+
 - **Payment Confirmation**:
   - Notify employee when payment issued.
   - Payment reference and expected deposit date.
@@ -304,12 +304,12 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - **Debit**: Expense account (by category and cost center).
   - **Credit**: AP clearing account (employee payable).
   - When paid: **Debit** AP clearing, **Credit** Cash.
-  
+
 - **Cost Allocation**:
   - Allocate expense to cost center, project, customer, grant.
   - Multiple dimensions (legal entity, department, product, region).
   - Integration with Controlling (ADR-028) for internal orders.
-  
+
 - **Project Accounting**:
   - Billable vs non-billable expense tracking.
   - Mark-up on billable expenses for customer invoicing.
@@ -319,7 +319,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
 - **Posting Timing**:
   - **Option 1: Post when reconciled** (expense report approved).
   - **Option 2: Post at card statement** (accrual, then adjust when reconciled).
-  
+
 - **Posting Logic**:
   - **Debit**: Expense account.
   - **Credit**: Corporate card liability (Amex payable).
@@ -329,7 +329,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
 - **Tax Capture**:
   - Extract VAT/GST from receipts (OCR or manual entry).
   - VAT rate and country identification.
-  
+
 - **Tax Recovery**:
   - Post recoverable VAT to tax receivable account.
   - Export for VAT return filing.
@@ -342,7 +342,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - All expense report changes logged (who, when, what).
   - Approval history and comments.
   - Receipt version control (original vs corrected).
-  
+
 - **Supporting Documentation**:
   - Receipt images/PDFs linked to expense lines.
   - Travel justification and approvals.
@@ -355,17 +355,17 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - **Missing Receipts**: Transactions over $75 without receipt attachment.
   - **Personal Charges**: Corporate card transactions at blocked merchant categories (gambling, cash advances, personal shopping).
   - **Temporal Anomalies**: Expenses submitted from non-travel dates or outside trip duration.
-  
+
 - **Statistical Outlier Detection**:
   - **Z-Score Analysis**: Flag expenses > 2 standard deviations from employee/department average.
   - **Round-Number Flagging**: Expenses with suspiciously round amounts ($100.00, $500.00) without itemized receipts.
   - **Velocity Checks**: Multiple submissions in short time window (possible duplicate errors).
-  
+
 - **Audit Workflow**:
   - High-risk expenses flagged for audit review before approval.
   - Quarterly audit sampling (5-10% of all expenses).
   - Manager investigation workflow for flagged items.
-  
+
 > **Implementation Note**: Fraud detection uses **rules-based policy enforcement** and **statistical outlier analysis** (Z-score, velocity checks), not machine learning. Deterministic rules are more explainable, easier to tune, and have lower false-positive rates than ML anomaly detection. Future enhancement could add ML-based anomaly detection after accumulating 12+ months of historical expense data.
 
 #### Compliance Reporting
@@ -374,7 +374,7 @@ Implement a comprehensive **Travel & Expense Management (T&E)** module that exte
   - Category analysis (airfare, hotel, meals).
   - Policy compliance rate and violation trends.
   - Vendor spend concentration.
-  
+
 - **Tax Compliance**:
   - Per diem vs actual tracking for tax reporting.
   - Accountable plan compliance (IRS requirements).

@@ -8,7 +8,7 @@
 
 ### IntercompanyPostedEvent
 
-**Trigger**: Intercompany transaction posted  
+**Trigger**: Intercompany transaction posted
 **Consumers**: General Ledger
 
 ```json
@@ -30,7 +30,7 @@
 
 ### NettingCompletedEvent
 
-**Trigger**: Netting batch completed  
+**Trigger**: Netting batch completed
 **Consumers**: Treasury, Reporting
 
 ```json

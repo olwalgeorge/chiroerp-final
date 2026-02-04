@@ -1,8 +1,8 @@
 # Manufacturing Costing - ADR-037
 
-> **Bounded Context:** `manufacturing-costing`  
-> **Port:** `9305`  
-> **Database:** `chiroerp_manufacturing_costing`  
+> **Bounded Context:** `manufacturing-costing`
+> **Port:** `9305`
+> **Database:** `chiroerp_manufacturing_costing`
 > **Kafka Consumer Group:** `manufacturing-costing-cg`
 
 ## Overview

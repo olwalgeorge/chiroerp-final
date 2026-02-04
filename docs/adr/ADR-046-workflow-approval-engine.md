@@ -1,10 +1,10 @@
 # ADR-046: Workflow & Approval Engine
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Product Team  
-**Priority**: P0 (Critical)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Product Team
+**Priority**: P0 (Critical)
+**Tier**: Core
 **Tags**: workflow, approvals, orchestration, human-tasks, temporal
 
 ## Context
@@ -54,52 +54,52 @@ interface PurchaseOrderApprovalWorkflow {
 
 @WorkflowImpl
 class PurchaseOrderApprovalWorkflowImpl : PurchaseOrderApprovalWorkflow {
-    
+
     private val approvalActivity = Workflow.newActivityStub(
         ApprovalActivity::class.java,
         ActivityOptions {
             startToCloseTimeout = Duration.ofMinutes(5)
         }
     )
-    
+
     override fun approve(request: POApprovalRequest): POApprovalResult {
         val schema = approvalActivity.getApprovalSchema(
             tenantId = request.tenantId,
             documentType = "PURCHASE_ORDER",
             context = request.context // amount, vendor risk, etc.
         )
-        
+
         // Execute approval levels sequentially
         for (level in schema.approvalLevels) {
             val approvers = approvalActivity.determineApprovers(level, request)
-            
+
             // Parallel approval within level (if multiple approvers)
             val approvals = approvers.map { approver ->
-                Async.function { 
+                Async.function {
                     waitForApproval(request.poId, approver, level.levelNumber)
                 }
             }
-            
+
             val results = Async.allOf(approvals).get()
-            
+
             // Check if any rejections
             if (results.any { it.decision == REJECTED }) {
                 return POApprovalResult(status = REJECTED, rejectedBy = results.first { it.decision == REJECTED }.approver)
             }
-            
+
             // Check for escalation timeout
-            if (Workflow.await(Duration.ofHours(level.escalationTimeHours)) { 
-                allApproved(results) 
+            if (Workflow.await(Duration.ofHours(level.escalationTimeHours)) {
+                allApproved(results)
             }.not()) {
                 approvalActivity.escalate(request.poId, level)
             }
         }
-        
+
         // All levels approved
         approvalActivity.completePOApproval(request.poId)
         return POApprovalResult(status = APPROVED)
     }
-    
+
     private fun waitForApproval(poId: POId, approver: UserId, level: Int): ApprovalDecision {
         // Wait for signal (human task completion)
         val signalName = "po_approval_${poId}_${approver}_${level}"
@@ -112,10 +112,10 @@ class PurchaseOrderApprovalWorkflowImpl : PurchaseOrderApprovalWorkflow {
 ```kotlin
 @Path("/workflow/tasks")
 class WorkflowTaskResource {
-    
+
     @Inject
     lateinit var temporalClient: WorkflowClient
-    
+
     @GET
     @Path("/my-tasks")
     fun getMyTasks(@Context userId: UserId): List<WorkflowTask> {
@@ -124,7 +124,7 @@ class WorkflowTaskResource {
             PurchaseOrderApprovalWorkflow::class.java
         ).queryPendingTasks(userId)
     }
-    
+
     @POST
     @Path("/{taskId}/approve")
     fun approveTask(
@@ -137,7 +137,7 @@ class WorkflowTaskResource {
             PurchaseOrderApprovalWorkflow::class.java,
             workflowId
         ).signal("approval_decision", request.decision)
-        
+
         return Response.ok().build()
     }
 }
@@ -157,16 +157,16 @@ interface OrderToCashWorkflow {
 
 @WorkflowImpl
 class OrderToCashWorkflowImpl : OrderToCashWorkflow {
-    
+
     private val salesActivity = Workflow.newActivityStub(SalesActivity::class.java)
     private val inventoryActivity = Workflow.newActivityStub(InventoryActivity::class.java)
     private val financeActivity = Workflow.newActivityStub(FinanceActivity::class.java)
-    
+
     override fun execute(orderId: OrderId): O2CResult {
         try {
             // Step 1: Create Sales Order (synchronous)
             val order = salesActivity.createSalesOrder(orderId)
-            
+
             // Step 2: Credit Check (may require approval)
             val creditCheck = salesActivity.performCreditCheck(order.customerId, order.totalAmount)
             if (creditCheck.status == BLOCKED) {
@@ -179,45 +179,45 @@ class OrderToCashWorkflowImpl : OrderToCashWorkflow {
                     return O2CResult(status = CREDIT_REJECTED)
                 }
             }
-            
+
             // Step 3: Inventory Reservation (compensatable)
             val reservation = inventoryActivity.reserveStock(order)
-            
+
             // Step 4: Shipment (wait for external event)
             salesActivity.createShipment(order)
             val shipmentConfirmation = Workflow.await(Duration.ofDays(7)) {
                 getShipmentConfirmation(order.shipmentId)
             }
-            
+
             if (!shipmentConfirmation.isPresent) {
                 // Timeout: compensate reservation
                 inventoryActivity.cancelReservation(reservation.reservationId)
                 return O2CResult(status = SHIPMENT_TIMEOUT)
             }
-            
+
             // Step 5: Invoice Generation
             val invoice = financeActivity.createInvoice(order, shipmentConfirmation.get())
-            
+
             // Step 6: Payment Collection (wait for days)
             val payment = Workflow.await(Duration.ofDays(30)) {
                 getPaymentReceived(invoice.invoiceId)
             }
-            
+
             if (!payment.isPresent) {
                 // Trigger dunning workflow (parallel)
                 Workflow.newChildWorkflowStub(DunningWorkflow::class.java)
                     .execute(invoice.customerId, invoice.invoiceId)
             }
-            
+
             return O2CResult(status = COMPLETED, invoiceId = invoice.invoiceId)
-            
+
         } catch (e: Exception) {
             // Compensation logic
             compensate()
             throw e
         }
     }
-    
+
     private fun compensate() {
         // Saga compensation pattern
         // Undo: cancel reservation, reverse invoice, etc.
@@ -239,7 +239,7 @@ interface PeriodCloseWorkflow {
 
 @WorkflowImpl
 class PeriodCloseWorkflowImpl : PeriodCloseWorkflow {
-    
+
     override fun execute(request: PeriodCloseRequest): PeriodCloseResult {
         val tasks = listOf(
             CloseTask("AP", "Close Accounts Payable"),
@@ -248,17 +248,17 @@ class PeriodCloseWorkflowImpl : PeriodCloseWorkflow {
             CloseTask("Assets", "Run Depreciation"),
             CloseTask("Controlling", "Allocate Cost Centers")
         )
-        
+
         // Execute close tasks in parallel
         val futures = tasks.map { task ->
             Async.function {
                 executeCloseTask(task, request.period)
             }
         }
-        
+
         // Wait for all tasks to complete
         val results = Async.allOf(futures).get()
-        
+
         // Check for failures
         val failures = results.filter { !it.success }
         if (failures.isNotEmpty()) {
@@ -267,10 +267,10 @@ class PeriodCloseWorkflowImpl : PeriodCloseWorkflow {
                 failedTasks = failures.map { it.taskName }
             )
         }
-        
+
         // All tasks successful: perform GL close
         financeActivity.performGLClose(request.period)
-        
+
         return PeriodCloseResult(status = COMPLETED)
     }
 }
@@ -284,10 +284,10 @@ class PeriodCloseWorkflowImpl : PeriodCloseWorkflow {
 ```kotlin
 @ApplicationScoped
 class WorkflowEventListener {
-    
+
     @Inject
     lateinit var temporalClient: WorkflowClient
-    
+
     @Incoming("sales.order.approved")
     fun onOrderApproved(event: SalesOrderApprovedEvent) {
         // Start O2C workflow
@@ -298,10 +298,10 @@ class WorkflowEventListener {
                 taskQueue = "order-fulfillment"
             }
         )
-        
+
         WorkflowClient.start(workflow::execute, event.payload.orderId)
     }
-    
+
     @Incoming("warehouse.shipment.confirmed")
     fun onShipmentConfirmed(event: ShipmentConfirmedEvent) {
         // Signal running O2C workflow
@@ -323,7 +323,7 @@ class WorkflowEventListener {
 ```kotlin
 @Path("/workflow/monitoring")
 class WorkflowMonitoringResource {
-    
+
     @GET
     @Path("/running")
     fun getRunningWorkflows(
@@ -334,7 +334,7 @@ class WorkflowMonitoringResource {
             query = "WorkflowType='$workflowType' AND ExecutionStatus='Running'"
         )
     }
-    
+
     @GET
     @Path("/{workflowId}/history")
     fun getWorkflowHistory(
@@ -343,7 +343,7 @@ class WorkflowMonitoringResource {
         // Get event history (audit trail)
         return temporalClient.getWorkflowExecutionHistory(workflowId)
     }
-    
+
     @POST
     @Path("/{workflowId}/terminate")
     fun terminateWorkflow(
@@ -380,10 +380,10 @@ Task Details View
 ```kotlin
 @ActivityImpl
 class ApprovalActivity {
-    
+
     @Inject
     lateinit var configRepository: ConfigurationRepository
-    
+
     fun getApprovalSchema(
         tenantId: TenantId,
         documentType: String,
@@ -391,7 +391,7 @@ class ApprovalActivity {
     ): ApprovalSchema {
         // Fetch approval schema from configuration
         val schema = configRepository.getApprovalSchema(tenantId, documentType)
-        
+
         // Filter levels based on context (e.g., amount thresholds)
         return schema.copy(
             approvalLevels = schema.approvalLevels.filter { level ->
@@ -399,7 +399,7 @@ class ApprovalActivity {
             }
         )
     }
-    
+
     fun determineApprovers(
         level: ApprovalLevel,
         request: POApprovalRequest
@@ -426,14 +426,14 @@ class ApprovalActivity {
 ```kotlin
 @WorkflowImpl(version = 2) // New version
 class PurchaseOrderApprovalWorkflowImpl_V2 : PurchaseOrderApprovalWorkflow {
-    
+
     override fun approve(request: POApprovalRequest): POApprovalResult {
         // New logic: added risk assessment step
         val riskScore = assessVendorRisk(request.vendorId)
         if (riskScore > 80) {
             // Additional approval required
         }
-        
+
         // Rest of original logic
     }
 }
@@ -468,28 +468,28 @@ class PurchaseOrderApprovalWorkflowImpl_V2 : PurchaseOrderApprovalWorkflow {
 ## Alternatives Considered
 
 ### 1. Camunda/Zeebe
-**Pros**: BPMN 2.0 standard, visual designer, mature ecosystem  
-**Cons**: XML-heavy, central engine (not microservices-native), steeper learning curve  
+**Pros**: BPMN 2.0 standard, visual designer, mature ecosystem
+**Cons**: XML-heavy, central engine (not microservices-native), steeper learning curve
 **Decision**: Deferred—can add BPMN designer on top of Temporal later
 
 ### 2. Custom State Machine (Spring State Machine)
-**Pros**: Lightweight, full control  
-**Cons**: No workflow history, no human tasks, no distributed sagas  
+**Pros**: Lightweight, full control
+**Cons**: No workflow history, no human tasks, no distributed sagas
 **Decision**: Rejected—insufficient for ERP complexity
 
 ### 3. Apache Airflow
-**Pros**: Mature, Python-friendly  
-**Cons**: Batch-oriented (DAGs), not designed for long-running business processes  
+**Pros**: Mature, Python-friendly
+**Cons**: Batch-oriented (DAGs), not designed for long-running business processes
 **Decision**: Rejected—wrong abstraction level
 
 ### 4. AWS Step Functions
-**Pros**: Managed service, low ops overhead  
-**Cons**: Vendor lock-in, limited local dev/test, JSON-based state machines  
+**Pros**: Managed service, low ops overhead
+**Cons**: Vendor lock-in, limited local dev/test, JSON-based state machines
 **Decision**: Rejected—avoid AWS lock-in
 
 ### 5. No Workflow Engine (Domain Services Only)
-**Pros**: Simple  
-**Cons**: Cannot handle human tasks, no process monitoring, no compensation logic  
+**Pros**: Simple
+**Cons**: Cannot handle human tasks, no process monitoring, no compensation logic
 **Decision**: Rejected—does not meet requirements for approvals, task inboxes, and long-running orchestration
 
 ---

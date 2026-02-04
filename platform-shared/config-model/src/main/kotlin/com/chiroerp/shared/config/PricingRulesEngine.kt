@@ -5,25 +5,25 @@ import java.time.LocalDate
 
 /**
  * Interface for pricing rule evaluation.
- * 
+ *
  * Phase 0: Hardcoded implementations (catalog price + manual discounts)
  * Phase 1: Configuration-driven (discount matrices, volume tiers, promotions)
  * Phase 2: AI-powered dynamic pricing with market optimization
- * 
+ *
  * Related ADRs: ADR-006, ADR-025, ADR-044
  */
 interface PricingRulesEngine {
     /**
      * Calculate price for a product/service in context.
-     * 
+     *
      * @param context Pricing context (product, customer, quantity, date)
      * @return Price calculation result with breakdown
      */
     suspend fun calculatePrice(context: PricingContext): Result<PriceCalculation>
-    
+
     /**
      * Determine applicable discounts for a transaction.
-     * 
+     *
      * @param context Pricing context
      * @return List of applicable discounts with amounts
      */

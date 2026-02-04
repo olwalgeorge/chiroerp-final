@@ -1,8 +1,8 @@
 # Analytics Report Scheduler - ADR-016
 
-> **Bounded Context:** `analytics-scheduler`  
-> **Port:** `9805` (logical, part of analytics-warehouse service)  
-> **Database:** `chiroerp_analytics_warehouse`  
+> **Bounded Context:** `analytics-scheduler`
+> **Port:** `9805` (logical, part of analytics-warehouse service)
+> **Database:** `chiroerp_analytics_warehouse`
 > **Kafka Consumer Group:** `analytics-warehouse-cg`
 
 ## Overview
@@ -91,7 +91,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | ReportDeliveredEvent | `analytics.scheduler.report.delivered` | 6 | 30d |
 | WarehouseLoadCompletedEvent (consumed) | `analytics.warehouse.load.completed` | 6 | 30d |
 
-**Consumer Group:** `analytics-warehouse-cg`  
+**Consumer Group:** `analytics-warehouse-cg`
 **Partition Key:** `scheduleId` (ensures all events for a schedule are processed in order)
 
 ## API Endpoints (Examples)

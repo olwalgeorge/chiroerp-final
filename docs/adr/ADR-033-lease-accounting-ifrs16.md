@@ -1,10 +1,10 @@
 # ADR-033: Lease Accounting (IFRS 16 / ASC 842)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P2 (Medium)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P2 (Medium)
+**Tier**: Add-on
 **Tags**: lease-accounting, ifrs16, asc842, compliance
 
 ## Context
@@ -95,7 +95,7 @@ Real estate companies, property management firms, and commercial landlords requi
   - Finance lease (sales-type): Lease receivable, interest income, residual value.
   - Lease modifications and renewals from lessor perspective.
   - Impairment testing for lease receivables.
-  
+
 - **Tenant Lifecycle**:
   - Tenant application and credit checks.
   - Lease origination (terms, rent schedules, escalations, options).
@@ -103,26 +103,26 @@ Real estate companies, property management firms, and commercial landlords requi
   - Lease renewals, amendments, expansions.
   - Lease termination and move-out (security deposit disposition).
   - Eviction workflows and legal holds.
-  
+
 - **Rent Roll Management**:
   - Current rent schedule by tenant and unit.
   - Occupancy rate and vacancy tracking.
   - Lease expiration calendar and renewal pipeline.
   - Rent escalation tracking (CPI, fixed percentage, market adjustments).
   - Delinquency tracking and collections.
-  
+
 - **Property Operations**:
   - Maintenance work orders (routine, emergency, tenant-requested).
   - Vendor contracts and service agreements.
   - Capital improvement projects (renovation, expansion).
   - Property inspections and compliance audits.
-  
+
 - **CAM Reconciliation**:
   - CAM budget allocation to tenants (pro-rata by square footage).
   - Actual CAM expenses tracking.
   - Annual reconciliation and tenant true-ups.
   - CAM charge disputes and adjustments.
-  
+
 - **Property Financials**:
   - Property-level P&L (rental income, operating expenses, NOI).
   - Cap rate and IRR calculations.

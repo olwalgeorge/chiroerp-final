@@ -1,8 +1,8 @@
 # ChiroERP Minimum Viable Deployment Guide
 
-**Version**: 1.0  
-**Last Updated**: 2026-02-03  
-**Purpose**: Define production-ready deployment topologies per customer tier (SMB, Mid-Market, Enterprise)  
+**Version**: 1.0
+**Last Updated**: 2026-02-03
+**Purpose**: Define production-ready deployment topologies per customer tier (SMB, Mid-Market, Enterprise)
 **Owner**: Platform Team
 
 ---
@@ -53,12 +53,12 @@ ChiroERP supports **three deployment tiers** optimized for different customer se
 
 ### Business Requirements
 
-✅ **Financial Accounting**: GL, AP, AR  
-✅ **Inventory Management**: Stock movements, locations, basic ATP  
-✅ **Sales**: Orders, quotations, invoicing  
-✅ **Procurement**: Purchase orders, goods receipts  
-❌ **Manufacturing**: Not included (use Tier 2)  
-❌ **Advanced Inventory**: No kitting/catch weight (use Tier 2)  
+✅ **Financial Accounting**: GL, AP, AR
+✅ **Inventory Management**: Stock movements, locations, basic ATP
+✅ **Sales**: Orders, quotations, invoicing
+✅ **Procurement**: Purchase orders, goods receipts
+❌ **Manufacturing**: Not included (use Tier 2)
+❌ **Advanced Inventory**: No kitting/catch weight (use Tier 2)
 ❌ **Multi-Region**: Single region only
 
 ---
@@ -410,13 +410,13 @@ volumes:
 
 ### Business Requirements
 
-✅ **All Tier 1 Features** (Finance, Inventory, Sales, Procurement)  
-✅ **Manufacturing**: BOM, MRP, shop floor execution  
-✅ **Quality Management**: Inspection planning, execution, CAPA  
-✅ **Plant Maintenance**: Work orders, preventive maintenance  
-✅ **CRM**: Customer 360, contracts, field service  
-✅ **Advanced Inventory**: Kitting, catch weight, packaging hierarchies  
-✅ **Analytics**: Data warehouse, OLAP, KPI dashboards  
+✅ **All Tier 1 Features** (Finance, Inventory, Sales, Procurement)
+✅ **Manufacturing**: BOM, MRP, shop floor execution
+✅ **Quality Management**: Inspection planning, execution, CAPA
+✅ **Plant Maintenance**: Work orders, preventive maintenance
+✅ **CRM**: Customer 360, contracts, field service
+✅ **Advanced Inventory**: Kitting, catch weight, packaging hierarchies
+✅ **Analytics**: Data warehouse, OLAP, KPI dashboards
 ✅ **Multi-Country**: 2-5 country packs (Kenya, Tanzania, Nigeria, etc.)
 
 ---
@@ -633,12 +633,12 @@ Cost: $100-$200/month
 
 ### Business Requirements
 
-✅ **All Tier 2 Features**  
-✅ **Multi-Region Deployment**: 3+ regions (disaster recovery, geo-distribution)  
-✅ **Industry Add-ons**: Banking (ADR-026 treasury), Insurance (ADR-051), Retail AI (ADR-056, ADR-057)  
-✅ **Enterprise SLA**: 99.99% uptime (52 minutes downtime/year)  
-✅ **Compliance**: ISO 27001, SOC 2 Type II, PCI-DSS  
-✅ **Advanced Security**: WAF, DDoS protection, SIEM integration  
+✅ **All Tier 2 Features**
+✅ **Multi-Region Deployment**: 3+ regions (disaster recovery, geo-distribution)
+✅ **Industry Add-ons**: Banking (ADR-026 treasury), Insurance (ADR-051), Retail AI (ADR-056, ADR-057)
+✅ **Enterprise SLA**: 99.99% uptime (52 minutes downtime/year)
+✅ **Compliance**: ISO 27001, SOC 2 Type II, PCI-DSS
+✅ **Advanced Security**: WAF, DDoS protection, SIEM integration
 ✅ **Custom Integrations**: EDI, B2B, legacy ERP connectors
 
 ---
@@ -1038,17 +1038,17 @@ $500/mo   $6K/mo    $55K/mo
 def calculate_infrastructure(concurrent_users, transactions_per_month):
     # Compute (vCPU)
     vcpu_needed = (concurrent_users / 10) + (transactions_per_month / 100000) * 4
-    
+
     # Memory (GB)
     memory_needed = vcpu_needed * 4
-    
+
     # Database (connections)
     db_connections = concurrent_users * 2
     db_storage_gb = transactions_per_month * 0.01
-    
+
     # Kafka (throughput MB/s)
     kafka_throughput = transactions_per_month / (30 * 24 * 60 * 60) * 0.1
-    
+
     return {
         "vcpu": vcpu_needed,
         "memory_gb": memory_needed,

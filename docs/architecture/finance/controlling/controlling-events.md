@@ -8,7 +8,7 @@
 
 ### AllocationRunPostedEvent
 
-**Trigger**: Allocation run posted  
+**Trigger**: Allocation run posted
 **Consumers**: General Ledger, Reporting
 
 ```json
@@ -31,7 +31,7 @@
 
 ### CostCenterCreatedEvent
 
-**Trigger**: Cost center created  
+**Trigger**: Cost center created
 **Consumers**: HR, Reporting
 
 ```json
@@ -49,7 +49,7 @@
 
 ### InternalOrderClosedEvent
 
-**Trigger**: Internal order closed  
+**Trigger**: Internal order closed
 **Consumers**: Reporting, Audit
 
 ```json

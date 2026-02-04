@@ -1,8 +1,8 @@
 # Master Data Hub - ADR-027
 
-> **Bounded Context:** `mdm-hub`  
-> **Port:** `9701`  
-> **Database:** `chiroerp_mdm_hub`  
+> **Bounded Context:** `mdm-hub`
+> **Port:** `9701`
+> **Database:** `chiroerp_mdm_hub`
 > **Kafka Consumer Group:** `mdm-hub-cg`
 
 ## Overview

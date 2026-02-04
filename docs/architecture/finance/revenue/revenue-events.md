@@ -8,7 +8,7 @@
 
 ### RevenueRecognizedEvent
 
-**Trigger**: Revenue recognized for period  
+**Trigger**: Revenue recognized for period
 **Consumers**: General Ledger, Reporting
 
 ```json
@@ -30,7 +30,7 @@
 
 ### RevenueDeferredEvent
 
-**Trigger**: Revenue deferred  
+**Trigger**: Revenue deferred
 **Consumers**: General Ledger
 
 ```json

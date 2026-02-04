@@ -1,8 +1,8 @@
 # Quality CAPA Management - ADR-039
 
-> **Bounded Context:** `quality-capa`  
-> **Port:** `9504`  
-> **Database:** `chiroerp_quality_capa`  
+> **Bounded Context:** `quality-capa`
+> **Port:** `9504`
+> **Database:** `chiroerp_quality_capa`
 > **Kafka Consumer Group:** `quality-capa-cg`
 
 ## Overview

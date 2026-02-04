@@ -1,8 +1,8 @@
 # Procurement Core - ADR-023
 
-> **Bounded Context:** `procurement-core`  
-> **Port:** `9101`  
-> **Database:** `chiroerp_procurement_core`  
+> **Bounded Context:** `procurement-core`
+> **Port:** `9101`
+> **Database:** `chiroerp_procurement_core`
 > **Kafka Consumer Group:** `procurement-core-cg`
 
 ## Overview

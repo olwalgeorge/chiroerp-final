@@ -1,8 +1,8 @@
 # CRM Parts Consumption - ADR-042
 
-> **Bounded Context:** `crm-parts-consumption`  
-> **Port:** `9408` (logical, part of crm-service-orders service)  
-> **Database:** `chiroerp_crm_service_orders`  
+> **Bounded Context:** `crm-parts-consumption`
+> **Port:** `9408` (logical, part of crm-service-orders service)
+> **Database:** `chiroerp_crm_service_orders`
 > **Kafka Consumer Group:** `crm-service-orders-cg`
 
 ## Overview
@@ -92,7 +92,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | ServiceOrderScheduledEvent (consumed) | `crm.service.order.scheduled` | 6 | 30d |
 | StockIssuedEvent (consumed) | `inventory.stock.issued` | 6 | 30d |
 
-**Consumer Group:** `crm-service-orders-cg`  
+**Consumer Group:** `crm-service-orders-cg`
 **Partition Key:** `serviceOrderId` (ensures all events for a service order are processed in order)
 
 ## API Endpoints (Examples)

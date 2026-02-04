@@ -1,8 +1,8 @@
 # Manufacturing MRP - ADR-037
 
-> **Bounded Context:** `manufacturing-mrp`  
-> **Port:** `9301`  
-> **Database:** `chiroerp_manufacturing_mrp`  
+> **Bounded Context:** `manufacturing-mrp`
+> **Port:** `9301`
+> **Database:** `chiroerp_manufacturing_mrp`
 > **Kafka Consumer Group:** `manufacturing-mrp-cg`
 
 ## Overview

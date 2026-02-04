@@ -1,8 +1,8 @@
 # Inventory ATP & Allocation - ADR-024
 
-> **Bounded Context:** `inventory-atp`  
-> **Port:** `9006`  
-> **Database:** `chiroerp_inventory_atp`  
+> **Bounded Context:** `inventory-atp`
+> **Port:** `9006`
+> **Database:** `chiroerp_inventory_atp`
 > **Kafka Consumer Group:** `inventory-atp-cg`
 
 ## Overview

@@ -8,19 +8,19 @@ import java.time.LocalDate
 import java.util.*
 
 class JournalEntryTest {
-    
+
     // =========================================================================
     // Balance Validation Tests
     // =========================================================================
-    
+
     @Test
     fun `should validate balanced entry`() {
         val entry = createBalancedEntry()
         val result = entry.validateBalance()
-        
+
         assertThat(result.isSuccess).isTrue()
     }
-    
+
     @Test
     fun `should reject unbalanced entry with more debits`() {
         val entry = createTestEntry(
@@ -29,12 +29,12 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4000", amount = BigDecimal("500.00"))
             )
         )
-        
+
         val result = entry.validateBalance()
         assertThat(result.isFailure).isTrue()
         assertThat(result.exceptionOrNull()?.message).contains("out of balance")
     }
-    
+
     @Test
     fun `should reject unbalanced entry with more credits`() {
         val entry = createTestEntry(
@@ -43,11 +43,11 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4000", amount = BigDecimal("1000.00"))
             )
         )
-        
+
         val result = entry.validateBalance()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     @Test
     fun `should reject entry with no amounts`() {
         val entry = createTestEntry(
@@ -56,11 +56,11 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4000", amount = BigDecimal.ZERO)
             )
         )
-        
+
         val result = entry.validateBalance()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     @Test
     fun `should calculate total debit correctly`() {
         val entry = createTestEntry(
@@ -70,10 +70,10 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4000", amount = BigDecimal("800.00"))
             )
         )
-        
+
         assertThat(entry.totalDebit()).isEqualTo(BigDecimal("800.00"))
     }
-    
+
     @Test
     fun `should calculate total credit correctly`() {
         val entry = createTestEntry(
@@ -83,22 +83,22 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4100", amount = BigDecimal("400.00"))
             )
         )
-        
+
         assertThat(entry.totalCredit()).isEqualTo(BigDecimal("1000.00"))
     }
-    
+
     // =========================================================================
     // Line Validation Tests
     // =========================================================================
-    
+
     @Test
     fun `should validate entry with sufficient lines`() {
         val entry = createBalancedEntry()
         val result = entry.validateLines()
-        
+
         assertThat(result.isSuccess).isTrue()
     }
-    
+
     @Test
     fun `should reject entry with fewer than 2 lines`() {
         val entry = createTestEntry(
@@ -106,11 +106,11 @@ class JournalEntryTest {
                 createDebitLine(accountNumber = "1000", amount = BigDecimal("100.00"))
             )
         )
-        
+
         val result = entry.validateLines()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     @Test
     fun `should reject entry with duplicate line numbers`() {
         val entry = createTestEntry(
@@ -119,27 +119,27 @@ class JournalEntryTest {
                 createCreditLine(lineNumber = 1, accountNumber = "4000", amount = BigDecimal("500.00"))
             )
         )
-        
+
         val result = entry.validateLines()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     // =========================================================================
     // Status and State Transition Tests
     // =========================================================================
-    
+
     @Test
     fun `should allow posting draft entry that is balanced`() {
         val entry = createBalancedEntry(status = JournalEntryStatus.DRAFT)
         assertThat(entry.canPost()).isTrue()
     }
-    
+
     @Test
     fun `should not allow posting already posted entry`() {
         val entry = createBalancedEntry(status = JournalEntryStatus.POSTED)
         assertThat(entry.canPost()).isFalse()
     }
-    
+
     @Test
     fun `should not allow posting unbalanced entry`() {
         val entry = createTestEntry(
@@ -149,10 +149,10 @@ class JournalEntryTest {
                 createCreditLine(accountNumber = "4000", amount = BigDecimal("500.00"))
             )
         )
-        
+
         assertThat(entry.canPost()).isFalse()
     }
-    
+
     @Test
     fun `should allow reversing posted entry`() {
         val entry = createBalancedEntry(
@@ -160,16 +160,16 @@ class JournalEntryTest {
             postedBy = "user123",
             postedAt = Instant.now()
         )
-        
+
         assertThat(entry.canReverse()).isTrue()
     }
-    
+
     @Test
     fun `should not allow reversing draft entry`() {
         val entry = createBalancedEntry(status = JournalEntryStatus.DRAFT)
         assertThat(entry.canReverse()).isFalse()
     }
-    
+
     @Test
     fun `should not allow reversing already reversed entry`() {
         val entry = createBalancedEntry(
@@ -178,34 +178,34 @@ class JournalEntryTest {
             postedAt = Instant.now(),
             reversedBy = "user456"
         )
-        
+
         assertThat(entry.canReverse()).isFalse()
     }
-    
+
     // =========================================================================
     // JournalEntryLine Tests
     // =========================================================================
-    
+
     @Test
     fun `should validate line with debit amount only`() {
         val line = createDebitLine(accountNumber = "1000", amount = BigDecimal("100.00"))
         val result = line.validate()
-        
+
         assertThat(result.isSuccess).isTrue()
         assertThat(line.isDebit()).isTrue()
         assertThat(line.isCredit()).isFalse()
     }
-    
+
     @Test
     fun `should validate line with credit amount only`() {
         val line = createCreditLine(accountNumber = "4000", amount = BigDecimal("100.00"))
         val result = line.validate()
-        
+
         assertThat(result.isSuccess).isTrue()
         assertThat(line.isDebit()).isFalse()
         assertThat(line.isCredit()).isTrue()
     }
-    
+
     @Test
     fun `should reject line with both debit and credit amounts`() {
         val line = JournalEntryLine(
@@ -222,11 +222,11 @@ class JournalEntryTest {
             quantity = null,
             uom = null
         )
-        
+
         val result = line.validate()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     @Test
     fun `should reject line with negative debit amount`() {
         val line = JournalEntryLine(
@@ -243,23 +243,23 @@ class JournalEntryTest {
             quantity = null,
             uom = null
         )
-        
+
         val result = line.validate()
         assertThat(result.isFailure).isTrue()
     }
-    
+
     @Test
     fun `should return correct amount for debit line`() {
         val line = createDebitLine(accountNumber = "1000", amount = BigDecimal("250.50"))
         assertThat(line.amount()).isEqualTo(BigDecimal("250.50"))
     }
-    
+
     @Test
     fun `should return correct amount for credit line`() {
         val line = createCreditLine(accountNumber = "4000", amount = BigDecimal("350.75"))
         assertThat(line.amount()).isEqualTo(BigDecimal("350.75"))
     }
-    
+
     @Test
     fun `should support cost center assignment on line`() {
         val line = createDebitLine(
@@ -267,10 +267,10 @@ class JournalEntryTest {
             amount = BigDecimal("100.00"),
             costCenter = "CC-100"
         )
-        
+
         assertThat(line.costCenter).isEqualTo("CC-100")
     }
-    
+
     @Test
     fun `should support profit center assignment on line`() {
         val line = createCreditLine(
@@ -278,51 +278,51 @@ class JournalEntryTest {
             amount = BigDecimal("100.00"),
             profitCenter = "PC-1000"
         )
-        
+
         assertThat(line.profitCenter).isEqualTo("PC-1000")
     }
-    
+
     // =========================================================================
     // Entry Type Tests
     // =========================================================================
-    
+
     @Test
     fun `should support standard entry type`() {
         val entry = createBalancedEntry(entryType = JournalEntryType.STANDARD)
         assertThat(entry.entryType).isEqualTo(JournalEntryType.STANDARD)
     }
-    
+
     @Test
     fun `should support automatic entry type`() {
         val entry = createBalancedEntry(entryType = JournalEntryType.AUTOMATIC)
         assertThat(entry.entryType).isEqualTo(JournalEntryType.AUTOMATIC)
     }
-    
+
     @Test
     fun `should support reversal entry type`() {
         val entry = createBalancedEntry(entryType = JournalEntryType.REVERSAL)
         assertThat(entry.entryType).isEqualTo(JournalEntryType.REVERSAL)
     }
-    
+
     // =========================================================================
     // Multi-Currency Tests
     // =========================================================================
-    
+
     @Test
     fun `should support multi-currency entries`() {
         val entry = createBalancedEntry(
             currency = "EUR",
             exchangeRate = BigDecimal("1.10")
         )
-        
+
         assertThat(entry.currency).isEqualTo("EUR")
         assertThat(entry.exchangeRate).isEqualTo(BigDecimal("1.10"))
     }
-    
+
     // =========================================================================
     // Test Helpers
     // =========================================================================
-    
+
     private fun createBalancedEntry(
         entryType: JournalEntryType = JournalEntryType.STANDARD,
         status: JournalEntryStatus = JournalEntryStatus.DRAFT,
@@ -346,7 +346,7 @@ class JournalEntryTest {
             reversedBy = reversedBy
         )
     }
-    
+
     private fun createTestEntry(
         entryNumber: String = "JE-2026-001",
         companyCode: String = "1000",
@@ -386,7 +386,7 @@ class JournalEntryTest {
             reversalEntryId = null
         )
     }
-    
+
     private fun createDebitLine(
         lineNumber: Int = 1,
         accountNumber: String,
@@ -409,7 +409,7 @@ class JournalEntryTest {
             uom = null
         )
     }
-    
+
     private fun createCreditLine(
         lineNumber: Int = 2,
         accountNumber: String,

@@ -1,10 +1,10 @@
 # ADR-052: Contingent Workforce & Professional Services Management (Add-on)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, Procurement Team, HR Team  
-**Priority**: P2 (Medium-High)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, Procurement Team, HR Team
+**Priority**: P2 (Medium-High)
+**Tier**: Add-on
 **Tags**: contingent-workforce, consultants, professional-services, vms, sow, staffing
 
 ## Context
@@ -166,26 +166,26 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
     - Availability and location fit.
     - Rate competitiveness vs. budget.
   - **Candidate ranking**: Multi-factor scoring (skills, experience, ratings, cost, availability).
-  
+
 - **Natural Language Processing (NLP)**:
   - **Resume parsing**: Extract skills, certifications, work history from unstructured CVs.
   - **Job description analysis**: Auto-generate skill requirements from SOW descriptions.
   - **Semantic search**: Find consultants by natural language queries ("senior Java developer with AWS and microservices experience").
-  
+
 - **Predictive Analytics** (Phase 2):
   - **Time-to-fill prediction**: Estimate days to fill based on role difficulty, location, rate.
   - **Attrition risk**: Identify consultants likely to end assignments early.
   - **Rate optimization**: Suggest optimal rate based on market data, skills, and urgency.
   - **Supplier performance prediction**: Forecast supplier fill rates and quality scores.
   - **Data Requirements**: Requires 6-12 months of historical requisition, assignment, and performance data.
-  
+
 > **Phased AI Strategy**: Phase 1 (MVP) includes **resume parsing**, **skills matching**, and **bias mitigation** as core VMS differentiators. Phase 2 adds **predictive analytics** (time-to-fill, attrition, rate optimization) after accumulating sufficient historical data. This ensures AI features deliver measurable value from day one (resume parsing saves hours per requisition) while avoiding predictive models trained on insufficient data.
-  
+
 - **Learning & Improvement**:
   - **Feedback loops**: Manager ratings feed back into matching algorithm.
   - **A/B testing**: Test different matching algorithms and measure hire success.
   - **Model retraining**: Quarterly model updates with new performance data.
-  
+
 - **Bias Mitigation**:
   - **Fairness constraints**: Ensure recommendations are free from demographic bias.
   - **Explainability**: Show why each consultant was recommended (feature importance).
@@ -196,38 +196,38 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
   - **Permanent hire requisitions**: Separate workflow from contingent workforce.
   - **Job posting**: Internal career site, external job boards (LinkedIn, Indeed, Glassdoor).
   - **Requisition approval**: Budget approval, headcount control, hiring manager assignment.
-  
+
 - **Candidate Sourcing**:
   - **Resume upload**: Bulk import from job boards or email.
   - **Employee referrals**: Referral tracking with bonus eligibility.
   - **Talent pool**: Past candidates, silver medalists, passive candidates.
   - **Social recruiting**: LinkedIn integration, Twitter sourcing.
-  
+
 - **Candidate Screening**:
   - **Resume parsing**: Auto-populate candidate profiles (NLP extraction).
   - **Knockout questions**: Automated screening (location, salary expectations, work authorization).
   - **Skills assessment integration**: HackerRank, Codility, TestGorilla.
   - **Video screening**: One-way video interviews (HireVue, Spark Hire).
-  
+
 - **Interview Management**:
   - **Interview scheduling**: Calendar integration (Outlook, Google Calendar).
   - **Interview kits**: Structured interview guides, scorecards.
   - **Panel interviews**: Multi-interviewer coordination and feedback collection.
   - **Interview feedback**: Structured ratings (technical, cultural fit, communication).
   - **Scorecard aggregation**: Weighted average across interviewers.
-  
+
 - **Offer Management**:
   - **Offer letter generation**: Templates by role, level, location.
   - **Compensation approval**: Compensation band validation, executive approval for exceptions.
   - **Offer negotiation**: Counter-offer tracking and approval workflow.
   - **E-signature integration**: DocuSign, Adobe Sign for offer acceptance.
   - **Background check initiation**: Trigger background check on offer acceptance.
-  
+
 - **Onboarding Handoff**:
   - **HR system integration**: Push hired candidate to HRIS (ADR-034).
   - **Onboarding checklist**: I-9, tax forms, benefits enrollment, IT provisioning.
   - **New hire portal**: Pre-boarding tasks (paperwork, training videos).
-  
+
 - **Compliance & Reporting**:
   - **EEO/OFCCP compliance**: Applicant flow logs, adverse impact analysis.
   - **GDPR/CCPA**: Candidate data retention policies, right to erasure.
@@ -239,45 +239,45 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
   - **Role-based login**: Staffing agency recruiters, consulting firm partners, freelancers.
   - **Multi-tenant isolation**: Each supplier sees only their data.
   - **SSO integration**: SAML, OAuth for enterprise suppliers.
-  
+
 - **Requisition Visibility**:
   - **Open requisitions**: Suppliers see requisitions they're invited to fill.
   - **RFP management**: Download RFP documents, submit proposals, Q&A forums.
   - **Bidding**: Submit rate bids, availability commitments, consultant profiles.
   - **Requisition status**: Real-time updates (under review, filled, cancelled).
-  
+
 - **Candidate Submission**:
   - **Candidate profiles**: Upload resumes, skills, certifications, references.
   - **Resume parsing**: Auto-populate candidate data (AI-assisted).
   - **Video introductions**: Upload candidate intro videos.
   - **Availability calendar**: Mark consultant availability dates.
   - **Submission tracking**: Status updates (submitted, shortlisted, interview, offer, rejected).
-  
+
 - **Timesheet & Invoice Management**:
   - **Timesheet submission**: Suppliers submit consultant timesheets on behalf.
   - **Expense submission**: Upload receipts and expense reports.
   - **Invoice generation**: Auto-generate invoices from approved timesheets.
   - **Invoice status tracking**: Submitted, approved, paid, disputed.
   - **Payment history**: View payment dates and amounts.
-  
+
 - **Performance Dashboards**:
   - **Supplier scorecard**: Real-time view of performance metrics (time-to-fill, quality scores, retention).
   - **Fill rate trends**: Monthly/quarterly trends.
   - **Consultant ratings**: Aggregated performance ratings for submitted consultants.
   - **Compliance status**: Document completeness, expiration alerts.
-  
+
 - **Communication & Collaboration**:
   - **Messaging**: In-app messaging with hiring managers and procurement.
   - **Notifications**: Email/SMS alerts for new requisitions, status changes, invoice approvals.
   - **Document sharing**: SOWs, MSAs, rate cards, compliance docs.
   - **Feedback forms**: Supplier feedback on requisition clarity, process improvements.
-  
+
 - **Self-Service Actions**:
   - **Profile updates**: Update supplier company info, contacts, certifications.
   - **Rate card submissions**: Propose rate updates for annual negotiations.
   - **Consultant roster management**: Add/remove consultants from talent pool.
   - **Compliance document uploads**: Insurance certificates, business licenses, tax forms.
-  
+
 - **Analytics & Reporting**:
   - **Revenue reports**: Supplier's revenue by period, project, client department.
   - **Utilization reports**: Consultant utilization rates (billable hours / available hours).

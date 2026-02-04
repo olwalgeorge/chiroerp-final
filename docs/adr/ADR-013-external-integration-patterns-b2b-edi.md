@@ -1,10 +1,10 @@
 # ADR-013: External Integration Patterns (B2B / EDI)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Integration Team  
-**Tier**: Advanced  
-**Tags**: integration, b2b, edi, idoc, odata, mapping, canonical-model  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Integration Team
+**Tier**: Advanced
+**Tags**: integration, b2b, edi, idoc, odata, mapping, canonical-model
 
 ## Context
 ChiroERP must integrate with external partners and legacy systems (suppliers, customers, banks, logistics, tax providers). SAP-grade ERPs provide robust B2B integrations (EDI, IDoc, SOAP/OData, file-based) plus monitoring and retry semantics. This ADR defines a standardized approach for partner onboarding, message formats, mapping, transport, and operational visibility.

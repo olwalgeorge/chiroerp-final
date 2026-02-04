@@ -1,8 +1,8 @@
 # Manufacturing Subcontracting - ADR-037
 
-> **Bounded Context:** `manufacturing-subcontracting`  
-> **Port:** `9307` (logical, part of manufacturing-production service)  
-> **Database:** `chiroerp_manufacturing_production`  
+> **Bounded Context:** `manufacturing-subcontracting`
+> **Port:** `9307` (logical, part of manufacturing-production service)
+> **Database:** `chiroerp_manufacturing_production`
 > **Kafka Consumer Group:** `manufacturing-production-cg`
 
 ## Overview
@@ -112,7 +112,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | PurchaseOrderApprovedEvent (consumed) | `procurement.core.po.approved` | 6 | 30d |
 | GoodsReceivedEvent (consumed) | `procurement.receiving.goods.received` | 6 | 30d |
 
-**Consumer Group:** `manufacturing-production-cg`  
+**Consumer Group:** `manufacturing-production-cg`
 **Partition Key:** `orderId` (ensures all events for a subcontract order are processed in order)
 
 ## API Endpoints (Examples)

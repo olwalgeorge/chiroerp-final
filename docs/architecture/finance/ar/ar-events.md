@@ -10,7 +10,7 @@
 
 #### InvoicePostedEvent
 
-**Trigger**: Invoice posted to GL  
+**Trigger**: Invoice posted to GL
 **Consumers**: General Ledger, Controlling, Revenue
 
 ```json
@@ -39,7 +39,7 @@
 
 #### InvoiceCancelledEvent
 
-**Trigger**: Invoice cancelled  
+**Trigger**: Invoice cancelled
 **Consumers**: General Ledger (reversal), Sales
 
 ```json
@@ -61,7 +61,7 @@
 
 #### PaymentReceivedEvent
 
-**Trigger**: Payment recorded  
+**Trigger**: Payment recorded
 **Consumers**: General Ledger, Treasury
 
 ```json
@@ -89,7 +89,7 @@
 
 #### PaymentReversedEvent
 
-**Trigger**: Payment reversed (chargeback, bounce)  
+**Trigger**: Payment reversed (chargeback, bounce)
 **Consumers**: General Ledger, Treasury, Collections
 
 ```json
@@ -109,7 +109,7 @@
 
 #### CreditMemoIssuedEvent
 
-**Trigger**: Credit memo issued  
+**Trigger**: Credit memo issued
 **Consumers**: General Ledger, Sales
 
 ```json
@@ -128,7 +128,7 @@
 
 #### DunningNoticeGeneratedEvent
 
-**Trigger**: Dunning run completed  
+**Trigger**: Dunning run completed
 **Consumers**: Notifications, CRM
 
 ```json
@@ -150,7 +150,7 @@
 
 #### CustomerBlockedEvent
 
-**Trigger**: Customer blocked due to credit policy  
+**Trigger**: Customer blocked due to credit policy
 **Consumers**: Sales, CRM
 
 ```json
@@ -181,7 +181,7 @@
 
 #### RebateIssuedEvent
 
-**Source**: Sales Rebates  
+**Source**: Sales Rebates
 **Action**: Create AR credit memo for rebate settlement
 
 ```json

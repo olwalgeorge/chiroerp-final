@@ -21,8 +21,8 @@ data class ApprovalTask(
      * Check if task is overdue.
      */
     fun isOverdue(): Boolean {
-        return status == TaskStatus.PENDING && 
-               dueDate != null && 
+        return status == TaskStatus.PENDING &&
+               dueDate != null &&
                Instant.now().isAfter(dueDate)
     }
 }

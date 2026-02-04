@@ -1,8 +1,8 @@
 # Finance Accounts Payable (AP) - ADR-009
 
-> **Bounded Context:** `finance-ap`  
-> **Port:** `8083`  
-> **Database:** `chiroerp_finance_ap`  
+> **Bounded Context:** `finance-ap`
+> **Port:** `8083`
+> **Database:** `chiroerp_finance_ap`
 > **Kafka Consumer Group:** `finance-ap-cg`
 
 ## Overview

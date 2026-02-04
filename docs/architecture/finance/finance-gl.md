@@ -1,8 +1,8 @@
 # Finance General Ledger (GL) - ADR-009
 
-> **Bounded Context:** `finance-gl`  
-> **Port:** `8081`  
-> **Database:** `chiroerp_finance_gl`  
+> **Bounded Context:** `finance-gl`
+> **Port:** `8081`
+> **Database:** `chiroerp_finance_gl`
 > **Kafka Consumer Group:** `finance-gl-cg`
 
 ## Overview

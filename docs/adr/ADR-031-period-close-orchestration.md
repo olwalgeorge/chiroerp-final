@@ -1,10 +1,10 @@
 # ADR-031: Period Close Orchestration
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team  
-**Priority**: P1 (High)  
-**Tier**: Advanced  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team
+**Priority**: P1 (High)
+**Tier**: Advanced
 **Tags**: period-close, orchestration, finance, automation
 
 ## Context

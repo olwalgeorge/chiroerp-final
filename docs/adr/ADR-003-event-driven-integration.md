@@ -1,11 +1,11 @@
 # ADR-003: Event-Driven Integration Between Contexts
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-05  
-**Deciders**: Architecture Team  
-**Tier**: Core  
-**Tags**: events, integration, messaging, bounded-contexts  
-**Updated**: 2026-02-03 (Kafka vendor selection & Redpanda local dev adoption)  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-05
+**Deciders**: Architecture Team
+**Tier**: Core
+**Tags**: events, integration, messaging, bounded-contexts
+**Updated**: 2026-02-03 (Kafka vendor selection & Redpanda local dev adoption)
 
 ## Context
 Bounded contexts in our ERP platform need to share data and coordinate workflows without creating tight coupling. We must choose an integration strategy that supports eventual consistency, scalability, and maintains bounded context autonomy.
@@ -34,9 +34,9 @@ We will use **asynchronous event-driven integration** as the primary communicati
    - No breaking changes without migration path
 
 3. **Message Broker Strategy**
-   
+
    **Decision**: Hybrid approach - **Redpanda for local development**, **Apache Kafka for production**
-   
+
    **Local Development** (Redpanda):
    - Single container vs 3 containers (Kafka + ZooKeeper + Schema Registry)
    - 2-second startup vs 30+ seconds
@@ -44,7 +44,7 @@ We will use **asynchronous event-driven integration** as the primary communicati
    - Built-in Schema Registry (no separate container)
    - 100% Kafka API compatible (no code changes)
    - Better developer experience
-   
+
    **Production** (Apache Kafka 3.7.0 + Strimzi Operator):
    - Kubernetes deployment on DigitalOcean/AWS
    - No vendor lock-in (can deploy anywhere)
@@ -52,37 +52,37 @@ We will use **asynchronous event-driven integration** as the primary communicati
    - $55K 5-year TCO vs $190K for Confluent Cloud
    - Strimzi operator for automated management
    - Apicurio Schema Registry
-   
+
    **Alternatives Evaluated**:
-   
+
    | Option | 5-Year TCO | Pros | Cons | Decision |
    |--------|-----------|------|------|----------|
    | **Apache Kafka OSS** | **$55K** | No vendor lock-in, deploy anywhere, proven at scale | Manual operations (mitigated by Strimzi) | ✅ **CHOSEN for production** |
    | **Confluent Cloud** | $190K | Managed, full ecosystem | 3.5x more expensive, vendor lock-in, cloud-only | ❌ Rejected - cost |
    | **Redpanda Cloud** | $115K | Simpler operations, fast | Smaller ecosystem, less battle-tested | ⚠️ Deferred - use for dev only |
    | **AWS MSK** | $140K | Managed, AWS integration | AWS lock-in, regional constraints (no Kenya/Tanzania) | ❌ Rejected - lock-in |
-   
+
    **TCO Breakdown** (5 years, 3 brokers, 50TB storage, 200MB/s throughput):
-   
+
    **Apache Kafka (OSS)**:
    - Compute: 3x c2-standard-8 @ $219/month = $39K
    - Storage: 15TB SSD @ $51/month = $9K
    - Operations: 20% time for 1 engineer @ $1,500/month = $9K
    - **Total: $57K** (rounded to $55K)
-   
+
    **Confluent Cloud**:
    - Platform fees: $500/month = $30K
    - Compute: $2,000/month = $120K
    - Storage: $1,000/month = $60K
    - **Total: $210K** (rounded to $190K after discounts)
-   
+
    **Why Hybrid Approach?**:
    - 💰 **Cost savings**: $135K saved over 5 years vs Confluent
    - 🚀 **Developer productivity**: Redpanda 10x faster startup, 75% less RAM
    - 🔓 **No vendor lock-in**: Can deploy Apache Kafka anywhere (on-prem, any cloud)
    - 🌍 **Regional flexibility**: Kenya/Tanzania deployments possible (AWS MSK not available)
    - ✅ **API compatibility**: 100% Kafka API compatible - zero code changes between environments
-   
+
    **Configuration**:
    - Durable, ordered, replayable event log
    - Topic per bounded context (see "Kafka Topics Strategy" below)
@@ -179,10 +179,10 @@ fun onOrderPlaced(event: OrderPlacedEvent) {
         logger.debug("Event ${event.eventId} already processed, skipping")
         return
     }
-    
+
     // Process event
     inventoryService.reserveStock(event.orderId, event.orderLines)
-    
+
     // Mark as processed
     processedEvents.record(event.eventId)
 }
@@ -281,13 +281,13 @@ groups:
         for: 2m
         annotations:
           summary: "Kafka broker {{ $labels.instance }} is down"
-      
+
       - alert: UnderReplicatedPartitions
         expr: kafka_server_replicamanager_underreplicatedpartitions > 0
         for: 5m
         annotations:
           summary: "Kafka has under-replicated partitions"
-      
+
       - alert: ConsumerLag
         expr: kafka_consumergroup_lag > 1000
         for: 10m
@@ -464,12 +464,12 @@ class PlaceOrderHandler(
     private val orderRepository: OrderRepository,
     private val eventPublisher: EventPublisher
 ) : CommandHandler<PlaceOrderCommand, OrderId> {
-    
+
     @Transactional
     override fun handle(command: PlaceOrderCommand): OrderId {
         val order = Order.create(command.customerId, command.lines)
         orderRepository.save(order)
-        
+
         // Publish event
         eventPublisher.publish(
             OrderPlacedEvent(
@@ -479,7 +479,7 @@ class PlaceOrderHandler(
                 totalAmount = order.totalAmount
             )
         )
-        
+
         return order.id
     }
 }
@@ -492,17 +492,17 @@ class PlaceOrderHandler(
 class OrderEventConsumer(
     private val inventoryService: InventoryService
 ) {
-    
+
     @ConsumeEvent("commerce.OrderPlaced")
     @Transactional
     fun onOrderPlaced(event: OrderPlacedEvent) {
         logger.info("Reserving inventory for order ${event.orderId}")
-        
+
         try {
             inventoryService.reserveStock(
                 orderId = event.orderId,
-                items = event.orderLines.map { 
-                    StockReservation(it.productId, it.quantity) 
+                items = event.orderLines.map {
+                    StockReservation(it.productId, it.quantity)
                 }
             )
         } catch (e: InsufficientStockException) {

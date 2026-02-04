@@ -8,7 +8,7 @@
 
 ### AvailabilityCalculatedEvent
 
-**Trigger**: Availability calculated for item/channel  
+**Trigger**: Availability calculated for item/channel
 **Consumers**: Sales, Ecommerce
 
 ```json
@@ -25,7 +25,7 @@
 
 ### AllocationCommittedEvent
 
-**Trigger**: Allocation committed  
+**Trigger**: Allocation committed
 **Consumers**: Sales, WMS
 
 ```json

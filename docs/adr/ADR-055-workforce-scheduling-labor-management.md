@@ -1,10 +1,10 @@
 # ADR-055: Workforce Scheduling & Labor Management (WFM)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-03  
-**Deciders**: Architecture Team, HR Team, Operations Team  
-**Priority**: P3 (Industry-Specific)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-03
+**Deciders**: Architecture Team, HR Team, Operations Team
+**Priority**: P3 (Industry-Specific)
+**Tier**: Add-on
 **Tags**: workforce-management, scheduling, shift-planning, time-tracking, labor-optimization, retail, hospitality, healthcare
 
 ## Context
@@ -50,13 +50,13 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Paid vs unpaid breaks.
   - Skill requirements (cashier, nurse, forklift operator).
   - Department, location, workstation.
-  
+
 - **Shift Types**:
   - Fixed shifts (same start/end time daily).
   - Rotating shifts (alternating weeks: Mon-Wed morning, Thu-Fri evening).
   - Split shifts (work, break, work again).
   - On-call shifts (standby with call-in).
-  
+
 - **Shift Patterns**:
   - 4x10 (4 days × 10 hours).
   - 3x12 (3 days × 12 hours, common in nursing).
@@ -69,11 +69,11 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Define typical week schedule by department/role.
   - Monday-Friday 9-5, weekends off.
   - 24/7 coverage with rotating crews.
-  
+
 - **Recurring Schedules**:
   - Copy previous week or template week.
   - Seasonal adjustments (holiday staffing, summer peak).
-  
+
 - **Template Customization**:
   - Per location, department, or role.
   - Override for special events (Black Friday, conference, election day).
@@ -85,17 +85,17 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Historical sales data (daily, hourly granularity).
   - Forecasted sales (promotions, seasonality, weather).
   - Transactions per labor hour (TPLH) target.
-  
+
 - **Occupancy-Based** (Hotels, Hospitality):
   - Room occupancy percentage.
   - Guest arrivals/departures (front desk staffing).
   - Restaurant covers and banquet events.
-  
+
 - **Volume-Based** (Call Centers, Healthcare):
   - Call volume (AHT × calls = labor hours).
   - Patient census (nurses per X patients).
   - Procedure schedule (OR staffing, radiology).
-  
+
 - **Production-Based** (Manufacturing, Warehouses):
   - Production orders and output targets.
   - Units per labor hour (UPH).
@@ -107,19 +107,19 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Adjust for holidays and anomalies.
   - Linear regression (labor hours = f(sales, day, season)).
   - External factors (weather, events, promotions).
-  
+
 - **Phase 2 (Enterprise): AI/ML Forecasting**:
   - Time series forecasting (ARIMA, Prophet) for 1000+ employee operations.
   - Multi-variate models (sales, weather, holidays, local events).
   - Requires 6-12 months of historical data for training.
-  
+
 > **Implementation Note**: Phase 1 uses **deterministic forecasting** (historical averaging, linear regression) which works well for SMBs with <500 employees. Phase 2 adds ML-based forecasting for large-scale operations (1000+ employees) after accumulating sufficient historical data. This positions ChiroERP WFM as **lightweight and integration-friendly** vs. enterprise WFM systems (Kronos, UKG Pro, ADP Workforce Now) which require dedicated implementation teams.
 
 #### Demand-to-Schedule Translation
 - **Labor Budget**:
   - Forecasted labor hours by department, shift, day.
   - Labor cost budget (hours × hourly rate).
-  
+
 - **Staffing Requirements**:
   - Convert labor hours to shift counts.
   - Example: 120 labor hours / 8-hour shifts = 15 employees needed.
@@ -132,7 +132,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - **Primary**: Meet labor demand (avoid under/over-staffing).
   - **Secondary**: Minimize labor cost (avoid unnecessary overtime).
   - **Tertiary**: Maximize employee satisfaction (preferences, work-life balance).
-  
+
 - **Constraints**:
   - **Hard Constraints** (must satisfy):
     - Employee availability (time off, blackout dates).
@@ -143,7 +143,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
     - Employee preferences (preferred shifts, weekends off).
     - Consecutive days off.
     - Balanced workload distribution.
-  
+
 - **Optimization Algorithms**:
   - Integer Linear Programming (ILP).
   - Constraint satisfaction problem (CSP) solvers.
@@ -156,13 +156,13 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Visual schedule board (rows = employees, columns = days/shifts).
   - Drag employee to shift slot.
   - Color-coded status (scheduled, available, unavailable, conflict).
-  
+
 - **Conflict Detection**:
   - Double-booking (employee scheduled twice at same time).
   - Skill mismatch (unqualified for shift).
   - Compliance violation (no break, too many hours).
   - Under/over-staffing (shift needs 5, only 3 scheduled).
-  
+
 - **Copy & Adjust**:
   - Copy last week's schedule and adjust for time off, demand changes.
   - Bulk actions (shift all shifts forward 1 hour, add extra shift).
@@ -173,7 +173,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Manager reviews for coverage and cost.
   - HR reviews for compliance.
   - Publish schedule to employees.
-  
+
 - **Publication Rules**:
   - Minimum advance notice (e.g., 2 weeks before start).
   - Locked periods (cannot change within X days of shift).
@@ -186,7 +186,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - View personal schedule (web, mobile app).
   - Calendar view (daily, weekly, monthly).
   - Shift details (location, role, break times, co-workers).
-  
+
 - **Notifications**:
   - New schedule published.
   - Schedule changes (shift added, removed, time changed).
@@ -196,7 +196,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
 - **Recurring Availability**:
   - Standing availability (e.g., never work Sundays).
   - Preferred shifts (mornings preferred, nights avoid).
-  
+
 - **Time Off Requests**:
   - Request vacation, sick leave, personal days.
   - Manager approval workflow.
@@ -209,7 +209,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Employees bid based on seniority or qualifications.
   - Highest seniority (or highest bid) wins shift.
   - Auto-assignment after bidding window closes.
-  
+
 - **Union Compliance**:
   - Seniority-based shift selection (union contracts).
   - Overtime distribution (rotate OT opportunities fairly).
@@ -219,12 +219,12 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Employee A requests to swap shift with Employee B.
   - Employee B accepts or declines.
   - Manager approval (optional or auto-approve if qualified).
-  
+
 - **Swap Eligibility**:
   - Both employees qualified for each other's shifts.
   - No compliance violations (max hours, rest periods).
   - No impact to coverage (same skills/headcount).
-  
+
 - **Trade Board**:
   - Post shift to trade board (anyone can pick up).
   - First-come, first-served or bid-based.
@@ -237,12 +237,12 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Mobile app check-in (GPS geofencing validation).
   - Web portal (for remote/office workers).
   - Badge swipe (RFID, magnetic stripe).
-  
+
 - **Punch Types**:
   - Shift start, shift end, break start, break end.
   - Meal periods (paid vs unpaid).
   - Job transfer (switch departments mid-shift).
-  
+
 - **Geofencing**:
   - Validate employee location on mobile clock-in.
   - Allow clock-in only within X meters of work site.
@@ -254,12 +254,12 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - **Late**: Clocked in after grace period (e.g., > 5 min late).
   - **Absent**: No-show, no clock-in.
   - **Partial**: Left early or extended break.
-  
+
 - **Exception Handling**:
   - Missed punch (forgot to clock out).
   - Manager correction (manual time entry with approval).
   - Disputed time (employee contests manager edit).
-  
+
 - **Attendance Scoring**:
   - Attendance points system (tardy = 0.5 pts, absent = 1 pt).
   - Cumulative points trigger warnings, disciplinary action.
@@ -270,7 +270,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Who's clocked in now (by department, location).
   - Scheduled vs actual headcount.
   - Projected labor cost for day (actuals + forecasted remainder).
-  
+
 - **Alerts**:
   - Under-staffed (fewer employees than scheduled).
   - Over-time approaching (employee nearing 40 hours).
@@ -284,7 +284,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - **Break Rules**: Meal break after 5 hours (CA), rest breaks every 4 hours.
   - **Minor Labor Laws**: Max hours, prohibited times (school nights).
   - **Predictive Scheduling**: Minimum advance notice, change penalties (SF, NYC, OR).
-  
+
 - **International Regulations**:
   - **EU Working Time Directive**: Max 48 hours/week, 11-hour rest period, 4 weeks paid leave.
   - **Canada**: Overtime rules vary by province.
@@ -296,7 +296,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Overtime distribution (fair rotation, voluntary first).
   - Shift differentials (night shift +$2/hr, weekend +$3/hr).
   - Grievance procedures (schedule disputes).
-  
+
 - **Union Reporting**:
   - Seniority roster updates.
   - Overtime distribution reports.
@@ -307,7 +307,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Minimum hours off between shifts (e.g., 8-hour rest).
   - Maximum consecutive days (e.g., 6 days on, 1 day off).
   - Maximum hours per week/month.
-  
+
 - **High-Risk Industries** (Transportation, Healthcare, Aviation):
   - Fatigue risk scoring (hours worked, circadian rhythm, sleep patterns).
   - Mandatory rest after long shifts (12+ hours).
@@ -317,12 +317,12 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
 - **Pre-Schedule Validation**:
   - Block schedule publication if violations detected.
   - Warn if soft violations (e.g., no weekend off in 3 weeks).
-  
+
 - **Real-Time Alerts**:
   - Employee approaching overtime threshold.
   - Break required (worked 5 hours, no break yet).
   - Rest period violation (less than 8 hours since last shift).
-  
+
 - **Audit Reports**:
   - Compliance violations by type, frequency, department.
   - Manager accountability (who approved violating schedule).
@@ -335,7 +335,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Set labor hour budget by department, week, period.
   - Labor cost budget (hours × standard rate + benefits).
   - Allocate to cost centers (ADR-028 integration).
-  
+
 - **Budget Tracking**:
   - Actual labor hours vs budget (daily, weekly, period).
   - Variance analysis (over/under budget).
@@ -345,7 +345,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
 - **Cost Centers**:
   - Allocate labor hours to department, project, customer.
   - Multi-dimensional (location, product, service).
-  
+
 - **Job Costing**:
   - Employee switches jobs mid-shift (transfer punch).
   - Time captured by activity (cashier, stocking, cleaning).
@@ -358,7 +358,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - **Manufacturing**: Units per hour (UPH), output per labor dollar.
   - **Call Center**: Calls handled per hour, AHT.
   - **Healthcare**: Patients per nurse, procedures per labor hour.
-  
+
 - **Benchmarking**:
   - Compare productivity across locations, shifts, employees.
   - Identify top/bottom performers.
@@ -370,7 +370,7 @@ Implement a **Workforce Scheduling & Labor Management (WFM)** add-on module that
   - Labor cost as % of revenue.
   - Overtime hours and cost.
   - Attendance and tardiness rates.
-  
+
 - **Reports**:
   - Labor distribution (full-time, part-time, overtime).
   - Shift coverage heatmaps (under/over-staffed hours).

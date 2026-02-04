@@ -12,15 +12,15 @@ dependencies {
 
     // REST API (quarkus-conventions provides core, REST, Jackson, Kotlin)
     implementation("io.quarkus:quarkus-smallrye-openapi")
-    
+
     // Database - Hibernate ORM with Panache
     implementation("io.quarkus:quarkus-hibernate-orm-panache-kotlin")
     implementation("io.quarkus:quarkus-jdbc-postgresql")
     implementation("io.quarkus:quarkus-flyway")
-    
+
     // Validation
     implementation("io.quarkus:quarkus-hibernate-validator")
-    
+
     // Observability
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     implementation("io.quarkus:quarkus-smallrye-health")

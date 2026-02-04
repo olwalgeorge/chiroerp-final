@@ -1,10 +1,10 @@
 # ADR-001: Pragmatic CQRS Implementation
 
-**Status**: Draft (Not Implemented; Revised 2025-11-16)  
-**Date**: 2025-11-05 (Original), 2025-11-16 (Revised)  
-**Deciders**: Architecture Team  
-**Tier**: Core  
-**Tags**: cqrs, architecture, use-cases, validation  
+**Status**: Draft (Not Implemented; Revised 2025-11-16)
+**Date**: 2025-11-05 (Original), 2025-11-16 (Revised)
+**Deciders**: Architecture Team
+**Tier**: Core
+**Tags**: cqrs, architecture, use-cases, validation
 
 ## Context
 The ERP platform requires handling complex business workflows spanning multiple bounded contexts. We need to implement the Command Query Responsibility Segregation (CQRS) pattern while maintaining consistency, testability, developer ergonomics, and team velocity.
@@ -46,7 +46,7 @@ We will implement a **pragmatic CQRS pattern** using direct use case invocation 
 class UserResource {
     @Inject
     lateinit var createUserUseCase: CreateUserUseCase
-    
+
     @POST
     fun createUser(@Valid @BeanParam request: CreateUserRequest): Response {
         val command = request.toCommand(locale)
@@ -62,7 +62,7 @@ class UserResource {
 class UserResource {
     @Inject
     lateinit var commandBus: CommandBus
-    
+
     @POST
     fun createUser(@Valid @BeanParam request: CreateUserRequest): Response {
         val command = request.toCommand(locale)
@@ -99,7 +99,7 @@ Our approach mirrors this simplicity while adding modern validation.
 @RestController
 public class UserController {
     private final UserService userService;  // Direct injection
-    
+
     @PostMapping("/users")
     public ResponseEntity<UserId> create(@Valid @RequestBody CreateUserRequest request) {
         UserId userId = userService.createUser(request);  // Direct call
@@ -118,7 +118,7 @@ class CreateUserCommandTest {
     @Test
     fun `should validate required fields`() {
         val validator = Validation.buildDefaultValidatorFactory().validator
-        
+
         val invalidCommand = CreateUserCommand(
             tenantId = null,  // Invalid
             username = "",     // Invalid
@@ -126,7 +126,7 @@ class CreateUserCommandTest {
             fullName = "A",    // Too short
             password = "123"   // Too short
         )
-        
+
         val violations = validator.validate(invalidCommand)
         assertTrue(violations.isNotEmpty())
     }
@@ -140,7 +140,7 @@ class CreateUserUseCaseTest {
     private val passwordEncoder = mockk<PasswordEncoder>()
     private val eventPublisher = mockk<DomainEventPublisher>()
     private val useCase = CreateUserUseCase(userRepository, passwordEncoder, eventPublisher)
-    
+
     @Test
     fun `should create user and publish event`() {
         // Given
@@ -148,10 +148,10 @@ class CreateUserUseCaseTest {
         every { passwordEncoder.encode(any()) } returns "hashed"
         every { userRepository.save(any()) } returns Unit
         every { eventPublisher.publish(any()) } returns Unit
-        
+
         // When
         val userId = useCase.execute(command)
-        
+
         // Then
         assertNotNull(userId)
         verify { userRepository.save(any()) }
@@ -189,7 +189,7 @@ class UserResourceIT {
 
 ### Why Revise This ADR?
 
-**Date**: 2025-11-16  
+**Date**: 2025-11-16
 **Trigger**: Design review revealed documentation mismatch with intended implementation
 
 **Findings**:
@@ -231,7 +231,7 @@ class UserResourceIT {
 **Rejected**: Too complex for initial implementation. Our pragmatic CQRS provides the foundation to add event sourcing later if specific aggregates need it.
 
 ### 4. Third-Party CQRS Framework (Axon, etc.)
-**Rejected**: 
+**Rejected**:
 - Vendor lock-in
 - Heavy dependencies
 - Opinionated structure
@@ -286,7 +286,7 @@ import jakarta.validation.constraints.Size
 data class CreateUserCommand(
     @field:NotNull(message = "Tenant ID is required")
     val tenantId: TenantId,
-    
+
     @field:NotBlank(message = "Username is required")
     @field:Size(min = 3, max = 50, message = "Username must be 3-50 characters long")
     @field:Pattern(
@@ -294,19 +294,19 @@ data class CreateUserCommand(
         message = "Username can contain letters, numbers, underscore, and hyphen only"
     )
     val username: String,
-    
+
     @field:Email(message = "Email must be valid")
     @field:NotBlank(message = "Email is required")
     val email: String,
-    
+
     @field:NotBlank(message = "Full name is required")
     @field:Size(min = 2, max = 200)
     val fullName: String,
-    
+
     @field:NotBlank(message = "Password is required")
     @field:Size(min = 8, max = 256)
     val password: String,
-    
+
     val roleIds: Set<RoleId> = emptySet()
 )
 ```
@@ -331,7 +331,7 @@ class CreateUserUseCase(
     @Transactional
     fun execute(command: CreateUserCommand): UserId {
         // Validation already done at REST boundary
-        
+
         // Domain logic
         val hashedPassword = passwordEncoder.encode(command.password)
         val user = User.create(
@@ -341,21 +341,21 @@ class CreateUserUseCase(
             fullName = command.fullName,
             hashedPassword = hashedPassword
         )
-        
+
         // Assign roles
         command.roleIds.forEach { roleId ->
             user.assignRole(roleId)
         }
-        
+
         // Persist
         userRepository.save(user)
-        
+
         // Publish events
         user.domainEvents.forEach { event ->
             eventPublisher.publish(event)
         }
         user.clearDomainEvents()
-        
+
         return user.id
     }
 }
@@ -382,25 +382,25 @@ import java.util.Locale
 class UserResource {
     @Inject
     lateinit var createUserUseCase: CreateUserUseCase
-    
+
     @Context
     lateinit var httpHeaders: HttpHeaders
-    
+
     @POST
     fun createUser(@Valid request: CreateUserRequest): Response {
         // Transform REST request to command
         val command = request.toCommand(currentLocale())
-        
+
         // Execute use case
         val userId = createUserUseCase.execute(command)
-        
+
         // Return response
         return Response
             .created(URI.create("/users/${userId.value}"))
             .entity(mapOf("userId" to userId.value))
             .build()
     }
-    
+
     private fun currentLocale(): Locale {
         return httpHeaders.acceptableLanguages.firstOrNull()?.let {
             Locale.forLanguageTag(it.language)
@@ -435,7 +435,7 @@ data class CreateUserRequest(
 data class GetUserQuery(
     @field:NotNull
     val tenantId: TenantId,
-    
+
     @field:NotNull
     val userId: UserId
 )
@@ -448,7 +448,7 @@ class GetUserUseCase(
     fun execute(query: GetUserQuery): UserDTO {
         val user = userRepository.findById(query.tenantId, query.userId)
             ?: throw UserNotFoundException(query.userId)
-        
+
         return UserDTO.from(user)
     }
 }

@@ -1,8 +1,8 @@
 # Manufacturing Production Orders - ADR-037
 
-> **Bounded Context:** `manufacturing-production`  
-> **Port:** `9302`  
-> **Database:** `chiroerp_manufacturing_production`  
+> **Bounded Context:** `manufacturing-production`
+> **Port:** `9302`
+> **Database:** `chiroerp_manufacturing_production`
 > **Kafka Consumer Group:** `manufacturing-production-cg`
 
 ## Overview

@@ -8,7 +8,7 @@
 
 ### PurchaseOrderApprovedEvent
 
-**Trigger**: PO approved  
+**Trigger**: PO approved
 **Consumers**: Inventory, Finance/AP
 
 ```json
@@ -25,7 +25,7 @@
 
 ### PurchaseOrderIssuedEvent
 
-**Trigger**: PO issued to supplier  
+**Trigger**: PO issued to supplier
 **Consumers**: Supplier portal, Inventory
 
 ```json

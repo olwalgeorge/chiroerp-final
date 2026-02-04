@@ -1,10 +1,10 @@
 # ADR-035: ESG & Sustainability Reporting
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-02  
-**Deciders**: Architecture Team, Finance Team, Compliance Team  
-**Priority**: P3 (Optional Add-on)  
-**Tier**: Add-on  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-02
+**Deciders**: Architecture Team, Finance Team, Compliance Team
+**Priority**: P3 (Optional Add-on)
+**Tier**: Add-on
 **Tags**: esg, sustainability, carbon, csrd, tcfd, gri, scope-emissions
 
 ## Context

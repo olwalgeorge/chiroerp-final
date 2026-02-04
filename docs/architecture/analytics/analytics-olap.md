@@ -1,8 +1,8 @@
 # Analytics OLAP & Cube Engine - ADR-016
 
-> **Bounded Context:** `analytics-olap`  
-> **Port:** `9802`  
-> **Database:** `chiroerp_analytics_olap`  
+> **Bounded Context:** `analytics-olap`
+> **Port:** `9802`
+> **Database:** `chiroerp_analytics_olap`
 > **Kafka Consumer Group:** `analytics-olap-cg`
 
 ## Overview

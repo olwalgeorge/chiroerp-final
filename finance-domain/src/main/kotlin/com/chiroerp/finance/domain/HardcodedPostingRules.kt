@@ -1,4 +1,4 @@
-package com.chiroerp.finance.infrastructure
+package com.chiroerp.finance.domain
 
 import com.chiroerp.shared.config.PostingRulesEngine
 import com.chiroerp.shared.config.PostingContext
@@ -6,17 +6,17 @@ import com.chiroerp.shared.config.AccountMapping
 
 /**
  * Phase 0: Hardcoded Posting Rules
- * 
+ *
  * Simple hardcoded implementation of PostingRulesEngine for Phase 0 development.
  * Maps common transaction types to GL accounts using if/when logic.
- * 
+ *
  * Phase 1: Replace with Drools-based configuration engine
  * Phase 2: Replace with AI-powered suggestion engine
- * 
+ *
  * Related ADRs: ADR-006 (Platform-Shared Governance), ADR-009 (Financial Accounting)
  */
 class HardcodedPostingRules : PostingRulesEngine {
-    
+
     override suspend fun determineAccounts(context: PostingContext): Result<AccountMapping> {
         return try {
             val mapping = when (context.transactionType.uppercase()) {
@@ -35,35 +35,35 @@ class HardcodedPostingRules : PostingRulesEngine {
             Result.failure(e)
         }
     }
-    
+
     override suspend fun validatePosting(context: PostingContext): Result<Unit> {
         // Basic validation
         if (context.amount.signum() <= 0) {
             return Result.failure(IllegalArgumentException("Amount must be positive"))
         }
-        
+
         if (context.companyCode.isBlank()) {
             return Result.failure(IllegalArgumentException("Company code is required"))
         }
-        
+
         if (context.currency.isBlank()) {
             return Result.failure(IllegalArgumentException("Currency is required"))
         }
-        
+
         return Result.success(Unit)
     }
-    
+
     // =========================================================================
     // Transaction-Specific Handlers
     // =========================================================================
-    
+
     /**
      * Invoice posting (Accounts Receivable)
      * Debit: AR (1200), Credit: Revenue (4000)
      */
     private fun handleInvoice(context: PostingContext): AccountMapping {
         val customer = context.attributes["customerId"] as? String
-        
+
         return AccountMapping(
             debitAccount = "1200",      // Accounts Receivable
             creditAccount = "4000",     // Revenue
@@ -72,14 +72,14 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Customer Invoice - AR debit, Revenue credit (Customer: $customer)"
         )
     }
-    
+
     /**
      * Payment posting (Cash Receipt)
      * Debit: Cash (1000), Credit: AR (1200)
      */
     private fun handlePayment(context: PostingContext): AccountMapping {
         val paymentMethod = context.attributes["paymentMethod"] as? String ?: "CASH"
-        
+
         val cashAccount = when (paymentMethod.uppercase()) {
             "CASH" -> "1000"           // Cash
             "CHECK" -> "1010"          // Cash - Checks
@@ -87,7 +87,7 @@ class HardcodedPostingRules : PostingRulesEngine {
             "ACH" -> "1020"            // Cash - ACH
             else -> "1000"             // Default to cash
         }
-        
+
         return AccountMapping(
             debitAccount = cashAccount,
             creditAccount = "1200",    // Accounts Receivable
@@ -96,7 +96,7 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Payment Received - Cash debit, AR credit (Method: $paymentMethod)"
         )
     }
-    
+
     /**
      * Expense posting
      * Debit: Expense (5000-9999), Credit: AP or Cash
@@ -104,7 +104,7 @@ class HardcodedPostingRules : PostingRulesEngine {
     private fun handleExpense(context: PostingContext): AccountMapping {
         val expenseCategory = context.attributes["expenseCategory"] as? String ?: "GENERAL"
         val isPaid = context.attributes["isPaid"] as? Boolean ?: false
-        
+
         val expenseAccount = when (expenseCategory.uppercase()) {
             "SALARY" -> "5100"         // Salaries Expense
             "RENT" -> "5200"           // Rent Expense
@@ -114,9 +114,9 @@ class HardcodedPostingRules : PostingRulesEngine {
             "SUPPLIES" -> "5600"       // Office Supplies Expense
             else -> "5000"             // General Expense
         }
-        
+
         val creditAccount = if (isPaid) "1000" else "2000"  // Cash or AP
-        
+
         return AccountMapping(
             debitAccount = expenseAccount,
             creditAccount = creditAccount,
@@ -125,14 +125,14 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Expense Posting - ${expenseCategory} expense debit, ${if (isPaid) "Cash" else "AP"} credit"
         )
     }
-    
+
     /**
      * Revenue posting (Direct revenue recognition)
      * Debit: Cash (1000), Credit: Revenue (4000)
      */
     private fun handleRevenue(context: PostingContext): AccountMapping {
         val revenueType = context.attributes["revenueType"] as? String ?: "PRODUCT"
-        
+
         val revenueAccount = when (revenueType.uppercase()) {
             "PRODUCT" -> "4000"        // Product Sales Revenue
             "SERVICE" -> "4100"        // Service Revenue
@@ -140,7 +140,7 @@ class HardcodedPostingRules : PostingRulesEngine {
             "OTHER" -> "4900"          // Other Revenue
             else -> "4000"
         }
-        
+
         return AccountMapping(
             debitAccount = "1000",     // Cash
             creditAccount = revenueAccount,
@@ -149,7 +149,7 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Revenue Recognition - Cash debit, ${revenueType} revenue credit"
         )
     }
-    
+
     /**
      * Asset purchase posting
      * Debit: Fixed Asset (1500), Credit: AP or Cash
@@ -157,7 +157,7 @@ class HardcodedPostingRules : PostingRulesEngine {
     private fun handleAssetPurchase(context: PostingContext): AccountMapping {
         val assetType = context.attributes["assetType"] as? String ?: "EQUIPMENT"
         val isPaid = context.attributes["isPaid"] as? Boolean ?: false
-        
+
         val assetAccount = when (assetType.uppercase()) {
             "BUILDING" -> "1510"       // Buildings
             "EQUIPMENT" -> "1520"      // Equipment
@@ -165,9 +165,9 @@ class HardcodedPostingRules : PostingRulesEngine {
             "FURNITURE" -> "1540"      // Furniture & Fixtures
             else -> "1500"             // Fixed Assets
         }
-        
+
         val creditAccount = if (isPaid) "1000" else "2000"
-        
+
         return AccountMapping(
             debitAccount = assetAccount,
             creditAccount = creditAccount,
@@ -176,7 +176,7 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Asset Purchase - ${assetType} asset debit, ${if (isPaid) "Cash" else "AP"} credit"
         )
     }
-    
+
     /**
      * Depreciation posting
      * Debit: Depreciation Expense (5700), Credit: Accumulated Depreciation (1590)
@@ -190,11 +190,11 @@ class HardcodedPostingRules : PostingRulesEngine {
             explanation = "Depreciation - Expense debit, Accumulated Depreciation credit"
         )
     }
-    
+
     // =========================================================================
     // Helper Functions
     // =========================================================================
-    
+
     /**
      * Derive profit center from cost center (simple mapping).
      * Phase 1: Replace with org-model hierarchy lookup.

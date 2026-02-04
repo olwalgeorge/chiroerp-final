@@ -1,8 +1,8 @@
 # ChiroERP - Cloud-Native Multi-Tenant ERP Platform
 
-> **Enterprise-Grade ERP System for Africa and Emerging Markets**  
-> **Technology**: Quarkus 3.29.0 + Kotlin 2.2.0 + PostgreSQL + Kafka  
-> **Architecture**: Microservices + Event-Driven + CQRS + Multi-Tenancy  
+> **Enterprise-Grade ERP System for Africa and Emerging Markets**
+> **Technology**: Quarkus 3.29.0 + Kotlin 2.2.0 + PostgreSQL + Kafka
+> **Architecture**: Microservices + Event-Driven + CQRS + Multi-Tenancy
 > **Status**: 🚧 Active Development | 📐 Architecture Complete | 🏗️ Build System Ready
 
 ---
@@ -24,13 +24,13 @@ ChiroERP is a **cloud-native, microservices-based ERP system** designed for **mu
 
 ### Key Differentiators
 
-✅ **60-83% cheaper than SAP** across all deployment tiers  
-✅ **Multi-region deployment** (Primary: Africa, DR: Europe, Backup: Asia)  
-✅ **Configurable Business Rules** (Drools engine - ADR-044)  
-✅ **Event-Driven Architecture** (Kafka - ADR-003, ADR-020)  
-✅ **Database-per-Context** (Independent scaling - ADR-002)  
-✅ **Modular CQRS** (Command/Query separation - ADR-001)  
-✅ **API-First Design** (REST + GraphQL via gateway - ADR-004)  
+✅ **60-83% cheaper than SAP** across all deployment tiers
+✅ **Multi-region deployment** (Primary: Africa, DR: Europe, Backup: Asia)
+✅ **Configurable Business Rules** (Drools engine - ADR-044)
+✅ **Event-Driven Architecture** (Kafka - ADR-003, ADR-020)
+✅ **Database-per-Context** (Independent scaling - ADR-002)
+✅ **Modular CQRS** (Command/Query separation - ADR-001)
+✅ **API-First Design** (REST + GraphQL via gateway - ADR-004)
 
 ---
 
@@ -363,8 +363,8 @@ ChiroERP aims to democratize access to world-class ERP systems by providing:
 
 ---
 
-> **Status**: 🚧 Active Development  
-> **Last Updated**: February 3, 2026  
-> **Build System**: ✅ Ready  
-> **Architecture**: ✅ Complete  
+> **Status**: 🚧 Active Development
+> **Last Updated**: February 3, 2026
+> **Build System**: ✅ Ready
+> **Architecture**: ✅ Complete
 > **Implementation**: 🔄 In Progress (1/92 modules)

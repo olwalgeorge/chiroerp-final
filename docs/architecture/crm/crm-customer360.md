@@ -1,8 +1,8 @@
 # CRM Customer 360 - ADR-043
 
-> **Bounded Context:** `crm-customer360`  
-> **Port:** `9401`  
-> **Database:** `chiroerp_crm_customer360`  
+> **Bounded Context:** `crm-customer360`
+> **Port:** `9401`
+> **Database:** `chiroerp_crm_customer360`
 > **Kafka Consumer Group:** `crm-customer360-cg`
 
 ## Overview

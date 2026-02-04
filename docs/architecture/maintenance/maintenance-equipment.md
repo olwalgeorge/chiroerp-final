@@ -1,8 +1,8 @@
 # Plant Maintenance Equipment Master - ADR-040
 
-> **Bounded Context:** `maintenance-equipment`  
-> **Port:** `9601`  
-> **Database:** `chiroerp_maintenance_equipment`  
+> **Bounded Context:** `maintenance-equipment`
+> **Port:** `9601`
+> **Database:** `chiroerp_maintenance_equipment`
 > **Kafka Consumer Group:** `maintenance-equipment-cg`
 
 ## Overview

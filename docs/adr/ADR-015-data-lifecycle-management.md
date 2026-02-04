@@ -1,10 +1,10 @@
 # ADR-015: Data Lifecycle Management (Archiving, Retention, Backup)
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Compliance Team, Security Team  
-**Tier**: Advanced  
-**Tags**: data, retention, archiving, backup, recovery, compliance, privacy  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Compliance Team, Security Team
+**Tier**: Advanced
+**Tags**: data, retention, archiving, backup, recovery, compliance, privacy
 
 ## Context
 Enterprise ERP systems require strict data lifecycle controls for compliance (SOX, GDPR, HIPAA), performance, and cost management. SAP-grade systems provide formal retention, archiving, legal hold, and disaster recovery standards. This ADR defines ChiroERP’s platform-wide strategy for data retention, archiving, anonymization, and backup/recovery targets.
@@ -100,11 +100,11 @@ object RetentionRuleEngine {
                 legalBasis = "SOX Section 802, IRS 26 CFR 1.6001-1"
             )
         }
-        
+
         // Default to most conservative (longest) retention
         return getConservativeDefault(dataClass)
     }
-    
+
     fun calculatePurgeDate(
         dataCreatedAt: Instant,
         policy: RetentionPolicy
@@ -143,7 +143,7 @@ interface ArchivingService {
         dataClass: String,
         olderThan: Duration
     ): ArchiveResult
-    
+
     /**
      * Move data from warm to cold (object storage)
      */
@@ -152,7 +152,7 @@ interface ArchivingService {
         dataClass: String,
         olderThan: Duration
     ): ArchiveResult
-    
+
     /**
      * Restore archived data for audit/legal inquiry
      */
@@ -162,7 +162,7 @@ interface ArchivingService {
         requestedBy: String,
         justification: String
     ): RestoreResult
-    
+
     /**
      * Permanent purge after retention expiry (with legal hold check)
      */
@@ -189,20 +189,20 @@ class FinancialAccountingArchiveJob : ScheduledJob {
             dataClass = "A1",
             olderThan = Duration.ofDays(730)
         )
-        
+
         // Move journal entries older than 7 years to cold storage
         archivingService.archiveToCold(
             context = BoundedContext.FINANCIAL_ACCOUNTING,
             dataClass = "A1",
             olderThan = Duration.ofDays(2555) // ~7 years
         )
-        
+
         // Check for purge eligibility (10 years + no legal hold)
         val purgeEligible = findRecordsEligibleForPurge(
             dataClass = "A1",
             retentionExpired = Instant.now().minus(10.years)
         )
-        
+
         purgeEligible.forEach { batch ->
             if (!hasActiveLegalHold(batch)) {
                 archivingService.purgeExpiredData(
@@ -331,7 +331,7 @@ interface LegalHoldService {
         request: LegalHoldRequest,
         requestedBy: String
     ): LegalHold
-    
+
     /**
      * Check if data is under active legal hold before purge
      */
@@ -340,7 +340,7 @@ interface LegalHoldService {
         dataClass: String,
         entityId: String
     ): Boolean
-    
+
     /**
      * Release legal hold after case closure
      */
@@ -349,7 +349,7 @@ interface LegalHoldService {
         releasedBy: String,
         justification: String
     ): LegalHoldReleaseResult
-    
+
     /**
      * Generate preservation report for e-discovery
      */
@@ -366,7 +366,7 @@ class DataPurgeService {
         expiredBefore: Instant
     ) {
         val candidates = findPurgeCandidates(dataClass, expiredBefore)
-        
+
         candidates.forEach { record ->
             // Check legal hold before deletion
             if (legalHoldService.isUnderLegalHold(
@@ -380,7 +380,7 @@ class DataPurgeService {
                 )
                 return@forEach // Skip this record
             }
-            
+
             // Safe to purge
             deleteRecord(record)
             auditLog.log(
@@ -429,7 +429,7 @@ interface eDiscoveryService {
     suspend fun createExportPackage(
         request: eDiscoveryRequest
     ): ExportPackage
-    
+
     /**
      * Generate load file for legal review platform (Relativity, Concordance)
      */
@@ -453,7 +453,7 @@ class FinancialEDiscoveryExporter {
             keywords = listOf(vendorId, "payment", "invoice"),
             dataClasses = listOf("A3") // AP/AR data
         )
-        
+
         return eDiscoveryService.createExportPackage(
             eDiscoveryRequest(
                 requestId = UUID.randomUUID().toString(),
@@ -480,19 +480,19 @@ sealed class LegalHoldAuditEvent {
         val scope: LegalHoldScope,
         val requestedBy: String
     ) : LegalHoldAuditEvent()
-    
+
     data class HoldReleased(
         val holdId: String,
         val releasedBy: String,
         val justification: String
     ) : LegalHoldAuditEvent()
-    
+
     data class PurgeBlocked(
         val entityId: String,
         val holdId: String,
         val attemptedBy: String
     ) : LegalHoldAuditEvent()
-    
+
     data class DataExported(
         val exportId: String,
         val holdId: String?,
@@ -556,14 +556,14 @@ interface BackupService {
         context: BoundedContext,
         policy: BackupPolicy
     ): BackupResult
-    
+
     /**
      * Verify backup integrity
      */
     suspend fun verifyBackup(
         backupId: String
     ): BackupVerificationResult
-    
+
     /**
      * Restore from backup to specific point in time
      */
@@ -572,7 +572,7 @@ interface BackupService {
         targetTimestamp: Instant,
         targetEnvironment: Environment
     ): RestoreResult
-    
+
     /**
      * Execute disaster recovery failover
      */
@@ -604,7 +604,7 @@ hot_standby_local:
   hot_standby: on
   max_standby_streaming_delay: 30s
   wal_receiver_timeout: 5s
-  
+
 # Warm Standby (US-West-2, DR Region)
 warm_standby_dr:
   host: pg-standby-dr-01.chiroerp-dr.internal
@@ -624,33 +624,33 @@ class PostgreSQLFailoverOrchestrator {
             checkDiskSpace(),
             checkCPULoad()
         )
-        
+
         // Fail if 2+ health checks fail within 30 seconds
         return healthChecks.count { !it } >= 2
     }
-    
+
     suspend fun executeAutomatedFailover() {
         logger.critical("Primary database failure detected. Initiating failover...")
-        
+
         // 1. Promote hot standby to primary
         promoteToPrimary("pg-standby-01")
-        
+
         // 2. Update DNS to point to new primary
         updateDNSRecord("pg-primary.chiroerp.internal", "pg-standby-01")
-        
+
         // 3. Notify operations team
         sendAlert(
             severity = Severity.CRITICAL,
             message = "Database failover completed. New primary: pg-standby-01"
         )
-        
+
         // 4. Audit log
         auditLog.log(
             event = "DR_FAILOVER_EXECUTED",
             targetHost = "pg-standby-01",
             downtime = measureDowntime()
         )
-        
+
         logger.info("Failover completed. RTO: ${measureDowntime()}")
     }
 }
@@ -673,41 +673,41 @@ object BackupRetentionPolicy {
         monthly = 24,  // 24 monthly backups (2 years)
         yearly = 7     // 7 yearly backups
     )
-    
+
     val TIER_2 = BackupRetentionSchedule(
         daily = 14,    // 14 daily backups
         weekly = 8,    // 8 weekly backups (2 months)
         monthly = 12,  // 12 monthly backups (1 year)
         yearly = 5     // 5 yearly backups
     )
-    
+
     val TIER_3 = BackupRetentionSchedule(
         daily = 7,     // 7 daily backups
         weekly = 4,    // 4 weekly backups (1 month)
         monthly = 6,   // 6 monthly backups
         yearly = 3     // 3 yearly backups
     )
-    
+
     fun shouldRetain(backup: Backup, schedule: BackupRetentionSchedule): Boolean {
         val age = Duration.between(backup.createdAt, Instant.now())
-        
+
         return when {
             // Keep all daily backups within retention window
             age < Duration.ofDays(schedule.daily.toLong()) -> true
-            
+
             // Keep weekly backups (Sunday) within retention window
             backup.createdAt.dayOfWeek == DayOfWeek.SUNDAY &&
             age < Duration.ofDays(schedule.weekly * 7L) -> true
-            
+
             // Keep monthly backups (1st of month) within retention window
             backup.createdAt.dayOfMonth == 1 &&
             age < Duration.ofDays(schedule.monthly * 30L) -> true
-            
+
             // Keep yearly backups (Jan 1st) within retention window
             backup.createdAt.month == Month.JANUARY &&
             backup.createdAt.dayOfMonth == 1 &&
             age < Duration.ofDays(schedule.yearly * 365L) -> true
-            
+
             else -> false
         }
     }
@@ -748,7 +748,7 @@ class DisasterRecoveryDrillService {
     suspend fun executeDrill(drill: DRDrill): DrillResults {
         logger.info("Starting DR drill: ${drill.drillType}")
         val startTime = Instant.now()
-        
+
         try {
             when (drill.drillType) {
                 DrillType.FULL_FAILOVER -> executeFullFailoverDrill(drill)
@@ -756,9 +756,9 @@ class DisasterRecoveryDrillService {
                 DrillType.POINT_IN_TIME_RECOVERY -> executePITRDrill(drill)
                 DrillType.DATA_CENTER_OUTAGE -> executeDCOutageDrill(drill)
             }
-            
+
             val actualRTO = Duration.between(startTime, Instant.now())
-            
+
             return DrillResults(
                 success = true,
                 actualRTO = actualRTO,
@@ -767,7 +767,7 @@ class DisasterRecoveryDrillService {
                 lessonsLearned = listOf("Drill completed successfully"),
                 actionItems = emptyList()
             )
-            
+
         } catch (e: Exception) {
             logger.error("DR drill failed", e)
             return DrillResults(
@@ -788,11 +788,11 @@ class DisasterRecoveryDrillService {
             )
         }
     }
-    
+
     suspend fun generateDrillReport(drillId: String): DrillReport {
         val drill = getDrill(drillId)
         val results = drill.results!!
-        
+
         return DrillReport(
             drillId = drillId,
             executedAt = drill.scheduledDate,
@@ -826,10 +826,10 @@ suspend fun scheduledDRDrill() {
         targetRPO = Duration.ofMinutes(15),
         participants = listOf("ops-team@chiroerp.com", "dba-team@chiroerp.com")
     )
-    
+
     val results = drDrillService.executeDrill(drill)
     val report = drDrillService.generateDrillReport(drill.drillId)
-    
+
     sendDrillReportToStakeholders(report)
 }
 ```
@@ -849,7 +849,7 @@ interface DataMaskingService {
      * Mask PII fields when copying to non-prod environments
      */
     fun maskPII(value: String, fieldType: PIIFieldType): String
-    
+
     /**
      * Create sanitized dataset for development/testing
      */
@@ -880,15 +880,15 @@ class PIIMaskingService : DataMaskingService {
             }
             PIIFieldType.PHONE -> value.takeLast(4).let { "(XXX) XXX-$it" }
             PIIFieldType.CREDIT_CARD -> value.takeLast(4).let { "XXXX-XXXX-XXXX-$it" }
-            PIIFieldType.NAME -> value.split(" ").joinToString(" ") { 
-                "${it.first()}***" 
+            PIIFieldType.NAME -> value.split(" ").joinToString(" ") {
+                "${it.first()}***"
             }
             PIIFieldType.ADDRESS -> "*** ${value.split(" ").drop(1).joinToString(" ")}"
             PIIFieldType.BANK_ACCOUNT -> value.takeLast(4).let { "XXXXXX$it" }
             PIIFieldType.SALARY -> "<redacted>"
         }
     }
-    
+
     override suspend fun createSanitizedDataset(
         sourceSchema: String,
         targetEnvironment: Environment
@@ -896,17 +896,17 @@ class PIIMaskingService : DataMaskingService {
         require(targetEnvironment != Environment.PRODUCTION) {
             "Cannot sanitize production environment"
         }
-        
+
         // Identify PII columns
         val piiColumns = identifyPIIColumns(sourceSchema)
-        
+
         // Copy data with masking
         val recordsProcessed = copyWithMasking(
             source = sourceSchema,
             target = "${sourceSchema}_${targetEnvironment.name.toLowerCase()}",
             maskingRules = piiColumns
         )
-        
+
         return SanitizationResult(
             recordsProcessed = recordsProcessed,
             columnsM masked = piiColumns.size,
@@ -921,7 +921,7 @@ suspend fun sanitizeCustomerDataForDev() {
         sourceSchema = "customer_relation",
         targetEnvironment = Environment.DEVELOPMENT
     )
-    
+
     logger.info("""
         Sanitized ${result.recordsProcessed} records
         Masked ${result.columnsMasked} PII columns
@@ -957,7 +957,7 @@ class AnalyticsAnonymizationService {
         policy: AnonymizationPolicy
     ): AnonymizedDataset {
         val records = fetchRecords(sourceTable)
-        
+
         return when (policy.technique) {
             AnonymizationTechnique.GENERALIZATION -> {
                 generalizeAttributes(records, policy)
@@ -976,7 +976,7 @@ class AnalyticsAnonymizationService {
             }
         }
     }
-    
+
     private fun generalizeAttributes(
         records: List<Record>,
         policy: AnonymizationPolicy
@@ -989,20 +989,20 @@ class AnalyticsAnonymizationService {
                 salary = generalizeSalary(record.salary) // 75000 -> 70000-80000
             )
         }
-        
+
         // Verify k-anonymity
         val satisfiesKAnonymity = verifyKAnonymity(anonymized, policy.kAnonymity)
         require(satisfiesKAnonymity) {
             "Dataset does not satisfy k-anonymity requirement"
         }
-        
+
         return AnonymizedDataset(
             records = anonymized,
             technique = policy.technique,
             kAnonymity = policy.kAnonymity
         )
     }
-    
+
     private fun generalizeAge(age: Int): String {
         return when (age) {
             in 0..17 -> "0-17"
@@ -1060,14 +1060,14 @@ interface DataErasureService {
     suspend fun processErasureRequest(
         request: ErasureRequest
     ): ErasureResult
-    
+
     /**
      * Verify no legal holds prevent erasure
      */
     suspend fun checkLegalHoldExceptions(
         dataSubjectId: String
     ): List<LegalHold>
-    
+
     /**
      * Execute erasure across all systems
      */
@@ -1082,7 +1082,7 @@ class GDPRErasureService : DataErasureService {
     ): ErasureResult {
         // 1. Verify identity of requester
         verifyDataSubjectIdentity(request.dataSubjectId, request.requestedBy)
-        
+
         // 2. Check for legal hold exceptions
         val legalHolds = checkLegalHoldExceptions(request.dataSubjectId)
         if (legalHolds.isNotEmpty()) {
@@ -1091,7 +1091,7 @@ class GDPRErasureService : DataErasureService {
                 legalHolds = legalHolds
             )
         }
-        
+
         // 3. Check for legitimate interests that override right to erasure
         val legitimateInterests = checkLegitimateInterests(request.dataSubjectId)
         if (legitimateInterests.isNotEmpty()) {
@@ -1101,10 +1101,10 @@ class GDPRErasureService : DataErasureService {
                 erasableData = identifyErasableData(request.dataSubjectId)
             )
         }
-        
+
         // 4. Execute erasure
         val executionResult = executeErasure(request)
-        
+
         // 5. Audit log
         auditLog.log(
             event = "DATA_ERASURE_COMPLETED",
@@ -1112,31 +1112,31 @@ class GDPRErasureService : DataErasureService {
             reason = request.reason,
             recordsErased = executionResult.recordsErased
         )
-        
+
         return ErasureResult.Completed(executionResult)
     }
-    
+
     override suspend fun executeErasure(
         request: ErasureRequest
     ): ErasureExecutionResult {
         val recordsErased = mutableMapOf<String, Int>()
-        
+
         // Erase from all bounded contexts
         BoundedContext.values().forEach { context ->
             val erased = eraseFromContext(context, request.dataSubjectId)
             recordsErased[context.name] = erased
         }
-        
+
         // Erase from backups (if scope includes backups)
         if (request.scope.includeBackups) {
             markForErasureInBackups(request.dataSubjectId)
         }
-        
+
         // Retain audit trail of erasure request (GDPR allows this)
         if (!request.scope.includeAuditLogs) {
             retainErasureAuditTrail(request)
         }
-        
+
         return ErasureExecutionResult(
             requestId = request.requestId,
             recordsErased = recordsErased,
@@ -1144,12 +1144,12 @@ class GDPRErasureService : DataErasureService {
             completedAt = Instant.now()
         )
     }
-    
+
     private suspend fun checkLegitimateInterests(
         dataSubjectId: String
     ): List<LegitimateInterest> {
         val interests = mutableListOf<LegitimateInterest>()
-        
+
         // Example: Open invoices must be retained for accounting
         val openInvoices = findOpenInvoices(dataSubjectId)
         if (openInvoices.isNotEmpty()) {
@@ -1162,7 +1162,7 @@ class GDPRErasureService : DataErasureService {
                 )
             )
         }
-        
+
         // Example: Tax records must be retained for statute of limitations
         val recentTaxRecords = findTaxRecordsWithinStatute(dataSubjectId)
         if (recentTaxRecords.isNotEmpty()) {
@@ -1175,7 +1175,7 @@ class GDPRErasureService : DataErasureService {
                 )
             )
         }
-        
+
         return interests
     }
 }
@@ -1195,9 +1195,9 @@ suspend fun handleCustomerErasureRequest(customerId: String, customerEmail: Stri
         ),
         status = ErasureStatus.PENDING_VERIFICATION
     )
-    
+
     val result = erasureService.processErasureRequest(request)
-    
+
     when (result) {
         is ErasureResult.Completed -> {
             sendErasureConfirmation(customerEmail, result)
@@ -1260,13 +1260,13 @@ class TenantDataLifecycleService {
         dataClass: String
     ) {
         val policy = getTenantPolicy(tenantId)
-        
+
         // Ensure archive respects residency
         val archiveLocation = determineArchiveLocation(
             primaryRegion = policy.dataResidency.primaryRegion,
             allowedRegions = policy.dataResidency.allowedRegions
         )
-        
+
         // Execute archival based on isolation tier
         when (policy.isolationTier) {
             IsolationTier.ROW_LEVEL -> {
@@ -1290,7 +1290,7 @@ class TenantDataLifecycleService {
                 )
             }
         }
-        
+
         // Store archive manifest with residency metadata
         storeArchiveManifest(
             tenantId = tenantId,
@@ -1298,12 +1298,12 @@ class TenantDataLifecycleService {
             residency = policy.dataResidency
         )
     }
-    
+
     suspend fun backupForTenant(
         tenantId: String
     ) {
         val policy = getTenantPolicy(tenantId)
-        
+
         // Backup to region(s) allowed by residency policy
         policy.dataResidency.allowedRegions.forEach { region ->
             backupService.executeBackup(
@@ -1313,10 +1313,10 @@ class TenantDataLifecycleService {
                 encryption = true
             )
         }
-        
+
         // Enforce cross-border transfer restrictions
         if (!policy.dataResidency.crossBorderTransferAllowed) {
-            require(policy.dataResidency.allowedRegions.all { 
+            require(policy.dataResidency.allowedRegions.all {
                 isSameJurisdiction(policy.dataResidency.primaryRegion, it)
             }) {
                 "Tenant prohibits cross-border data transfer"
@@ -1339,23 +1339,23 @@ object DataResidencyEnforcement {
     ): ValidationResult {
         val policy = getTenantPolicy(tenantId)
         val residency = policy.dataResidency
-        
+
         val region = extractRegion(proposedLocation)
-        
+
         // Check if region is allowed
         if (region !in residency.allowedRegions) {
             return ValidationResult.Invalid(
                 "Archive location $proposedLocation not in allowed regions: ${residency.allowedRegions}"
             )
         }
-        
+
         // Check if region is prohibited
         if (region in residency.prohibitedRegions) {
             return ValidationResult.Invalid(
                 "Archive location $proposedLocation is in prohibited regions"
             )
         }
-        
+
         // Check cross-border transfer restrictions
         if (!residency.crossBorderTransferAllowed) {
             if (!isSameJurisdiction(residency.primaryRegion, region)) {
@@ -1364,21 +1364,21 @@ object DataResidencyEnforcement {
                 )
             }
         }
-        
+
         return ValidationResult.Valid
     }
-    
+
     /**
      * GDPR-specific: Ensure EU data stays in EU
      */
     fun enforceGDPRResidency(tenantId: String, targetRegion: String): Boolean {
         val policy = getTenantPolicy(tenantId)
-        
+
         if (policy.dataResidency.regulatoryFramework == RegulatoryFramework.GDPR_EU) {
             val euRegions = listOf("eu-west-1", "eu-central-1", "eu-north-1", "eu-south-1")
             return targetRegion in euRegions
         }
-        
+
         return true
     }
 }
@@ -1414,7 +1414,7 @@ class TenantRetentionService {
         requestedRetentionYears: Int
     ): Result<RetentionPolicy> {
         val defaultPolicy = getDefaultRetentionPolicy(dataClass)
-        
+
         // Validate override request
         when {
             // Class A (financial): Cannot reduce below regulatory minimum
@@ -1427,7 +1427,7 @@ class TenantRetentionService {
                     )
                 }
             }
-            
+
             // Class B/C: Can reduce, but warn about business implications
             dataClass.startsWith("B") || dataClass.startsWith("C") -> {
                 if (requestedRetentionYears < defaultPolicy.retentionYears) {
@@ -1437,7 +1437,7 @@ class TenantRetentionService {
                     )
                 }
             }
-            
+
             // Class D (PII): Support GDPR "data minimization" principle
             dataClass.startsWith("D") -> {
                 logger.info(
@@ -1445,7 +1445,7 @@ class TenantRetentionService {
                 )
             }
         }
-        
+
         val overridePolicy = RetentionPolicy(
             dataClass = dataClass,
             jurisdiction = defaultPolicy.jurisdiction,
@@ -1453,10 +1453,10 @@ class TenantRetentionService {
             archiveTier = defaultPolicy.archiveTier,
             legalBasis = "Tenant override (stricter than regulatory minimum)"
         )
-        
+
         // Save override
         saveTenantRetentionOverride(tenantId, overridePolicy)
-        
+
         return Result.success(overridePolicy)
     }
 }
@@ -1480,30 +1480,30 @@ data class DataLifecycleMetrics(
     val bytesArchivedDaily: Long,
     val archiveJobDuration: Duration,
     val archiveFailureRate: Double,
-    
+
     // Retention & Purge
     val recordsPurgedDaily: Long,
     val bytesPurgedDaily: Long,
     val purgeBlockedByLegalHold: Int,
-    
+
     // Backup & Recovery
     val backupSuccessRate: Double,
     val averageBackupDuration: Duration,
     val actualRPO: Duration,
     val actualRTO: Duration,
-    
+
     // Storage
     val hotStorageTB: Double,
     val warmStorageTB: Double,
     val coldStorageTB: Double,
     val storageCostReduction: Double, // Percentage
-    
+
     // Compliance
     val legalHoldsActive: Int,
     val erasureRequestsPending: Int,
     val erasureRequestsCompleted: Int,
     val residencyViolations: Int,
-    
+
     // Privacy
     val piiMaskingCoverage: Double, // Percentage of non-prod
     val anonymizedDatasetsCreated: Int,
@@ -1517,29 +1517,29 @@ object DataLifecycleAlerts {
         if (metrics.archiveJobDuration > Duration.ofHours(4)) {
             alert(Severity.WARNING, "Archive job duration exceeds 4 hours")
         }
-        
+
         if (metrics.archiveFailureRate > 0.01) { // 1%
             alert(Severity.CRITICAL, "Archive failure rate exceeds 1%")
         }
-        
+
         // Backup SLA violations
         if (metrics.actualRTO > Duration.ofHours(2)) {
             alert(Severity.CRITICAL, "RTO exceeded 2-hour target")
         }
-        
+
         if (metrics.actualRPO > Duration.ofMinutes(15)) {
             alert(Severity.CRITICAL, "RPO exceeded 15-minute target")
         }
-        
+
         // Compliance violations
         if (metrics.residencyViolations > 0) {
             alert(Severity.CRITICAL, "Data residency violations detected")
         }
-        
+
         if (metrics.kAnonymityViolations > 0) {
             alert(Severity.HIGH, "K-anonymity violations in analytics datasets")
         }
-        
+
         // Storage growth
         if (metrics.hotStorageTB > 50.0) { // Example threshold
             alert(Severity.WARNING, "Hot storage exceeds 50 TB, consider archiving")

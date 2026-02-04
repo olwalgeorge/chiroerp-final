@@ -23,7 +23,7 @@ plugins {
 allprojects {
     group = "com.chiroerp"
     version = "1.0.0-SNAPSHOT"
-    
+
     // Repositories are configured centrally in settings.gradle.kts
     // See dependencyResolutionManagement block
 }
@@ -45,19 +45,19 @@ subprojects {
             )
         }
     }
-    
+
     tasks.withType<JavaCompile>().configureEach {
         options.encoding = "UTF-8"
         sourceCompatibility = "21"
         targetCompatibility = "21"
     }
-    
+
     tasks.withType<Test>().configureEach {
         useJUnitPlatform()
-        
+
         // Parallel test execution
         maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
-        
+
         // Test logging
         testLogging {
             events("passed", "skipped", "failed")
@@ -65,14 +65,14 @@ subprojects {
             showStackTraces = true
             showCauses = true
         }
-        
+
         // JVM arguments for tests
         jvmArgs(
             "-Xmx2g",
             "-XX:+HeapDumpOnOutOfMemoryError"
         )
     }
-    
+
     // TODO: Add ktlint and detekt configuration
     // See ADR-017 for code quality standards
 }
@@ -84,7 +84,7 @@ subprojects {
 tasks.register<Delete>("clean") {
     group = "build"
     description = "Cleans all project build directories"
-    
+
     delete(layout.buildDirectory)
     subprojects.forEach { subproject ->
         delete(subproject.layout.buildDirectory)
@@ -94,7 +94,7 @@ tasks.register<Delete>("clean") {
 tasks.register("buildAll") {
     group = "build"
     description = "Builds all ChiroERP modules"
-    
+
     dependsOn(subprojects
         .filter { it.tasks.findByName("build") != null }
         .map { it.tasks.named("build") }
@@ -104,8 +104,8 @@ tasks.register("buildAll") {
 tasks.register("testAll") {
     group = "verification"
     description = "Runs tests for all ChiroERP modules"
-    
-    dependsOn(subprojects.mapNotNull { 
+
+    dependsOn(subprojects.mapNotNull {
         try { it.tasks.named("test") } catch (e: Exception) { null }
     })
 }
@@ -113,10 +113,10 @@ tasks.register("testAll") {
 tasks.register("listModules") {
     group = "help"
     description = "Lists all ChiroERP modules organized by domain"
-    
+
     doLast {
         println("\n=== ChiroERP Module Structure ===\n")
-        
+
         val modulesByDomain = subprojects.groupBy { project ->
             when {
                 project.path.contains(":bounded-contexts:finance") -> "Finance Domain"
@@ -138,7 +138,7 @@ tasks.register("listModules") {
                 else -> "Other"
             }
         }
-        
+
         modulesByDomain.toSortedMap().forEach { (domain, projects) ->
             println("📦 $domain (${projects.size} modules)")
             projects.sortedBy { it.path }.forEach { project ->
@@ -146,7 +146,7 @@ tasks.register("listModules") {
             }
             println()
         }
-        
+
         println("Total Modules: ${subprojects.size}")
         println("=================================\n")
     }
@@ -155,12 +155,12 @@ tasks.register("listModules") {
 tasks.register("checkArchitecture") {
     group = "verification"
     description = "Validates architectural rules (ADR-001, ADR-002, ADR-006)"
-    
+
     doLast {
         println("\n=== Architecture Compliance Check ===\n")
-        
+
         var violations = 0
-        
+
         // Rule 1: Domain modules should not depend on infrastructure
         subprojects.filter { it.path.contains(":domain") }.forEach { domainProject ->
             val config = domainProject.configurations.findByName("implementation")
@@ -171,7 +171,7 @@ tasks.register("checkArchitecture") {
                 }
             }
         }
-        
+
         // Rule 2: platform-shared should not depend on bounded-contexts
         subprojects.filter { it.path.contains(":platform-shared") }.forEach { sharedProject ->
             val config = sharedProject.configurations.findByName("implementation")
@@ -182,14 +182,14 @@ tasks.register("checkArchitecture") {
                 }
             }
         }
-        
+
         if (violations == 0) {
             println("✓ All architectural rules satisfied")
         } else {
             println("\n⚠️  Found $violations architectural violation(s)")
             println("See ADR-001 (CQRS), ADR-002 (Database-per-Context), ADR-006 (Platform Governance)")
         }
-        
+
         println("\n=====================================\n")
     }
 }

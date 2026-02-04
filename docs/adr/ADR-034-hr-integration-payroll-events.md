@@ -1,10 +1,10 @@
 # ADR-034: HR Integration & Payroll Events
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Finance Team, HR Team  
-**Priority**: P2 (Medium)  
-**Tier**: Core  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Finance Team, HR Team
+**Priority**: P2 (Medium)
+**Tier**: Core
 **Tags**: hr, payroll, integration, expense, cost-allocation
 
 ## Context

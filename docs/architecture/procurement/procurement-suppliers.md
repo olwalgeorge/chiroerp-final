@@ -1,8 +1,8 @@
 # Procurement Supplier Management - ADR-023
 
-> **Bounded Context:** `procurement-suppliers`  
-> **Port:** `9103` (logical, part of procurement-core service)  
-> **Database:** `chiroerp_procurement_core`  
+> **Bounded Context:** `procurement-suppliers`
+> **Port:** `9103` (logical, part of procurement-core service)
+> **Database:** `chiroerp_procurement_core`
 > **Kafka Consumer Group:** `procurement-core-cg`
 
 ## Overview
@@ -97,7 +97,7 @@ All events are published to and consumed from dedicated Kafka topics following t
 | SupplierBlockedEvent | `procurement.suppliers.vendor.blocked` | 6 | 30d |
 | VendorMasterUpdatedEvent (consumed) | `mdm.vendor.master.updated` | 6 | 30d |
 
-**Consumer Group:** `procurement-core-cg`  
+**Consumer Group:** `procurement-core-cg`
 **Partition Key:** `vendorId` (ensures all events for a vendor are processed in order)
 
 ## API Endpoints (Examples)

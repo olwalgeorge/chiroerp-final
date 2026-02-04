@@ -1,8 +1,8 @@
 # Procurement Sourcing & RFQ - ADR-023
 
-> **Bounded Context:** `procurement-sourcing`  
-> **Port:** `9102`  
-> **Database:** `chiroerp_procurement_sourcing`  
+> **Bounded Context:** `procurement-sourcing`
+> **Port:** `9102`
+> **Database:** `chiroerp_procurement_sourcing`
 > **Kafka Consumer Group:** `procurement-sourcing-cg`
 
 ## Overview

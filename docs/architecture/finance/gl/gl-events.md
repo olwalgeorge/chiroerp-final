@@ -8,7 +8,7 @@
 
 ### JournalEntryPostedEvent
 
-**Trigger**: Journal entry posted to ledger  
+**Trigger**: Journal entry posted to ledger
 **Consumers**: Reporting, BI, Audit, Downstream Compliance
 
 ```json
@@ -38,7 +38,7 @@
 
 ### JournalEntryReversedEvent
 
-**Trigger**: Journal entry reversal posted  
+**Trigger**: Journal entry reversal posted
 **Consumers**: Reporting, Audit
 
 ```json
@@ -57,7 +57,7 @@
 
 ### FinancialPeriodClosedEvent
 
-**Trigger**: Accounting period hard-closed  
+**Trigger**: Accounting period hard-closed
 **Consumers**: AP, AR, Assets, Tax, Treasury
 
 ```json
@@ -76,7 +76,7 @@
 
 ### TrialBalanceGeneratedEvent
 
-**Trigger**: Trial balance snapshot created  
+**Trigger**: Trial balance snapshot created
 **Consumers**: Reporting, FP&A
 
 ```json

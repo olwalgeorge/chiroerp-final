@@ -1,8 +1,8 @@
 # Finance Accounts Receivable (AR) - ADR-009
 
-> **Bounded Context:** `finance-ar`  
-> **Port:** `8082`  
-> **Database:** `chiroerp_finance_ar`  
+> **Bounded Context:** `finance-ar`
+> **Port:** `8082`
+> **Database:** `chiroerp_finance_ar`
 > **Kafka Consumer Group:** `finance-ar-cg`
 
 ## Overview

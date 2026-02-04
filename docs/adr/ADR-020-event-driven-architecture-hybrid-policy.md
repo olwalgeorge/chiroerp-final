@@ -1,10 +1,10 @@
 # ADR-020: Event-Driven Architecture Hybrid Policy
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-09  
-**Deciders**: Architecture Team  
-**Tier**: Core  
-**Tags**: events, integration, hybrid, messaging, governance  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-09
+**Deciders**: Architecture Team
+**Tier**: Core
+**Tags**: events, integration, hybrid, messaging, governance
 
 ## Context
 The ERP platform consists of 12 bounded contexts that need to integrate and share data. We must define clear patterns for inter-context communication that balance:
@@ -175,24 +175,24 @@ We adopt a **flexible hybrid integration policy** that allows bounded contexts t
 1. Customer places order in Commerce
    ├─ Commerce: REST API → Create Order (sync response to user)
    └─ Commerce: Publish OrderPlacedEvent
-   
+
 2. Inventory receives OrderPlacedEvent
    ├─ Check stock availability
    ├─ Reserve items
    └─ Publish ItemsReservedEvent
-   
+
 3. Financial receives OrderPlacedEvent
    ├─ Create AR invoice
    └─ Publish InvoiceGeneratedEvent
-   
+
 4. Commerce receives ItemsReservedEvent + InvoiceGeneratedEvent
    ├─ Update order status to "Ready for Fulfillment"
    └─ Publish OrderConfirmedEvent
-   
+
 5. Inventory fulfills order
    ├─ Pick items, pack, ship
    └─ Publish OrderShippedEvent
-   
+
 6. Financial receives OrderShippedEvent
    ├─ Recognize revenue (GL posting)
    └─ Publish RevenueRecognizedEvent
@@ -207,23 +207,23 @@ We adopt a **flexible hybrid integration policy** that allows bounded contexts t
 ```
 1. Procurement: PO issued
    └─ Publish POIssuedEvent
-   
+
 2. Inventory receives POIssuedEvent
    ├─ Create expected receipt
    └─ Wait for physical arrival
-   
+
 3. Procurement: Goods received
    └─ Publish ReceivingCompletedEvent
-   
+
 4. Inventory receives ReceivingCompletedEvent
    ├─ Update stock levels
    └─ Publish StockAdjustedEvent
-   
+
 5. Financial receives ReceivingCompletedEvent
    ├─ Match to PO (3-way match: PO + Receipt + Invoice)
    ├─ Create AP liability
    └─ Publish InvoiceMatchedEvent
-   
+
 6. Financial: Payment due
    └─ Publish PaymentProcessedEvent
 ```
@@ -235,23 +235,23 @@ We adopt a **flexible hybrid integration policy** that allows bounded contexts t
 ```
 1. Commerce: Custom order placed
    └─ Publish CustomOrderPlacedEvent
-   
+
 2. Manufacturing receives CustomOrderPlacedEvent
    ├─ Create work order
    ├─ Query Inventory REST API for BOM availability (sync)
    └─ Publish WorkOrderCreatedEvent
-   
+
 3. Manufacturing: Production starts
    └─ Publish ProductionStartedEvent
-   
+
 4. Manufacturing: Production complete
    ├─ Quality check (may take time)
    └─ Publish ProductionCompletedEvent
-   
+
 5. Inventory receives ProductionCompletedEvent
    ├─ Add finished goods to stock
    └─ Publish StockAdjustedEvent
-   
+
 6. Commerce receives StockAdjustedEvent
    └─ Notify customer order ready for shipment
 ```
@@ -263,18 +263,18 @@ We adopt a **flexible hybrid integration policy** that allows bounded contexts t
 ```
 1. Customer: Support ticket created
    └─ Publish TicketOpenedEvent
-   
+
 2. Operations receives TicketOpenedEvent
    ├─ Assign to technician
    ├─ Schedule field service
    └─ Publish ServiceScheduledEvent
-   
+
 3. Communication receives ServiceScheduledEvent
    └─ Send SMS/Email to customer (REST call to external API)
-   
+
 4. Operations: Work completed
    └─ Publish WorkCompletedEvent
-   
+
 5. Customer receives WorkCompletedEvent
    ├─ Update ticket status
    └─ Publish TicketClosedEvent
@@ -346,13 +346,13 @@ data class UserCreatedEvent(
     val userId: UserId,                // v1.0.0
     val username: String,              // v1.0.0
     val email: String,                 // v1.0.0
-    
+
     @Since("1.1.0")
     val phoneNumber: String? = null,
-    
+
     @Since("2.1.0")
     val preferredLanguage: String? = null,
-    
+
     @DeprecatedSince(version = "2.0.0", replaceWith = "Use 'email'", removeIn = "3.0.0")
     val emailAddress: String? = null
 )
@@ -487,7 +487,7 @@ val kafkaAdaptersMustNotBeAccessedDirectly = noClasses()
 ### Kafka Topic Naming
 
 - **Format**: `{context}.domain.events.v{version}`
-- **Examples**: 
+- **Examples**:
   - `identity.domain.events.v1`
   - `commerce.domain.events.v1`
   - `financial.domain.events.v1`
@@ -514,7 +514,7 @@ Each event-driven context must expose:
 
 ### Event Versioning and Adaptability Policy
 
-**Last Updated**: 2025-11-16  
+**Last Updated**: 2025-11-16
 **Rationale**: Prevent breaking changes in production when events evolve
 
 ### The Problem: Breaking Changes in Event-Driven Systems
@@ -544,10 +544,10 @@ data class UserCreatedEvent(
     val userId: UserId,
     val username: String,
     val email: String,  // ✅ Original fields - no annotation needed
-    
+
     @Since("2.1.0")  // ✅ REQUIRED for new fields
     val phoneNumber: String? = null,
-    
+
     @Since("2.2.0")
     val preferredLanguage: String? = null
 )
@@ -586,7 +586,7 @@ When deprecating fields, use `@DeprecatedSince` with clear guidance:
 data class UserCreatedEvent(
     val tenantId: TenantId,
     val userId: UserId,
-    
+
     @DeprecatedSince(
         version = "2.0.0",
         replaceWith = "Use 'email' field instead. The 'emailAddress' field " +
@@ -594,7 +594,7 @@ data class UserCreatedEvent(
         removeIn = "3.0.0"
     )
     val emailAddress: String? = null,  // ✅ Keep for backward compatibility
-    
+
     @Since("2.0.0")
     val email: String? = null  // ✅ Replacement field
 )
@@ -639,17 +639,17 @@ Event consumers must handle versioned fields gracefully:
 fun handleUserCreated(event: UserCreatedEvent) {
     // Create user with original fields (always present)
     val user = createUser(event.tenantId, event.userId, event.email)
-    
+
     // Handle optional fields added in v2.1.0
     event.phoneNumber?.let { phone ->
         userService.addPhoneNumber(event.userId, phone)
     }
-    
+
     // Handle optional fields added in v2.2.0
     event.preferredLanguage?.let { lang ->
         userService.setLanguage(event.userId, lang)
     }
-    
+
     // Handle deprecated field (for backward compatibility)
     val email = event.email ?: event.emailAddress ?: "unknown@example.com"
 }
@@ -670,10 +670,10 @@ fun handleUserCreated(event: UserCreatedEvent) {
 
   ⚠️  Event/Bean versioning issues:
       • UserCreatedEvent.kt: Field with @Since is not nullable
-      
+
   ADR-020: New fields must have @Since annotation and be nullable
   Example: @Since("2.1.0") val phoneNumber: String? = null
-  
+
   This ensures backward compatibility with existing consumers!
 ```
 
@@ -792,38 +792,38 @@ interface EventPublisherPort {
 data class OutboxEventEntity(
     @Id @GeneratedValue
     val id: Long? = null,
-    
+
     @Column(nullable = false)
     val eventId: UUID,
-    
+
     @Column(nullable = false)
     val eventType: String,
-    
+
     @Column(nullable = false)
     val aggregateId: String,
-    
+
     @Column(columnDefinition = "TEXT")
     val payload: String,  // JSON serialized event
-    
+
     @Column(nullable = false)
     val occurredAt: Instant,
-    
+
     @Column(nullable = false)
     val recordedAt: Instant = Instant.now(),
-    
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     val status: OutboxEventStatus = OutboxEventStatus.PENDING,
-    
+
     @Column
     val publishedAt: Instant? = null,
-    
+
     @Column(nullable = false)
     val failureCount: Int = 0,
-    
+
     @Column(length = 2000)
     val lastError: String? = null,
-    
+
     @Column
     val tenantId: String? = null
 )
@@ -846,7 +846,7 @@ class OutboxEventPublisher(
     private val objectMapper: ObjectMapper,
     private val outboxRepository: OutboxRepository,
 ) : EventPublisherPort {
-    
+
     override fun publish(event: DomainEvent) {
         val entity = OutboxEventEntity.from(event, objectMapper)
         outboxRepository.save(entity)
@@ -874,7 +874,7 @@ class OutboxEventScheduler(
     @Transactional(TxType.REQUIRES_NEW)
     fun publishPendingEvents() {
         val events = outboxRepository.fetchPending(batchSize = 100, maxAttempts = 3)
-        
+
         events.forEach { event ->
             when (val result = messagePublisher.publish(event)) {
                 is Success -> outboxRepository.markPublished(event)
@@ -903,7 +903,7 @@ class KafkaOutboxMessagePublisher(
     private val emitter: Emitter<String>,
     private val meterRegistry: MeterRegistry,
 ) : OutboxMessagePublisher {
-    
+
     @Counted(value = "{context}.outbox.events.published")
     @Timed(value = "{context}.outbox.publish.duration")
     override fun publish(eventType: String, aggregateId: String, payload: String): Result<Unit> {
@@ -917,10 +917,10 @@ class KafkaOutboxMessagePublisher(
                 )
                 .build()
             )
-        
+
         return emitter.send(message)
-            .onFailure().invoke { cause -> 
-                LOGGER.error("Failed to publish event", cause) 
+            .onFailure().invoke { cause ->
+                LOGGER.error("Failed to publish event", cause)
             }
             .subscribeAsCompletionStage()
             .toCompletableFuture()
@@ -948,14 +948,14 @@ class KafkaOutboxMessagePublisher(
 class IdentityEventConsumer(
     private val userService: UserSyncService,
 ) {
-    
+
     @Incoming("identity-events-in")
     @Acknowledgment(Acknowledgment.Strategy.POST_PROCESSING)
     fun consumeIdentityEvents(message: Message<String>): CompletionStage<Void> {
         val eventType = message.getMetadata(IncomingKafkaRecordMetadata::class.java)
             .map { it.getHeaders().lastHeader("event-type").value().decodeToString() }
             .orElse("unknown")
-        
+
         return when (eventType) {
             "UserCreatedEvent" -> handleUserCreated(message.payload)
             "UserUpdatedEvent" -> handleUserUpdated(message.payload)
@@ -973,7 +973,7 @@ class IdentityEventConsumer(
             null
         }
     }
-    
+
     private fun handleUserCreated(payload: String): CompletionStage<Void> {
         val event = objectMapper.readValue(payload, UserCreatedEvent::class.java)
         return userService.syncUser(event).subscribeAsCompletionStage()
@@ -1005,7 +1005,7 @@ mp:
         value.deserializer: org.apache.kafka.common.serialization.StringDeserializer
         enable.auto.commit: false
         auto.offset.reset: earliest
-        
+
     outgoing:
       commerce-events-out:
         connector: smallrye-kafka
@@ -1034,14 +1034,14 @@ mp:
 class CustomerResource(
     private val customerQuery: CustomerQueryService,
 ) {
-    
+
     @GET
     @Path("/{customerId}")
     fun getCustomer(@PathParam("customerId") id: String): Response {
         return customerQuery.findById(CustomerId(id))
             .fold(
                 onSuccess = { customer -> Response.ok(customer).build() },
-                onFailure = { error -> 
+                onFailure = { error ->
                     when (error.code) {
                         "CUSTOMER_NOT_FOUND" -> Response.status(404).entity(error).build()
                         else -> Response.status(500).entity(error).build()

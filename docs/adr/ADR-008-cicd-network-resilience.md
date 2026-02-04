@@ -1,10 +1,10 @@
 # ADR-008: CI/CD Pipeline Architecture and Network Resilience
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-09  
-**Deciders**: Development Team, DevOps  
-**Tier**: Core  
-**Technical Story**: GitHub Actions pipeline optimization and reliability improvements  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-09
+**Deciders**: Development Team, DevOps
+**Tier**: Core
+**Technical Story**: GitHub Actions pipeline optimization and reliability improvements
 
 ## Context
 ### Context and Problem Statement
@@ -65,7 +65,7 @@ cache-warmup:
     - uses: nick-fields/retry@v3.0.0
       with:
         command: |
-          ./gradlew resolveAndLockAll --write-locks --no-daemon --stacktrace || 
+          ./gradlew resolveAndLockAll --write-locks --no-daemon --stacktrace ||
           ./gradlew dependencies --no-daemon --stacktrace
 ```
 
@@ -306,23 +306,23 @@ security-events: write
 ### Compliance and Standards
 
 ### GitHub Actions Best Practices (Planned)
-⬜ All actions pinned to specific versions  
-⬜ Least privilege permissions  
-⬜ Secrets handled securely  
-⬜ Concurrency controls planned  
-⬜ Timeout limits on all jobs  
+⬜ All actions pinned to specific versions
+⬜ Least privilege permissions
+⬜ Secrets handled securely
+⬜ Concurrency controls planned
+⬜ Timeout limits on all jobs
 
 ### Security Standards (Planned)
-⬜ Vulnerability scanning (Trivy)  
-⬜ SARIF format reports  
-⬜ GitHub Security tab integration  
-⬜ Gradle wrapper validation  
+⬜ Vulnerability scanning (Trivy)
+⬜ SARIF format reports
+⬜ GitHub Security tab integration
+⬜ Gradle wrapper validation
 
 ### Performance Standards
-✅ <35min total pipeline time  
-✅ Parallel job execution  
-✅ Configuration cache enabled  
-✅ Test duplication eliminated  
+✅ <35min total pipeline time
+✅ Parallel job execution
+✅ Configuration cache enabled
+✅ Test duplication eliminated
 
 ## Implementation Plan
 ### Implementation Status
@@ -349,8 +349,8 @@ All CI/CD features are in design/planning phase. No GitHub Actions workflows hav
 - Technology updates (new GitHub Actions features)
 - Alternative solutions emerging
 
-**Last Updated:** 2025-11-09  
-**Status:** ❌ NOT IMPLEMENTED  
+**Last Updated:** 2025-11-09
+**Status:** ❌ NOT IMPLEMENTED
 **Version:** 3.0 (Planned)
 
 ## References

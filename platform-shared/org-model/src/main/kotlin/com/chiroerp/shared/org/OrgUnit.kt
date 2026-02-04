@@ -3,7 +3,7 @@ package com.chiroerp.shared.org
 /**
  * Organizational unit value object.
  * Represents any node in the org hierarchy (company, division, department, cost center, etc.).
- * 
+ *
  * Related ADRs: ADR-006, ADR-045
  */
 data class OrgUnit(
@@ -18,7 +18,7 @@ data class OrgUnit(
 ) {
     /**
      * Check if this org unit is a descendant of another.
-     * 
+     *
      * @param ancestorId Potential ancestor org unit ID
      * @param hierarchyService Service to query hierarchy
      * @return true if this unit is under ancestorId
@@ -38,37 +38,37 @@ enum class OrgUnitType {
      * Top-level organizational unit for financial reporting.
      */
     COMPANY,
-    
+
     /**
      * Business division (product line, geography, etc.).
      */
     DIVISION,
-    
+
     /**
      * Department within a division.
      */
     DEPARTMENT,
-    
+
     /**
      * Cost center for expense tracking.
      */
     COST_CENTER,
-    
+
     /**
      * Profit center for P&L reporting.
      */
     PROFIT_CENTER,
-    
+
     /**
      * Sales organization.
      */
     SALES_ORG,
-    
+
     /**
      * Plant/warehouse location.
      */
     PLANT,
-    
+
     /**
      * Custom organizational unit type.
      */

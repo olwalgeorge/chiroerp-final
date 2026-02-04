@@ -1,8 +1,8 @@
 # Finance Treasury - ADR-026
 
-> **Bounded Context:** `finance-treasury`  
-> **Port:** `8089`  
-> **Database:** `chiroerp_finance_treasury`  
+> **Bounded Context:** `finance-treasury`
+> **Port:** `8089`
+> **Database:** `chiroerp_finance_treasury`
 > **Kafka Consumer Group:** `finance-treasury-cg`
 
 ## Overview

@@ -1,10 +1,10 @@
 # ADR-014: Authorization Objects & Segregation of Duties
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2026-02-01  
-**Deciders**: Architecture Team, Security Team, Compliance Team  
-**Tier**: Core  
-**Tags**: security, authorization, rbac, abac, sod, compliance  
+**Status**: Draft (Not Implemented)
+**Date**: 2026-02-01
+**Deciders**: Architecture Team, Security Team, Compliance Team
+**Tier**: Core
+**Tags**: security, authorization, rbac, abac, sod, compliance
 
 ## Context
 Role-based access control (RBAC) alone is insufficient for SAP-grade enterprise security. ERP systems require fine-grained authorization objects (object-level permissions) and segregation of duties (SoD) to prevent fraud and meet SOX/GDPR requirements. This ADR extends the JWT + RBAC baseline with authorization objects, SoD conflict detection, and policy governance.
@@ -109,7 +109,7 @@ Fields:
 
 ### Medium-Risk Conflicts (Require Justification + Approval)
 
-| Rule ID | Conflict Description | Mitigation | 
+| Rule ID | Conflict Description | Mitigation |
 |---------|---------------------|-----------|
 | SOD-101 | Create Purchase Req + Approve Purchase Order | Compensating control: manager review |
 | SOD-102 | Post Receipt + Release Payment | Compensating control: payment run audit |
@@ -145,26 +145,26 @@ Authorization checks that vary based on object lifecycle state:
 object InvoiceAuthorizationRules {
     fun canModify(invoice: Invoice, user: User): Boolean {
         return when (invoice.status) {
-            InvoiceStatus.DRAFT -> 
-                user.hasAction("AR_INVOICE", "MODIFY") && 
+            InvoiceStatus.DRAFT ->
+                user.hasAction("AR_INVOICE", "MODIFY") &&
                 user.hasFieldAccess("BUKRS", invoice.companyCode)
-            
-            InvoiceStatus.PENDING_APPROVAL -> 
+
+            InvoiceStatus.PENDING_APPROVAL ->
                 user.hasAction("AR_INVOICE", "APPROVE") &&
                 user.id != invoice.createdBy // Maker-checker
-            
-            InvoiceStatus.APPROVED -> 
+
+            InvoiceStatus.APPROVED ->
                 user.hasRole("FINANCE_SUPERVISOR") && // Elevated privilege
                 invoice.amount < user.getFieldConstraint("AMOUNT_RANGE")
-            
-            InvoiceStatus.POSTED, InvoiceStatus.PAID -> 
+
+            InvoiceStatus.POSTED, InvoiceStatus.PAID ->
                 false // Immutable
-            
-            InvoiceStatus.CANCELLED -> 
+
+            InvoiceStatus.CANCELLED ->
                 false // Immutable
         }
     }
-    
+
     fun canReverse(invoice: Invoice, user: User): Boolean {
         return invoice.status == InvoiceStatus.POSTED &&
                user.hasAction("AR_INVOICE", "REVERSE") &&
@@ -190,20 +190,20 @@ data class ApprovalAuthority(
 object HierarchicalAuthorizationRules {
     fun canApprove(requisition: PurchaseRequisition, user: User): Boolean {
         val authority = getUserApprovalAuthority(user.id)
-        
+
         // Direct cost center match
         if (requisition.costCenter == authority.costCenter) {
             return requisition.amount <= authority.amountLimit
         }
-        
+
         // Subordinate cost center match (manager can approve for team)
         if (requisition.costCenter in authority.subordinateCostCenters) {
             return requisition.amount <= authority.amountLimit * 0.5m // 50% for indirect
         }
-        
+
         return false
     }
-    
+
     fun getApprovalChain(amount: BigDecimal, costCenter: String): List<String> {
         // Example: $0-10K: Supervisor, $10K-50K: Manager, $50K+: Director
         return when {
@@ -231,35 +231,35 @@ Authorization rules that vary by time:
 object TimeBoundAuthorizationRules {
     fun canPostToFiscalPeriod(period: FiscalPeriod, user: User): Boolean {
         val periodStatus = getFiscalPeriodStatus(period)
-        
+
         return when (periodStatus) {
-            PeriodStatus.OPEN -> 
+            PeriodStatus.OPEN ->
                 user.hasAction("FI_POSTING", "CREATE")
-            
-            PeriodStatus.CLOSING -> 
+
+            PeriodStatus.CLOSING ->
                 user.hasRole("PERIOD_CLOSE_TEAM") &&
                 user.hasAction("FI_POSTING", "CREATE_ADJUSTING")
-            
-            PeriodStatus.CLOSED -> 
+
+            PeriodStatus.CLOSED ->
                 user.hasRole("FINANCE_CONTROLLER") &&
                 user.hasAction("FI_POSTING", "REOPEN_PERIOD")
-            
-            PeriodStatus.LOCKED -> 
+
+            PeriodStatus.LOCKED ->
                 false // Hard lock, no one can post
         }
     }
-    
+
     fun canExecuteOutsideBusinessHours(action: String, user: User): Boolean {
         if (isBusinessHours()) return true
-        
+
         // Batch jobs and emergency access only
-        return user.hasRole("SYSTEM_ADMIN") || 
+        return user.hasRole("SYSTEM_ADMIN") ||
                user.hasActiveBreakGlassSession()
     }
-    
+
     fun canAccessDuringMaintenanceWindow(user: User): Boolean {
         if (!isMaintenanceWindow()) return true
-        
+
         // Only infrastructure team during maintenance
         return user.hasRole("INFRASTRUCTURE_TEAM")
     }
@@ -275,28 +275,28 @@ Authorization based on data relationships:
 object TerritoryAuthorizationRules {
     fun canAccessCustomer(customer: Customer, user: User): Boolean {
         val userTerritories = getUserAssignedTerritories(user.id)
-        
+
         // Direct territory match
         if (customer.territoryId in userTerritories) return true
-        
+
         // Hierarchical territory (e.g., Regional Manager sees all territories)
         val territoryHierarchy = getTerritoryHierarchy(userTerritories)
         if (customer.territoryId in territoryHierarchy) return true
-        
+
         // National account override
         if (customer.isNationalAccount && user.hasRole("NATIONAL_ACCOUNT_MANAGER")) {
             return true
         }
-        
+
         return false
     }
-    
+
     fun canModifyPricing(salesOrder: SalesOrder, user: User): Boolean {
         val discountAmount = salesOrder.listPrice - salesOrder.netPrice
         val discountPercent = (discountAmount / salesOrder.listPrice) * 100
-        
+
         val userDiscountLimit = user.getFieldConstraint("DISCOUNT_PERCENT")
-        
+
         return discountPercent <= userDiscountLimit &&
                canAccessCustomer(salesOrder.customer, user)
     }
@@ -322,20 +322,20 @@ object AuthorizationCache {
         .expireAfterWrite(5, TimeUnit.MINUTES)
         .recordStats()
         .build<AuthorizationCacheKey, Boolean>()
-    
+
     fun get(key: AuthorizationCacheKey): Boolean? = cache.getIfPresent(key)
-    
+
     fun put(key: AuthorizationCacheKey, decision: Boolean) {
         cache.put(key, decision)
     }
-    
+
     fun invalidateUser(userId: String) {
         // Invalidate all entries for this user
         cache.asMap().keys.filter { it.userId == userId }.forEach {
             cache.invalidate(it)
         }
     }
-    
+
     fun invalidateTenant(tenantId: String) {
         // Invalidate all entries for this tenant
         cache.asMap().keys.filter { it.tenantId == tenantId }.forEach {
@@ -362,12 +362,12 @@ data class UserAuthorizationProfile(
 object AuthorizationProfileCache {
     fun loadProfile(userId: String, tenantId: String): UserAuthorizationProfile {
         // Load from database and cache for session duration
-        return redisCache.get("auth:profile:$userId:$tenantId") 
+        return redisCache.get("auth:profile:$userId:$tenantId")
             ?: loadFromDatabase(userId, tenantId).also {
                 redisCache.setex("auth:profile:$userId:$tenantId", 3600, it)
             }
     }
-    
+
     fun invalidateProfile(userId: String, tenantId: String) {
         redisCache.del("auth:profile:$userId:$tenantId")
     }
@@ -385,12 +385,12 @@ object BulkAuthorizationService {
         action: String
     ): List<Resource> {
         val profile = AuthorizationProfileCache.loadProfile(user.id, user.tenantId)
-        
+
         return resources.filter { resource ->
             evaluateAuthorization(profile, resource, action)
         }
     }
-    
+
     private fun evaluateAuthorization(
         profile: UserAuthorizationProfile,
         resource: Resource,
@@ -399,7 +399,7 @@ object BulkAuthorizationService {
         // Fast-path checks without database
         val objectActions = profile.authorizationObjects[resource.objectType] ?: return false
         if (action !in objectActions) return false
-        
+
         // Field constraint checks
         val constraints = profile.fieldConstraints[resource.objectType] ?: return true
         return constraints.all { (field, allowedValues) ->
@@ -441,26 +441,26 @@ object BreakGlassService {
     fun requestEmergencyAccess(request: BreakGlassRequest): String {
         // Log request
         auditLog.log(AuditEvent.BREAK_GLASS_REQUESTED, request)
-        
+
         // Notify approvers (security team, compliance)
         notifyApprovers(request)
-        
+
         // Return request ID for tracking
         return request.requestId
     }
-    
+
     fun approveEmergencyAccess(
         requestId: String,
         approverId: String,
         approvedDuration: Duration
     ): BreakGlassSession {
         val request = getRequest(requestId)
-        
+
         // Verify approver authority
         require(hasApprovalAuthority(approverId)) {
             "User $approverId not authorized to approve break-glass"
         }
-        
+
         // Create session
         val session = BreakGlassSession(
             sessionId = UUID.randomUUID().toString(),
@@ -472,31 +472,31 @@ object BreakGlassService {
             reason = request.reason,
             isActive = true
         )
-        
+
         // Grant temporary elevated permissions
         grantTemporaryRole(session)
-        
+
         // Audit log
         auditLog.log(AuditEvent.BREAK_GLASS_APPROVED, session)
-        
+
         // Enhanced monitoring
         enableEnhancedMonitoring(session)
-        
+
         return session
     }
-    
+
     fun endSession(sessionId: String) {
         val session = getSession(sessionId)
-        
+
         // Revoke temporary permissions
         revokeTemporaryRole(session)
-        
+
         // Generate activity report
         val activityReport = generateActivityReport(session)
-        
+
         // Audit log
         auditLog.log(AuditEvent.BREAK_GLASS_ENDED, session, activityReport)
-        
+
         // Notify stakeholders
         notifySessionEnded(session, activityReport)
     }
@@ -514,7 +514,7 @@ object BreakGlassMonitoring {
             captureScreenshots = true // For compliance
             requireSecondaryApproval = session.grantedRole == "SYSTEM_ADMIN"
         }
-        
+
         // Alert on suspicious activity
         securityMonitor.watchForAnomalies(session.sessionId) {
             alertOn { activity ->
@@ -524,7 +524,7 @@ object BreakGlassMonitoring {
             }
         }
     }
-    
+
     fun generateActivityReport(session: BreakGlassSession): BreakGlassReport {
         return BreakGlassReport(
             sessionId = session.sessionId,
@@ -552,19 +552,19 @@ class AuthorizationServiceTest {
             fieldConstraint("AMOUNT_RANGE", setOf("0-1000", "1000-10000"))
             fieldConstraint("BUKRS", setOf("1000", "2000"))
         }
-        
+
         val invoice = Invoice(
             amount = 5000.bd,
             companyCode = "1000"
         )
-        
+
         // When
         val canCreate = authService.canCreate(user, invoice)
-        
+
         // Then
         assertTrue(canCreate)
     }
-    
+
     @Test
     fun `should deny finance user creating invoice exceeding amount limit`() {
         // Given
@@ -573,12 +573,12 @@ class AuthorizationServiceTest {
             authObject("AR_INVOICE", "CREATE")
             fieldConstraint("AMOUNT_RANGE", setOf("0-1000", "1000-10000"))
         }
-        
+
         val invoice = Invoice(amount = 50000.bd, companyCode = "1000")
-        
+
         // When
         val canCreate = authService.canCreate(user, invoice)
-        
+
         // Then
         assertFalse(canCreate)
     }
@@ -594,13 +594,13 @@ class SoDEnforcementTest {
         // Given
         val user = User(id = "user123")
         user.assignRole("VENDOR_CREATOR")
-        
+
         // When & Then
         assertThrows<SoDViolationException> {
             user.assignRole("PAYMENT_APPROVER") // SOD-001 violation
         }
     }
-    
+
     @Test
     fun `should block transaction when user has conflicting roles`() {
         // Given - user with vendor creation permission
@@ -608,12 +608,12 @@ class SoDEnforcementTest {
             role = "PROCUREMENT_CLERK"
             authObject("VENDOR_MASTER", "CREATE")
         }
-        
+
         val vendor = user.createVendor("ABC Corp")
-        
+
         // When - same user tries to approve payment
         val payment = Payment(vendor = vendor, amount = 10000.bd)
-        
+
         // Then
         assertThrows<SoDViolationException> {
             paymentService.approve(payment, user) // SOD-001 enforcement
@@ -629,12 +629,12 @@ class SoDEnforcementTest {
 class AuthorizationIntegrationTest {
     @Inject
     lateinit var authService: AuthorizationService
-    
+
     @Test
     fun `should enforce authorization through full stack`() {
         // Given - authenticated request
         val token = generateJWT(userId = "user123", tenantId = "tenant1")
-        
+
         // When - API call to create invoice
         given()
             .auth().oauth2(token)
@@ -674,7 +674,7 @@ class AuthorizationPerformanceTest {
                 )
             }
         }
-        
+
         // Assert performance SLA
         assertTrue(metrics.p95Latency < Duration.ofMillis(10))
         assertTrue(metrics.cacheHitRate > 0.9) // 90%+ cache hit

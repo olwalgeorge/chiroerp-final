@@ -1,10 +1,10 @@
 # ADR-005: Multi-Tenancy Data Isolation Strategy
 
-**Status**: Draft (Not Implemented)  
-**Date**: 2025-11-05  
-**Deciders**: Architecture Team, Security Team  
-**Tier**: Core  
-**Tags**: multi-tenancy, security, data-isolation, compliance  
+**Status**: Draft (Not Implemented)
+**Date**: 2025-11-05
+**Deciders**: Architecture Team, Security Team
+**Tier**: Core
+**Tags**: multi-tenancy, security, data-isolation, compliance
 
 ## Context
 Our ERP platform will serve multiple customer organizations (tenants) from a shared infrastructure. We must ensure complete data isolation between tenants while maintaining operational efficiency, cost-effectiveness, and regulatory compliance.
@@ -62,7 +62,7 @@ We will implement a **hybrid multi-tenancy approach** combining:
 ```kotlin
 @ApplicationScoped
 class TenantAuditLogger {
-    
+
     fun logDataAccess(
         tenantId: TenantId,
         userId: UserId,
@@ -91,7 +91,7 @@ fun `repositories must extend TenantAwareRepository`(importedClasses: JavaClasse
 // Runtime validation
 @Aspect
 class TenantSecurityAspect(private val tenantContext: TenantContext) {
-    
+
     @Before("execution(* com.erp..repository..*(..))")
     fun validateTenantContext(joinPoint: ProceedingJoinPoint) {
         if (tenantContext.getTenantId() == null) {
@@ -128,10 +128,10 @@ fun `repository should only return data for current tenant`() {
     val accountA = Account(tenantId = TenantId("tenant-a"), ...)
     val accountB = Account(tenantId = TenantId("tenant-b"), ...)
     repository.persist(accountA, accountB)
-    
+
     // Execute
     val results = repository.listAll()
-    
+
     // Assert
     assertThat(results).hasSize(1)
     assertThat(results[0].tenantId).isEqualTo(TenantId("tenant-a"))
@@ -145,11 +145,11 @@ fun `RLS should prevent cross-tenant queries`() {
     // This test uses raw SQL to verify RLS works even if app logic fails
     dataSource.connection.use { conn ->
         conn.prepareStatement("SET app.current_tenant_id = 'tenant-a'").execute()
-        
+
         val results = conn.prepareStatement(
             "SELECT * FROM accounts"
         ).executeQuery()
-        
+
         // Should only see tenant-a accounts
         while (results.next()) {
             assertThat(results.getString("tenant_id")).isEqualTo("tenant-a")
@@ -168,21 +168,21 @@ fun `RLS should prevent cross-tenant queries`() {
 ```kotlin
 @ApplicationScoped
 class TenantMigrationService {
-    
+
     @Transactional
     fun migrateToHigherTier(
-        tenantId: TenantId, 
+        tenantId: TenantId,
         targetTier: IsolationTier
     ): MigrationJob {
-        
+
         val job = MigrationJob(tenantId, targetTier)
-        
+
         // 1. Create new schema/database
         // 2. Copy data
         // 3. Verify integrity
         // 4. Switch routing
         // 5. Delete old data (after grace period)
-        
+
         return job
     }
 }
@@ -243,7 +243,7 @@ CREATE TABLE financial_accounting.accounts (
     account_type VARCHAR(50) NOT NULL,
     created_at TIMESTAMP NOT NULL,
     updated_at TIMESTAMP NOT NULL,
-    
+
     UNIQUE(tenant_id, account_number)
 );
 
@@ -264,11 +264,11 @@ CREATE POLICY tenant_isolation_policy ON financial_accounting.accounts
 @RequestScoped
 class TenantContext {
     private var tenantId: TenantId? = null
-    
+
     fun setTenantId(id: TenantId) {
         this.tenantId = id
     }
-    
+
     fun getTenantId(): TenantId {
         return tenantId ?: throw IllegalStateException("Tenant context not set")
     }
@@ -281,11 +281,11 @@ class TenantFilter(
     private val tenantContext: TenantContext,
     private val jwtValidator: JwtValidator
 ) : ContainerRequestFilter {
-    
+
     override fun filter(requestContext: ContainerRequestContext) {
         val token = extractToken(requestContext)
         val claims = jwtValidator.validate(token)
-        
+
         // Extract and set tenant ID from JWT
         tenantContext.setTenantId(TenantId(claims.tenantId))
     }
@@ -296,17 +296,17 @@ class TenantFilter(
 abstract class TenantAwareRepository<T : TenantAwareEntity>(
     private val tenantContext: TenantContext
 ) : PanacheRepositoryBase<T, UUID> {
-    
+
     // Override find methods to include tenant filter
     override fun findById(id: UUID): T? {
         return find("id = ?1 and tenantId = ?2", id, tenantContext.getTenantId())
             .firstResult()
     }
-    
+
     override fun listAll(): List<T> {
         return find("tenantId = ?1", tenantContext.getTenantId()).list()
     }
-    
+
     // Prevent cross-tenant access
     fun save(entity: T) {
         if (entity.tenantId != tenantContext.getTenantId()) {
@@ -322,10 +322,10 @@ abstract class TenantAwareRepository<T : TenantAwareEntity>(
 abstract class Account(
     @Column(name = "tenant_id", nullable = false)
     val tenantId: TenantId,
-    
+
     @Column(name = "account_number", nullable = false)
     val accountNumber: String,
-    
+
     // ... other fields
 ) : TenantAwareEntity
 ```
@@ -337,19 +337,19 @@ abstract class Account(
 class TenantAwareDataSource(
     private val tenantContext: TenantContext
 ) {
-    
+
     @Produces
     @RequestScoped
     fun getConnection(dataSource: DataSource): Connection {
         val connection = dataSource.connection
-        
+
         // Set PostgreSQL session variable for RLS
         val statement = connection.prepareStatement(
             "SET app.current_tenant_id = ?"
         )
         statement.setObject(1, tenantContext.getTenantId().value)
         statement.execute()
-        
+
         return connection
     }
 }
@@ -364,10 +364,10 @@ class SchemaRouter(
     private val tenantContext: TenantContext,
     private val tenantRepository: TenantRepository
 ) {
-    
+
     fun getSchemaName(): String {
         val tenant = tenantRepository.findById(tenantContext.getTenantId())
-        
+
         return when (tenant.isolationTier) {
             IsolationTier.STANDARD -> "financial_accounting"  // Shared schema
             IsolationTier.PREMIUM -> "tenant_${tenant.id}_financial_accounting"  // Dedicated schema
@@ -379,14 +379,14 @@ class SchemaRouter(
 // Configure Hibernate to use dynamic schema
 @ApplicationScoped
 class DynamicSchemaProvider implements CurrentTenantIdentifierResolver {
-    
+
     @Inject
     lateinit var schemaRouter: SchemaRouter
-    
+
     override fun resolveCurrentTenantIdentifier(): String {
         return schemaRouter.getSchemaName()
     }
-    
+
     override fun validateExistingCurrentSessions(): Boolean = false
 }
 ```
@@ -399,11 +399,11 @@ class TenantProvisioningService(
     private val dataSource: DataSource,
     private val flywayMigrationRunner: FlywayMigrationRunner
 ) {
-    
+
     @Transactional
     fun provisionTenant(request: ProvisionTenantRequest): TenantId {
         val tenantId = TenantId.generate()
-        
+
         // Create tenant record
         val tenant = Tenant(
             id = tenantId,
@@ -412,29 +412,29 @@ class TenantProvisioningService(
             status = TenantStatus.PROVISIONING
         )
         entityManager.persist(tenant)
-        
+
         when (request.isolationTier) {
             IsolationTier.STANDARD -> {
                 // No additional setup - uses shared schema
                 logger.info("Tenant $tenantId using shared schema")
             }
-            
+
             IsolationTier.PREMIUM -> {
                 // Create dedicated schema
                 createDedicatedSchema(tenantId)
                 runMigrations(tenantId)
             }
-            
+
             IsolationTier.ENTERPRISE -> {
                 // Provision dedicated database (async job)
                 provisionDedicatedDatabase(tenantId)
             }
         }
-        
+
         tenant.status = TenantStatus.ACTIVE
         return tenantId
     }
-    
+
     private fun createDedicatedSchema(tenantId: TenantId) {
         val schemaName = "tenant_${tenantId}_financial_accounting"
         dataSource.connection.use { conn ->

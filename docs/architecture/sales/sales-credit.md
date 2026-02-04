@@ -1,8 +1,8 @@
 # Sales Credit Management - ADR-025
 
-> **Bounded Context:** `sales-credit`  
-> **Port:** `9205` (logical, part of sales-core service)  
-> **Database:** `chiroerp_sales_core`  
+> **Bounded Context:** `sales-credit`
+> **Port:** `9205` (logical, part of sales-core service)
+> **Database:** `chiroerp_sales_core`
 > **Kafka Consumer Group:** `sales-core-cg`
 
 ## Overview
