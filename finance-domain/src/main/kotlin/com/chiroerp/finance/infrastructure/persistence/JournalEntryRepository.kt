@@ -154,7 +154,7 @@ class JournalEntryRepository : PanacheRepositoryBase<JournalEntryEntity, UUID> {
         tenantId: UUID,
         reference: String
     ): List<JournalEntryEntity> {
-        return find("tenantId = ?1 and reference = ?2", tenantId, reference)
+        return find("tenantId = ?1 and referenceId = ?2", tenantId, reference)
             .list()
     }
 }

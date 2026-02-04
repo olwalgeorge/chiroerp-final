@@ -23,7 +23,7 @@ class JournalEntryService(
      * @param context Authorization context
      * @return Result with created entry or error
      */
-    suspend fun createJournalEntry(
+    fun createJournalEntry(
         entry: JournalEntry,
         context: AuthorizationContext = AuthorizationContext.SINGLE_TENANT_DEV
     ): Result<JournalEntry> {
@@ -54,7 +54,7 @@ class JournalEntryService(
      * @param context Authorization context
      * @return Result with posted entry or error
      */
-    suspend fun postJournalEntry(
+    fun postJournalEntry(
         entry: JournalEntry,
         userId: String,
         context: AuthorizationContext = AuthorizationContext.SINGLE_TENANT_DEV
@@ -92,7 +92,7 @@ class JournalEntryService(
      * @param context Authorization context
      * @return Result with reversal entry or error
      */
-    suspend fun reverseJournalEntry(
+    fun reverseJournalEntry(
         originalEntry: JournalEntry,
         userId: String,
         reversalDate: java.time.LocalDate,
