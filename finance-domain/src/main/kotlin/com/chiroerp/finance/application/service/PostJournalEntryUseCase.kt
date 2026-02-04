@@ -40,6 +40,9 @@ class PostJournalEntryUseCase {
         // Validate balance before posting
         entry.validateBalance().getOrThrow()
 
+        // TODO: validate accounting period is open (AccountingPeriod aggregate not yet implemented)
+        // TODO: validate all referenced accounts are posting-allowed (needs GL account lookup)
+
         // Update status to POSTED
         val posted = entry.copy(
             status = JournalEntryStatus.POSTED,

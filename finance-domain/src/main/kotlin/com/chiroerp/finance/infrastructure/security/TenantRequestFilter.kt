@@ -7,6 +7,7 @@ import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.Response
 import jakarta.ws.rs.container.ContainerRequestContext
 import jakarta.ws.rs.container.ContainerRequestFilter
+import jakarta.ws.rs.core.HttpHeaders
 import jakarta.ws.rs.ext.Provider
 import java.util.UUID
 
@@ -23,6 +24,7 @@ class TenantRequestFilter : ContainerRequestFilter {
 
     override fun filter(requestContext: ContainerRequestContext) {
         val tenantHeader = requestContext.getHeaderString("X-Tenant-Id")
+            ?: requestContext.headers[HttpHeaders.AUTHORIZATION]?.firstOrNull()?.let { _ -> null } // placeholder for JWT extraction
             ?: throw WebApplicationException(
                 "X-Tenant-Id header is required",
                 Response.Status.BAD_REQUEST

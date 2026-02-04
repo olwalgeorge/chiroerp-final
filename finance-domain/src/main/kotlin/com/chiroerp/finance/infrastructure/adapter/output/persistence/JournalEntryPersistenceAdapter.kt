@@ -21,6 +21,10 @@ class JournalEntryPersistenceAdapter : JournalEntryPort {
         return repository.findByTenantAndEntryNumber(tenantId, entryNumber)?.toDomain()
     }
 
+    override fun findByTenant(tenantId: UUID): List<JournalEntry> {
+        return repository.findByTenant(tenantId).map { it.toDomain() }
+    }
+
     override fun save(entry: JournalEntry, tenantId: UUID): JournalEntry {
         val entity = JournalEntryEntity.fromDomain(entry, tenantId)
         repository.persist(entity)

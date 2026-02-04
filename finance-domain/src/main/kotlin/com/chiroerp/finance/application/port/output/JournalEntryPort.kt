@@ -12,6 +12,7 @@ import java.util.UUID
  * Related ADRs: ADR-001 (Hexagonal Architecture - Ports & Adapters)
  */
 interface JournalEntryPort {
+    fun findByTenant(tenantId: UUID): List<JournalEntry>
     fun findByTenantAndEntryNumber(tenantId: UUID, entryNumber: String): JournalEntry?
     fun save(entry: JournalEntry, tenantId: UUID): JournalEntry
     fun update(entry: JournalEntry, tenantId: UUID): JournalEntry
