@@ -1,6 +1,6 @@
 package com.chiroerp.finance.domain
 
-import com.chiroerp.finance.infrastructure.HardcodedPostingRules
+import com.chiroerp.finance.domain.HardcodedPostingRules
 import com.chiroerp.shared.org.AuthorizationContext
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat

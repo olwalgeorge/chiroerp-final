@@ -1,5 +1,6 @@
 package com.chiroerp.finance.infrastructure
 
+import com.chiroerp.finance.domain.HardcodedPostingRules
 import com.chiroerp.shared.config.PostingContext
 import kotlinx.coroutines.runBlocking
 import org.assertj.core.api.Assertions.assertThat
