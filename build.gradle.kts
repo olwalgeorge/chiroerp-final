@@ -7,6 +7,9 @@
  * use convention plugins for shared configuration.
  */
 
+import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.tasks.testing.Test
+
 plugins {
     // Base plugins applied to all projects
     alias(libs.plugins.kotlin.jvm) apply false
@@ -161,12 +164,17 @@ tasks.register("checkArchitecture") {
 
         var violations = 0
 
-        // Rule 1: Domain modules should not depend on infrastructure
-        subprojects.filter { it.path.contains(":domain") }.forEach { domainProject ->
+        // Rule 1: Domain modules should not depend on infrastructure or frameworks
+        subprojects.filter { it.name.endsWith("-domain") }.forEach { domainProject ->
             val config = domainProject.configurations.findByName("implementation")
             config?.dependencies?.forEach { dep ->
                 if (dep.name.contains("quarkus") || dep.name.contains("spring")) {
                     println("❌ VIOLATION: Domain module ${domainProject.path} depends on framework: ${dep.name}")
+                    violations++
+                }
+
+                if (dep is ProjectDependency && dep.name.endsWith("-infrastructure")) {
+                    println("❌ VIOLATION: Domain module ${domainProject.path} depends on infrastructure module ${dep.name}")
                     violations++
                 }
             }
@@ -176,8 +184,8 @@ tasks.register("checkArchitecture") {
         subprojects.filter { it.path.contains(":platform-shared") }.forEach { sharedProject ->
             val config = sharedProject.configurations.findByName("implementation")
             config?.dependencies?.forEach { dep ->
-                if (dep.toString().contains("bounded-contexts")) {
-                    println("❌ VIOLATION: Platform-shared module ${sharedProject.path} depends on bounded context")
+                if (dep.toString().contains("bounded-contexts") || dep.toString().contains(":finance:")) {
+                    println("❌ VIOLATION: Platform-shared module ${sharedProject.path} depends on bounded context/domain module")
                     violations++
                 }
             }
@@ -191,6 +199,74 @@ tasks.register("checkArchitecture") {
         }
 
         println("\n=====================================\n")
+    }
+}
+
+val architectureTest = tasks.register("architectureTest") {
+    group = "verification"
+    description = "Runs the ADR architecture test suite (ArchUnit)"
+    dependsOn(project(":architecture-tests").tasks.named("test"))
+}
+
+tasks.register("preCommit") {
+    group = "verification"
+    description = "Fast pre-commit checks for architecture compliance"
+
+    doLast {
+        val changedOnly = providers.gradleProperty("changedOnly").isPresent
+        val stagedFiles = try {
+            val process = ProcessBuilder("git", "diff", "--cached", "--name-only", "--diff-filter=ACM")
+                .directory(rootProject.projectDir)
+                .redirectErrorStream(true)
+                .start()
+            val output = process.inputStream.bufferedReader().readText()
+            process.waitFor()
+            output.lines().filter { it.isNotBlank() }
+        } catch (ex: Exception) {
+            emptyList()
+        }
+
+        if (changedOnly && stagedFiles.none { it.endsWith(".kt") || it.endsWith(".java") }) {
+            println("No staged Kotlin/Java files detected. Skipping architecture tests.")
+            return@doLast
+        }
+
+        val gradleCmd = if (System.getProperty("os.name").lowercase().contains("windows")) {
+            "gradlew.bat"
+        } else {
+            "./gradlew"
+        }
+
+        val process = ProcessBuilder(gradleCmd, "architectureTest")
+            .directory(rootProject.projectDir)
+            .inheritIO()
+            .start()
+        val exitCode = process.waitFor()
+        if (exitCode != 0) {
+            throw GradleException("architectureTest failed")
+        }
+    }
+}
+
+tasks.register("installGitHooks") {
+    group = "verification"
+    description = "Install git hooks to run ./gradlew preCommit"
+
+    doLast {
+        val hooksDir = file(".git/hooks")
+        if (!hooksDir.exists()) {
+            println("Warning: .git/hooks directory not found; are you in a git repository?")
+            return@doLast
+        }
+
+        val hookFile = file(".git/hooks/pre-commit")
+        hookFile.writeText(
+            """#!/bin/sh
+./gradlew preCommit -PchangedOnly
+"""
+        )
+        hookFile.setExecutable(true)
+        println("Installed git pre-commit hook -> ./gradlew preCommit -PchangedOnly")
     }
 }
 

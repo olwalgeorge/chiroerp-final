@@ -448,7 +448,7 @@ val email: Email  // Changed from String to Email type - BREAKING!
 ### Architecture Tests (ArchUnit)
 
 ```kotlin
-// File: tests/arch/src/test/kotlin/.../EventDrivenArchitectureRules.kt
+// File: architecture-tests/src/test/kotlin/.../EventDrivenArchitectureRules.kt
 
 @ArchTest
 val eventPublishersMustUseOutboxPattern = classes()
@@ -554,7 +554,7 @@ data class UserCreatedEvent(
 ```
 
 **Enforcement:**
-- Pre-commit hook WARNS if new fields lack `@Since`
+- Pre-commit (Gradle `preCommit`) WARNS/FAILS if new fields lack `@Since`
 - ArchUnit test FAILS build if `@Since` field is not nullable
 - Semantic versioning (X.Y.Z) required
 
@@ -659,7 +659,7 @@ fun handleUserCreated(event: UserCreatedEvent) {
 
 #### Pre-Commit Hook (Warnings)
 
-`scripts/hooks/pre-commit-resilient.ps1` checks:
+Gradle task `preCommit` checks:
 - ✅ New fields in modified events have `@Since` annotation
 - ✅ `@Since` fields are nullable (String? not String)
 - ✅ `@DeprecatedSince` has non-empty `replaceWith` guidance
@@ -679,7 +679,7 @@ fun handleUserCreated(event: UserCreatedEvent) {
 
 #### ArchUnit Tests (Build Enforcement)
 
-`tests/arch/src/test/kotlin/com/erp/tests/arch/EventBeanAdaptabilityRules.kt`:
+`architecture-tests/src/test/kotlin/com/chiroerp/arch/ArchitectureRulesTest.kt`:
 
 1. **`Events should support backward compatibility with nullable new fields`**
    - Verifies `@Since` fields are nullable or have defaults
@@ -1156,7 +1156,7 @@ Given that no bounded contexts are implemented, we recommend a phased approach:
 - CQRS Infrastructure: platform-infrastructure/cqrs/
 - Event Store: platform-infrastructure/eventing/
 - Implementation Example: bounded-contexts/tenancy-identity/identity-infrastructure/src/main/kotlin/.../outbox/
-- Pre-Commit Hook: scripts/hooks/pre-commit-resilient.ps1
+- Pre-Commit Hook: `./gradlew preCommit`
 - Shared Types: platform-shared/common-types/src/main/kotlin/.../events/DomainEvent.kt
 - Versioning Annotations: platform-shared/common-types/src/main/kotlin/.../annotations/Since.kt
 
