@@ -2,6 +2,8 @@ package chiroerp.buildlogic
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.DuplicatesStrategy
+import org.gradle.api.tasks.bundling.Jar
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import org.gradle.api.tasks.testing.logging.TestLogEvent
@@ -43,7 +45,7 @@ class KotlinConventionsPlugin : Plugin<Project> {
                 freeCompilerArgs.addAll(
                     "-progressive",
                     "-Xjsr305=strict",        // Strict null-safety checks
-                    "-Xcontext-receivers"     // Enable context receivers
+                    "-Xcontext-parameters"    // Enable context parameters (new syntax)
                     // Note: -Xopt-in=kotlin.RequiresOptIn moved to @OptIn at usage site
                 )
 
@@ -52,6 +54,9 @@ class KotlinConventionsPlugin : Plugin<Project> {
                 //     freeCompilerArgs.add("-Xexplicit-api=strict")
                 // }
             }
+            
+            // Output Kotlin classes to java/main directory for Quarkus compatibility
+            destinationDirectory.set(layout.buildDirectory.dir("classes/java/main"))
         }
 
         // Java toolchain configuration (Java 21)
@@ -110,6 +115,11 @@ class KotlinConventionsPlugin : Plugin<Project> {
             doLast {
                 println("✓ Code formatting (integrate ktlint plugin for real formatting)")
             }
+        }
+
+        // Handle duplicate kotlin_module files in JAR
+        tasks.withType<Jar>().configureEach {
+            duplicatesStrategy = DuplicatesStrategy.EXCLUDE
         }
     }
 }

@@ -128,6 +128,17 @@ include("platform-shared:config-model")
 include("platform-shared:org-model")
 include("platform-shared:workflow-model")
 
+// Tenancy-Identity Bounded Context (ADR-005)
+include("tenancy-identity:tenancy-shared")
+include("tenancy-identity:tenancy-core")
+include("tenancy-identity:tenancy-core:tenancy-core-domain")
+include("tenancy-identity:tenancy-core:tenancy-core-application")
+include("tenancy-identity:tenancy-core:tenancy-core-infrastructure")
+include("tenancy-identity:identity-core")
+include("tenancy-identity:identity-core:identity-core-domain")
+include("tenancy-identity:identity-core:identity-core-application")
+include("tenancy-identity:identity-core:identity-core-infrastructure")
+
 // Finance Shared - Common types across all finance subdomains
 include("finance:finance-shared")
 

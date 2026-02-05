@@ -1,0 +1,10 @@
+quarkus:
+  datasource:
+    db-kind: postgresql
+    username: \
+    password: \
+    jdbc:
+      url: jdbc:postgresql://prod-db:5432/tenancy_identity
+  hibernate-orm:
+    database:
+      generation: validate

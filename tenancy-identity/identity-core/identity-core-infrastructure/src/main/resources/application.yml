@@ -1,0 +1,7 @@
+quarkus:
+  application:
+    name: identity-core-infrastructure
+  profile: dev
+
+quarkus.http:
+  port: 8080

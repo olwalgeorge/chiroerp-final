@@ -1,0 +1,7 @@
+quarkus:
+  application:
+    name: tenancy-core-infrastructure
+  profile: dev
+
+quarkus.http:
+  port: 8080

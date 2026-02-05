@@ -221,8 +221,6 @@ services:
     ports:
       - "7233:7233"  # gRPC
       - "8233:8233"  # Web UI
-    volumes:
-      - ./temporal/dynamicconfig:/etc/temporal/config/dynamicconfig
     healthcheck:
       test: ["CMD", "tctl", "--address", "temporal:7233", "workflow", "list"]
       interval: 10s
@@ -277,7 +275,6 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
     volumes:
-      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
@@ -295,8 +292,6 @@ services:
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: grafana-piechart-panel
     volumes:
-      - ./observability/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources:ro
       - grafana-data:/var/lib/grafana
     ports:
       - "3000:3000"
