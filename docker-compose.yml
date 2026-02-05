@@ -6,20 +6,20 @@ version: '3.8'
 services:
   # PostgreSQL Databases (Database-per-Bounded-Context)
 
-  postgres-finance:
+  postgres-finance-gl:
     image: postgres:16-alpine
-    container_name: chiroerp-postgres-finance
+    container_name: chiroerp-postgres-finance-gl
     environment:
-      POSTGRES_DB: finance
+      POSTGRES_DB: finance_gl
       POSTGRES_USER: chiroerp
       POSTGRES_PASSWORD: dev_password
     ports:
       - "5432:5432"
     volumes:
-      - postgres-finance-data:/var/lib/postgresql/data
-      - ./database/init/finance:/docker-entrypoint-initdb.d
+      - postgres-finance-gl-data:/var/lib/postgresql/data
+      - ./database/init/finance-gl:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d finance"]
+      test: ["CMD-SHELL", "pg_isready -U chiroerp -d finance_gl"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -327,8 +327,8 @@ networks:
     name: chiroerp-network
 
 volumes:
-  postgres-finance-data:
-    name: chiroerp-postgres-finance-data
+  postgres-finance-gl-data:
+    name: chiroerp-postgres-finance-gl-data
   postgres-sales-data:
     name: chiroerp-postgres-sales-data
   postgres-inventory-data:

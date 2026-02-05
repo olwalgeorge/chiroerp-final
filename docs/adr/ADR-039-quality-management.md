@@ -1,14 +1,17 @@
 # ADR-039: Quality Management (QM)
 
 **Status**: Draft (Not Implemented)
-**Date**: 2026-02-02
+**Date**: 2026-02-05
 **Deciders**: Architecture Team, Operations Team, Quality Team
 **Priority**: P3 (Optional Add-on)
 **Tier**: Add-on
-**Tags**: quality, inspection, nonconformance, audit, iso, fda, gmp
+**Parent Module**: Manufacturing (ADR-037)
+**Tags**: quality, inspection, nonconformance, audit, iso, fda, gmp, hexagonal-architecture
 
 ## Context
 Manufacturing, distribution, and regulated industries require quality management capabilities to ensure product conformance, manage inspections, track nonconformances, and maintain regulatory compliance. A general-purpose ERP must support quality workflows as an optional add-on for tenants with quality-critical operations.
+
+**Organizational Decision**: Quality Management has been incorporated as a subdomain within the Manufacturing bounded context (`manufacturing/manufacturing-quality/`) to ensure tight coupling with production processes, inspection points, and manufacturing analytics. This placement enables seamless integration with production orders, work centers, and bill of materials while maintaining quality gates at every manufacturing stage.
 
 ## Decision
 Implement a **Quality Management (QM)** add-on module that provides inspection planning, quality checks, nonconformance management, CAPA workflows, supplier quality, and audit management integrated with procurement, inventory, manufacturing, and sales.
@@ -28,6 +31,119 @@ Implement a **Quality Management (QM)** add-on module that provides inspection p
 - Laboratory Information Management (LIMS).
 - Advanced SPC/SQC tools (integrate with Minitab, JMP).
 - Product lifecycle management (PLM).
+
+### Subdomain Architecture
+Quality Management is implemented as 7 subdomains within the Manufacturing bounded context, each following **hexagonal architecture** with clean separation of concerns:
+
+```
+manufacturing/
+└── manufacturing-quality/                    # Quality Management (ADR-039)
+    ├── quality-inspection-planning/          # Inspection Planning (Port 9501)
+    ├── quality-execution/                    # Inspection Execution (Port 9502)
+    ├── quality-nonconformance/               # NC Management (Port 9503)
+    ├── quality-capa/                         # CAPA Workflow (Port 9504)
+    ├── quality-supplier/                     # Supplier Quality (Port 9505)
+    ├── quality-certificates/                 # Quality Certificates (Port 9506)
+    └── quality-analytics/                    # Quality Analytics (Port 9507)
+```
+
+#### 1. Quality Inspection Planning (Port 9501)
+**Package**: `com.chiroerp.manufacturing.quality.inspectionplanning`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `InspectionPlan`, `InspectionCharacteristic`, `CharacteristicType`, `SamplingProcedure`, `SampleSize`, `InspectionTrigger`, `InspectionPoint`, `ControlLimit`, `MasterInspectionCharacteristic`, `InspectionMethod`, `InspectionEquipment` | Core inspection planning entities |
+| **Domain Events** | `InspectionPlanCreatedEvent`, `InspectionPlanActivatedEvent`, `CharacteristicAddedEvent` | Plan lifecycle events |
+| **Input Ports** | `CreateInspectionPlanUseCase`, `ActivateInspectionPlanUseCase`, `InspectionPlanQueryPort` | Planning use cases |
+| **Output Ports** | `InspectionPlanRepository`, `CharacteristicRepository`, `MaterialMasterPort` | Persistence and integration |
+| **Domain Services** | `InspectionPlanService`, `CharacteristicService`, `SamplingService` | Business logic |
+| **REST Controllers** | `InspectionPlanController`, `CharacteristicController`, `SamplingController` | API endpoints |
+
+#### 2. Quality Execution (Port 9502)
+**Package**: `com.chiroerp.manufacturing.quality.execution`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `InspectionLot`, `InspectionResult`, `ResultRecord`, `UsageDecision`, `DecisionCode`, `Defect`, `DefectCode`, `DefectLocation`, `ControlChart`, `MeasurementPoint` | Inspection execution entities |
+| **Domain Events** | `InspectionLotCreatedEvent`, `ResultRecordedEvent`, `UsageDecisionMadeEvent`, `DefectRecordedEvent`, `LotReleasedEvent`, `LotRejectedEvent` | Execution lifecycle events |
+| **Input Ports** | `CreateInspectionLotUseCase`, `RecordResultUseCase`, `MakeUsageDecisionUseCase`, `InspectionLotQueryPort` | Execution use cases |
+| **Output Ports** | `InspectionLotRepository`, `ResultRepository`, `InspectionPlanPort`, `InventoryPort` | Persistence and integration |
+| **Domain Services** | `InspectionExecutionService`, `ResultRecordingService`, `UsageDecisionService`, `DefectRecordingService` | Business logic |
+| **REST Controllers** | `InspectionLotController`, `ResultController`, `UsageDecisionController`, `DefectController` | API endpoints |
+
+#### 3. Quality Nonconformance (Port 9503)
+**Package**: `com.chiroerp.manufacturing.quality.nonconformance`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `Nonconformance`, `NCType`, `SeverityLevel`, `DefectRecord`, `Disposition`, `DispositionType`, `QualityCost`, `CostCategory`, `ContainmentAction` | NC tracking entities |
+| **Domain Events** | `NonconformanceCreatedEvent`, `DispositionDecidedEvent`, `NCClosedEvent`, `QualityCostRecordedEvent`, `ContainmentActionTakenEvent` | NC lifecycle events |
+| **Input Ports** | `CreateNonconformanceUseCase`, `RecordDispositionUseCase`, `TrackQualityCostUseCase`, `NonconformanceQueryPort` | NC management use cases |
+| **Output Ports** | `NonconformanceRepository`, `DispositionRepository`, `QualityCostRepository`, `InspectionLotPort` | Persistence and integration |
+| **Domain Services** | `NonconformanceService`, `DispositionService`, `QualityCostService`, `ContainmentService` | Business logic |
+| **REST Controllers** | `NonconformanceController`, `DispositionController`, `QualityCostController` | API endpoints |
+
+#### 4. Quality CAPA (Port 9504)
+**Package**: `com.chiroerp.manufacturing.quality.capa`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `CAPA`, `CAPAType`, `CAPAStatus`, `RootCauseAnalysis`, `FiveWhyAnalysis`, `FishboneAnalysis`, `EightDReport`, `CorrectiveAction`, `PreventiveAction`, `ActionAssignment`, `EffectivenessCheck` | CAPA workflow entities |
+| **Domain Events** | `CAPACreatedEvent`, `RootCauseIdentifiedEvent`, `ActionAssignedEvent`, `ActionCompletedEvent`, `EffectivenessVerifiedEvent`, `CAPAClosedEvent` | CAPA lifecycle events |
+| **Input Ports** | `CreateCAPAUseCase`, `RecordRootCauseUseCase`, `AssignActionUseCase`, `CAPAQueryPort` | CAPA use cases |
+| **Output Ports** | `CAPARepository`, `RCARepository`, `ActionRepository`, `NonconformancePort` | Persistence and integration |
+| **Domain Services** | `CAPAService`, `RootCauseAnalysisService`, `ActionTrackingService`, `EffectivenessService` | Business logic |
+| **REST Controllers** | `CAPAController`, `RCAController`, `ActionController` | API endpoints |
+
+#### 5. Quality Supplier (Port 9505)
+**Package**: `com.chiroerp.manufacturing.quality.supplier`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `SupplierQualityProfile`, `VendorScorecard`, `QualityScore`, `PPMTracking`, `ApprovedSupplierList`, `ASLStatus`, `SupplierAudit`, `AuditFinding`, `SupplierDevelopment`, `QualityAgreement`, `SupplierCertification` | Supplier quality entities |
+| **Domain Events** | `VendorQualityScoreUpdatedEvent`, `ASLStatusChangedEvent`, `SupplierAuditCompletedEvent`, `PPMThresholdExceededEvent` | Supplier quality events |
+| **Input Ports** | `UpdateVendorScoreUseCase`, `ManageASLUseCase`, `SupplierQualityQueryPort` | Supplier quality use cases |
+| **Output Ports** | `SupplierQualityRepository`, `ScorecardRepository`, `ASLRepository`, `ProcurementPort` | Persistence and integration |
+| **Domain Services** | `VendorScorecardService`, `ASLManagementService`, `PPMCalculationService`, `SupplierAuditService` | Business logic |
+| **REST Controllers** | `VendorScorecardController`, `ASLController`, `SupplierAuditController` | API endpoints |
+
+#### 6. Quality Certificates (Port 9506)
+**Package**: `com.chiroerp.manufacturing.quality.certificates`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `CertificateOfAnalysis`, `CertificateOfConformance`, `CertificateTemplate`, `CertificateContent`, `TestResult`, `Specification`, `RegulatorySubmission`, `BatchRelease`, `DigitalSignature`, `AuditTrail` | Certificate entities |
+| **Domain Events** | `CertificateGeneratedEvent`, `CertificateApprovedEvent`, `BatchReleasedEvent`, `RegulatorySubmissionSentEvent` | Certificate lifecycle events |
+| **Input Ports** | `GenerateCertificateUseCase`, `ApproveCertificateUseCase`, `CertificateQueryPort` | Certificate use cases |
+| **Output Ports** | `CertificateRepository`, `TemplateRepository`, `InspectionLotPort`, `DocumentOutputPort` | Persistence and integration |
+| **Domain Services** | `CertificateGenerationService`, `TemplateService`, `BatchReleaseService`, `RegulatorySubmissionService` | Business logic |
+| **REST Controllers** | `CoAController`, `CoCController`, `BatchReleaseController` | API endpoints |
+| **Output Adapters** | `PDFGeneratorAdapter` | Document generation |
+
+#### 7. Quality Analytics (Port 9507)
+**Package**: `com.chiroerp.manufacturing.quality.analytics`
+
+| Layer | Component | Description |
+|-------|-----------|-------------|
+| **Domain Models** | `QualityKPI`, `SPCChart`, `ControlChart`, `ProcessCapability`, `FirstPassYield`, `RolledThroughputYield`, `DefectRate`, `CostOfQuality`, `COQCategory`, `TrendAnalysis`, `ParetoAnalysis` | Analytics entities |
+| **Domain Events** | `QualityKPICalculatedEvent`, `SPCViolationDetectedEvent`, `ProcessOutOfControlEvent`, `COQReportGeneratedEvent` | Analytics events |
+| **Input Ports** | `CalculateSPCUseCase`, `CalculateYieldUseCase`, `CalculateCOQUseCase`, `QualityAnalyticsQueryPort` | Analytics use cases |
+| **Output Ports** | `QualityKPIRepository`, `SPCRepository`, `InspectionDataPort`, `AnalyticsWarehousePort` | Persistence and integration |
+| **Domain Services** | `SPCCalculationService`, `YieldCalculationService`, `ProcessCapabilityService`, `COQCalculationService` | Business logic |
+| **REST Controllers** | `SPCController`, `YieldController`, `COQController` | API endpoints |
+
+### Inter-Subdomain Communication
+
+| Source Subdomain | Target Subdomain | Communication | Purpose |
+|------------------|------------------|---------------|---------|
+| Inspection Planning | Execution | Event/Query | Provide inspection plan to lot creation |
+| Execution | Nonconformance | Event | Create NC on rejection/defects |
+| Nonconformance | CAPA | Event | Trigger CAPA on NC patterns |
+| CAPA | Nonconformance | Event | Close related NCs on CAPA effectiveness |
+| Execution | Certificates | Event | Provide results for certificate generation |
+| Execution | Analytics | Event | Provide data for SPC/yield calculation |
+| Supplier | Execution | Query | Vendor incoming inspection results |
+| Analytics | All Subdomains | Query | Aggregate data for KPIs and reports |
 
 ### Core Capabilities
 
@@ -113,14 +229,26 @@ Implement a **Quality Management (QM)** add-on module that provides inspection p
 - **Supplier audit**: Plan → execute → findings → CAPA → follow-up.
 
 ### Integration Points
-- **Procurement (ADR-023)**: Vendor quality, incoming inspection.
-- **Inventory (ADR-024)**: Stock status (QC hold, released, blocked).
-- **Warehouse (ADR-038)**: Quarantine zones, inspection locations.
-- **Manufacturing (ADR-037)**: In-process inspection, production quality.
-- **Sales (ADR-025)**: Customer complaints, returns quality.
-- **Finance (ADR-009)**: Quality costs, scrap costs, rework costs.
-- **Master Data (ADR-027)**: Item specifications, vendor master.
-- **Analytics (ADR-016)**: Quality KPIs, trend analysis, PPM dashboards.
+- **Manufacturing (ADR-037)**: Parent bounded context; in-process inspection at work centers; production order quality gates; OEE quality rate integration.
+- **Procurement (ADR-023)**: Vendor quality, incoming inspection at goods receipt.
+- **Inventory (ADR-024)**: Stock status (QC hold, released, blocked); batch/lot traceability.
+- **Warehouse (ADR-038)**: Quarantine zones, inspection locations, quality sampling.
+- **Sales (ADR-025)**: Customer complaints, returns quality, CoA/CoC for shipments.
+- **Finance (ADR-009)**: Quality costs (internal/external failure, prevention, appraisal); scrap/rework costs.
+- **Master Data (ADR-027)**: Item specifications, vendor master, characteristic catalogs.
+- **Analytics (ADR-016)**: Quality KPIs, trend analysis, PPM dashboards, SPC alerts.
+
+### Port Assignments
+
+| Subdomain | Port | Package |
+|-----------|------|---------|
+| Quality Inspection Planning | 9501 | `com.chiroerp.manufacturing.quality.inspectionplanning` |
+| Quality Execution | 9502 | `com.chiroerp.manufacturing.quality.execution` |
+| Quality Nonconformance | 9503 | `com.chiroerp.manufacturing.quality.nonconformance` |
+| Quality CAPA | 9504 | `com.chiroerp.manufacturing.quality.capa` |
+| Quality Supplier | 9505 | `com.chiroerp.manufacturing.quality.supplier` |
+| Quality Certificates | 9506 | `com.chiroerp.manufacturing.quality.certificates` |
+| Quality Analytics | 9507 | `com.chiroerp.manufacturing.quality.analytics` |
 
 ### Non-Functional Constraints
 - **Traceability**: Full lot/serial trace from raw material to finished goods.
@@ -175,20 +303,23 @@ Implement a **Quality Management (QM)** add-on module that provides inspection p
 - **Industry presets**: Pharma, food, automotive, aerospace configurations.
 
 ## Implementation Plan
-- Phase 1: Inspection planning, characteristics, basic inspection.
-- Phase 2: Sampling plans, usage decisions, stock integration.
-- Phase 3: Nonconformance management, defect tracking.
-- Phase 4: CAPA workflow, root cause analysis.
-- Phase 5: Supplier quality, scorecards, incoming inspection.
-- Phase 6: Certificates, audit management, regulatory templates.
+Implementation follows the subdomain architecture within `manufacturing/manufacturing-quality/`:
+
+- **Phase 1**: `quality-inspection-planning` - Inspection plans, characteristics, sampling procedures.
+- **Phase 2**: `quality-execution` - Inspection lots, results recording, usage decisions, defect tracking.
+- **Phase 3**: `quality-nonconformance` - NC creation, disposition, quality cost tracking.
+- **Phase 4**: `quality-capa` - CAPA workflow, root cause analysis (5 Why, Fishbone, 8D), action tracking.
+- **Phase 5**: `quality-supplier` - Vendor scorecards, ASL management, PPM tracking, supplier audits.
+- **Phase 6**: `quality-certificates` - CoA/CoC generation, batch release, regulatory submissions.
+- **Phase 7**: `quality-analytics` - SPC charts, process capability (Cp/Cpk), yield calculations, COQ analysis.
 
 ## References
 ### Related ADRs
+- ADR-037: Manufacturing & Production (PP) - **Parent bounded context**
 - ADR-016: Analytics & Reporting Architecture
 - ADR-023: Procurement (MM-PUR)
 - ADR-024: Inventory Management (MM-IM)
 - ADR-027: Master Data Governance (MDG)
-- ADR-037: Manufacturing & Production (PP)
 - ADR-038: Warehouse Execution System (WES/WMS)
 
 ### External References

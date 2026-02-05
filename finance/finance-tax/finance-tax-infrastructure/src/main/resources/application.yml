@@ -1,0 +1,7 @@
+quarkus:
+  application:
+    name: finance-tax-infrastructure
+  profile: dev
+
+quarkus.http:
+  port: 8080

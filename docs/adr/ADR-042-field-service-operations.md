@@ -1,17 +1,158 @@
 # ADR-042: Field Service Operations (Add-on)
 
 **Status**: Draft (Not Implemented)
-**Date**: 2026-02-01
+**Date**: 2026-02-05
+**Updated**: 2026-02-05 - Added subdomain architecture aligned with COMPLETE_STRUCTURE.txt
 **Deciders**: Architecture Team, Operations Team
 **Priority**: Medium
 **Tier**: Add-on
-**Tags**: field-service, dispatch, work-orders, SLA, mobile
+**Tags**: field-service, dispatch, work-orders, SLA, mobile, hexagonal-architecture
 
 ## Context
 Field Service Operations introduce on-site work orders, technician dispatch, parts usage, and service SLAs that are not covered by core ERP domains. This is common for maintenance, repair, and after-sales service businesses and requires integration with Inventory, Sales, and Finance for parts, billing, and cost tracking.
 
 ## Decision
-Adopt a **Field Service Operations** domain as an add-on with service order lifecycle, scheduling/dispatch, and service billing integration to core ERP domains.
+Adopt a **Field Service Operations** domain as an add-on with service order lifecycle, scheduling/dispatch, and service billing integration to core ERP domains. The FSM domain follows hexagonal architecture with three distinct subdomains.
+
+### Subdomain Architecture
+
+The FSM domain is decomposed into three bounded subdomains, each following hexagonal (ports & adapters) architecture:
+
+```
+maintenance-fsm/
+├── fsm-shared/                    # Shared FSM types and events
+├── fsm-service-orders/            # Service Orders Subdomain (Port 9601)
+├── fsm-dispatch/                  # Technician Dispatch Subdomain (Port 9602)
+└── fsm-parts-consumption/         # Parts Consumption Subdomain (Port 9603)
+```
+
+#### FSM Shared Module (`fsm-shared/`)
+Shared value objects, IDs, and domain events used across FSM subdomains:
+
+| Component | Purpose |
+|-----------|---------|
+| `ServiceOrderId.kt` | Service order identifier |
+| `TechnicianId.kt` | Technician identifier |
+| `DispatchId.kt` | Dispatch assignment identifier |
+| `RouteId.kt` | Route plan identifier |
+| `PartsConsumptionId.kt` | Parts consumption record identifier |
+| **Events** | |
+| `ServiceOrderCreatedEvent.kt` | Published when service order created |
+| `ServiceOrderCompletedEvent.kt` | Published when service completed |
+| `TechnicianDispatchedEvent.kt` | Published when technician dispatched |
+| `PartsConsumedEvent.kt` | Published when parts consumed in field |
+
+#### Service Orders Subdomain (`fsm-service-orders/` - Port 9601)
+
+**Domain Model:**
+| Entity | Description |
+|--------|-------------|
+| `ServiceOrder.kt` | Aggregate root - service order lifecycle |
+| `ServiceOrderType.kt` | Installation, repair, maintenance types |
+| `ServiceOrderStatus.kt` | Open, in progress, completed states |
+| `ServiceLine.kt` | Line items for services |
+| `LaborCharge.kt` | Labor billing records |
+| `PartsUsed.kt` | Parts consumption tracking |
+| `SlaPolicy.kt` | SLA definition and rules |
+| `SlaTracking.kt` | SLA compliance monitoring |
+| `ServicePriority.kt` | P1/P2/P3/P4 priority levels |
+| `ServiceResolution.kt` | Resolution details and notes |
+| `CustomerSignature.kt` | Sign-off capture |
+
+**Domain Events:**
+- `ServiceOrderCreatedEvent`, `ServiceOrderAssignedEvent`, `ServiceOrderStartedEvent`
+- `ServiceOrderCompletedEvent`, `ServiceOrderBilledEvent`, `SlaBreachedEvent`, `PartsConsumedEvent`
+
+**Use Cases (Input Ports):**
+- `CreateServiceOrderUseCase`, `AssignTechnicianUseCase`, `StartServiceUseCase`
+- `CompleteServiceUseCase`, `RecordPartsUsageUseCase`, `BillServiceOrderUseCase`
+- `ServiceOrderQueryPort`
+
+**Output Ports:**
+- `ServiceOrderRepository`, `SlaPolicyRepository`, `InventoryPort`, `BillingPort`, `ServiceOrderEventPublisher`
+
+**Domain Services:**
+- `ServiceOrderDomainService` - Core service order business logic
+- `SlaCalculationService` - SLA breach detection and compliance
+- `ServiceBillingService` - Service billing calculations
+
+**Infrastructure Adapters:**
+- REST: `ServiceOrderController`, `ServiceOrderMobileController`, `SlaReportController`
+- Persistence: `ServiceOrderJpaRepository`, `ServiceOrderEntity`, `SlaPolicyEntity`
+- Integration: `InventoryServiceAdapter`, `KafkaEventPublisher`
+
+#### Dispatch Subdomain (`fsm-dispatch/` - Port 9602)
+
+**Domain Model:**
+| Entity | Description |
+|--------|-------------|
+| `Technician.kt` | Aggregate root - technician profile |
+| `TechnicianSkill.kt` | Skills and certifications |
+| `TechnicianAvailability.kt` | Schedule availability |
+| `DispatchAssignment.kt` | Assignment aggregate |
+| `AssignmentStatus.kt` | Dispatched, en route, on site states |
+| `Route.kt` | Daily route plan |
+| `RouteStop.kt` | Individual route stops |
+| `TravelTime.kt` | Travel time estimation |
+| `ServiceTerritory.kt` | Geographic territory |
+| `ScheduleSlot.kt` | Time slot booking |
+| `EmergencyDispatch.kt` | Priority dispatch handling |
+
+**Domain Events:**
+- `TechnicianDispatchedEvent`, `TechnicianEnRouteEvent`, `TechnicianArrivedEvent`
+- `TechnicianDepartedEvent`, `RouteOptimizedEvent`, `ScheduleConflictEvent`, `EmergencyDispatchedEvent`
+
+**Use Cases (Input Ports):**
+- `DispatchTechnicianUseCase`, `OptimizeRouteUseCase`, `UpdateTechnicianStatusUseCase`
+- `ScheduleAppointmentUseCase`, `DispatchQueryPort`
+
+**Output Ports:**
+- `TechnicianRepository`, `DispatchRepository`, `RouteOptimizationPort`
+- `GeocodingPort`, `DispatchEventPublisher`
+
+**Domain Services:**
+- `DispatchDomainService` - Core dispatch business logic
+- `RouteOptimizationService` - Route optimization algorithms
+- `SkillMatchingService` - Technician skill matching
+- `TravelTimeEstimationService` - Travel time calculations
+
+**Infrastructure Adapters:**
+- REST: `DispatchController`, `ScheduleController`, `TechnicianMobileController`
+- Persistence: `TechnicianJpaRepository`, `DispatchJpaRepository`, `TechnicianEntity`, `DispatchEntity`
+- External: `GoogleMapsRoutingAdapter`, `GeocodingServiceAdapter`, `KafkaEventPublisher`
+
+#### Parts Consumption Subdomain (`fsm-parts-consumption/` - Port 9603)
+
+**Domain Model:**
+| Entity | Description |
+|--------|-------------|
+| `PartsConsumption.kt` | Aggregate root - consumption record |
+| `PartUsage.kt` | Individual part usage |
+| `TechnicianInventory.kt` | Van/truck stock |
+| `PartReturn.kt` | Unused part returns |
+| `PartRequest.kt` | Part request from warehouse |
+| `BillablePart.kt` | Customer billable parts |
+| `WarrantyPart.kt` | Warranty replacement parts |
+
+**Domain Events:**
+- `PartsConsumedEvent`, `PartsReturnedEvent`, `PartRequestCreatedEvent`
+- `VanStockReplenishedEvent`, `WarrantyPartUsedEvent`
+
+**Use Cases (Input Ports):**
+- `ConsumePartsUseCase`, `ReturnPartsUseCase`, `RequestPartsUseCase`
+- `PartsConsumptionQueryPort`
+
+**Output Ports:**
+- `PartsConsumptionRepository`, `InventoryPort`, `PartsEventPublisher`
+
+**Domain Services:**
+- `PartsConsumptionDomainService` - Parts consumption business logic
+- `VanStockManagementService` - Van inventory management
+
+**Infrastructure Adapters:**
+- REST: `PartsConsumptionController`
+- Persistence: `PartsConsumptionJpaRepository`, `PartsConsumptionEntity`
+- Integration: `InventoryServiceAdapter`, `KafkaEventPublisher`
 
 ### Scope
 - Service orders with SLA tracking and priority rules.
@@ -26,11 +167,21 @@ Adopt a **Field Service Operations** domain as an add-on with service order life
 - **Service Contracts**: entitlements, warranty coverage, billing rules.
 
 ### Integration Points
-- **Inventory (ADR-024)**: parts reservation, issuance, and stock adjustments.
-- **Sales (ADR-025)**: service billing, quotes, and customer approvals.
+- **Inventory (ADR-024)**: parts reservation, issuance, and stock adjustments via `InventoryPort`.
+- **Sales (ADR-025)**: service billing, quotes, and customer approvals via `BillingPort`.
 - **Finance (ADR-009)**: revenue recognition for service jobs and cost postings.
 - **CRM (ADR-043)**: customer history and service entitlements.
 - **Plant Maintenance (ADR-040)**: optional integration for asset-heavy scenarios.
+- **Workforce Scheduling (ADR-055)**: technician shift management and labor costing.
+
+### Inter-Subdomain Communication
+| Source Subdomain | Target Subdomain | Event/Integration |
+|-----------------|------------------|-------------------|
+| Service Orders | Dispatch | `ServiceOrderCreatedEvent` → triggers dispatch assignment |
+| Dispatch | Service Orders | `TechnicianArrivedEvent` → updates service order status |
+| Service Orders | Parts Consumption | `ServiceOrderStartedEvent` → enables parts consumption |
+| Parts Consumption | Service Orders | `PartsConsumedEvent` → updates service order parts list |
+| Parts Consumption | Inventory | `PartsConsumedEvent` → stock adjustment (ADR-024) |
 
 ### Non-Functional Constraints / KPIs
 - **Dispatch assignment latency**: p95 < 2 minutes.

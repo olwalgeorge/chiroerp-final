@@ -122,9 +122,37 @@ println("=== Discovery Complete ===\n")
 // Platform-shared modules (cross-cutting concerns)
 include("platform-shared:common-types")
 include("platform-shared:common-messaging")
+include("platform-shared:common-security")
+include("platform-shared:common-observability")
 include("platform-shared:config-model")
 include("platform-shared:org-model")
 include("platform-shared:workflow-model")
 
+// Finance Shared - Common types across all finance subdomains
+include("finance:finance-shared")
+
 // Bounded Contexts - Finance Domain
-include("finance-domain")
+include("finance:finance-gl")
+include("finance:finance-gl:finance-gl-domain")
+include("finance:finance-gl:finance-gl-application")
+include("finance:finance-gl:finance-gl-infrastructure")
+
+include("finance:finance-ar")
+include("finance:finance-ar:finance-ar-domain")
+include("finance:finance-ar:finance-ar-application")
+include("finance:finance-ar:finance-ar-infrastructure")
+
+include("finance:finance-ap")
+include("finance:finance-ap:finance-ap-domain")
+include("finance:finance-ap:finance-ap-application")
+include("finance:finance-ap:finance-ap-infrastructure")
+
+include("finance:finance-assets")
+include("finance:finance-assets:finance-assets-domain")
+include("finance:finance-assets:finance-assets-application")
+include("finance:finance-assets:finance-assets-infrastructure")
+
+include("finance:finance-tax")
+include("finance:finance-tax:finance-tax-domain")
+include("finance:finance-tax:finance-tax-application")
+include("finance:finance-tax:finance-tax-infrastructure")

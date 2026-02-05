@@ -1,0 +1,7 @@
+quarkus:
+  application:
+    name: config-model
+  profile: dev
+
+quarkus.http:
+  port: 8080

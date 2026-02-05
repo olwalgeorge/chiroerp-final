@@ -53,6 +53,15 @@ class QuarkusConventionsPlugin : Plugin<Project> {
             "implementation"("io.quarkus:quarkus-rest-jackson")          // JSON serialization
             "implementation"("io.quarkus:quarkus-hibernate-validator")   // Bean validation
 
+            // Database extensions
+            "implementation"("io.quarkus:quarkus-jdbc-postgresql")       // PostgreSQL JDBC driver
+            "implementation"("io.quarkus:quarkus-hibernate-orm")         // Hibernate ORM
+            "implementation"("io.quarkus:quarkus-hibernate-orm-panache") // Panache for simplified ORM
+
+            // Messaging extensions (optional - add as needed)
+            // "implementation"("io.quarkus:quarkus-smallrye-reactive-messaging") // Reactive messaging
+            // "implementation"("io.quarkus:quarkus-kafka-client")               // Kafka client
+
             // Kotlin support
             "implementation"("io.quarkus:quarkus-kotlin")
             "implementation"("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")

@@ -1,0 +1,10 @@
+quarkus:
+  datasource:
+    db-kind: postgresql
+    username: chiroerp
+    password: chiroerp
+    jdbc:
+      url: jdbc:postgresql://localhost:5432/chiroerp
+  hibernate-orm:
+    database:
+      generation: validate

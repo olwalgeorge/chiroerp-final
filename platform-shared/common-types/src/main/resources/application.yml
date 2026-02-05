@@ -1,0 +1,7 @@
+quarkus:
+  application:
+    name: common-types
+  profile: dev
+
+quarkus.http:
+  port: 8080
