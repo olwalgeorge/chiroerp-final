@@ -157,8 +157,8 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:$module:$domainModule"))
-    implementation(project(":finance:$module:$applicationModule"))
+    implementation(project(":finance:${module}:${domainModule}"))
+    implementation(project(":finance:${module}:${applicationModule}"))
     implementation(project(":platform-shared:common-types"))
     implementation(project(":finance:finance-shared"))
 }
@@ -171,7 +171,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:$module:$domainModule"))
+    implementation(project(":finance:${module}:${domainModule}"))
     implementation(project(":platform-shared:common-types"))
     implementation(project(":finance:finance-shared"))
 }
