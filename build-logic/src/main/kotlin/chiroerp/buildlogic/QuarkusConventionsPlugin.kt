@@ -81,5 +81,12 @@ class QuarkusConventionsPlugin : Plugin<Project> {
             description = "Run Quarkus in dev mode with live reload"
             dependsOn("quarkusDev")
         }
+
+        // Fix task dependency ordering for Quarkus build tasks
+        tasks.configureEach {
+            if (name.startsWith("quarkus") && name.contains("Build")) {
+                mustRunAfter("compileTestKotlin")
+            }
+        }
     }
 }

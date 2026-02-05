@@ -43,8 +43,8 @@ subprojects {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_21)
             freeCompilerArgs.addAll(
                 "-Xjsr305=strict",           // Strict null-safety
-                "-progressive",              // Enable progressive mode
-                "-Xcontext-receivers"        // Enable context receivers
+                "-progressive"               // Enable progressive mode
+                // Note: Kotlin 2.0+ uses context parameters by default, removed -Xcontext-receivers
             )
         }
     }

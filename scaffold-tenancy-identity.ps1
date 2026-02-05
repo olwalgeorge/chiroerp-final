@@ -115,8 +115,8 @@ plugins {
 }
 
 dependencies {
-    implementation(project("`:tenancy-identity`:$module-domain"))
-    implementation(project("`:tenancy-identity`:$module-application"))
+    implementation(project("`:tenancy-identity`:${module}-domain"))
+    implementation(project("`:tenancy-identity`:${module}-application"))
     implementation(project("`:platform-shared`:common-types"))
     implementation(project("`:tenancy-identity`:tenancy-shared"))
 }
@@ -129,7 +129,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project("`:tenancy-identity`:$module`:$module-domain"))
+    implementation(project("`:tenancy-identity`:${module}`:${module}-domain"))
     implementation(project("`:platform-shared`:common-types"))
     implementation(project("`:tenancy-identity`:tenancy-shared"))
 }
