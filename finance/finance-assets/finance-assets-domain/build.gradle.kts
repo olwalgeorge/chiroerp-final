@@ -1,12 +1,9 @@
 // finance-assets-domain build configuration
 plugins {
-    id("chiroerp.quarkus-conventions")
+    id("chiroerp.kotlin-conventions")
 }
 
 dependencies {
-    implementation(project(":finance:finance-assets"))
     implementation(project(":platform-shared:common-types"))
     implementation(project(":finance:finance-shared"))
-
-
 }

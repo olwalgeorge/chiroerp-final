@@ -1,8 +1,8 @@
 // common-types build configuration
 plugins {
-    id("chiroerp.quarkus-conventions")
+    id("chiroerp.kotlin-conventions")
 }
 
 dependencies {
-    // No dependencies - this is the shared kernel
+    // No dependencies - shared kernel primitives
 }

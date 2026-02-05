@@ -1,7 +1,0 @@
-quarkus:
-  application:
-    name: common-messaging
-  profile: dev
-
-quarkus.http:
-  port: 8080

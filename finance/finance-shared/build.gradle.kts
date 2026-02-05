@@ -1,6 +1,6 @@
 // finance-shared build configuration
 plugins {
-    id("chiroerp.quarkus-conventions")
+    id("chiroerp.kotlin-conventions")
 }
 
 dependencies {

@@ -3,8 +3,6 @@ package com.chiroerp.finance.tax.infrastructure
 import io.quarkus.runtime.QuarkusApplication
 import io.quarkus.runtime.annotations.QuarkusMain
 
-import org.springframework.boot.runApplication
-
 @QuarkusMain
 class TaxApplication : QuarkusApplication {
     override fun run(vararg args: String?): Int {

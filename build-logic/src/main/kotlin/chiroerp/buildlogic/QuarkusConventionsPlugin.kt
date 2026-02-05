@@ -52,6 +52,7 @@ class QuarkusConventionsPlugin : Plugin<Project> {
             "implementation"("io.quarkus:quarkus-rest")                   // REST endpoints
             "implementation"("io.quarkus:quarkus-rest-jackson")          // JSON serialization
             "implementation"("io.quarkus:quarkus-hibernate-validator")   // Bean validation
+            "implementation"("io.quarkus:quarkus-config-yaml")           // YAML configuration support
 
             // Database extensions
             "implementation"("io.quarkus:quarkus-jdbc-postgresql")       // PostgreSQL JDBC driver

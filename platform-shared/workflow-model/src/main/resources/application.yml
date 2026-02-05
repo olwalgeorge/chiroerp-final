@@ -1,7 +1,0 @@
-quarkus:
-  application:
-    name: workflow-model
-  profile: dev
-
-quarkus.http:
-  port: 8080

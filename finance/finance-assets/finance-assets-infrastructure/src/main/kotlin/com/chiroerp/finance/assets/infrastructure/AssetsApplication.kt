@@ -3,8 +3,6 @@ package com.chiroerp.finance.assets.infrastructure
 import io.quarkus.runtime.QuarkusApplication
 import io.quarkus.runtime.annotations.QuarkusMain
 
-import org.springframework.boot.runApplication
-
 @QuarkusMain
 class AssetsApplication : QuarkusApplication {
     override fun run(vararg args: String?): Int {
