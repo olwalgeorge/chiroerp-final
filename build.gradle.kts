@@ -211,41 +211,7 @@ val architectureTest = tasks.register("architectureTest") {
 tasks.register("preCommit") {
     group = "verification"
     description = "Fast pre-commit checks for architecture compliance"
-
-    doLast {
-        val changedOnly = providers.gradleProperty("changedOnly").isPresent
-        val stagedFiles = try {
-            val process = ProcessBuilder("git", "diff", "--cached", "--name-only", "--diff-filter=ACM")
-                .directory(rootProject.projectDir)
-                .redirectErrorStream(true)
-                .start()
-            val output = process.inputStream.bufferedReader().readText()
-            process.waitFor()
-            output.lines().filter { it.isNotBlank() }
-        } catch (ex: Exception) {
-            emptyList()
-        }
-
-        if (changedOnly && stagedFiles.none { it.endsWith(".kt") || it.endsWith(".java") }) {
-            println("No staged Kotlin/Java files detected. Skipping architecture tests.")
-            return@doLast
-        }
-
-        val gradleCmd = if (System.getProperty("os.name").lowercase().contains("windows")) {
-            "gradlew.bat"
-        } else {
-            "./gradlew"
-        }
-
-        val process = ProcessBuilder(gradleCmd, "architectureTest")
-            .directory(rootProject.projectDir)
-            .inheritIO()
-            .start()
-        val exitCode = process.waitFor()
-        if (exitCode != 0) {
-            throw GradleException("architectureTest failed")
-        }
-    }
+    dependsOn(architectureTest)
 }
 
 tasks.register("installGitHooks") {
