@@ -2,6 +2,7 @@
 
 **Status**: Draft (Not Implemented)
 **Date**: 2026-02-02
+**Updated**: 2026-02-06 - Clarified relationship with Field Service (ADR-042), updated port assignments
 **Deciders**: Architecture Team, Operations Team, Facilities Team
 **Priority**: P3 (Optional Add-on)
 **Tier**: Add-on
@@ -9,6 +10,45 @@
 
 ## Context
 Asset-intensive industries (manufacturing, utilities, facilities, fleet) require plant maintenance capabilities to manage equipment upkeep, prevent downtime, and optimize asset lifecycle. A general-purpose ERP must support maintenance workflows as an optional add-on for tenants with significant physical assets. This includes not only reactive and preventive maintenance, but also **complete asset lifecycle management** from commissioning through decommissioning, health monitoring, and proactive replacement planning.
+
+### Relationship with Field Service (ADR-042)
+
+Plant Maintenance and Field Service are **separate bounded contexts** with distinct purposes:
+
+| Aspect | Plant Maintenance (ADR-040) | Field Service (ADR-042) |
+|--------|------------------------------|-------------------------|
+| **Focus** | Internal asset upkeep | Customer-facing service delivery |
+| **Workers** | Internal maintenance technicians | Field technicians at customer sites |
+| **Billing** | Cost center (internal expense) | Revenue-generating (billable to customer) |
+| **Assets** | Company-owned equipment | Customer equipment (external) |
+| **SLA** | Internal availability targets | Customer SLA/contract compliance |
+| **Triggers** | Equipment failures, preventive schedules | Customer service requests, contracts |
+| **Port Range** | 9401-9411 | 9601-9603 |
+
+While both domains share similar concepts (work orders, technicians, parts), they operate in fundamentally different business contexts. Integration between the two is via events (e.g., field service may trigger internal repair work orders).
+
+## Decision
+Implement a **Plant Maintenance (PM)** add-on module that provides equipment management, preventive/predictive maintenance, work order management, spare parts planning, maintenance cost tracking, **asset commissioning/decommissioning, health scoring, and end-of-life planning** integrated with fixed assets, inventory, procurement, controlling, and budgeting.
+
+### Bounded Context Architecture
+
+```
+maintenance/                        # Plant Maintenance Bounded Context (ADR-040)
+├── maintenance-shared/             # Shared identifiers (ADR-006 compliant)
+├── maintenance-equipment/          # Equipment Master (Port 9401)
+├── maintenance-work-orders/        # Work Order Management (Port 9402)
+├── maintenance-preventive/         # Preventive Maintenance (Port 9403)
+├── maintenance-breakdown/          # Breakdown Maintenance (Port 9404)
+├── maintenance-scheduling/         # Maintenance Scheduling (Port 9405)
+├── maintenance-spare-parts/        # Spare Parts Management (Port 9406)
+├── maintenance-analytics/          # Maintenance Analytics (Port 9407)
+├── maintenance-commissioning/      # Asset Commissioning (Port 9408)
+├── maintenance-decommissioning/    # Asset Decommissioning (Port 9409)
+├── maintenance-health-scoring/     # Health Scoring (Port 9410)
+└── maintenance-eol-planning/       # EOL Planning (Port 9411)
+```
+
+**Package Structure**: `com.chiroerp.maintenance.*`
 
 ## Decision
 Implement a **Plant Maintenance (PM)** add-on module that provides equipment management, preventive/predictive maintenance, work order management, spare parts planning, maintenance cost tracking, **asset commissioning/decommissioning, health scoring, and end-of-life planning** integrated with fixed assets, inventory, procurement, controlling, and budgeting.
@@ -31,6 +71,7 @@ Implement a **Plant Maintenance (PM)** add-on module that provides equipment man
 - **AI/ML predictive maintenance on sensor data** (customers bring IoT data, we integrate for visualization/alerting).
 - Building Management Systems (BMS).
 - Fleet management (separate module - see ADR-053).
+- **Field Service Operations** (separate bounded context - see ADR-042). Customer-facing service delivery with SLA tracking, dispatch, and billing is handled by Field Service, not Plant Maintenance.
 
 > **Predictive Maintenance Strategy**: ChiroERP provides **deterministic health scoring** (5-dimension model) and **condition-based maintenance** workflows. True AI/ML predictive maintenance requires IoT sensor data (vibration, temperature, oil analysis) that most customers don't have. For customers with existing IoT platforms, ChiroERP will integrate sensor data into health scores and alerts (future enhancement), but we will **not build IoT infrastructure or train ML models from scratch**. This avoids overengineering for the 95% of customers who use preventive maintenance schedules and periodic inspections.
 

@@ -1,2331 +1,11319 @@
 # ChiroERP - Complete Workspace File Tree Structure
 
-> **Based on**: 57+ ADRs (ADR-001 through ADR-057) | 12 Major Domains | 92 Modules
-> **Last Updated**: 2026-02-03
-> **Architecture Principles**: Modular CQRS (ADR-001), Database-per-Context (ADR-002), Event-Driven (ADR-003), API Gateway (ADR-004)
-> **Status**: Target workspace structure (see [Architecture README](./README.md) for current implementation status)
+> **Source of Truth**: `COMPLETE_STRUCTURE.txt`
+> **Last Updated**: 2026-02-06
+> **Status**: Authoritative structure snapshot (mirrors the complete blueprint)
 
-> ⚠️ **Important**: This document shows the **target/desired workspace structure** for complete ChiroERP implementation. For the **current architecture index** with actual domain coverage, module counts, ports, and implementation status, see [docs/architecture/README.md](./README.md).
-
----
-
-## 📋 Table of Contents
-
-1. [Overview](#overview)
-2. [Architecture Principles](#architecture-principles)
-3. [Complete Directory Structure](#complete-directory-structure)
-4. [Bounded Contexts & Microservices](#bounded-contexts--microservices)
-5. [Shared Libraries](#shared-libraries)
-6. [Infrastructure & Platform](#infrastructure--platform)
-7. [Frontend Applications](#frontend-applications)
-8. [Industry Extensions](#industry-extensions)
-9. [Deployment Configurations](#deployment-configurations)
-10. [Technology Stack](#technology-stack)
+This document mirrors the full workspace structure defined in `COMPLETE_STRUCTURE.txt`. For domain summaries, port ranges, and integration context, see `docs/architecture/README.md`.
 
 ---
 
-## Overview
+## Complete Structure (Authoritative)
 
-ChiroERP is a **cloud-native, microservices-based ERP system** designed for multi-tenant SaaS deployment with optional on-premise support. The architecture supports:
+```text
+ChiroERP - Complete Platform-Shared, Finance, and Inventory Structure
+===============================================================
+Based on ADRs and improved.txt specifications
+Generated: February 5, 2026
+Updated: February 6, 2026 - ADR-006 Governance Compliance
 
-- **Domain Coverage**: 92 modules across 12 domains (Finance, Inventory, Sales, Manufacturing, Quality, Maintenance, CRM, MDG, Analytics, HCM, Fleet, Procurement)
-- **Industry Extensions**: 10+ verticals (Banking, Process Manufacturing, Utilities, Public Sector, Insurance, Real Estate, Fleet Management, Retail AI, etc.)
-- **Recent Enhancements**: AI Demand Forecasting (ADR-056), Dynamic Pricing (ADR-057), HCM modules (ADR-052, 054, 055), Fleet Management (ADR-053)
-- **Two Deployment Modes**: SMB (Docker Compose bundled) | Enterprise (Kubernetes distributed)
-- **Event-Driven Integration**: Kafka for async communication (ADR-003, ADR-020)
-- **CQRS Pattern**: Command/Query separation with event sourcing support (ADR-001)
+GOVERNANCE NOTES (ADR-006)
+==========================
+1. platform-shared contains ONLY technical primitives and abstractions
+2. Business value objects (Money, Address, PhoneNumber, Email) are DUPLICATED
+   in each bounded context's *-shared module with context-specific semantics
+3. Maximum 7 modules in platform-shared (adding 8th requires ADR amendment)
+4. No domain models, business logic, or shared DTOs in platform-shared
 
-> For **current implementation status** and actual module counts per domain, see [Architecture README](./README.md).
+ROOT STRUCTURE
+==============
 
----
-
-## Architecture Principles
-
-### Core ADRs Driving Structure
-
-| ADR | Principle | Impact on Structure |
-|-----|-----------|---------------------|
-| **ADR-001** | Modular CQRS | Separate command/query handlers per bounded context |
-| **ADR-002** | Database-per-Context | Each microservice owns its database schema |
-| **ADR-003** | Event-Driven Integration | Kafka event streams, Avro schemas in `platform-events` |
-| **ADR-004** | API Gateway Pattern | Single entry point via `api-gateway` service |
-| **ADR-005** | Multi-Tenancy Isolation | Tenant discriminator in all aggregates |
-| **ADR-006** | Platform-Shared Governance | Strict rules for `platform-shared` modules (technical only) |
-| **ADR-044** | Configuration Framework | Dedicated `configuration-engine` service |
-| **ADR-045** | Organizational Model | Dedicated `org-model-service` |
-| **ADR-046** | Workflow Engine | Dedicated `workflow-engine` service |
-| **ADR-047** | Localization Framework | Country packs as plugins in `localization/` |
-
----
-
-## Complete Directory Structure
-
-> **⚠️ Target Structure**: This directory tree represents the **complete target workspace** for full ChiroERP implementation. Many directories/files do not yet exist in the actual repository. For current architecture status (what's actually implemented), see [docs/architecture/README.md](./README.md).
-
-```
 chiroerp/
 │
-├── .github/                                    # GitHub Actions CI/CD workflows
-│   ├── workflows/
-│   │   ├── ci-microservices.yml               # Build & test all services
-│   │   ├── cd-dev.yml                         # Deploy to dev environment
-│   │   ├── cd-staging.yml                     # Deploy to staging
-│   │   ├── cd-production.yml                  # Production deployment
-│   │   ├── security-scan.yml                  # SAST/DAST scans (ADR-008)
-│   │   └── performance-tests.yml              # Load testing (ADR-017)
-│   └── CODEOWNERS                             # Code ownership by bounded context
-│
-├── .vscode/                                    # VS Code workspace settings
-│   ├── settings.json
-│   ├── launch.json                            # Debug configurations
-│   └── extensions.json                        # Recommended extensions
-│
-├── docs/                                       # **EXISTING** Documentation
-│   ├── adr/                                    # All 57+ ADRs
-│   │   ├── ADR-001-modular-cqrs.md
-│   │   ├── ADR-002-database-per-context.md
-│   │   ├── ...
-│   │   ├── ADR-056-ai-demand-forecasting-replenishment.md
-│   │   └── ADR-057-dynamic-pricing-markdown-optimization.md
+├── platform-shared/                             # Shared Kernel (cross-cutting)
 │   │
-│   ├── architecture/                           # Architecture docs
-│   │   ├── gap-to-sap-grade-roadmap.md        # Main 18-month roadmap
-│   │   ├── WORKSPACE-STRUCTURE.md              # **THIS FILE**
-│   │   │
-│   │   ├── retail/                            # Retail AI Enhancement
-│   │   │   └── retail-ai-architecture.md      # 40K word retail AI spec
-│   │   │
-│   │   ├── finance/                           # Finance domain (ADR-009)
-│   │   │   ├── finance-gl.md
-│   │   │   ├── finance-ap.md
-│   │   │   ├── finance-ar.md
-│   │   │   ├── finance-assets.md              # ADR-021 (actual filename)
-│   │   │   ├── ...
-│   │   │   ├── gl/                            # GL subdomain modules
-│   │   │   │   ├── gl-domain.md
-│   │   │   │   ├── gl-application.md
-│   │   │   │   ├── gl-infrastructure.md
-│   │   │   │   ├── gl-api.md
-│   │   │   │   └── gl-events.md
-│   │   │   ├── ap/
-│   │   │   │   └── [same structure]
-│   │   │   └── ar/
-│   │   │       └── [same structure]
-│   │   │
-│   │   ├── controlling/                       # Controlling domain (ADR-028)
-│   │   │   ├── controlling-cost-center.md
-│   │   │   ├── controlling-profitability.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── inventory/                         # Inventory domain (ADR-024)
-│   │   │   ├── inventory-core.md
-│   │   │   ├── inventory-atp.md
-│   │   │   ├── inventory-valuation.md
-│   │   │   ├── inventory-warehouse.md         # ADR-038 (WMS)
-│   │   │   ├── inventory-advanced-ops.md      # Advanced Ops add-on (separate module)
-│   │   │   └── ...
-│   │   │
-│   │   ├── sales/                             # Sales domain (ADR-025)
-│   │   │   ├── sales-core.md
-│   │   │   ├── sales-pricing.md
-│   │   │   ├── sales-credit.md                # (actual filename)
-│   │   │   └── ...
-│   │   │
-│   │   ├── procurement/                       # Procurement domain (ADR-023)
-│   │   │   ├── procurement-core.md
-│   │   │   ├── procurement-sourcing.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── manufacturing/                     # Manufacturing domain (ADR-037)
-│   │   │   ├── manufacturing-bom.md
-│   │   │   ├── manufacturing-mrp.md
-│   │   │   ├── manufacturing-shop-floor.md
-│   │   │   ├── manufacturing-costing.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── quality/                           # Quality domain (ADR-039)
-│   │   │   ├── quality-inspection-planning.md
-│   │   │   ├── quality-execution.md
-│   │   │   ├── quality-capa.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── maintenance/                       # Maintenance domain (ADR-040)
-│   │   │   ├── maintenance-equipment.md
-│   │   │   ├── maintenance-work-orders.md
-│   │   │   ├── maintenance-preventive.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── crm/                               # CRM domain (ADR-042, ADR-043)
-│   │   │   ├── crm-customer360.md
-│   │   │   ├── crm-contracts.md
-│   │   │   ├── crm-dispatch.md                # ADR-042 (Field Service)
-│   │   │   └── ...
-│   │   │
-│   │   ├── mdm/                               # Master Data domain (ADR-027)
-│   │   │   ├── mdm-hub.md
-│   │   │   ├── mdm-data-quality.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── analytics/                         # Analytics domain (ADR-016)
-│   │   │   ├── analytics-warehouse.md
-│   │   │   ├── analytics-olap.md
-│   │   │   ├── analytics-kpi.md
-│   │   │   └── ...
-│   │   │
-│   │   ├── hr/                                # Human Capital Management (ADR-034, 052, 054, 055)
-│   │   │   ├── hr-travel-expense.md           # ADR-054
-│   │   │   ├── hr-contingent-workforce.md     # ADR-052 (VMS)
-│   │   │   ├── hr-workforce-scheduling.md     # ADR-055 (WFM)
-│   │   │   └── ...
-│   │   │
-│   │   └── fleet/                             # Fleet Management (ADR-053)
-│   │       ├── fleet-vehicle-lifecycle.md
-│   │       ├── fleet-telematics.md
-│   │       └── ...
-│   │
-│   └── runbooks/                              # Operational runbooks (ADR-018)
-│       ├── deployment.md
-│       ├── incident-response.md
-│       ├── disaster-recovery.md
-│       └── monitoring.md
-│
-├── platform-shared/                            # 🔧 PLATFORM SHARED (ADR-006)
-│   │                                          # STRICT GOVERNANCE: Technical primitives ONLY
-│   │
-│   ├── common-types/                          # Type-safe primitives
+│   ├── common-types/
 │   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.types/
-│   │           ├── TenantId.kt                # Multi-tenancy (ADR-005)
-│   │           ├── UserId.kt
-│   │           ├── Money.kt
-│   │           ├── Quantity.kt
-│   │           ├── UnitOfMeasure.kt
-│   │           ├── Currency.kt
-│   │           ├── LocalizationContext.kt     # ADR-047
-│   │           └── Result.kt                  # Railway-oriented programming
-│   │
-│   ├── common-api/                            # REST API standards (ADR-010)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.api/
-│   │           ├── ErrorResponse.kt           # Standardized error format
-│   │           ├── PageRequest.kt
-│   │           ├── PageResponse.kt
-│   │           ├── ApiVersion.kt
-│   │           ├── RateLimiting.kt
-│   │           └── CorrelationIdInterceptor.kt
-│   │
-│   ├── common-security/                       # AuthN/AuthZ (ADR-007)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.security/
-│   │           ├── JwtTokenValidator.kt
-│   │           ├── OAuth2Config.kt
-│   │           ├── TenantContextHolder.kt     # Tenant isolation
-│   │           ├── PermissionChecker.kt       # ADR-014 (AuthZ Objects)
-│   │           └── SeparationOfDuties.kt      # ADR-014 (SoD)
-│   │
-│   ├── common-observability/                  # Monitoring (ADR-017)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.observability/
-│   │           ├── CorrelationId.kt
-│   │           ├── TraceContext.kt
-│   │           ├── MetricsCollector.kt
-│   │           ├── StructuredLogging.kt
-│   │           └── PerformanceMonitor.kt      # ADR-017 (SLA tracking)
-│   │
-│   ├── common-events/                         # Event contracts (ADR-003)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.events/
-│   │           ├── DomainEvent.kt             # Base interface
-│   │           ├── EventMetadata.kt
-│   │           ├── EventEnvelope.kt
-│   │           ├── EventPublisher.kt          # Kafka abstraction
-│   │           └── EventConsumer.kt
-│   │
-│   ├── common-cqrs/                           # CQRS primitives (ADR-001)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.cqrs/
-│   │           ├── Command.kt
-│   │           ├── Query.kt
-│   │           ├── CommandHandler.kt
-│   │           ├── QueryHandler.kt
-│   │           ├── CommandBus.kt
-│   │           └── QueryBus.kt
-│   │
-│   ├── common-saga/                           # Saga orchestration (ADR-011)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.saga/
-│   │           ├── SagaDefinition.kt
-│   │           ├── SagaStep.kt
-│   │           ├── CompensatingAction.kt
-│   │           ├── SagaOrchestrator.kt
-│   │           └── SagaState.kt
-│   │
-│   ├── common-testing/                        # Testing standards (ADR-019)
-│   │   ├── build.gradle.kts
-│   │   └── src/main/kotlin/
-│   │       └── com.erp.shared.testing/
-│   │           ├── IntegrationTest.kt         # Base class
-│   │           ├── E2ETest.kt
-│   │           ├── ContractTest.kt            # Pact support
-│   │           ├── TestContainers.kt          # Docker test containers
-│   │           └── TestDataBuilder.kt
-│   │
-│   └── common-resilience/                     # Network resilience (ADR-008)
-│       ├── build.gradle.kts
-│       └── src/main/kotlin/
-│           └── com.erp.shared.resilience/
-│               ├── CircuitBreaker.kt
-│               ├── RetryPolicy.kt
-│               ├── Bulkhead.kt
-│               ├── RateLimiter.kt
-│               └── Timeout.kt
-│
-├── platform-events/                            # 📡 EVENT DEFINITIONS (ADR-003)
-│   │                                          # Avro schemas for all domain events
-│   │
-│   ├── build.gradle.kts                       # Avro code generation
-│   │
-│   ├── finance-events/
-│   │   └── src/main/avro/
-│   │       ├── JournalEntryPostedEvent.avsc
-│   │       ├── InvoiceCreatedEvent.avsc
-│   │       ├── PaymentReceivedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── inventory-events/
-│   │   └── src/main/avro/
-│   │       ├── StockMovementRecordedEvent.avsc
-│   │       ├── ReorderPointTriggeredEvent.avsc
-│   │       ├── GoodsReceivedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── sales-events/
-│   │   └── src/main/avro/
-│   │       ├── SalesOrderCreatedEvent.avsc
-│   │       ├── OrderFulfilledEvent.avsc
-│   │       ├── InvoiceGeneratedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── manufacturing-events/
-│   │   └── src/main/avro/
-│   │       ├── ProductionOrderCreatedEvent.avsc
-│   │       ├── OperationCompletedEvent.avsc
-│   │       ├── MaterialConsumedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── quality-events/
-│   │   └── src/main/avro/
-│   │       ├── InspectionLotCreatedEvent.avsc
-│   │       ├── QualityDefectDetectedEvent.avsc
-│   │       ├── StockBlockedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── maintenance-events/
-│   │   └── src/main/avro/
-│   │       ├── WorkOrderCreatedEvent.avsc
-│   │       ├── PreventiveMaintenanceScheduledEvent.avsc
-│   │       ├── EquipmentDowntimeEvent.avsc
-│   │       └── ...
-│   │
-│   ├── crm-events/
-│   │   └── src/main/avro/
-│   │       ├── CustomerCreatedEvent.avsc
-│   │       ├── ContractRenewedEvent.avsc
-│   │       ├── ServiceTicketClosedEvent.avsc
-│   │       └── ...
-│   │
-│   ├── mdm-events/
-│   │   └── src/main/avro/
-│   │       ├── MasterDataChangedEvent.avsc
-│   │       ├── DataQualityIssueDetectedEvent.avsc
-│   │       └── ...
-│   │
-│   └── retail-ai-events/                      # ADR-056, ADR-057
-│       └── src/main/avro/
-│           ├── DemandForecastGeneratedEvent.avsc
-│           ├── ReorderPointAdjustedEvent.avsc
-│           ├── PriceRecommendationEvent.avsc
-│           └── MarkdownOptimizationEvent.avsc
-│
-├── bounded-contexts/                           # 🎯 MICROSERVICES (ADR-001)
-│   │                                          # One service per bounded context
-│   │
-│   ├── finance/                               # 💰 FINANCE DOMAIN (ADR-009, 021, 022, 026, 029)
-│   │   │
-│   │   ├── finance-gl/                        # General Ledger
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── gl-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.gl.domain/
-│   │   │   │           ├── model/             # Aggregates & Entities
-│   │   │   │           │   ├── JournalEntry.kt
-│   │   │   │           │   ├── Account.kt
-│   │   │   │           │   ├── ChartOfAccounts.kt
-│   │   │   │           │   ├── FiscalYear.kt
-│   │   │   │           │   └── PostingPeriod.kt
-│   │   │   │           ├── events/            # Domain events
-│   │   │   │           │   ├── JournalEntryPostedEvent.kt
-│   │   │   │           │   ├── PeriodClosedEvent.kt
-│   │   │   │           │   └── ReversalPostedEvent.kt
-│   │   │   │           ├── exceptions/
-│   │   │   │           │   ├── PeriodClosedException.kt
-│   │   │   │           │   └── BalanceNotZeroException.kt
-│   │   │   │           └── services/          # Domain services
-│   │   │   │               ├── PostingRulesService.kt
-│   │   │   │               └── BalanceCalculator.kt
-│   │   │   │
-│   │   │   ├── gl-application/                # CQRS handlers
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.gl.application/
-│   │   │   │           ├── commands/
-│   │   │   │           │   ├── PostJournalEntryCommand.kt
-│   │   │   │           │   ├── PostJournalEntryHandler.kt
-│   │   │   │           │   ├── ClosePeriodCommand.kt
-│   │   │   │           │   └── ClosePeriodHandler.kt
-│   │   │   │           ├── queries/
-│   │   │   │           │   ├── GetTrialBalanceQuery.kt
-│   │   │   │           │   ├── GetTrialBalanceHandler.kt
-│   │   │   │           │   ├── GetAccountHistoryQuery.kt
-│   │   │   │           │   └── GetAccountHistoryHandler.kt
-│   │   │   │           └── ports/             # Hexagonal architecture
-│   │   │   │               ├── JournalEntryRepository.kt
-│   │   │   │               ├── AccountRepository.kt
-│   │   │   │               └── EventPublisher.kt
-│   │   │   │
-│   │   │   └── gl-infrastructure/             # Adapters
-│   │   │       └── src/main/kotlin/
-│   │   │           └── com.erp.finance.gl.infrastructure/
-│   │   │               ├── rest/              # REST API (ADR-010)
-│   │   │               │   ├── GLController.kt
-│   │   │               │   ├── TrialBalanceController.kt
-│   │   │               │   └── dto/
-│   │   │               │       ├── PostJournalEntryRequest.kt
-│   │   │               │       └── TrialBalanceResponse.kt
-│   │   │               ├── persistence/       # Database-per-context (ADR-002)
-│   │   │               │   ├── JpaJournalEntryRepository.kt
-│   │   │               │   ├── JpaAccountRepository.kt
-│   │   │               │   └── entities/
-│   │   │               │       ├── JournalEntryEntity.kt
-│   │   │               │       └── AccountEntity.kt
-│   │   │               ├── messaging/         # Kafka integration (ADR-003)
-│   │   │               │   ├── KafkaEventPublisher.kt
-│   │   │               │   ├── APInvoiceEventConsumer.kt  # Consumes from AP
-│   │   │               │   └── ARInvoiceEventConsumer.kt  # Consumes from AR
-│   │   │               └── config/
-│   │   │                   ├── SecurityConfig.kt
-│   │   │                   └── DatabaseConfig.kt
-│   │   │
-│   │   ├── finance-ap/                        # Accounts Payable
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── ap-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.ap.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Vendor.kt
-│   │   │   │           │   ├── Invoice.kt
-│   │   │   │           │   ├── Payment.kt
-│   │   │   │           │   └── PaymentTerm.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── InvoiceReceivedEvent.kt
-│   │   │   │           │   └── PaymentMadeEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ThreeWayMatchService.kt
-│   │   │   ├── ap-application/
-│   │   │   │   └── [CQRS handlers]
-│   │   │   └── ap-infrastructure/
-│   │   │       └── [REST, persistence, messaging]
-│   │   │
-│   │   ├── finance-ar/                        # Accounts Receivable
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── ar-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.ar.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Customer.kt
-│   │   │   │           │   ├── Invoice.kt
-│   │   │   │           │   ├── Payment.kt
-│   │   │   │           │   ├── CreditMemo.kt
-│   │   │   │           │   └── AgingBucket.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── InvoiceGeneratedEvent.kt
-│   │   │   │           │   ├── PaymentReceivedEvent.kt
-│   │   │   │           │   └── DunningLetterSentEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               ├── CreditCheckService.kt
-│   │   │   │               └── DunningService.kt
-│   │   │   ├── ar-application/
-│   │   │   │   └── [CQRS handlers]
-│   │   │   └── ar-infrastructure/
-│   │   │       └── [REST, persistence, messaging]
-│   │   │
-│   │   ├── finance-fixed-assets/              # ADR-021
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── fixed-assets-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.fixedassets.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Asset.kt
-│   │   │   │           │   ├── Depreciation.kt
-│   │   │   │           │   └── AssetAcquisition.kt
-│   │   │   │           └── services/
-│   │   │   │               └── DepreciationCalculator.kt
-│   │   │   ├── fixed-assets-application/
-│   │   │   └── fixed-assets-infrastructure/
-│   │   │
-│   │   ├── finance-treasury/                  # ADR-026
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── treasury-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.finance.treasury.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── BankAccount.kt
-│   │   │   │           │   ├── CashPosition.kt
-│   │   │   │           │   └── FXContract.kt
-│   │   │   │           └── services/
-│   │   │   │               └── LiquidityForecast.kt
-│   │   │   ├── treasury-application/
-│   │   │   └── treasury-infrastructure/
-│   │   │
-│   │   ├── finance-intercompany/              # ADR-029
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── intercompany-domain/
-│   │   │   │   └── [Intercompany transactions & netting]
-│   │   │   ├── intercompany-application/
-│   │   │   └── intercompany-infrastructure/
-│   │   │
-│   │   └── finance-lease-accounting/          # ADR-033 (IFRS 16)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── lease-domain/
-│   │       │   └── [Lease contracts, ROU assets, amortization]
-│   │       ├── lease-application/
-│   │       └── lease-infrastructure/
-│   │
-│   ├── controlling/                           # 📊 CONTROLLING DOMAIN (ADR-028)
-│   │   │
-│   │   ├── controlling-cost-center/           # Cost Center Accounting
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── cost-center-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.controlling.costcenter.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── CostCenter.kt
-│   │   │   │           │   ├── CostCenterHierarchy.kt
-│   │   │   │           │   ├── ActualCosts.kt
-│   │   │   │           │   └── PlanCosts.kt
-│   │   │   │           └── services/
-│   │   │   │               └── VarianceAnalysis.kt
-│   │   │   ├── cost-center-application/
-│   │   │   └── cost-center-infrastructure/
-│   │   │
-│   │   ├── controlling-profitability/         # Profitability Analysis
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── profitability-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.controlling.profitability.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── ProfitabilitySegment.kt
-│   │   │   │           │   ├── ContributionMargin.kt
-│   │   │   │           │   └── CostAllocation.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ProfitabilityCalculator.kt
-│   │   │   ├── profitability-application/
-│   │   │   └── profitability-infrastructure/
-│   │   │
-│   │   ├── controlling-product-costing/       # Product Costing
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── product-costing-domain/
-│   │   │   │   └── [Standard costing, variance analysis]
-│   │   │   ├── product-costing-application/
-│   │   │   └── product-costing-infrastructure/
-│   │   │
-│   │   └── controlling-budgeting/             # ADR-032 (FP&A)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── budgeting-domain/
-│   │       │   └── [Budget planning, rolling forecasts]
-│   │       ├── budgeting-application/
-│   │       └── budgeting-infrastructure/
-│   │
-│   ├── inventory/                             # 📦 INVENTORY DOMAIN (ADR-024, 038)
-│   │   │
-│   │   ├── inventory-core/                    # Core Inventory
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── inventory-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.inventory.core.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Material.kt
-│   │   │   │           │   ├── StorageLocation.kt
-│   │   │   │           │   ├── Stock.kt
-│   │   │   │           │   └── StockMovement.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── StockMovementRecordedEvent.kt
-│   │   │   │           │   └── StockAdjustmentEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               └── StockBalanceService.kt
-│   │   │   ├── inventory-application/
-│   │   │   └── inventory-infrastructure/
-│   │   │
-│   │   ├── inventory-atp/                     # ATP & Allocation
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── atp-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.inventory.atp.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── ATPQuantity.kt
-│   │   │   │           │   ├── Reservation.kt
-│   │   │   │           │   └── AllocationRule.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ATPCalculator.kt
-│   │   │   ├── atp-application/
-│   │   │   └── atp-infrastructure/
-│   │   │
-│   │   ├── inventory-valuation/              # Valuation & Costing
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── valuation-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.inventory.valuation.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── MaterialValuation.kt
-│   │   │   │           │   ├── ValuationPrice.kt
-│   │   │   │           │   └── InventoryValue.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ValuationCalculator.kt  # FIFO/LIFO/WAC
-│   │   │   ├── valuation-application/
-│   │   │   └── valuation-infrastructure/
-│   │   │
-│   │   └── inventory-warehouse/               # ADR-038 (WMS)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── warehouse-domain/
-│   │       │   └── src/main/kotlin/
-│   │       │       └── com.erp.inventory.warehouse.domain/
-│   │       │           ├── model/
-│   │       │           │   ├── WarehouseTask.kt
-│   │       │           │   ├── WaveManagement.kt
-│   │       │           │   ├── BinLocation.kt
-│   │       │           │   └── PickingStrategy.kt
-│   │       │           └── services/
-│   │       │               ├── TaskOptimizer.kt
-│   │       │               └── WaveReleaseService.kt
-│   │       ├── warehouse-application/
-│   │       └── warehouse-infrastructure/
-│   │
-│   ├── sales/                                 # 💵 SALES DOMAIN (ADR-025)
-│   │   │
-│   │   ├── sales-core/                        # Core Sales Orders
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── sales-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.sales.core.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── SalesOrder.kt
-│   │   │   │           │   ├── OrderLine.kt
-│   │   │   │           │   ├── ShippingAddress.kt
-│   │   │   │           │   └── OrderStatus.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── SalesOrderCreatedEvent.kt
-│   │   │   │           │   ├── OrderFulfilledEvent.kt
-│   │   │   │           │   └── OrderCancelledEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               ├── OrderValidationService.kt
-│   │   │   │               └── ATPCheckService.kt
-│   │   │   ├── sales-application/
-│   │   │   └── sales-infrastructure/
-│   │   │
-│   │   ├── sales-pricing/                     # Pricing & Promotions
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── pricing-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.sales.pricing.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── PriceList.kt
-│   │   │   │           │   ├── PricingCondition.kt
-│   │   │   │           │   ├── Discount.kt
-│   │   │   │           │   └── Promotion.kt
-│   │   │   │           └── services/
-│   │   │   │               └── PriceDeterminationService.kt
-│   │   │   ├── pricing-application/
-│   │   │   └── pricing-infrastructure/
-│   │   │
-│   │   ├── sales-credits/                     # Credits & Returns
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── credits-domain/
-│   │   │   │   └── [Credit memos, returns authorization]
-│   │   │   ├── credits-application/
-│   │   │   └── credits-infrastructure/
-│   │   │
-│   │   └── sales-shipping/                    # Shipping & Logistics
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── shipping-domain/
-│   │       │   └── [Delivery documents, carrier integration]
-│   │       ├── shipping-application/
-│   │       └── shipping-infrastructure/
-│   │
-│   ├── procurement/                           # 🛒 PROCUREMENT DOMAIN (ADR-023)
-│   │   │
-│   │   ├── procurement-core/                  # Core Procurement
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── procurement-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.procurement.core.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── PurchaseRequisition.kt
-│   │   │   │           │   ├── PurchaseOrder.kt
-│   │   │   │           │   ├── GoodsReceipt.kt
-│   │   │   │           │   └── Vendor.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── PurchaseOrderCreatedEvent.kt
-│   │   │   │           │   └── GoodsReceivedEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ThreeWayMatchService.kt
-│   │   │   ├── procurement-application/
-│   │   │   └── procurement-infrastructure/
-│   │   │
-│   │   └── procurement-sourcing/              # Sourcing & RFQ
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── sourcing-domain/
-│   │       │   └── src/main/kotlin/
-│   │       │       └── com.erp.procurement.sourcing.domain/
-│   │       │           ├── model/
-│   │       │           │   ├── RFQ.kt
-│   │       │           │   ├── Quotation.kt
-│   │       │           │   └── ContractAgreement.kt
-│   │       │           └── services/
-│   │       │               └── QuotationEvaluator.kt
-│   │       ├── sourcing-application/
-│   │       └── sourcing-infrastructure/
-│   │
-│   ├── manufacturing/                         # 🏭 MANUFACTURING DOMAIN (ADR-037)
-│   │   │
-│   │   ├── manufacturing-bom/                 # BOM Management
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── bom-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.manufacturing.bom.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── BillOfMaterial.kt
-│   │   │   │           │   ├── BOMLine.kt
-│   │   │   │           │   ├── Routing.kt
-│   │   │   │           │   └── Operation.kt
-│   │   │   │           ├── events/
-│   │   │   │           │   ├── BOMPublishedEvent.kt
-│   │   │   │           │   └── RoutingUpdatedEvent.kt
-│   │   │   │           └── services/
-│   │   │   │               └── BOMExplosionService.kt
-│   │   │   ├── bom-application/
-│   │   │   └── bom-infrastructure/
-│   │   │
-│   │   ├── manufacturing-mrp/                 # MRP (Material Requirements Planning)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── mrp-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.manufacturing.mrp.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── PlannedOrder.kt
-│   │   │   │           │   ├── MRPElement.kt
-│   │   │   │           │   └── PlanningHorizon.kt
-│   │   │   │           └── services/
-│   │   │   │               └── NetRequirementsCalculator.kt
-│   │   │   ├── mrp-application/
-│   │   │   └── mrp-infrastructure/
-│   │   │
-│   │   ├── manufacturing-shop-floor/          # Shop Floor Execution
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── shopfloor-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.manufacturing.shopfloor.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── ProductionOrder.kt
-│   │   │   │           │   ├── OperationConfirmation.kt
-│   │   │   │           │   ├── WorkCenter.kt
-│   │   │   │           │   └── MaterialConsumption.kt
-│   │   │   │           └── services/
-│   │   │   │               └── CapacityScheduler.kt
-│   │   │   ├── shopfloor-application/
-│   │   │   └── shopfloor-infrastructure/
-│   │   │
-│   │   └── manufacturing-costing/             # Production Costing
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── costing-domain/
-│   │       │   └── [Actual costing, variance analysis, scrap]
-│   │       ├── costing-application/
-│   │       └── costing-infrastructure/
-│   │
-│   ├── quality/                               # ✅ QUALITY DOMAIN (ADR-039)
-│   │   │
-│   │   ├── quality-inspection-planning/       # Inspection Planning
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── inspection-planning-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.quality.planning.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── InspectionPlan.kt
-│   │   │   │           │   ├── Characteristic.kt
-│   │   │   │           │   └── SamplingProcedure.kt
-│   │   │   │           └── services/
-│   │   │   │               └── SamplingCalculator.kt
-│   │   │   ├── inspection-planning-application/
-│   │   │   └── inspection-planning-infrastructure/
-│   │   │
-│   │   ├── quality-execution/                 # Quality Execution
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── execution-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.quality.execution.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── InspectionLot.kt
-│   │   │   │           │   ├── InspectionResult.kt
-│   │   │   │           │   ├── UsageDecision.kt
-│   │   │   │           │   └── Defect.kt
-│   │   │   │           └── services/
-│   │   │   │               └── UsageDecisionService.kt
-│   │   │   ├── execution-application/
-│   │   │   └── execution-infrastructure/
-│   │   │
-│   │   └── quality-capa/                      # CAPA (Corrective & Preventive Actions)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── capa-domain/
-│   │       │   └── [Nonconformance, root cause analysis, action tracking]
-│   │       ├── capa-application/
-│   │       └── capa-infrastructure/
-│   │
-│   ├── maintenance/                           # 🔧 MAINTENANCE DOMAIN (ADR-040)
-│   │   │
-│   │   ├── maintenance-equipment/             # Equipment Master
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── equipment-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.maintenance.equipment.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Equipment.kt
-│   │   │   │           │   ├── TechnicalObject.kt
-│   │   │   │           │   └── BillOfMaterial.kt
-│   │   │   │           └── services/
-│   │   │   │               └── EquipmentHierarchyService.kt
-│   │   │   ├── equipment-application/
-│   │   │   └── equipment-infrastructure/
-│   │   │
-│   │   ├── maintenance-work-orders/           # Work Orders
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── work-orders-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.maintenance.workorders.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── WorkOrder.kt
-│   │   │   │           │   ├── Operation.kt
-│   │   │   │           │   ├── SparePartRequirement.kt
-│   │   │   │           │   └── Notification.kt
-│   │   │   │           └── services/
-│   │   │   │               └── WorkOrderScheduler.kt
-│   │   │   ├── work-orders-application/
-│   │   │   └── work-orders-infrastructure/
-│   │   │
-│   │   └── maintenance-preventive/            # Preventive Maintenance
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── preventive-domain/
-│   │       │   └── [Maintenance plans, scheduling, task lists]
-│   │       ├── preventive-application/
-│   │       └── preventive-infrastructure/
-│   │
-│   ├── crm/                                   # 👥 CRM DOMAIN (ADR-042, 043)
-│   │   │
-│   │   ├── crm-customer360/                   # Customer 360° View
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── customer360-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.crm.customer360.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Customer.kt
-│   │   │   │           │   ├── Account.kt
-│   │   │   │           │   ├── Contact.kt
-│   │   │   │           │   └── Interaction.kt
-│   │   │   │           └── services/
-│   │   │   │               └── CustomerSegmentationService.kt
-│   │   │   ├── customer360-application/
-│   │   │   └── customer360-infrastructure/
-│   │   │
-│   │   ├── crm-contracts/                     # Contracts & SLAs
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── contracts-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.crm.contracts.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── ServiceContract.kt
-│   │   │   │           │   ├── Entitlement.kt
-│   │   │   │           │   ├── SLA.kt
-│   │   │   │           │   └── Renewal.kt
-│   │   │   │           └── services/
-│   │   │   │               └── RenewalForecastService.kt
-│   │   │   ├── contracts-application/
-│   │   │   └── contracts-infrastructure/
-│   │   │
-│   │   └── crm-dispatch/                      # ADR-042 (Field Service)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── dispatch-domain/
-│   │       │   └── src/main/kotlin/
-│   │       │       └── com.erp.crm.dispatch.domain/
-│   │       │           ├── model/
-│   │       │           │   ├── ServiceAppointment.kt
-│   │       │           │   ├── Technician.kt
-│   │       │           │   ├── WorkOrder.kt
-│   │       │           │   └── TimeSlot.kt
-│   │       │           └── services/
-│   │       │               ├── RouteOptimizer.kt
-│   │       │               └── TechnicianMatcher.kt
-│   │       ├── dispatch-application/
-│   │       └── dispatch-infrastructure/
-│   │
-│   ├── mdm/                                   # 📚 MASTER DATA DOMAIN (ADR-027)
-│   │   │
-│   │   ├── mdm-hub/                           # Master Data Hub
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── hub-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.mdm.hub.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── MasterDataObject.kt
-│   │   │   │           │   ├── Attribute.kt
-│   │   │   │           │   ├── Version.kt
-│   │   │   │           │   └── Subscription.kt
-│   │   │   │           └── services/
-│   │   │   │               └── PublishSubscribeService.kt
-│   │   │   ├── hub-application/
-│   │   │   └── hub-infrastructure/
-│   │   │
-│   │   └── mdm-data-quality/                  # Data Quality Rules
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── data-quality-domain/
-│   │       │   └── src/main/kotlin/
-│   │       │       └── com.erp.mdm.quality.domain/
-│   │       │           ├── model/
-│   │       │           │   ├── QualityRule.kt
-│   │       │           │   ├── Validation.kt
-│   │       │           │   └── QualityScore.kt
-│   │       │           └── services/
-│   │       │               └── DataQualityEngine.kt
-│   │       ├── data-quality-application/
-│   │       └── data-quality-infrastructure/
-│   │
-│   ├── analytics/                             # 📈 ANALYTICS DOMAIN (ADR-016)
-│   │   │
-│   │   ├── analytics-warehouse/               # Data Warehouse
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── warehouse-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.analytics.warehouse.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── FactTable.kt
-│   │   │   │           │   ├── DimensionTable.kt
-│   │   │   │           │   └── ETLJob.kt
-│   │   │   │           └── services/
-│   │   │   │               └── CDCProcessor.kt  # Change Data Capture
-│   │   │   ├── warehouse-application/
-│   │   │   └── warehouse-infrastructure/
-│   │   │
-│   │   ├── analytics-olap/                    # OLAP Cube Engine
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── olap-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.analytics.olap.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── Cube.kt
-│   │   │   │           │   ├── Dimension.kt
-│   │   │   │           │   ├── Measure.kt
-│   │   │   │           │   └── Hierarchy.kt
-│   │   │   │           └── services/
-│   │   │   │               └── CubeQueryExecutor.kt
-│   │   │   ├── olap-application/
-│   │   │   └── olap-infrastructure/
-│   │   │
-│   │   └── analytics-kpi/                     # KPI Engine
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── kpi-domain/
-│   │       │   └── src/main/kotlin/
-│   │       │       └── com.erp.analytics.kpi.domain/
-│   │       │           ├── model/
-│   │       │           │   ├── KPI.kt
-│   │       │           │   ├── Threshold.kt
-│   │       │           │   └── Calculation.kt
-│   │       │           └── services/
-│   │       │               └── KPICalculator.kt
-│   │       ├── kpi-application/
-│   │       └── kpi-infrastructure/
-│   │
-│   ├── platform-services/                     # 🛠️ PLATFORM SERVICES (ADR-044, 045, 046)
-│   │   │
-│   │   ├── api-gateway/                       # ADR-004 (API Gateway)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   └── src/main/kotlin/
-│   │   │       └── com.erp.platform.gateway/
-│   │   │           ├── routing/
-│   │   │           │   └── GatewayRoutingConfig.kt
-│   │   │           ├── security/
-│   │   │           │   ├── JwtAuthenticationFilter.kt
-│   │   │           │   └── TenantResolutionFilter.kt
-│   │   │           ├── ratelimiting/
-│   │   │           │   └── RateLimitFilter.kt
-│   │   │           └── cors/
-│   │   │               └── CorsConfig.kt
-│   │   │
-│   │   ├── configuration-engine/              # ADR-044 (Configuration Framework)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── config-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.platform.config.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── ConfigurationKey.kt
-│   │   │   │           │   ├── ConfigurationValue.kt
-│   │   │   │           │   ├── ConfigurationScope.kt  # Tenant/User/Global
-│   │   │   │           │   └── ConfigurationVersion.kt
-│   │   │   │           └── services/
-│   │   │   │               └── ConfigurationResolver.kt
-│   │   │   ├── config-application/
-│   │   │   └── config-infrastructure/
-│   │   │
-│   │   ├── org-model-service/                 # ADR-045 (Organizational Model)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── org-model-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.platform.orgmodel.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── CompanyCode.kt
-│   │   │   │           │   ├── Plant.kt
-│   │   │   │           │   ├── Division.kt
-│   │   │   │           │   ├── SalesOrganization.kt
-│   │   │   │           │   └── PurchasingOrganization.kt
-│   │   │   │           └── services/
-│   │   │   │               └── OrgHierarchyService.kt
-│   │   │   ├── org-model-application/
-│   │   │   └── org-model-infrastructure/
-│   │   │
-│   │   ├── workflow-engine/                   # ADR-046 (Workflow & Approval)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── workflow-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.platform.workflow.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── WorkflowDefinition.kt
-│   │   │   │           │   ├── WorkflowInstance.kt
-│   │   │   │           │   ├── WorkflowStep.kt
-│   │   │   │           │   ├── ApprovalRule.kt
-│   │   │   │           │   └── ApprovalRequest.kt
-│   │   │   │           └── services/
-│   │   │   │               └── WorkflowExecutor.kt
-│   │   │   ├── workflow-application/
-│   │   │   └── workflow-infrastructure/
-│   │   │
-│   │   ├── tax-engine/                        # ADR-030 (Tax Compliance)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── tax-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.platform.tax.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── TaxCode.kt
-│   │   │   │           │   ├── TaxJurisdiction.kt
-│   │   │   │           │   ├── TaxRule.kt
-│   │   │   │           │   └── TaxCalculation.kt
-│   │   │   │           └── services/
-│   │   │   │               └── TaxCalculationEngine.kt
-│   │   │   ├── tax-application/
-│   │   │   └── tax-infrastructure/
-│   │   │
-│   │   ├── period-close-orchestrator/         # ADR-031 (Period Close)
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── period-close-domain/
-│   │   │   │   └── src/main/kotlin/
-│   │   │   │       └── com.erp.platform.periodclose.domain/
-│   │   │   │           ├── model/
-│   │   │   │           │   ├── PeriodCloseTask.kt
-│   │   │   │           │   ├── TaskDependency.kt
-│   │   │   │           │   └── CloseLock.kt
-│   │   │   │           └── services/
-│   │   │   │               └── PeriodCloseOrchestrator.kt
-│   │   │   ├── period-close-application/
-│   │   │   └── period-close-infrastructure/
-│   │   │
-│   │   ├── document-management/               # Document Attachments
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── document-domain/
-│   │   │   │   └── [Document metadata, storage, versioning]
-│   │   │   ├── document-application/
-│   │   │   └── document-infrastructure/
-│   │   │
-│   │   ├── notification-service/              # Notifications & Alerts
-│   │   │   ├── build.gradle.kts
-│   │   │   ├── Dockerfile
-│   │   │   ├── notification-domain/
-│   │   │   │   └── [Email, SMS, push notifications]
-│   │   │   ├── notification-application/
-│   │   │   └── notification-infrastructure/
-│   │   │
-│   │   └── audit-log-service/                 # ADR-015 (Data Lifecycle)
-│   │       ├── build.gradle.kts
-│   │       ├── Dockerfile
-│   │       ├── audit-domain/
-│   │       │   └── [Audit trail, change history, retention policies]
-│   │       ├── audit-application/
-│   │       └── audit-infrastructure/
-│   │
-│   ├── industry-extensions/                   # 🏭 INDUSTRY-SPECIFIC MODULES
-│   │   │
-│   │   ├── banking/                           # Banking & Financial Services
-│   │   │   ├── loan-management/
-│   │   │   │   ├── build.gradle.kts
-│   │   │   │   ├── Dockerfile
-│   │   │   │   └── [Loan origination, servicing, collections]
-│   │   │   ├── deposit-accounts/
-│   │   │   │   └── [Checking, savings, CD accounts]
-│   │   │   └── regulatory-reporting/
-│   │   │       └── [Basel III, Dodd-Frank, IFRS 9]
-│   │   │
-│   │   ├── process-manufacturing/             # Process Manufacturing
-│   │   │   ├── batch-management/
-│   │   │   │   └── [Batch genealogy, lot traceability]
-│   │   │   ├── formula-management/
-│   │   │   │   └── [Recipes, formulations, yield]
-│   │   │   └── process-execution/
-│   │   │       └── [Campaigns, batch sequencing]
-│   │   │
-│   │   ├── utilities/                         # Utilities (Energy, Water, Telecom)
-│   │   │   ├── meter-data-management/
-│   │   │   │   └── [Meter readings, consumption, billing]
-│   │   │   ├── outage-management/
-│   │   │   │   └── [Incident tracking, crew dispatch]
-│   │   │   └── asset-management/
-│   │   │       └── [Grid infrastructure, maintenance]
-│   │   │
-│   │   ├── public-sector/                     # ADR-050 (Government)
-│   │   │   ├── grant-management/
-│   │   │   │   └── [Grant applications, tracking, reporting]
-│   │   │   ├── fund-accounting/
-│   │   │   │   └── [Fund-based GL, encumbrances]
-│   │   │   └── procurement-compliance/
-│   │   │       └── [RFP processes, vendor compliance]
-│   │   │
-│   │   ├── insurance/                         # Insurance
-│   │   │   ├── policy-administration/
-│   │   │   │   └── [Policy lifecycle, endorsements]
-│   │   │   ├── claims-management/
-│   │   │   │   └── [Claims processing, adjudication]
-│   │   │   └── underwriting/
-│   │   │       └── [Risk assessment, pricing]
-│   │   │
-│   │   ├── real-estate/                       # Real Estate & Property Management
-│   │   │   ├── lease-management/
-│   │   │   │   └── [Lease contracts, rent billing]
-│   │   │   ├── property-maintenance/
-│   │   │   │   └── [Work orders, tenant requests]
-│   │   │   └── vacancy-management/
-│   │   │       └── [Availability, showings, leasing]
-│   │   │
-│   │   ├── advanced-inventory/                # Advanced Inventory Features
-│   │   │   ├── batch-management/
-│   │   │   │   └── [Batch tracking, genealogy]
-│   │   │   ├── serial-number-management/
-│   │   │   │   └── [Serial tracking, warranties]
-│   │   │   └── kitting/
-│   │   │       └── [Kit assembly, disassembly]
-│   │   │
-│   │   └── retail-ai/                         # 🤖 RETAIL AI ENHANCEMENT (ADR-056, 057)
-│   │       │
-│   │       ├── demand-forecasting-service/    # ADR-056 (AI Demand Forecasting)
-│   │       │   ├── build.gradle.kts
-│   │       │   ├── Dockerfile
-│   │       │   ├── requirements.txt           # Python dependencies
-│   │       │   ├── forecasting-domain/
-│   │       │   │   └── src/main/python/
-│   │       │   │       └── com.erp.retail.forecasting/
-│   │       │   │           ├── models/
-│   │       │   │           │   ├── DemandForecast.py
-│   │       │   │           │   ├── ForecastModel.py
-│   │       │   │           │   ├── ReorderPoint.py
-│   │       │   │           │   ├── PromotionPlan.py
-│   │       │   │           │   ├── ExternalSignal.py
-│   │       │   │           │   ├── ForecastAccuracy.py
-│   │       │   │           │   └── ScenarioAnalysis.py
-│   │       │   │           ├── ml/            # ML models
-│   │       │   │           │   ├── time_series/
-│   │       │   │           │   │   ├── arima_model.py
-│   │       │   │           │   │   ├── prophet_model.py
-│   │       │   │           │   │   ├── xgboost_model.py
-│   │       │   │           │   │   └── lstm_model.py
-│   │       │   │           │   ├── seasonality/
-│   │       │   │           │   │   ├── stl_decomposition.py
-│   │       │   │           │   │   └── fourier_transform.py
-│   │       │   │           │   └── ensemble/
-│   │       │   │           │       └── model_blending.py
-│   │       │   │           └── services/
-│   │       │   │               ├── ForecastingEngine.py
-│   │       │   │               ├── ReorderPointCalculator.py
-│   │       │   │               └── MultiEchelonOptimizer.py
-│   │       │   │
-│   │       │   ├── forecasting-application/
-│   │       │   │   └── src/main/python/
-│   │       │   │       └── [Commands, queries, handlers]
-│   │       │   │
-│   │       │   └── forecasting-infrastructure/
-│   │       │       └── src/main/python/
-│   │       │           ├── api/               # FastAPI REST endpoints
-│   │       │           │   ├── forecast_api.py
-│   │       │           │   └── reorder_point_api.py
-│   │       │           ├── persistence/       # PostgreSQL + TimescaleDB
-│   │       │           │   └── forecast_repository.py
-│   │       │           └── messaging/         # Kafka integration
-│   │       │               └── forecast_event_publisher.py
-│   │       │
-│   │       └── pricing-optimization-service/  # ADR-057 (Dynamic Pricing)
-│   │           ├── build.gradle.kts
-│   │           ├── Dockerfile
-│   │           ├── requirements.txt           # Python dependencies
-│   │           ├── pricing-domain/
-│   │           │   └── src/main/python/
-│   │           │       └── com.erp.retail.pricing/
-│   │           │           ├── models/
-│   │           │           │   ├── PriceElasticity.py
-│   │           │           │   ├── MarkdownRecommendation.py
-│   │           │           │   ├── CompetitorPrice.py
-│   │           │           │   ├── PromotionROI.py
-│   │           │           │   ├── ABTestExperiment.py
-│   │           │           │   └── PriceHistory.py
-│   │           │           ├── ml/            # ML models
-│   │           │           │   ├── elasticity/
-│   │           │           │   │   ├── log_log_regression.py
-│   │           │           │   │   ├── xgboost_elasticity.py
-│   │           │           │   │   └── hierarchical_model.py
-│   │           │           │   ├── optimization/
-│   │           │           │   │   ├── markdown_optimizer.py
-│   │           │           │   │   └── clearance_accelerator.py
-│   │           │           │   └── ab_testing/
-│   │           │           │       └── statistical_validator.py
-│   │           │           └── services/
-│   │           │               ├── PricingEngine.py
-│   │           │               ├── MarkdownOptimizer.py
-│   │           │               └── CompetitiveIntelligence.py
-│   │           │
-│   │           ├── pricing-application/
-│   │           │   └── src/main/python/
-│   │           │       └── [Commands, queries, handlers]
-│   │           │
-│   │           └── pricing-infrastructure/
-│   │               └── src/main/python/
-│   │                   ├── api/               # FastAPI REST endpoints
-│   │                   │   ├── pricing_api.py
-│   │                   │   └── markdown_api.py
-│   │                   ├── persistence/       # PostgreSQL
-│   │                   │   └── pricing_repository.py
-│   │                   └── messaging/         # Kafka integration
-│   │                       └── pricing_event_publisher.py
-│   │
-│   └── localization/                          # 🌍 LOCALIZATION (ADR-047)
-│       │                                      # Country packs as plugins
-│       │
-│       ├── country-packs/
-│       │   ├── us/                            # United States
-│       │   │   ├── build.gradle.kts
-│       │   │   ├── chart-of-accounts/         # GAAP COA
-│       │   │   ├── tax-codes/                 # Federal/State taxes
-│       │   │   ├── legal-forms/               # LLC, Corp, etc.
-│       │   │   └── regulatory-reports/        # 10-K, SOX
-│       │   │
-│       │   ├── de/                            # Germany
-│       │   │   ├── build.gradle.kts
-│       │   │   ├── chart-of-accounts/         # HGB/IFRS COA (SKR03/04)
-│       │   │   ├── tax-codes/                 # MwSt, Umsatzsteuer
-│       │   │   ├── legal-forms/               # GmbH, AG
-│       │   │   └── regulatory-reports/        # GoBD, DATEV
-│       │   │
-│       │   ├── fr/                            # France
-│       │   │   └── [COA, tax, legal forms, reports]
-│       │   │
-│       │   ├── gb/                            # United Kingdom
-│       │   │   └── [COA, VAT, legal forms, MTD]
-│       │   │
-│       │   ├── cn/                            # China
-│       │   │   └── [COA, Golden Tax, legal forms]
-│       │   │
-│       │   └── [additional countries...]
-│       │
-│       └── localization-engine/               # Localization Framework
-│           ├── build.gradle.kts
-│           ├── Dockerfile
-│           └── src/main/kotlin/
-│               └── com.erp.localization/
-│                   ├── CountryPackLoader.kt
-│                   ├── LocalizationResolver.kt
-│                   └── RegulatoryReportGenerator.kt
-│
-├── frontend/                                   # 🖥️ FRONTEND APPLICATIONS (ADR-048)
-│   │
-│   ├── web-app/                               # Main Web Application (React)
-│   │   ├── package.json
-│   │   ├── tsconfig.json
-│   │   ├── vite.config.ts                     # Vite build config
-│   │   ├── Dockerfile
-│   │   │
-│   │   ├── public/
-│   │   │   ├── index.html
-│   │   │   └── assets/
-│   │   │
 │   │   └── src/
-│   │       ├── main.tsx                       # Entry point
-│   │       │
-│   │       ├── modules/                       # Domain modules
-│   │       │   ├── finance/
-│   │       │   │   ├── gl/
-│   │       │   │   │   ├── pages/
-│   │       │   │   │   │   ├── TrialBalancePage.tsx
-│   │       │   │   │   │   ├── JournalEntryPage.tsx
-│   │       │   │   │   │   └── AccountHistoryPage.tsx
-│   │       │   │   │   ├── components/
-│   │       │   │   │   │   ├── JournalEntryForm.tsx
-│   │       │   │   │   │   └── TrialBalanceTable.tsx
-│   │       │   │   │   └── api/
-│   │       │   │   │       └── glApiClient.ts
-│   │       │   │   ├── ap/
-│   │       │   │   │   └── [AP UI components]
-│   │       │   │   └── ar/
-│   │       │   │       └── [AR UI components]
-│   │       │   │
-│   │       │   ├── inventory/
-│   │       │   │   ├── stock-overview/
-│   │       │   │   ├── warehouse-management/
-│   │       │   │   └── atp-check/
-│   │       │   │
-│   │       │   ├── sales/
-│   │       │   │   ├── sales-orders/
-│   │       │   │   ├── pricing/
-│   │       │   │   └── shipping/
-│   │       │   │
-│   │       │   ├── manufacturing/
-│   │       │   │   ├── shop-floor/
-│   │       │   │   ├── bom-management/
-│   │       │   │   └── mrp/
-│   │       │   │
-│   │       │   └── [other modules...]
-│   │       │
-│   │       ├── shared/                        # Shared UI components
-│   │       │   ├── components/
-│   │       │   │   ├── Layout/
-│   │       │   │   │   ├── AppLayout.tsx
-│   │       │   │   │   ├── Sidebar.tsx
-│   │       │   │   │   └── Header.tsx
-│   │       │   │   ├── DataTable/
-│   │       │   │   │   └── DataTable.tsx
-│   │       │   │   ├── Form/
-│   │       │   │   │   ├── Input.tsx
-│   │       │   │   │   ├── Select.tsx
-│   │       │   │   │   └── DatePicker.tsx
-│   │       │   │   └── Modals/
-│   │       │   │       └── ConfirmDialog.tsx
-│   │       │   │
-│   │       │   ├── hooks/                     # Custom React hooks
-│   │       │   │   ├── useAuth.ts
-│   │       │   │   ├── useTenant.ts
-│   │       │   │   └── useApi.ts
-│   │       │   │
-│   │       │   └── utils/
-│   │       │       ├── api.ts                 # Axios client
-│   │       │       ├── formatting.ts
-│   │       │       └── validation.ts
-│   │       │
-│   │       ├── routing/
-│   │       │   └── AppRoutes.tsx              # React Router config
-│   │       │
-│   │       └── store/                         # State management (Redux Toolkit)
-│   │           ├── store.ts
-│   │           ├── authSlice.ts
-│   │           └── tenantSlice.ts
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── types/
+│   │       │   │                   ├── primitives/                   # ADR-006: ONLY technical primitives
+│   │       │   │                   │   ├── Identifier.kt             # Generic ID wrapper
+│   │       │   │                   │   ├── AuditInfo.kt              # Technical audit trail (ALLOWED per ADR-006)
+│   │       │   │                   │   └── CorrelationId.kt          # Request correlation
+│   │       │   │                   │   # NOTE: Money, Address, PhoneNumber, Email, TaxId
+│   │       │   │                   │   # are FORBIDDEN here per ADR-006 - must be duplicated
+│   │       │   │                   │   # in each bounded context with context-specific semantics
+│   │       │   │                   ├── events/
+│   │       │   │                   │   ├── DomainEvent.kt
+│   │       │   │                   │   ├── EventMetadata.kt
+│   │       │   │                   │   ├── EventEnvelope.kt
+│   │       │   │                   │   └── EventVersion.kt
+│   │       │   │                   ├── results/
+│   │       │   │                   │   ├── Result.kt
+│   │       │   │                   │   ├── DomainError.kt
+│   │       │   │                   │   └── ValidationError.kt
+│   │       │   │                   ├── aggregate/
+│   │       │   │                   │   ├── AggregateRoot.kt
+│   │       │   │                   │   ├── Entity.kt
+│   │       │   │                   │   └── ValueObject.kt
+│   │       │   │                   └── cqrs/
+│   │       │   │                       ├── Command.kt
+│   │       │   │                       ├── Query.kt
+│   │       │   │                       ├── CommandHandler.kt
+│   │       │   │                       └── QueryHandler.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── types/
+│   │           │                   ├── IdentifierTest.kt
+│   │           │                   ├── AuditInfoTest.kt
+│   │           │                   ├── ResultTest.kt
+│   │           │                   └── AggregateRootTest.kt
+│   │           └── resources/
 │   │
-│   ├── mobile-app/                            # Mobile Application (React Native - Optional)
-│   │   ├── package.json
-│   │   ├── App.tsx
-│   │   └── [mobile-specific components]
+│   ├── common-messaging/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── messaging/
+│   │       │   │                   ├── EventPublisher.kt
+│   │       │   │                   ├── EventConsumer.kt
+│   │       │   │                   ├── EventBus.kt
+│   │       │   │                   ├── CommandBus.kt
+│   │       │   │                   ├── QueryBus.kt
+│   │       │   │                   └── kafka/
+│   │       │   │                       ├── KafkaConfiguration.kt
+│   │       │   │                       ├── KafkaProducer.kt
+│   │       │   │                       ├── KafkaConsumer.kt
+│   │       │   │                       └── SchemaRegistry.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── messaging/
+│   │           │                   ├── EventBusTest.kt
+│   │           │                   └── KafkaProducerTest.kt
+│   │           └── resources/
 │   │
-│   └── admin-portal/                          # Admin Portal (Tenant management)
-│       ├── package.json
-│       └── [admin-specific components]
+│   ├── common-security/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── security/
+│   │       │   │                   ├── tenant/
+│   │       │   │                   │   ├── TenantContext.kt
+│   │       │   │                   │   ├── TenantContextHolder.kt
+│   │       │   │                   │   ├── TenantId.kt
+│   │       │   │                   │   └── TenantResolver.kt
+│   │       │   │                   ├── authentication/
+│   │       │   │                   │   ├── AuthenticationPrincipal.kt
+│   │       │   │                   │   ├── JwtTokenProvider.kt
+│   │       │   │                   │   ├── JwtTokenValidator.kt
+│   │       │   │                   │   ├── TokenClaims.kt
+│   │       │   │                   │   └── AuthenticationException.kt
+│   │       │   │                   ├── authorization/
+│   │       │   │                   │   ├── Authorization.kt
+│   │       │   │                   │   ├── PermissionChecker.kt
+│   │       │   │                   │   ├── RoleBasedAccessControl.kt
+│   │       │   │                   │   ├── AuthorizationObject.kt         # ADR-014
+│   │       │   │                   │   ├── SodValidator.kt                # Segregation of Duties
+│   │       │   │                   │   ├── Permission.kt
+│   │       │   │                   │   ├── Role.kt
+│   │       │   │                   │   └── AccessDeniedException.kt
+│   │       │   │                   ├── context/
+│   │       │   │                   │   ├── SecurityContext.kt
+│   │       │   │                   │   ├── SecurityContextHolder.kt
+│   │       │   │                   │   └── UserPrincipal.kt
+│   │       │   │                   └── filter/
+│   │       │   │                       ├── TenantFilter.kt
+│   │       │   │                       ├── AuthenticationFilter.kt
+│   │       │   │                       └── CorrelationIdFilter.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── security/
+│   │           │                   ├── TenantContextTest.kt
+│   │           │                   ├── TenantContextHolderTest.kt
+│   │           │                   ├── JwtTokenProviderTest.kt
+│   │           │                   ├── JwtTokenValidatorTest.kt
+│   │           │                   ├── AuthorizationTest.kt
+│   │           │                   ├── PermissionCheckerTest.kt
+│   │           │                   ├── SodValidatorTest.kt
+│   │           │                   └── SecurityContextTest.kt
+│   │           └── resources/
+│   │
+│   ├── common-observability/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── observability/
+│   │       │   │                   ├── correlation/
+│   │       │   │                   │   ├── CorrelationId.kt
+│   │       │   │                   │   ├── CorrelationIdGenerator.kt
+│   │       │   │                   │   └── CorrelationIdPropagator.kt
+│   │       │   │                   ├── tracing/
+│   │       │   │                   │   ├── TraceContext.kt
+│   │       │   │                   │   ├── SpanContext.kt
+│   │       │   │                   │   ├── TraceIdGenerator.kt
+│   │       │   │                   │   ├── TracingInterceptor.kt
+│   │       │   │                   │   └── DistributedTracing.kt
+│   │       │   │                   ├── metrics/
+│   │       │   │                   │   ├── MetricsCollector.kt
+│   │       │   │                   │   ├── MetricsRegistry.kt
+│   │       │   │                   │   ├── CounterMetric.kt
+│   │       │   │                   │   ├── GaugeMetric.kt
+│   │       │   │                   │   ├── HistogramMetric.kt
+│   │       │   │                   │   ├── TimerMetric.kt
+│   │       │   │                   │   └── BusinessMetrics.kt
+│   │       │   │                   ├── logging/
+│   │       │   │                   │   ├── StructuredLogging.kt
+│   │       │   │                   │   ├── LogContext.kt
+│   │       │   │                   │   ├── LogLevel.kt
+│   │       │   │                   │   ├── AuditLogger.kt
+│   │       │   │                   │   └── SensitiveDataMasker.kt
+│   │       │   │                   └── health/
+│   │       │   │                       ├── HealthCheck.kt
+│   │       │   │                       ├── HealthIndicator.kt
+│   │       │   │                       ├── ReadinessCheck.kt
+│   │       │   │                       └── LivenessCheck.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── observability/
+│   │           │                   ├── CorrelationIdTest.kt
+│   │           │                   ├── CorrelationIdGeneratorTest.kt
+│   │           │                   ├── TraceContextTest.kt
+│   │           │                   ├── MetricsCollectorTest.kt
+│   │           │                   ├── MetricsRegistryTest.kt
+│   │           │                   ├── StructuredLoggingTest.kt
+│   │           │                   ├── SensitiveDataMaskerTest.kt
+│   │           │                   └── HealthCheckTest.kt
+│   │           └── resources/
+│   │
+│   ├── config-model/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── config/
+│   │       │   │                   ├── model/
+│   │       │   │                   │   ├── ConfigurationModel.kt
+│   │       │   │                   │   ├── ConfigurationKey.kt
+│   │       │   │                   │   ├── ConfigurationValue.kt
+│   │       │   │                   │   ├── ConfigurationScope.kt       # System, Tenant, User
+│   │       │   │                   │   └── ConfigurationVersion.kt
+│   │       │   │                   ├── tenant/
+│   │       │   │                   │   ├── TenantConfiguration.kt
+│   │       │   │                   │   ├── TenantSettings.kt
+│   │       │   │                   │   ├── TenantFeatureFlags.kt
+│   │       │   │                   │   ├── TenantLimits.kt
+│   │       │   │                   │   └── TenantLocalization.kt
+│   │       │   │                   ├── module/
+│   │       │   │                   │   ├── ModuleConfiguration.kt
+│   │       │   │                   │   ├── ModuleSettings.kt
+│   │       │   │                   │   ├── ModuleDependency.kt
+│   │       │   │                   │   └── ModuleActivation.kt
+│   │       │   │                   ├── customization/                  # ADR-012
+│   │       │   │                   │   ├── CustomField.kt
+│   │       │   │                   │   ├── CustomFieldType.kt
+│   │       │   │                   │   ├── CustomFieldValidation.kt
+│   │       │   │                   │   ├── CustomizationRule.kt
+│   │       │   │                   │   └── ExtensionPoint.kt
+│   │       │   │                   └── source/
+│   │       │   │                       ├── ConfigurationSource.kt
+│   │       │   │                       ├── ConfigurationLoader.kt
+│   │       │   │                       └── ConfigurationRefresher.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── config/
+│   │           │                   ├── ConfigurationModelTest.kt
+│   │           │                   ├── TenantConfigurationTest.kt
+│   │           │                   ├── ModuleConfigurationTest.kt
+│   │           │                   ├── CustomFieldTest.kt
+│   │           │                   └── ConfigurationLoaderTest.kt
+│   │           └── resources/
+│   │
+│   ├── org-model/
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── org/
+│   │       │   │                   ├── structure/
+│   │       │   │                   │   ├── OrganizationUnit.kt
+│   │       │   │                   │   ├── OrganizationUnitId.kt
+│   │       │   │                   │   ├── OrganizationHierarchy.kt
+│   │       │   │                   │   ├── OrganizationType.kt         # LegalEntity, BusinessUnit, Division
+│   │       │   │                   │   └── OrganizationStatus.kt
+│   │       │   │                   ├── entity/
+│   │       │   │                   │   ├── LegalEntity.kt
+│   │       │   │                   │   ├── LegalEntityId.kt
+│   │       │   │                   │   ├── CompanyCode.kt
+│   │       │   │                   │   ├── TaxIdentifier.kt
+│   │       │   │                   │   └── JurisdictionInfo.kt
+│   │       │   │                   ├── department/
+│   │       │   │                   │   ├── Department.kt
+│   │       │   │                   │   ├── DepartmentId.kt
+│   │       │   │                   │   ├── DepartmentType.kt
+│   │       │   │                   │   └── DepartmentHierarchy.kt
+│   │       │   │                   ├── costcenter/
+│   │       │   │                   │   ├── CostCenter.kt
+│   │       │   │                   │   ├── CostCenterId.kt
+│   │       │   │                   │   ├── CostCenterType.kt           # Production, Admin, Sales, R&D
+│   │       │   │                   │   └── CostAllocation.kt
+│   │       │   │                   ├── location/
+│   │       │   │                   │   ├── Location.kt
+│   │       │   │                   │   ├── LocationId.kt
+│   │       │   │                   │   ├── LocationType.kt             # Office, Warehouse, Plant
+│   │       │   │                   │   └── GeographicInfo.kt
+│   │       │   │                   └── assignment/
+│   │       │   │                       ├── OrgAssignment.kt
+│   │       │   │                       ├── PrimaryAssignment.kt
+│   │       │   │                       └── EffectiveDatedAssignment.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── org/
+│   │           │                   ├── OrganizationUnitTest.kt
+│   │           │                   ├── LegalEntityTest.kt
+│   │           │                   ├── DepartmentTest.kt
+│   │           │                   ├── CostCenterTest.kt
+│   │           │                   ├── LocationTest.kt
+│   │           │                   └── OrgHierarchyTest.kt
+│   │           └── resources/
+│   │
+│   └── workflow-model/
+│       ├── build.gradle.kts
+│       └── src/
+│           ├── main/
+│           │   ├── kotlin/
+│           │   │   └── com/
+│           │   │       └── chiroerp/
+│           │   │           └── shared/
+│           │   │               └── workflow/
+│           │   │                   ├── definition/
+│           │   │                   │   ├── WorkflowDefinition.kt
+│           │   │                   │   ├── WorkflowDefinitionId.kt
+│           │   │                   │   ├── WorkflowVersion.kt
+│           │   │                   │   ├── WorkflowType.kt             # Approval, StateTransition, Saga
+│           │   │                   │   └── WorkflowTrigger.kt
+│           │   │                   ├── state/
+│           │   │                   │   ├── WorkflowState.kt
+│           │   │                   │   ├── WorkflowStateId.kt
+│           │   │                   │   ├── StateType.kt                # Initial, Intermediate, Terminal, Error
+│           │   │                   │   └── StateMetadata.kt
+│           │   │                   ├── transition/
+│           │   │                   │   ├── WorkflowTransition.kt
+│           │   │                   │   ├── TransitionId.kt
+│           │   │                   │   ├── TransitionCondition.kt
+│           │   │                   │   ├── TransitionAction.kt
+│           │   │                   │   └── TransitionGuard.kt
+│           │   │                   ├── instance/
+│           │   │                   │   ├── WorkflowInstance.kt
+│           │   │                   │   ├── WorkflowInstanceId.kt
+│           │   │                   │   ├── WorkflowContext.kt
+│           │   │                   │   ├── WorkflowStatus.kt           # Running, Completed, Failed, Suspended
+│           │   │                   │   └── WorkflowHistory.kt
+│           │   │                   ├── task/
+│           │   │                   │   ├── WorkflowTask.kt
+│           │   │                   │   ├── TaskId.kt
+│           │   │                   │   ├── TaskAssignment.kt
+│           │   │                   │   ├── TaskType.kt                 # Human, System, Timer
+│           │   │                   │   ├── TaskStatus.kt               # Pending, InProgress, Completed, Skipped
+│           │   │                   │   └── TaskOutcome.kt
+│           │   │                   ├── approval/
+│           │   │                   │   ├── ApprovalStep.kt
+│           │   │                   │   ├── ApprovalRule.kt             # Sequential, Parallel, Unanimous
+│           │   │                   │   ├── ApprovalDecision.kt         # Approved, Rejected, Delegated
+│           │   │                   │   ├── ApprovalDelegation.kt
+│           │   │                   │   └── EscalationRule.kt
+│           │   │                   ├── saga/                           # ADR-011
+│           │   │                   │   ├── SagaDefinition.kt
+│           │   │                   │   ├── SagaStep.kt
+│           │   │                   │   ├── CompensatingAction.kt
+│           │   │                   │   ├── SagaStatus.kt               # InProgress, Compensating, Completed, Failed
+│           │   │                   │   └── SagaCoordinator.kt
+│           │   │                   └── temporal/
+│           │   │                       ├── TemporalWorkflowAdapter.kt
+│           │   │                       ├── TemporalActivityAdapter.kt
+│           │   │                       └── TemporalConfiguration.kt
+│           │   └── resources/
+│           └── test/
+│               ├── kotlin/
+│               │   └── com/
+│               │       └── chiroerp/
+│               │           └── shared/
+│               │               └── workflow/
+│               │                   ├── WorkflowDefinitionTest.kt
+│               │                   ├── WorkflowStateTest.kt
+│               │                   ├── WorkflowTransitionTest.kt
+│               │                   ├── WorkflowInstanceTest.kt
+│               │                   ├── ApprovalStepTest.kt
+│               │                   ├── SagaDefinitionTest.kt
+│               │                   └── SagaCoordinatorTest.kt
+│               └── resources/
 │
-├── infrastructure/                             # 🏗️ INFRASTRUCTURE & DEPLOYMENT
+├── tenancy-identity/                            # Tenancy & Identity Bounded Context (ADR-005)
+│   │                                            # NOTE: Different from org-model!
+│   │                                            # org-model = organizational hierarchy WITHIN a tenant
+│   │                                            # tenancy-identity = multi-tenant isolation & identity management
 │   │
-│   ├── kafka/                                 # Kafka Configuration (ADR-003)
-│   │   ├── docker-compose.yml                 # Local Kafka cluster
-│   │   ├── kafka-topics.sh                    # Topic creation script
-│   │   ├── topics/
-│   │   │   ├── finance-events.yaml
-│   │   │   ├── inventory-events.yaml
-│   │   │   ├── sales-events.yaml
-│   │   │   └── [other topics]
-│   │   └── schema-registry/
-│   │       └── avro-schemas/                  # Avro schemas (mirrored from platform-events)
+│   ├── tenancy-shared/                          # Shared types for tenancy context
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── tenancy/
+│   │       │   │               └── shared/
+│   │       │   │                   ├── valueobjects/                # ADR-006: Context-specific value objects
+│   │       │   │                   │   ├── Email.kt                 # Identity email validation rules
+│   │       │   │                   │   ├── PhoneNumber.kt           # Identity phone validation
+│   │       │   │                   │   └── Address.kt               # Tenant address (billing/legal)
+│   │       │   │                   ├── TenantId.kt
+│   │       │   │                   ├── TenantContext.kt
+│   │       │   │                   ├── TenantStatus.kt              # ACTIVE, SUSPENDED, PROVISIONING, TERMINATED
+│   │       │   │                   ├── TenantTier.kt                # STANDARD, PREMIUM, ENTERPRISE (ADR-005)
+│   │       │   │                   ├── IsolationLevel.kt            # ROW_LEVEL, SCHEMA_LEVEL, DATABASE_LEVEL
+│   │       │   │                   └── TenantContextHolder.kt       # ThreadLocal/CoroutineContext accessor
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── tenancy/
+│   │           │               └── shared/
+│   │           │                   ├── TenantIdTest.kt
+│   │           │                   └── TenantContextTest.kt
+│   │           └── resources/
 │   │
-│   ├── postgres/                              # PostgreSQL Configuration (ADR-002)
-│   │   ├── docker-compose.yml                 # Local PostgreSQL
-│   │   ├── init-scripts/
-│   │   │   ├── 01-create-databases.sql        # Database-per-context creation
-│   │   │   ├── 02-create-users.sql
-│   │   │   └── 03-grant-permissions.sql
-│   │   └── timescaledb/                       # TimescaleDB for time-series (retail AI)
-│   │       └── docker-compose.yml
+│   ├── tenancy-core/                            # Tenant lifecycle management
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── tenancy/
+│   │       │   │               └── core/
+│   │       │   │                   ├── domain/
+│   │       │   │                   │   ├── model/
+│   │       │   │                   │   │   ├── Tenant.kt                    # Aggregate root
+│   │       │   │                   │   │   ├── TenantSettings.kt
+│   │       │   │                   │   │   ├── TenantConfiguration.kt
+│   │       │   │                   │   │   ├── TenantSubscription.kt        # Billing tier, features
+│   │       │   │                   │   │   ├── DataResidency.kt             # Region/compliance settings
+│   │       │   │                   │   │   └── TenantQuota.kt               # Resource limits
+│   │       │   │                   │   ├── event/
+│   │       │   │                   │   │   ├── TenantCreatedEvent.kt
+│   │       │   │                   │   │   ├── TenantActivatedEvent.kt
+│   │       │   │                   │   │   ├── TenantSuspendedEvent.kt
+│   │       │   │                   │   │   ├── TenantTerminatedEvent.kt
+│   │       │   │                   │   │   ├── TenantTierChangedEvent.kt
+│   │       │   │                   │   │   └── TenantSettingsUpdatedEvent.kt
+│   │       │   │                   │   └── port/
+│   │       │   │                   │       ├── TenantRepository.kt
+│   │       │   │                   │       └── TenantEventPublisher.kt
+│   │       │   │                   ├── application/
+│   │       │   │                   │   ├── command/
+│   │       │   │                   │   │   ├── CreateTenantCommand.kt
+│   │       │   │                   │   │   ├── ActivateTenantCommand.kt
+│   │       │   │                   │   │   ├── SuspendTenantCommand.kt
+│   │       │   │                   │   │   ├── TerminateTenantCommand.kt
+│   │       │   │                   │   │   └── UpdateTenantSettingsCommand.kt
+│   │       │   │                   │   ├── query/
+│   │       │   │                   │   │   ├── GetTenantQuery.kt
+│   │       │   │                   │   │   ├── GetTenantByDomainQuery.kt
+│   │       │   │                   │   │   └── ListTenantsQuery.kt
+│   │       │   │                   │   ├── handler/
+│   │       │   │                   │   │   ├── TenantCommandHandler.kt
+│   │       │   │                   │   │   └── TenantQueryHandler.kt
+│   │       │   │                   │   └── service/
+│   │       │   │                   │       ├── TenantProvisioningService.kt  # Onboarding workflow
+│   │       │   │                   │       ├── TenantIsolationService.kt     # Schema/DB provisioning
+│   │       │   │                   │       └── TenantResolutionService.kt    # Domain -> TenantId
+│   │       │   │                   └── infrastructure/
+│   │       │   │                       ├── persistence/
+│   │       │   │                       │   ├── TenantJpaRepository.kt
+│   │       │   │                       │   ├── TenantJpaEntity.kt
+│   │       │   │                       │   └── TenantMapper.kt
+│   │       │   │                       ├── messaging/
+│   │       │   │                       │   └── TenantKafkaEventPublisher.kt
+│   │       │   │                       └── web/
+│   │       │   │                           ├── TenantController.kt
+│   │       │   │                           ├── TenantRequest.kt
+│   │       │   │                           └── TenantResponse.kt
+│   │       │   └── resources/
+│   │       │       └── db/
+│   │       │           └── migration/
+│   │       │               ├── V001__create_tenant_table.sql
+│   │       │               └── V002__create_tenant_settings_table.sql
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── tenancy/
+│   │           │               └── core/
+│   │           │                   ├── domain/
+│   │           │                   │   └── TenantTest.kt
+│   │           │                   ├── application/
+│   │           │                   │   ├── TenantCommandHandlerTest.kt
+│   │           │                   │   └── TenantProvisioningServiceTest.kt
+│   │           │                   └── infrastructure/
+│   │           │                       └── TenantJpaRepositoryTest.kt
+│   │           └── resources/
 │   │
-│   ├── kubernetes/                            # Kubernetes Manifests (Enterprise deployment)
-│   │   │
-│   │   ├── namespaces/
-│   │   │   ├── dev-namespace.yaml
-│   │   │   ├── staging-namespace.yaml
-│   │   │   └── production-namespace.yaml
-│   │   │
-│   │   ├── services/                          # Per-microservice deployments
-│   │   │   ├── finance/
-│   │   │   │   ├── finance-gl-deployment.yaml
-│   │   │   │   ├── finance-gl-service.yaml
-│   │   │   │   ├── finance-gl-configmap.yaml
-│   │   │   │   └── finance-gl-secret.yaml
-│   │   │   ├── inventory/
-│   │   │   │   └── [inventory service manifests]
-│   │   │   └── [other services...]
-│   │   │
-│   │   ├── databases/
-│   │   │   ├── postgres-statefulset.yaml
-│   │   │   ├── postgres-service.yaml
-│   │   │   └── postgres-pvc.yaml
-│   │   │
-│   │   ├── kafka/
-│   │   │   ├── kafka-statefulset.yaml
-│   │   │   ├── kafka-service.yaml
-│   │   │   └── zookeeper-statefulset.yaml
-│   │   │
-│   │   ├── monitoring/
-│   │   │   ├── prometheus-deployment.yaml
-│   │   │   ├── grafana-deployment.yaml
-│   │   │   └── loki-deployment.yaml
-│   │   │
-│   │   ├── ingress/
-│   │   │   ├── ingress-controller.yaml
-│   │   │   └── ingress-routes.yaml
-│   │   │
-│   │   └── helm/                              # Helm charts (optional)
-│   │       ├── chiroerp/
-│   │       │   ├── Chart.yaml
-│   │       │   ├── values.yaml
-│   │       │   ├── values-dev.yaml
-│   │       │   ├── values-staging.yaml
-│   │       │   ├── values-production.yaml
-│   │       │   └── templates/
-│   │       │       └── [Helm templates]
-│   │       └── [dependency charts]
-│   │
-│   ├── docker-compose/                        # Docker Compose (SMB deployment - ADR-018)
-│   │   ├── docker-compose.yml                 # All-in-one SMB deployment
-│   │   ├── docker-compose.dev.yml             # Development overrides
-│   │   ├── docker-compose.monitoring.yml      # Monitoring stack
-│   │   └── .env.example                       # Environment variables template
-│   │
-│   ├── terraform/                             # Infrastructure as Code (IaC)
-│   │   ├── aws/
-│   │   │   ├── main.tf
-│   │   │   ├── variables.tf
-│   │   │   ├── outputs.tf
-│   │   │   ├── eks.tf                         # EKS cluster
-│   │   │   ├── rds.tf                         # RDS PostgreSQL
-│   │   │   ├── msk.tf                         # MSK (Managed Kafka)
-│   │   │   └── networking.tf                  # VPC, subnets
-│   │   │
-│   │   ├── azure/
-│   │   │   ├── main.tf
-│   │   │   ├── aks.tf                         # AKS cluster
-│   │   │   ├── postgresql.tf                  # Azure Database for PostgreSQL
-│   │   │   └── eventhub.tf                    # Event Hubs (Kafka alternative)
-│   │   │
-│   │   └── gcp/
-│   │       ├── main.tf
-│   │       ├── gke.tf                         # GKE cluster
-│   │       └── cloudsql.tf                    # Cloud SQL for PostgreSQL
-│   │
-│   ├── monitoring/                            # Monitoring & Observability (ADR-017)
-│   │   ├── prometheus/
-│   │   │   ├── prometheus.yml                 # Prometheus config
-│   │   │   └── alerts/
-│   │   │       ├── service-alerts.yaml
-│   │   │       └── infra-alerts.yaml
-│   │   │
-│   │   ├── grafana/
-│   │   │   ├── dashboards/
-│   │   │   │   ├── service-health-dashboard.json
-│   │   │   │   ├── business-metrics-dashboard.json
-│   │   │   │   └── sla-tracking-dashboard.json
-│   │   │   └── provisioning/
-│   │   │       └── datasources.yaml
-│   │   │
-│   │   └── loki/
-│   │       └── loki-config.yaml               # Log aggregation
-│   │
-│   └── scripts/                               # Deployment & Utility Scripts
-│       ├── setup-local-dev.sh                 # Local dev environment setup
-│       ├── deploy-dev.sh                      # Deploy to dev environment
-│       ├── deploy-staging.sh                  # Deploy to staging
-│       ├── deploy-production.sh               # Production deployment
-│       ├── backup-databases.sh                # Database backup (ADR-015)
-│       ├── restore-databases.sh               # Database restore
-│       └── seed-test-data.sh                  # Test data seeding
+│   └── identity-core/                           # Identity & authentication management
+│       ├── build.gradle.kts
+│       └── src/
+│           ├── main/
+│           │   ├── kotlin/
+│           │   │   └── com/
+│           │   │       └── chiroerp/
+│           │   │           └── identity/
+│           │   │               └── core/
+│           │   │                   ├── domain/
+│           │   │                   │   ├── model/
+│           │   │                   │   │   ├── User.kt                      # Aggregate root
+│           │   │                   │   │   ├── UserId.kt
+│           │   │                   │   │   ├── UserProfile.kt
+│           │   │                   │   │   ├── UserCredentials.kt
+│           │   │                   │   │   ├── UserStatus.kt                # ACTIVE, LOCKED, PENDING, DISABLED
+│           │   │                   │   │   ├── UserRole.kt
+│           │   │                   │   │   ├── Permission.kt
+│           │   │                   │   │   ├── IdentityProvider.kt          # LOCAL, SAML, OIDC, LDAP
+│           │   │                   │   │   ├── ExternalIdentity.kt          # SSO mapping
+│           │   │                   │   │   ├── MfaConfiguration.kt          # TOTP, SMS, Email
+│           │   │                   │   │   └── Session.kt
+│           │   │                   │   ├── event/
+│           │   │                   │   │   ├── UserCreatedEvent.kt
+│           │   │                   │   │   ├── UserActivatedEvent.kt
+│           │   │                   │   │   ├── UserLockedEvent.kt
+│           │   │                   │   │   ├── UserPasswordChangedEvent.kt
+│           │   │                   │   │   ├── UserRoleAssignedEvent.kt
+│           │   │                   │   │   ├── UserLoggedInEvent.kt
+│           │   │                   │   │   ├── UserLoggedOutEvent.kt
+│           │   │                   │   │   └── MfaEnabledEvent.kt
+│           │   │                   │   └── port/
+│           │   │                   │       ├── UserRepository.kt
+│           │   │                   │       ├── SessionRepository.kt
+│           │   │                   │       ├── IdentityProviderGateway.kt
+│           │   │                   │       └── UserEventPublisher.kt
+│           │   │                   ├── application/
+│           │   │                   │   ├── command/
+│           │   │                   │   │   ├── CreateUserCommand.kt
+│           │   │                   │   │   ├── ActivateUserCommand.kt
+│           │   │                   │   │   ├── LockUserCommand.kt
+│           │   │                   │   │   ├── ChangePasswordCommand.kt
+│           │   │                   │   │   ├── AssignRoleCommand.kt
+│           │   │                   │   │   ├── EnableMfaCommand.kt
+│           │   │                   │   │   └── LinkExternalIdentityCommand.kt
+│           │   │                   │   ├── query/
+│           │   │                   │   │   ├── GetUserQuery.kt
+│           │   │                   │   │   ├── GetUserByEmailQuery.kt
+│           │   │                   │   │   ├── ListUsersQuery.kt
+│           │   │                   │   │   ├── GetUserPermissionsQuery.kt
+│           │   │                   │   │   └── GetActiveSessionsQuery.kt
+│           │   │                   │   ├── handler/
+│           │   │                   │   │   ├── UserCommandHandler.kt
+│           │   │                   │   │   └── UserQueryHandler.kt
+│           │   │                   │   └── service/
+│           │   │                   │       ├── AuthenticationService.kt      # Login/logout
+│           │   │                   │       ├── AuthorizationService.kt       # Permission checks
+│           │   │                   │       ├── PasswordService.kt            # Hash, validate, policy
+│           │   │                   │       ├── MfaService.kt                 # TOTP generation/validation
+│           │   │                   │       ├── SessionService.kt             # Session management
+│           │   │                   │       ├── TokenService.kt               # JWT generation/validation
+│           │   │                   │       └── SsoIntegrationService.kt      # SAML/OIDC handling
+│           │   │                   └── infrastructure/
+│           │   │                       ├── persistence/
+│           │   │                       │   ├── UserJpaRepository.kt
+│           │   │                       │   ├── UserJpaEntity.kt
+│           │   │                       │   ├── SessionRedisRepository.kt
+│           │   │                       │   └── UserMapper.kt
+│           │   │                       ├── security/
+│           │   │                       │   ├── JwtTokenProvider.kt
+│           │   │                       │   ├── PasswordEncoder.kt
+│           │   │                       │   └── TotpGenerator.kt
+│           │   │                       ├── sso/
+│           │   │                       │   ├── SamlIdentityProvider.kt
+│           │   │                       │   ├── OidcIdentityProvider.kt
+│           │   │                       │   └── LdapIdentityProvider.kt
+│           │   │                       ├── messaging/
+│           │   │                       │   └── UserKafkaEventPublisher.kt
+│           │   │                       └── web/
+│           │   │                           ├── AuthController.kt             # Login/logout endpoints
+│           │   │                           ├── UserController.kt
+│           │   │                           ├── MfaController.kt
+│           │   │                           ├── LoginRequest.kt
+│           │   │                           ├── LoginResponse.kt
+│           │   │                           └── UserResponse.kt
+│           │   └── resources/
+│           │       └── db/
+│           │           └── migration/
+│           │               ├── V001__create_user_table.sql
+│           │               ├── V002__create_user_role_table.sql
+│           │               ├── V003__create_permission_table.sql
+│           │               └── V004__create_external_identity_table.sql
+│           └── test/
+│               ├── kotlin/
+│               │   └── com/
+│               │       └── chiroerp/
+│               │           └── identity/
+│               │               └── core/
+│               │                   ├── domain/
+│               │                   │   ├── UserTest.kt
+│               │                   │   └── SessionTest.kt
+│               │                   ├── application/
+│               │                   │   ├── AuthenticationServiceTest.kt
+│               │                   │   ├── AuthorizationServiceTest.kt
+│               │                   │   └── MfaServiceTest.kt
+│               │                   └── infrastructure/
+│               │                       ├── UserJpaRepositoryTest.kt
+│               │                       └── JwtTokenProviderTest.kt
+│               └── resources/
 │
-├── tests/                                      # 🧪 TESTING (ADR-019)
+├── api-gateway/                                 # API Gateway (ADR-004)
+│   │                                            # Single entry point for all external API traffic
+│   │                                            # Handles: routing, auth, rate limiting, CORS, tracing
 │   │
-│   ├── unit/                                  # Unit tests (per service)
-│   │   ├── finance-gl/
-│   │   │   └── [JUnit tests for GL domain]
-│   │   ├── inventory-core/
-│   │   │   └── [JUnit tests for Inventory domain]
-│   │   └── [other services...]
-│   │
-│   ├── integration/                           # Integration tests
-│   │   ├── finance-integration-tests/
-│   │   │   └── [Tests for GL ↔ AP ↔ AR integration]
-│   │   └── [other integration tests...]
-│   │
-│   ├── contract/                              # Contract tests (Pact)
-│   │   ├── consumer-contracts/
-│   │   │   └── [Pact consumer contracts]
-│   │   └── provider-contracts/
-│   │       └── [Pact provider verifications]
-│   │
-│   ├── e2e/                                   # End-to-end tests (Playwright/Cypress)
-│   │   ├── package.json
-│   │   ├── playwright.config.ts
-│   │   ├── tests/
-│   │   │   ├── finance/
-│   │   │   │   ├── journal-entry-e2e.spec.ts
-│   │   │   │   └── trial-balance-e2e.spec.ts
-│   │   │   ├── sales/
-│   │   │   │   └── sales-order-e2e.spec.ts
-│   │   │   └── [other E2E tests...]
-│   │   └── fixtures/
-│   │       └── test-data.json
-│   │
-│   ├── performance/                           # Performance tests (JMeter/Gatling) - ADR-017
-│   │   ├── jmeter/
-│   │   │   ├── load-test-plan.jmx
-│   │   │   └── stress-test-plan.jmx
-│   │   └── gatling/
-│   │       └── LoadSimulation.scala
-│   │
-│   └── security/                              # Security tests (OWASP ZAP) - ADR-008
-│       ├── zap-baseline-scan.sh
-│       └── zap-full-scan.sh
+│   ├── build.gradle.kts
+│   └── src/
+│       ├── main/
+│       │   ├── kotlin/
+│       │   │   └── com/
+│       │   │       └── chiroerp/
+│       │   │           └── gateway/
+│       │   │               ├── GatewayApplication.kt            # Quarkus main entry point
+│       │   │               ├── config/
+│       │   │               │   ├── GatewayConfig.kt             # Gateway configuration properties
+│       │   │               │   ├── RouteConfig.kt               # Service route definitions
+│       │   │               │   ├── RateLimitConfig.kt           # Rate limiting configuration
+│       │   │               │   ├── CorsConfig.kt                # CORS settings per environment
+│       │   │               │   └── SecurityConfig.kt            # Security headers, JWT config
+│       │   │               ├── routing/
+│       │   │               │   ├── RouteRegistry.kt             # Service discovery & routing
+│       │   │               │   ├── RouteResolver.kt             # URL pattern matching
+│       │   │               │   ├── ServiceProxy.kt              # HTTP proxy to backend services
+│       │   │               │   ├── LoadBalancer.kt              # Round-robin/weighted load balancing
+│       │   │               │   └── CircuitBreaker.kt            # Resilience pattern for backend calls
+│       │   │               ├── security/
+│       │   │               │   ├── JwtAuthFilter.kt             # JWT validation filter
+│       │   │               │   ├── TenantResolver.kt            # Extract tenant from JWT/header
+│       │   │               │   ├── RbacEnforcer.kt              # Role-based access at gateway
+│       │   │               │   ├── ApiKeyValidator.kt           # API key authentication (B2B)
+│       │   │               │   └── SecurityHeadersFilter.kt     # HSTS, X-Frame-Options, CSP
+│       │   │               ├── ratelimit/
+│       │   │               │   ├── RateLimiter.kt               # Rate limiting interface
+│       │   │               │   ├── RateLimitPolicy.kt           # Per-tenant, per-endpoint policies
+│       │   │               │   ├── RedisRateLimiter.kt          # Distributed rate limiting via Redis
+│       │   │               │   └── RateLimitExceededException.kt
+│       │   │               ├── observability/
+│       │   │               │   ├── CorrelationIdFilter.kt       # Generate/propagate X-Correlation-Id
+│       │   │               │   ├── RequestLoggingFilter.kt      # Structured request/response logging
+│       │   │               │   ├── MetricsCollector.kt          # Prometheus metrics
+│       │   │               │   ├── TracingFilter.kt             # OpenTelemetry distributed tracing
+│       │   │               │   └── AuditLogger.kt               # Security audit trail
+│       │   │               ├── cache/
+│       │   │               │   ├── ResponseCache.kt             # Redis-based response caching
+│       │   │               │   ├── CachePolicy.kt               # TTL, invalidation rules
+│       │   │               │   └── CacheKeyGenerator.kt         # Cache key strategies
+│       │   │               ├── error/
+│       │   │               │   ├── GatewayExceptionMapper.kt    # Global exception handler
+│       │   │               │   ├── ErrorResponse.kt             # Standardized error format
+│       │   │               │   ├── ErrorSanitizer.kt            # Remove sensitive info from errors
+│       │   │               │   └── BackendErrorHandler.kt       # Handle 5xx from backends
+│       │   │               ├── health/
+│       │   │               │   ├── HealthCheckResource.kt       # /health, /ready, /live endpoints
+│       │   │               │   ├── BackendHealthChecker.kt      # Check backend service health
+│       │   │               │   └── RedisHealthChecker.kt        # Check Redis connectivity
+│       │   │               └── dto/
+│       │   │                   ├── GatewayRequest.kt            # Incoming request wrapper
+│       │   │                   ├── GatewayResponse.kt           # Outgoing response wrapper
+│       │   │                   └── ProxyHeaders.kt              # X-Tenant-Id, X-User-Id, X-Correlation-Id
+│       │   └── resources/
+│       │       ├── application.yml                              # Main configuration
+│       │       ├── application-dev.yml                          # Development overrides
+│       │       ├── application-prod.yml                         # Production settings
+│       │       └── config/
+│       │           ├── routes.yml                               # Service route mappings
+│       │           ├── rate-limits.yml                          # Rate limit definitions
+│       │           └── cors-whitelist.yml                       # CORS allowed origins
+│       └── test/
+│           ├── kotlin/
+│           │   └── com/
+│           │       └── chiroerp/
+│           │           └── gateway/
+│           │               ├── routing/
+│           │               │   ├── RouteResolverTest.kt
+│           │               │   ├── ServiceProxyTest.kt
+│           │               │   └── CircuitBreakerTest.kt
+│           │               ├── security/
+│           │               │   ├── JwtAuthFilterTest.kt
+│           │               │   ├── TenantResolverTest.kt
+│           │               │   └── RbacEnforcerTest.kt
+│           │               ├── ratelimit/
+│           │               │   ├── RateLimiterTest.kt
+│           │               │   └── RedisRateLimiterIntegrationTest.kt
+│           │               ├── observability/
+│           │               │   └── CorrelationIdFilterTest.kt
+│           │               └── integration/
+│           │                   ├── GatewayIntegrationTest.kt    # End-to-end with mock backends
+│           │                   ├── AuthFlowIntegrationTest.kt
+│           │                   └── RateLimitIntegrationTest.kt
+│           └── resources/
+│               ├── application-test.yml
+│               └── mock-responses/
+│                   └── backend-responses.json
 │
-├── migrations/                                 # 📊 DATABASE MIGRATIONS (Flyway/Liquibase)
+└── finance/                                     # Finance Domain (ADR-009)
+    │
+    ├── finance-shared/                              # ADR-006 COMPLIANT: Identifiers and value objects only
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       ├── main/
+    │       │   ├── kotlin/
+    │       │   │   └── com/
+    │       │   │       └── chiroerp/
+    │       │   │           └── finance/
+    │       │   │               └── shared/
+    │       │   │                   ├── identifiers/                  # ADR-006: Shared identifiers across finance subdomains
+    │       │   │                   │   ├── JournalEntryId.kt         # GL journal entries
+    │       │   │                   │   ├── AccountId.kt              # Chart of accounts
+    │       │   │                   │   ├── LedgerId.kt               # General ledger
+    │       │   │                   │   ├── InvoiceId.kt              # AR/AP invoices
+    │       │   │                   │   ├── PaymentId.kt              # Payment transactions
+    │       │   │                   │   ├── AssetId.kt                # Fixed assets
+    │       │   │                   │   ├── TaxRuleId.kt              # Tax configuration
+    │       │   │                   │   ├── BudgetId.kt               # Budgeting
+    │       │   │                   │   └── CostCenterId.kt           # Cost allocation
+    │       │   │                   ├── valueobjects/                 # ADR-006: Context-specific value objects
+    │       │   │                   │   ├── Money.kt                  # Finance-specific precision & rounding
+    │       │   │                   │   ├── Currency.kt               # ISO 4217 with finance formatting
+    │       │   │                   │   ├── TaxId.kt                  # Finance tax identification
+    │       │   │                   │   └── AccountNumber.kt          # Bank account number
+    │       │   │                   ├── FiscalPeriod.kt
+    │       │   │                   ├── AccountingPeriodStatus.kt
+    │       │   │                   ├── AccountType.kt
+    │       │   │                   ├── JournalEntryType.kt
+    │       │   │                   └── PostingStatus.kt
+    │       │   └── resources/
+    │       └── test/
+    │           ├── kotlin/
+    │           │   └── com/
+    │           │       └── chiroerp/
+    │           │           └── finance/
+    │           │               └── shared/
+    │           │                   ├── FiscalPeriodTest.kt
+    │           │                   └── CurrencyTest.kt
+    │           └── resources/
+    │
+    ├── finance-gl/                              # General Ledger Subdomain
+    │   │
+    │   ├── gl-domain/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── gl/
+    │   │       │   │                   └── domain/
+    │   │       │   │                       ├── model/
+    │   │       │   │                       │   ├── ledger/
+    │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root
+    │   │       │   │                       │   ├── ledger/
+    │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root (uses shared LedgerId)
+    │   │       │   │                       │   │   ├── LedgerType.kt             # Primary, Secondary, Statistical
+    │   │       │   │                       │   │   ├── LedgerStatus.kt
+    │   │       │   │                       │   │   └── LedgerPeriod.kt
+    │   │       │   │                       │   ├── chartofaccounts/
+    │   │       │   │                       │   │   ├── ChartOfAccounts.kt        # Aggregate Root
+    │   │       │   │                       │   │   ├── ChartId.kt
+    │   │       │   │                       │   │   ├── Account.kt                # Entity (uses shared AccountId)
+    │   │       │   │                       │   │   ├── AccountType.kt            # Asset, Liability, Equity, Revenue, Expense
+    │   │       │   │                       │   │   ├── AccountGroup.kt
+    │   │       │   │                       │   │   ├── AccountHierarchy.kt
+    │   │       │   │                       │   │   ├── NaturalAccount.kt
+    │   │       │   │                       │   │   └── AccountSegment.kt         # Company, CostCenter, Department, Project
+    │   │       │   │                       │   ├── journal/
+    │   │       │   │                       │   │   ├── JournalEntry.kt           # Aggregate Root (uses shared JournalEntryId)
+    │   │       │   │                       │   │   ├── JournalLine.kt            # Entity
+    │   │       │   │                       │   │   ├── JournalLineId.kt
+    │   │       │   │                       │   │   ├── JournalType.kt            # Manual, Automated, Recurring, Reversing, Adjustment
+    │   │       │   │                       │   │   ├── JournalSource.kt          # AR, AP, FA, Inventory, Payroll, Manual
+    │   │       │   │                       │   │   ├── PostingRule.kt            # Entity
+    │   │       │   │                       │   │   ├── PostingRuleId.kt
+    │   │       │   │                       │   │   ├── DebitCreditIndicator.kt   # Debit, Credit
+    │   │       │   │                       │   │   └── BalanceValidation.kt      # Value Object
+    │   │       │   │                       │   ├── period/
+    │   │       │   │                       │   │   ├── AccountingPeriod.kt       # Aggregate Root
+    │   │       │   │                       │   │   ├── PeriodId.kt
+    │   │       │   │                       │   │   ├── FiscalYear.kt             # Entity
+    │   │       │   │                       │   │   ├── FiscalYearId.kt
+    │   │       │   │                       │   │   ├── PeriodStatus.kt           # Open, Closed, Locked
+    │   │       │   │                       │   │   ├── PeriodType.kt             # Regular, Adjustment
+    │   │       │   │                       │   │   ├── YearEndClose.kt           # Entity
+    │   │       │   │                       │   │   └── PeriodCalendar.kt         # Value Object
+    │   │       │   │                       │   ├── balance/
+    │   │       │   │                       │   │   ├── AccountBalance.kt         # Aggregate Root
+    │   │       │   │                       │   │   ├── BalanceId.kt
+    │   │       │   │                       │   │   ├── OpeningBalance.kt         # Entity
+    │   │       │   │                       │   │   ├── ClosingBalance.kt         # Entity
+    │   │       │   │                       │   │   ├── PeriodActivity.kt         # Value Object
+    │   │       │   │                       │   │   ├── TrialBalance.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── BalanceSheet.kt           # Aggregate Root
+    │   │       │   │                       │   │   └── ProfitAndLoss.kt          # Aggregate Root
+    │   │       │   │                       │   ├── currency/
+    │   │       │   │                       │   │   ├── ExchangeRate.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── ExchangeRateId.kt
+    │   │       │   │                       │   │   ├── CurrencyPair.kt           # Value Object
+    │   │       │   │                       │   │   ├── RateType.kt               # Average, Spot, Budget, Historical
+    │   │       │   │                       │   │   ├── ExchangeRateProvider.kt   # ECB, Bloomberg, Manual
+    │   │       │   │                       │   │   └── Translation.kt            # Entity
+    │   │       │   │                       │   └── company/
+    │   │       │   │                       │       ├── LegalEntity.kt            # Aggregate Root
+    │   │       │   │                       │       ├── LegalEntityId.kt
+    │   │       │   │                       │       ├── CompanyCode.kt
+    │   │       │   │                       │       ├── CostCenter.kt             # Entity (uses shared CostCenterId)
+    │   │       │   │                       │       └── SegmentDimension.kt       # Value Object
+    │   │       │   │                       ├── events/
+    │   │       │   │                       │   ├── JournalEntryPostedEvent.kt
+    │   │       │   │                       │   ├── JournalEntryReversedEvent.kt
+    │   │       │   │                       │   ├── AccountCreatedEvent.kt
+    │   │       │   │                       │   ├── AccountDeactivatedEvent.kt
+    │   │       │   │                       │   ├── PeriodOpenedEvent.kt
+    │   │       │   │                       │   ├── PeriodClosedEvent.kt
+    │   │       │   │                       │   ├── PeriodLockedEvent.kt
+    │   │       │   │                       │   ├── BalanceUpdatedEvent.kt
+    │   │       │   │                       │   ├── ExchangeRateUpdatedEvent.kt
+    │   │       │   │                       │   └── YearEndClosedEvent.kt
+    │   │       │   │                       ├── exceptions/
+    │   │       │   │                       │   ├── UnbalancedJournalException.kt
+    │   │       │   │                       │   ├── PeriodClosedException.kt
+    │   │       │   │                       │   ├── InvalidAccountException.kt
+    │   │       │   │                       │   ├── DuplicateJournalEntryException.kt
+    │   │       │   │                       │   ├── ExchangeRateNotFoundException.kt
+    │   │       │   │                       │   └── InsufficientPermissionException.kt
+    │   │       │   │                       └── services/
+    │   │       │   │                           ├── JournalValidationService.kt    # Domain Service
+    │   │       │   │                           ├── BalanceCalculationService.kt
+    │   │       │   │                           ├── PostingRuleEngine.kt
+    │   │       │   │                           ├── PeriodCloseService.kt
+    │   │       │   │                           ├── ExchangeRateService.kt
+    │   │       │   │                           └── TrialBalanceService.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── gl/
+    │   │           │                   └── domain/
+    │   │           │                       ├── JournalEntryTest.kt
+    │   │           │                       ├── AccountTest.kt
+    │   │           │                       ├── AccountingPeriodTest.kt
+    │   │           │                       └── BalanceCalculationServiceTest.kt
+    │   │           └── resources/
+    │   │
+    │   ├── gl-application/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── gl/
+    │   │       │   │                   └── application/
+    │   │       │   │                       ├── port/
+    │   │       │   │                       │   ├── input/
+    │   │       │   │                       │   │   ├── command/
+    │   │       │   │                       │   │   │   ├── CreateAccountCommand.kt
+    │   │       │   │                       │   │   │   ├── PostJournalEntryCommand.kt
+    │   │       │   │                       │   │   │   ├── ReverseJournalEntryCommand.kt
+    │   │       │   │                       │   │   │   ├── OpenAccountingPeriodCommand.kt
+    │   │       │   │                       │   │   │   ├── CloseAccountingPeriodCommand.kt
+    │   │       │   │                       │   │   │   ├── LockAccountingPeriodCommand.kt
+    │   │       │   │                       │   │   │   ├── UpdateExchangeRateCommand.kt
+    │   │       │   │                       │   │   │   ├── CreateLegalEntityCommand.kt
+    │   │       │   │                       │   │   │   └── PerformYearEndCloseCommand.kt
+    │   │       │   │                       │   │   └── query/
+    │   │       │   │                       │   │       ├── GetAccountByIdQuery.kt
+    │   │       │   │                       │   │       ├── GetChartOfAccountsQuery.kt
+    │   │       │   │                       │   │       ├── GetJournalEntryQuery.kt
+    │   │       │   │                       │   │       ├── GetTrialBalanceQuery.kt
+    │   │       │   │                       │   │       ├── GetBalanceSheetQuery.kt
+    │   │       │   │                       │   │       ├── GetProfitAndLossQuery.kt
+    │   │       │   │                       │   │       ├── GetAccountBalanceQuery.kt
+    │   │       │   │                       │   │       ├── GetGeneralLedgerQuery.kt
+    │   │       │   │                       │   │       ├── GetExchangeRateQuery.kt
+    │   │       │   │                       │   │       └── GetFiscalPeriodQuery.kt
+    │   │       │   │                       │   └── output/
+    │   │       │   │                       │       ├── JournalEntryRepository.kt
+    │   │       │   │                       │       ├── AccountRepository.kt
+    │   │       │   │                       │       ├── BalanceRepository.kt
+    │   │       │   │                       │       ├── FiscalPeriodRepository.kt
+    │   │       │   │                       │       ├── ExchangeRateRepository.kt
+    │   │       │   │                       │       ├── LegalEntityRepository.kt
+    │   │       │   │                       │       ├── JournalEntryReadRepository.kt    # Read model
+    │   │       │   │                       │       ├── TrialBalanceReadRepository.kt    # Read model
+    │   │       │   │                       │       ├── BalanceSheetReadRepository.kt    # Read model
+    │   │       │   │                       │       ├── SubLedgerIntegrationPort.kt      # AR, AP, FA integration
+    │   │       │   │                       │       ├── TaxServicePort.kt                # Tax calculation
+    │   │       │   │                       │       ├── IntercompanyPort.kt              # IC transactions
+    │   │       │   │                       │       ├── ConsolidationPort.kt             # Multi-entity rollup
+    │   │       │   │                       │       ├── AuditTrailPort.kt                # Immutable audit log
+    │   │       │   │                       │       └── EventPublisherPort.kt
+    │   │       │   │                       └── service/
+    │   │       │   │                           ├── command/
+    │   │       │   │                           │   ├── JournalEntryCommandHandler.kt
+    │   │       │   │                           │   ├── AccountCommandHandler.kt
+    │   │       │   │                           │   ├── PeriodCommandHandler.kt
+    │   │       │   │                           │   ├── ExchangeRateCommandHandler.kt
+    │   │       │   │                           │   └── LegalEntityCommandHandler.kt
+    │   │       │   │                           └── query/
+    │   │       │   │                               ├── TrialBalanceQueryHandler.kt
+    │   │       │   │                               ├── JournalEntryQueryHandler.kt
+    │   │       │   │                               ├── AccountQueryHandler.kt
+    │   │       │   │                               ├── PeriodQueryHandler.kt
+    │   │       │   │                               └── BalanceSheetQueryHandler.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── gl/
+    │   │           │                   └── application/
+    │   │           │                       ├── JournalEntryCommandHandlerTest.kt
+    │   │           │                       ├── AccountCommandHandlerTest.kt
+    │   │           │                       ├── TrialBalanceQueryHandlerTest.kt
+    │   │           │                       └── BalanceSheetQueryHandlerTest.kt
+    │   │           └── resources/
+    │   │
+    │   └── gl-infrastructure/
+    │       ├── build.gradle.kts
+    │       └── src/
+    │           ├── main/
+    │           │   ├── kotlin/
+    │           │   │   └── com/
+    │           │   │       └── chiroerp/
+    │           │   │           └── finance/
+    │           │   │               └── gl/
+    │           │   │                   └── infrastructure/
+    │           │   │                       ├── adapter/
+    │           │   │                       │   ├── input/
+    │           │   │                       │   │   ├── rest/
+    │           │   │                       │   │   │   ├── JournalEntryResource.kt
+    │           │   │                       │   │   │   ├── AccountResource.kt
+    │           │   │                       │   │   │   ├── PeriodResource.kt
+    │           │   │                       │   │   │   ├── TrialBalanceResource.kt
+    │           │   │                       │   │   │   ├── BalanceSheetResource.kt
+    │           │   │                       │   │   │   ├── ExchangeRateResource.kt
+    │           │   │                       │   │   │   └── dto/
+    │           │   │                       │   │   │       ├── request/
+    │           │   │                       │   │   │       │   ├── PostJournalEntryRequest.kt
+    │           │   │                       │   │   │       │   ├── CreateAccountRequest.kt
+    │           │   │                       │   │   │       │   ├── ClosePeriodRequest.kt
+    │           │   │                       │   │   │       │   └── UpdateExchangeRateRequest.kt
+    │           │   │                       │   │   │       └── response/
+    │           │   │                       │   │   │           ├── JournalEntryDto.kt
+    │           │   │                       │   │   │           ├── JournalLineDto.kt
+    │           │   │                       │   │   │           ├── AccountDto.kt
+    │           │   │                       │   │   │           ├── TrialBalanceDto.kt
+    │           │   │                       │   │   │           ├── BalanceSheetDto.kt
+    │           │   │                       │   │   │           └── PeriodStatusDto.kt
+    │           │   │                       │   │   └── event/
+    │           │   │                       │   │       ├── SubLedgerEventConsumer.kt       # AR/AP/FA postings
+    │           │   │                       │   │       ├── InventoryEventConsumer.kt       # Inventory valuations
+    │           │   │                       │   │       └── PayrollEventConsumer.kt         # HR payroll postings
+    │           │   │                       │   └── output/
+    │           │   │                       │       ├── persistence/
+    │           │   │                       │       │   ├── jpa/
+    │           │   │                       │       │   │   ├── JournalEntryJpaAdapter.kt
+    │           │   │                       │       │   │   ├── AccountJpaAdapter.kt
+    │           │   │                       │       │   │   ├── BalanceJpaAdapter.kt
+    │           │   │                       │       │   │   ├── entity/
+    │           │   │                       │       │   │   │   ├── GLAccountEntity.kt
+    │           │   │                       │       │   │   │   ├── JournalEntryEntity.kt
+    │           │   │                       │       │   │   │   ├── JournalEntryLineEntity.kt
+    │           │   │                       │       │   │   │   ├── FiscalPeriodEntity.kt
+    │           │   │                       │       │   │   │   ├── BalanceEntity.kt
+    │           │   │                       │       │   │   │   ├── ExchangeRateEntity.kt
+    │           │   │                       │       │   │   │   ├── LegalEntityEntity.kt
+    │           │   │                       │       │   │   │   └── EventOutboxEntity.kt
+    │           │   │                       │       │   │   └── repository/
+    │           │   │                       │       │   │       ├── JournalEntryJpaRepository.kt
+    │           │   │                       │       │   │       ├── AccountJpaRepository.kt
+    │           │   │                       │       │   │       ├── BalanceJpaRepository.kt
+    │           │   │                       │       │   │       ├── FiscalPeriodJpaRepository.kt
+    │           │   │                       │       │   │       └── EventOutboxRepository.kt
+    │           │   │                       │       │   └── reporting/
+    │           │   │                       │       │       ├── TrialBalanceReadAdapter.kt
+    │           │   │                       │       │       ├── BalanceSheetReadAdapter.kt
+    │           │   │                       │       │       ├── ProfitLossReadAdapter.kt
+    │           │   │                       │       │       └── document/
+    │           │   │                       │       │           ├── TrialBalanceDocument.kt
+    │           │   │                       │       │           ├── BalanceSheetDocument.kt
+    │           │   │                       │       │           └── JournalRegisterDocument.kt
+    │           │   │                       │       ├── audit/
+    │           │   │                       │       │   ├── ImmutableAuditLogAdapter.kt
+    │           │   │                       │       │   └── AuditTrailEntity.kt
+    │           │   │                       │       ├── integration/
+    │           │   │                       │       │   ├── ARSubLedgerAdapter.kt
+    │           │   │                       │       │   ├── APSubLedgerAdapter.kt
+    │           │   │                       │       │   ├── FASubLedgerAdapter.kt
+    │           │   │                       │       │   └── InventoryValuationAdapter.kt
+    │           │   │                       │       ├── messaging/
+    │           │   │                       │       │   ├── kafka/
+    │           │   │                       │       │   │   ├── GLEventPublisher.kt
+    │           │   │                       │       │   │   ├── GLEventConsumer.kt
+    │           │   │                       │       │   │   └── schema/
+    │           │   │                       │       │   │       ├── JournalPostedSchema.avro
+    │           │   │                       │       │   │       ├── PeriodClosedSchema.avro
+    │           │   │                       │       │   │       └── BalanceUpdatedSchema.avro
+    │           │   │                       │       │   └── outbox/
+    │           │   │                       │       │       ├── GLOutboxEventPublisher.kt
+    │           │   │                       │       │       └── EventOutboxRelay.kt
+    │           │   │                       │       └── client/
+    │           │   │                       │           ├── TaxServiceClient.kt
+    │           │   │                       │           ├── IntercompanyClient.kt
+    │           │   │                       │           └── ConsolidationClient.kt
+    │           │   │                       ├── configuration/
+    │           │   │                       │   ├── GLDependencyInjection.kt
+    │           │   │                       │   ├── CQRSConfiguration.kt
+    │           │   │                       │   ├── PersistenceConfiguration.kt
+    │           │   │                       │   └── MessagingConfiguration.kt
+    │           │   │                       └── FinanceGLApplication.kt
+    │           │   └── resources/
+    │           │       ├── application.yml
+    │           │       ├── application-dev.yml
+    │           │       ├── application-prod.yml
+    │           │       └── db/
+    │           │           └── migration/
+    │           │               ├── V1__create_gl_schema.sql
+    │           │               ├── V2__create_gl_account_tables.sql
+    │           │               ├── V3__create_journal_entry_tables.sql
+    │           │               ├── V4__create_fiscal_period_tables.sql
+    │           │               ├── V5__create_balance_tables.sql
+    │           │               ├── V6__create_exchange_rate_tables.sql
+    │           │               └── V7__create_event_outbox_table.sql
+    │           └── test/
+    │               ├── kotlin/
+    │               │   └── com/
+    │               │       └── chiroerp/
+    │               │           └── finance/
+    │               │               └── gl/
+    │               │                   └── infrastructure/
+    │               │                       ├── JournalEntryResourceTest.kt
+    │               │                       ├── AccountResourceTest.kt
+    │               │                       ├── JournalEntryJpaAdapterTest.kt
+    │               │                       ├── AccountJpaAdapterTest.kt
+    │               │                       └── EventOutboxRelayTest.kt
+    │               └── resources/
+    │                   └── application-test.yml
+    │
+    ├── finance-ar/                              # Accounts Receivable Subdomain
+    │   ├── ar-domain/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── ar/
+    │   │       │   │                   └── domain/
+    │   │       │   │                       ├── model/
+    │   │       │   │                       │   ├── customer/
+    │   │       │   │                       │   │   ├── CustomerAccount.kt
+    │   │       │   │                       │   │   ├── CustomerAccountId.kt
+    │   │       │   │                       │   │   ├── CustomerType.kt
+    │   │       │   │                       │   │   ├── CreditProfile.kt
+    │   │       │   │                       │   │   ├── CreditLimit.kt
+    │   │       │   │                       │   │   ├── CreditStatus.kt
+    │   │       │   │                       │   │   ├── PaymentTerms.kt
+    │   │       │   │                       │   │   └── CustomerSegment.kt
+    │   │       │   │                       │   ├── invoice/
+    │   │       │   │                       │   │   ├── Invoice.kt
+    │   │       │   │                       │   │   ├── InvoiceId.kt
+    │   │       │   │                       │   │   ├── InvoiceLine.kt
+    │   │       │   │                       │   │   ├── InvoiceLineId.kt
+    │   │       │   │                       │   │   ├── InvoiceType.kt
+    │   │       │   │                       │   │   ├── InvoiceStatus.kt
+    │   │       │   │                       │   │   └── InvoiceReference.kt
+    │   │       │   │                       │   ├── payment/
+    │   │       │   │                       │   │   ├── Payment.kt
+    │   │       │   │                       │   │   ├── PaymentId.kt
+    │   │       │   │                       │   │   ├── PaymentAllocation.kt
+    │   │       │   │                       │   │   ├── PaymentMethod.kt
+    │   │       │   │                       │   │   └── PaymentStatus.kt
+    │   │       │   │                       │   ├── aging/
+    │   │       │   │                       │   │   ├── AgingBucket.kt
+    │   │       │   │                       │   │   ├── AgingSnapshot.kt
+    │   │       │   │                       │   │   └── AgingPeriod.kt
+    │   │       │   │                       │   └── dunning/
+    │   │       │   │                       │       ├── DunningRun.kt
+    │   │       │   │                       │       ├── DunningRunId.kt
+    │   │       │   │                       │       ├── DunningNotice.kt
+    │   │       │   │                       │       └── DunningLevel.kt
+    │   │       │   │                       ├── events/
+    │   │       │   │                       │   ├── InvoicePostedEvent.kt
+    │   │       │   │                       │   ├── PaymentReceivedEvent.kt
+    │   │       │   │                       │   ├── PaymentAppliedEvent.kt
+    │   │       │   │                       │   └── CreditLimitExceededEvent.kt
+    │   │       │   │                       ├── exceptions/
+    │   │       │   │                       │   ├── InvoiceNotFoundException.kt
+    │   │       │   │                       │   ├── PaymentExceedsBalanceException.kt
+    │   │       │   │                       │   └── CreditLimitExceededException.kt
+    │   │       │   │                       └── services/
+    │   │       │   │                           ├── InvoiceValidationService.kt
+    │   │       │   │                           ├── PaymentAllocationService.kt
+    │   │       │   │                           └── AgingCalculationService.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           └── resources/
+    │   ├── ar-application/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── ar/
+    │   │       │   │                   └── application/
+    │   │       │   │                       ├── port/
+    │   │       │   │                       │   ├── input/
+    │   │       │   │                       │   │   ├── command/
+    │   │       │   │                       │   │   │   ├── CreateInvoiceCommand.kt
+    │   │       │   │                       │   │   │   ├── PostInvoiceCommand.kt
+    │   │       │   │                       │   │   │   ├── RecordPaymentCommand.kt
+    │   │       │   │                       │   │   │   └── ApplyPaymentCommand.kt
+    │   │       │   │                       │   │   └── query/
+    │   │       │   │                       │   │       ├── GetInvoiceByIdQuery.kt
+    │   │       │   │                       │   │       ├── GetAgingReportQuery.kt
+    │   │       │   │                       │   │       └── GetCustomerBalanceQuery.kt
+    │   │       │   │                       │   └── output/
+    │   │       │   │                       │       ├── InvoiceRepository.kt
+    │   │       │   │                       │       ├── PaymentRepository.kt
+    │   │       │   │                       │       └── GeneralLedgerPort.kt
+    │   │       │   │                       └── service/
+    │   │       │   │                           ├── command/
+    │   │       │   │                           │   ├── InvoiceCommandHandler.kt
+    │   │       │   │                           │   └── PaymentCommandHandler.kt
+    │   │       │   │                           └── query/
+    │   │       │   │                               ├── InvoiceQueryHandler.kt
+    │   │       │   │                               └── AgingQueryHandler.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           └── resources/
+    │   └── ar-infrastructure/
+    │       ├── build.gradle.kts
+    │       └── src/
+    │           ├── main/
+    │           │   ├── kotlin/
+    │           │   │   └── com/
+    │           │   │       └── chiroerp/
+    │           │   │           └── finance/
+    │           │   │               └── ar/
+    │           │   │                   └── infrastructure/
+    │           │   │                       ├── adapter/
+    │           │   │                       │   ├── input/
+    │           │   │                       │   │   └── rest/
+    │           │   │                       │   │       ├── InvoiceResource.kt
+    │           │   │                       │   │       ├── PaymentResource.kt
+    │           │   │                       │   │       └── dto/
+    │           │   │                       │   │           ├── request/
+    │           │   │                       │   │           │   ├── CreateInvoiceRequest.kt
+    │           │   │                       │   │           │   └── RecordPaymentRequest.kt
+    │           │   │                       │   │           └── response/
+    │           │   │                       │   │               ├── InvoiceDto.kt
+    │           │   │                       │   │               └── AgingReportDto.kt
+    │           │   │                       │   └── output/
+    │           │   │                       │       └── persistence/
+    │           │   │                       │           └── jpa/
+    │           │   │                       │               ├── InvoiceJpaAdapter.kt
+    │           │   │                       │               ├── entity/
+    │           │   │                       │               │   ├── InvoiceEntity.kt
+    │           │   │                       │               │   └── PaymentEntity.kt
+    │           │   │                       │               └── repository/
+    │           │   │                       │                   ├── InvoiceJpaRepository.kt
+    │           │   │                       │                   └── PaymentJpaRepository.kt
+    │           │   │                       ├── configuration/
+    │           │   │                       │   └── ARDependencyInjection.kt
+    │           │   │                       └── FinanceARApplication.kt
+    │           │   └── resources/
+    │           │       ├── application.yml
+    │           │       └── db/
+    │           │           └── migration/
+    │           │               ├── V1__create_ar_schema.sql
+    │           │               └── V2__create_invoice_tables.sql
+    │           └── test/
+    │               ├── kotlin/
+    │               └── resources/
+    │
+    ├── finance-ap/                              # Accounts Payable Subdomain
+    │   ├── ap-domain/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── ap/
+    │   │       │   │                   └── domain/
+    │   │       │   │                       ├── model/
+    │   │       │   │                       │   ├── vendor/
+    │   │       │   │                       │   │   ├── VendorAccount.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── VendorAccountId.kt
+    │   │       │   │                       │   │   ├── VendorType.kt              # Supplier, Contractor, ServiceProvider
+    │   │       │   │                       │   │   ├── VendorStatus.kt            # Active, OnHold, Blocked, Inactive
+    │   │       │   │                       │   │   ├── PaymentTerms.kt            # Value Object
+    │   │       │   │                       │   │   ├── PaymentMethod.kt           # Check, ACH, Wire, Card
+    │   │       │   │                       │   │   ├── VendorBankAccount.kt       # Entity
+    │   │       │   │                       │   │   ├── TaxIdentification.kt       # Value Object (W-9/W-8)
+    │   │       │   │                       │   │   ├── VendorContact.kt           # Entity
+    │   │       │   │                       │   │   └── VendorClassification.kt    # Value Object
+    │   │       │   │                       │   ├── bill/
+    │   │       │   │                       │   │   ├── Bill.kt                    # Aggregate Root
+    │   │       │   │                       │   │   ├── BillId.kt
+    │   │       │   │                       │   │   ├── BillLine.kt                # Entity
+    │   │       │   │                       │   │   ├── BillLineId.kt
+    │   │       │   │                       │   │   ├── BillStatus.kt              # Draft, PendingApproval, Approved, Posted, Paid
+    │   │       │   │                       │   │   ├── BillType.kt                # Standard, CreditMemo, DebitMemo, Prepayment
+    │   │       │   │                       │   │   ├── MatchingStatus.kt          # Unmatched, PartialMatch, FullMatch
+    │   │       │   │                       │   │   ├── MatchingDocument.kt        # Entity (PO/Receipt reference)
+    │   │       │   │                       │   │   └── BillReference.kt           # Value Object (vendor invoice #)
+    │   │       │   │                       │   ├── payment/
+    │   │       │   │                       │   │   ├── VendorPayment.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── VendorPaymentId.kt
+    │   │       │   │                       │   │   ├── PaymentAllocation.kt       # Entity
+    │   │       │   │                       │   │   ├── PaymentStatus.kt           # Pending, Approved, Processed, Reconciled
+    │   │       │   │                       │   │   ├── PaymentRun.kt              # Aggregate Root
+    │   │       │   │                       │   │   ├── PaymentRunId.kt
+    │   │       │   │                       │   │   ├── PaymentRunLine.kt          # Entity
+    │   │       │   │                       │   │   ├── PaymentRunStatus.kt        # Draft, Approved, Processing, Completed
+    │   │       │   │                       │   │   ├── PaymentBatch.kt            # Value Object
+    │   │       │   │                       │   │   └── BankFile.kt                # Value Object (NACHA/ISO20022)
+    │   │       │   │                       │   ├── matching/
+    │   │       │   │                       │   │   ├── ThreeWayMatch.kt           # Entity
+    │   │       │   │                       │   │   ├── MatchTolerance.kt          # Value Object
+    │   │       │   │                       │   │   ├── MatchException.kt          # Entity
+    │   │       │   │                       │   │   └── MatchResolution.kt         # Value Object
+    │   │       │   │                       │   └── aging/
+    │   │       │   │                       │       ├── AgingPayablesBucket.kt     # Value Object
+    │   │       │   │                       │       ├── AgingPayablesSnapshot.kt   # Entity
+    │   │       │   │                       │       └── CashRequirementsForecast.kt # Value Object
+    │   │       │   │                       ├── events/
+    │   │       │   │                       │   ├── BillCreatedEvent.kt
+    │   │       │   │                       │   ├── BillPostedEvent.kt
+    │   │       │   │                       │   ├── BillApprovedEvent.kt
+    │   │       │   │                       │   ├── BillRejectedEvent.kt
+    │   │       │   │                       │   ├── PaymentScheduledEvent.kt
+    │   │       │   │                       │   ├── PaymentExecutedEvent.kt
+    │   │       │   │                       │   ├── PaymentRunCompletedEvent.kt
+    │   │       │   │                       │   ├── MatchingCompletedEvent.kt
+    │   │       │   │                       │   └── MatchingExceptionEvent.kt
+    │   │       │   │                       ├── exceptions/
+    │   │       │   │                       │   ├── BillNotFoundException.kt
+    │   │       │   │                       │   ├── VendorNotFoundException.kt
+    │   │       │   │                       │   ├── DuplicateBillException.kt
+    │   │       │   │                       │   ├── BillAlreadyPaidException.kt
+    │   │       │   │                       │   ├── MatchingException.kt
+    │   │       │   │                       │   ├── PaymentRunException.kt
+    │   │       │   │                       │   └── VendorOnHoldException.kt
+    │   │       │   │                       └── services/
+    │   │       │   │                           ├── ThreeWayMatchService.kt        # Domain Service
+    │   │       │   │                           ├── BillValidationService.kt
+    │   │       │   │                           ├── PaymentAllocationService.kt
+    │   │       │   │                           ├── PaymentSchedulingService.kt
+    │   │       │   │                           ├── DuplicateBillCheckService.kt
+    │   │       │   │                           └── AgingPayablesService.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── ap/
+    │   │           │                   └── domain/
+    │   │           │                       ├── BillTest.kt
+    │   │           │                       ├── VendorAccountTest.kt
+    │   │           │                       ├── PaymentRunTest.kt
+    │   │           │                       ├── ThreeWayMatchServiceTest.kt
+    │   │           │                       └── PaymentAllocationServiceTest.kt
+    │   │           └── resources/
+    │   ├── ap-application/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── ap/
+    │   │       │   │                   └── application/
+    │   │       │   │                       ├── port/
+    │   │       │   │                       │   ├── input/
+    │   │       │   │                       │   │   ├── command/
+    │   │       │   │                       │   │   │   ├── CreateBillCommand.kt
+    │   │       │   │                       │   │   │   ├── PostBillCommand.kt
+    │   │       │   │                       │   │   │   ├── ApproveBillCommand.kt
+    │   │       │   │                       │   │   │   ├── RejectBillCommand.kt
+    │   │       │   │                       │   │   │   ├── CreatePaymentRunCommand.kt
+    │   │       │   │                       │   │   │   ├── ExecutePaymentRunCommand.kt
+    │   │       │   │                       │   │   │   ├── CreateVendorCommand.kt
+    │   │       │   │                       │   │   │   └── UpdateVendorCommand.kt
+    │   │       │   │                       │   │   └── query/
+    │   │       │   │                       │   │       ├── GetBillByIdQuery.kt
+    │   │       │   │                       │   │       ├── GetBillsByVendorQuery.kt
+    │   │       │   │                       │   │       ├── GetPendingBillsQuery.kt
+    │   │       │   │                       │   │       ├── GetPaymentRunQuery.kt
+    │   │       │   │                       │   │       ├── GetVendorBalanceQuery.kt
+    │   │       │   │                       │   │       ├── GetAgingPayablesQuery.kt
+    │   │       │   │                       │   │       └── GetCashRequirementsQuery.kt
+    │   │       │   │                       │   └── output/
+    │   │       │   │                       │       ├── BillRepository.kt
+    │   │       │   │                       │       ├── VendorRepository.kt
+    │   │       │   │                       │       ├── PaymentRunRepository.kt
+    │   │       │   │                       │       ├── GeneralLedgerPort.kt           # GL integration
+    │   │       │   │                       │       ├── PurchaseOrderPort.kt           # PO matching
+    │   │       │   │                       │       ├── ReceiptPort.kt                 # Receipt matching
+    │   │       │   │                       │       ├── BankingPort.kt                 # Payment execution
+    │   │       │   │                       │       └── EventPublisherPort.kt
+    │   │       │   │                       └── service/
+    │   │       │   │                           ├── command/
+    │   │       │   │                           │   ├── BillCommandHandler.kt
+    │   │       │   │                           │   ├── PaymentRunCommandHandler.kt
+    │   │       │   │                           │   └── VendorCommandHandler.kt
+    │   │       │   │                           └── query/
+    │   │       │   │                               ├── BillQueryHandler.kt
+    │   │       │   │                               ├── VendorQueryHandler.kt
+    │   │       │   │                               └── AgingPayablesQueryHandler.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── ap/
+    │   │           │                   └── application/
+    │   │           │                       ├── BillCommandHandlerTest.kt
+    │   │           │                       ├── PaymentRunCommandHandlerTest.kt
+    │   │           │                       └── ThreeWayMatchTest.kt
+    │   │           └── resources/
+    │   │
+    │   └── ap-infrastructure/
+    │       ├── build.gradle.kts
+    │       └── src/
+    │           ├── main/
+    │           │   ├── kotlin/
+    │           │   │   └── com/
+    │           │   │       └── chiroerp/
+    │           │   │           └── finance/
+    │           │   │               └── ap/
+    │           │   │                   └── infrastructure/
+    │           │   │                       ├── adapter/
+    │           │   │                       │   ├── input/
+    │           │   │                       │   │   ├── rest/
+    │           │   │                       │   │   │   ├── BillResource.kt
+    │           │   │                       │   │   │   ├── VendorResource.kt
+    │           │   │                       │   │   │   ├── PaymentRunResource.kt
+    │           │   │                       │   │   │   └── dto/
+    │           │   │                       │   │   │       ├── request/
+    │           │   │                       │   │   │       │   ├── CreateBillRequest.kt
+    │           │   │                       │   │   │       │   ├── ApproveBillRequest.kt
+    │           │   │                       │   │   │       │   ├── CreatePaymentRunRequest.kt
+    │           │   │                       │   │   │       │   └── CreateVendorRequest.kt
+    │           │   │                       │   │   │       └── response/
+    │           │   │                       │   │   │           ├── BillDto.kt
+    │           │   │                       │   │   │           ├── BillLineDto.kt
+    │           │   │                       │   │   │           ├── VendorDto.kt
+    │           │   │                       │   │   │           ├── PaymentRunDto.kt
+    │           │   │                       │   │   │           └── AgingPayablesDto.kt
+    │           │   │                       │   │   └── event/
+    │           │   │                       │   │       ├── PurchaseOrderEventConsumer.kt
+    │           │   │                       │   │       └── ReceiptEventConsumer.kt
+    │           │   │                       │   └── output/
+    │           │   │                       │       ├── persistence/
+    │           │   │                       │       │   └── jpa/
+    │           │   │                       │       │       ├── BillJpaAdapter.kt
+    │           │   │                       │       │       ├── VendorJpaAdapter.kt
+    │           │   │                       │       │       ├── PaymentRunJpaAdapter.kt
+    │           │   │                       │       │       ├── entity/
+    │           │   │                       │       │       │   ├── BillEntity.kt
+    │           │   │                       │       │       │   ├── BillLineEntity.kt
+    │           │   │                       │       │       │   ├── VendorEntity.kt
+    │           │   │                       │       │       │   ├── PaymentRunEntity.kt
+    │           │   │                       │       │       │   ├── PaymentRunLineEntity.kt
+    │           │   │                       │       │       │   └── EventOutboxEntity.kt
+    │           │   │                       │       │       └── repository/
+    │           │   │                       │       │           ├── BillJpaRepository.kt
+    │           │   │                       │       │           ├── VendorJpaRepository.kt
+    │           │   │                       │       │           ├── PaymentRunJpaRepository.kt
+    │           │   │                       │       │           └── EventOutboxRepository.kt
+    │           │   │                       │       ├── integration/
+    │           │   │                       │       │   ├── GLSubLedgerAdapter.kt
+    │           │   │                       │       │   ├── PurchaseOrderAdapter.kt
+    │           │   │                       │       │   └── ReceiptAdapter.kt
+    │           │   │                       │       ├── banking/
+    │           │   │                       │       │   ├── BankingAdapter.kt
+    │           │   │                       │       │   ├── ACHPaymentProvider.kt
+    │           │   │                       │       │   ├── WireTransferProvider.kt
+    │           │   │                       │       │   └── CheckPrintProvider.kt
+    │           │   │                       │       └── messaging/
+    │           │   │                       │           └── kafka/
+    │           │   │                       │               ├── APEventPublisher.kt
+    │           │   │                       │               └── schema/
+    │           │   │                       │                   ├── BillPostedSchema.avro
+    │           │   │                       │                   └── PaymentExecutedSchema.avro
+    │           │   │                       ├── configuration/
+    │           │   │                       │   ├── APDependencyInjection.kt
+    │           │   │                       │   ├── PersistenceConfiguration.kt
+    │           │   │                       │   └── MessagingConfiguration.kt
+    │           │   │                       └── FinanceAPApplication.kt
+    │           │   └── resources/
+    │           │       ├── application.yml
+    │           │       ├── application-dev.yml
+    │           │       ├── application-prod.yml
+    │           │       └── db/
+    │           │           └── migration/
+    │           │               ├── V1__create_ap_schema.sql
+    │           │
+                   ├── V2__create_vendor_tables.sql
+    │           │               ├── V3__create_bill_tables.sql
+    │           │               ├── V4__create_payment_run_tables.sql
+    │           │               └── V5__create_event_outbox_table.sql
+    │           └── test/
+    │               ├── kotlin/
+    │               │   └── com/
+    │               │       └── chiroerp/
+    │               │           └── finance/
+    │               │               └── ap/
+    │               │                   └── infrastructure/
+    │               │                       ├── BillResourceTest.kt
+    │               │                       ├── BillJpaAdapterTest.kt
+    │               │                       └── PaymentRunIntegrationTest.kt
+    │               └── resources/
+    │                   └── application-test.yml
+    │
+    ├── finance-assets/                          # Fixed Assets Subdomain
+    │   │
+    │   ├── assets-domain/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── assets/
+    │   │       │   │                   └── domain/
+    │   │       │   │                       ├── model/
+    │   │       │   │                       │   ├── asset/
+    │   │       │   │                       │   │   ├── FixedAsset.kt              # Aggregate Root
+    │   │       │   │                       │   │   ├── FixedAssetId.kt
+    │   │       │   │                       │   │   ├── AssetType.kt               # Tangible, Intangible, Leased
+    │   │       │   │                       │   │   ├── AssetCategory.kt           # Building, Equipment, Vehicle, Furniture, IT
+    │   │       │   │                       │   │   ├── AssetStatus.kt             # Active, Disposed, Retired, UnderConstruction
+    │   │       │   │                       │   │   ├── AssetLocation.kt           # Value Object
+    │   │       │   │                       │   │   ├── AcquisitionInfo.kt         # Value Object
+    │   │       │   │                       │   │   ├── UsefulLife.kt              # Value Object
+    │   │       │   │                       │   │   └── Warranty.kt                # Value Object
+    │   │       │   │                       │   ├── depreciation/
+    │   │       │   │                       │   │   ├── DepreciationSchedule.kt    # Entity
+    │   │       │   │                       │   │   ├── DepreciationScheduleId.kt
+    │   │       │   │                       │   │   ├── DepreciationMethod.kt      # StraightLine, DecliningBalance, SumOfYears, Units
+    │   │       │   │                       │   │   ├── DepreciationRun.kt         # Aggregate Root
+    │   │       │   │                       │   │   ├── DepreciationRunId.kt
+    │   │       │   │                       │   │   ├── DepreciationEntry.kt       # Entity
+    │   │       │   │                       │   │   ├── AccumulatedDepreciation.kt # Value Object
+    │   │       │   │                       │   │   ├── BookValue.kt               # Value Object
+    │   │       │   │                       │   │   └── DepreciationConvention.kt  # FullMonth, HalfYear, MidMonth
+    │   │       │   │                       │   ├── valuation/
+    │   │       │   │                       │   │   ├── AssetValuation.kt          # Entity
+    │   │       │   │                       │   │   ├── RevaluationAdjustment.kt   # Entity
+    │   │       │   │                       │   │   ├── ImpairmentTest.kt          # Entity
+    │   │       │   │                       │   │   └── FairMarketValue.kt         # Value Object
+    │   │       │   │                       │   ├── disposal/
+    │   │       │   │                       │   │   ├── AssetDisposal.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── DisposalId.kt
+    │   │       │   │                       │   │   ├── DisposalType.kt            # Sale, Scrapped, TradeIn, Donation, Theft
+    │   │       │   │                       │   │   ├── DisposalProceeds.kt        # Value Object
+    │   │       │   │                       │   │   └── GainLossCalculation.kt     # Value Object
+    │   │       │   │                       │   ├── transfer/
+    │   │       │   │                       │   │   ├── AssetTransfer.kt           # Aggregate Root
+    │   │       │   │                       │   │   ├── TransferId.kt
+    │   │       │   │                       │   │   ├── TransferType.kt            # InterCompany, InterDepartment, Relocation
+    │   │       │   │                       │   │   └── TransferReason.kt          # Value Object
+    │   │       │   │                       │   └── maintenance/
+    │   │       │   │                       │       ├── MaintenanceSchedule.kt     # Entity
+    │   │       │   │                       │       ├── MaintenanceRecord.kt       # Entity
+    │   │       │   │                       │       └── CapitalizationThreshold.kt # Value Object
+    │   │       │   │                       ├── events/
+    │   │       │   │                       │   ├── AssetAcquiredEvent.kt
+    │   │       │   │                       │   ├── AssetCapitalizedEvent.kt
+    │   │       │   │                       │   ├── DepreciationPostedEvent.kt
+    │   │       │   │                       │   ├── AssetRevaluedEvent.kt
+    │   │       │   │                       │   ├── AssetImpairedEvent.kt
+    │   │       │   │                       │   ├── AssetDisposedEvent.kt
+    │   │       │   │                       │   ├── AssetTransferredEvent.kt
+    │   │       │   │                       │   └── AssetRetiredEvent.kt
+    │   │       │   │                       ├── exceptions/
+    │   │       │   │                       │   ├── AssetNotFoundException.kt
+    │   │       │   │                       │   ├── AssetAlreadyDisposedException.kt
+    │   │       │   │                       │   ├── InvalidDepreciationException.kt
+    │   │       │   │                       │   ├── DepreciationAlreadyRunException.kt
+    │   │       │   │                       │   └── InvalidTransferException.kt
+    │   │       │   │                       └── services/
+    │   │       │   │                           ├── DepreciationCalculationService.kt   # Domain Service
+    │   │       │   │                           ├── GainLossCalculationService.kt
+    │   │       │   │                           ├── AssetValuationService.kt
+    │   │       │   │                           ├── CapitalizationService.kt
+    │   │       │   │                           └── AssetRegisterService.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── assets/
+    │   │           │                   └── domain/
+    │   │           │                       ├── FixedAssetTest.kt
+    │   │           │                       ├── DepreciationCalculationServiceTest.kt
+    │   │           │                       ├── GainLossCalculationServiceTest.kt
+    │   │           │                       └── AssetDisposalTest.kt
+    │   │           └── resources/
+    │   │
+    │   ├── assets-application/
+    │   │   ├── build.gradle.kts
+    │   │   └── src/
+    │   │       ├── main/
+    │   │       │   ├── kotlin/
+    │   │       │   │   └── com/
+    │   │       │   │       └── chiroerp/
+    │   │       │   │           └── finance/
+    │   │       │   │               └── assets/
+    │   │       │   │                   └── application/
+    │   │       │   │                       ├── port/
+    │   │       │   │                       │   ├── input/
+    │   │       │   │                       │   │   ├── command/
+    │   │       │   │                       │   │   │   ├── AcquireAssetCommand.kt
+    │   │       │   │                       │   │   │   ├── CapitalizeAssetCommand.kt
+    │   │       │   │                       │   │   │   ├── RunDepreciationCommand.kt
+    │   │       │   │                       │   │   │   ├── AdjustDepreciationCommand.kt
+    │   │       │   │                       │   │   │   ├── RevalueAssetCommand.kt
+    │   │       │   │                       │   │   │   ├── RecordImpairmentCommand.kt
+    │   │       │   │                       │   │   │   ├── DisposeAssetCommand.kt
+    │   │       │   │                       │   │   │   ├── TransferAssetCommand.kt
+    │   │       │   │                       │   │   │   ├── RetireAssetCommand.kt
+    │   │       │   │                       │   │   │   └── RecordMaintenanceCommand.kt
+    │   │       │   │                       │   │   └── query/
+    │   │       │   │                       │   │       ├── GetAssetByIdQuery.kt
+    │   │       │   │                       │   │       ├── GetAssetRegisterQuery.kt
+    │   │       │   │                       │   │       ├── GetDepreciationScheduleQuery.kt
+    │   │       │   │                       │   │       ├── GetDepreciationForecastQuery.kt
+    │   │       │   │                       │   │       ├── GetAssetsByLocationQuery.kt
+    │   │       │   │                       │   │       ├── GetAssetsByCategoryQuery.kt
+    │   │       │   │                       │   │       ├── GetDisposalHistoryQuery.kt
+    │   │       │   │                       │   │       └── GetAssetValuationQuery.kt
+    │   │       │   │                       │   └── output/
+    │   │       │   │                       │       ├── FixedAssetRepository.kt
+    │   │       │   │                       │       ├── DepreciationRepository.kt
+    │   │       │   │                       │       ├── DisposalRepository.kt
+    │   │       │   │                       │       ├── TransferRepository.kt
+    │   │       │   │                       │       ├── GeneralLedgerPort.kt           # GL integration
+    │   │       │   │                       │       ├── PurchasingPort.kt              # PO/Invoice link
+    │   │       │   │                       │       ├── InsurancePort.kt               # Insurance integration
+    │   │       │   │                       │       ├── AssetRegisterReadRepository.kt # Read model
+    │   │       │   │                       │       └── EventPublisherPort.kt
+    │   │       │   │                       └── service/
+    │   │       │   │                           ├── command/
+    │   │       │   │                           │   ├── AssetAcquisitionCommandHandler.kt
+    │   │       │   │                           │   ├── DepreciationCommandHandler.kt
+    │   │       │   │                           │   ├── DisposalCommandHandler.kt
+    │   │       │   │                           │   ├── TransferCommandHandler.kt
+    │   │       │   │                           │   └── ValuationCommandHandler.kt
+    │   │       │   │                           └── query/
+    │   │       │   │                               ├── AssetQueryHandler.kt
+    │   │       │   │                               ├── DepreciationQueryHandler.kt
+    │   │       │   │                               └── AssetRegisterQueryHandler.kt
+    │   │       │   └── resources/
+    │   │       └── test/
+    │   │           ├── kotlin/
+    │   │           │   └── com/
+    │   │           │       └── chiroerp/
+    │   │           │           └── finance/
+    │   │           │               └── assets/
+    │   │           │                   └── application/
+    │   │           │                       ├── AssetAcquisitionCommandHandlerTest.kt
+    │   │           │                       ├── DepreciationCommandHandlerTest.kt
+    │   │           │                       └── DisposalCommandHandlerTest.kt
+    │   │           └── resources/
+    │   │
+    │   └── assets-infrastructure/
+    │       ├── build.gradle.kts
+    │       └── src/
+    │           ├── main/
+    │           │   ├── kotlin/
+    │           │   │   └── com/
+    │           │   │       └── chiroerp/
+    │           │   │           └── finance/
+    │           │   │               └── assets/
+    │           │   │                   └── infrastructure/
+    │           │   │                       ├── adapter/
+    │           │   │                       │   ├── input/
+    │           │   │                       │   │   ├── rest/
+    │           │   │                       │   │   │   ├── AssetResource.kt
+    │           │   │                       │   │   │   ├── DepreciationResource.kt
+    │           │   │                       │   │   │   ├── DisposalResource.kt
+    │           │   │                       │   │   │   ├── TransferResource.kt
+    │           │   │                       │   │   │   └── dto/
+    │           │   │                       │   │   │       ├── request/
+    │           │   │                       │   │   │       │   ├── AcquireAssetRequest.kt
+    │           │   │                       │   │   │       │   ├── RunDepreciationRequest.kt
+    │           │   │                       │   │   │       │   ├── DisposeAssetRequest.kt
+    │           │   │                       │   │   │       │   └── TransferAssetRequest.kt
+    │           │   │                       │   │   │       └── response/
+    │           │   │                       │   │   │           ├── AssetDto.kt
+    │           │   │                       │   │   │           ├── AssetDetailDto.kt
+    │           │   │                       │   │   │           ├── DepreciationScheduleDto.kt
+    │           │   │                       │   │   │           ├── DepreciationEntryDto.kt
+    │           │   │                       │   │   │           ├── AssetRegisterDto.kt
+    │           │   │                       │   │   │           └── DisposalDto.kt
+    │           │   │                       │   │   └── event/
+    │           │   │                       │   │       ├── PurchaseOrderEventConsumer.kt  # Auto-create from PO
+    │           │   │                       │   │       └── InvoiceEventConsumer.kt        # Capitalization trigger
+    │           │   │                       │   └── output/
+    │           │   │                       │       ├── persistence/
+    │           │   │                       │       │   └── jpa/
+    │           │   │                       │       │       ├── FixedAssetJpaAdapter.kt
+    │           │   │                       │       │       ├── DepreciationJpaAdapter.kt
+    │           │   │                       │       │       ├── DisposalJpaAdapter.kt
+    │           │   │                       │       │       ├── entity/
+    │           │   │                       │       │       │   ├── FixedAssetEntity.kt
+    │           │   │                       │       │       │   ├── DepreciationScheduleEntity.kt
+    │           │   │                       │       │       │   ├── DepreciationEntryEntity.kt
+    │           │   │                       │       │       │   ├── AssetDisposalEntity.kt
+    │           │   │                       │       │       │   ├── AssetTransferEntity.kt
+    │           │   │                       │       │       │   ├── MaintenanceRecordEntity.kt
+    │           │   │                       │       │       │   └── EventOutboxEntity.kt
+    │           │   │                       │       │       └── repository/
+    │           │   │                       │       │           ├── FixedAssetJpaRepository.kt
+    │           │   │                       │       │           ├── DepreciationJpaRepository.kt
+    │           │   │                       │       │           ├── DisposalJpaRepository.kt
+    │           │   │                       │       │           └── EventOutboxRepository.kt
+    │           │   │                       │       ├── reporting/
+    │           │   │                       │       │   ├── AssetRegisterReadAdapter.kt
+    │           │   │                       │       │   ├── DepreciationReportAdapter.kt
+    │           │   │                       │       │   └── document/
+    │           │   │                       │       │       ├── AssetRegisterDocument.kt
+    │           │   │                       │       │       └── DepreciationScheduleDocument.kt
+    │           │   │                       │       ├── integration/
+    │           │   │                       │       │   ├── GLSubLedgerAdapter.kt
+    │           │   │                       │       │   └── PurchasingAdapter.kt
+    │           │   │                       │       └── messaging/
+    │           │   │                       │           └── kafka/
+    │           │   │                       │               ├── FAEventPublisher.kt
+    │           │   │                       │               └── schema/
+    │           │   │                       │                   ├── AssetAcquiredSchema.avro
+    │           │   │                       │                   ├── DepreciationPostedSchema.avro
+    │           │   │                       │                   └── AssetDisposedSchema.avro
+    │           │   │                       ├── configuration/
+    │           │   │                       │   ├── FADependencyInjection.kt
+    │           │   │                       │   ├── PersistenceConfiguration.kt
+    │           │   │                       │   └── MessagingConfiguration.kt
+    │           │   │                       └── FinanceAssetsApplication.kt
+    │           │   └── resources/
+    │           │       ├── application.yml
+    │           │       ├── application-dev.yml
+    │           │       ├── application-prod.yml
+    │           │       └── db/
+    │           │           └── migration/
+    │           │               ├── V1__create_assets_schema.sql
+    │           │               ├── V2__create_fixed_asset_tables.sql
+    │           │               ├── V3__create_depreciation_tables.sql
+    │           │               ├── V4__create_disposal_tables.sql
+    │           │               ├── V5__create_transfer_tables.sql
+    │           │               └── V6__create_event_outbox_table.sql
+    │           └── test/
+    │               ├── kotlin/
+    │               │   └── com/
+    │               │       └── chiroerp/
+    │               │           └── finance/
+    │               │               └── assets/
+    │               │                   └── infrastructure/
+    │               │                       ├── AssetResourceTest.kt
+    │               │                       ├── DepreciationResourceTest.kt
+    │               │                       ├── FixedAssetJpaAdapterTest.kt
+    │               │                       └── DepreciationIntegrationTest.kt
+    │               └── resources/
+    │                   └── application-test.yml
+    │
+    └── finance-tax/                             # Tax Subdomain
+        │
+        ├── tax-domain/
+        │   ├── build.gradle.kts
+        │   └── src/
+        │       ├── main/
+        │       │   ├── kotlin/
+        │       │   │   └── com/
+        │       │   │       └── chiroerp/
+        │       │   │           └── finance/
+        │       │   │               └── tax/
+        │       │   │                   └── domain/
+        │       │   │                       ├── model/
+        │       │   │                       │   ├── taxcode/
+        │       │   │                       │   │   ├── TaxCode.kt              # Aggregate Root
+        │       │   │                       │   │   ├── TaxCodeId.kt
+        │       │   │                       │   │   ├── TaxType.kt              # VAT, SalesTax, WithholdingTax, Excise
+        │       │   │                       │   │   ├── TaxRate.kt              # Value Object
+        │       │   │                       │   │   ├── TaxJurisdiction.kt      # Value Object
+        │       │   │                       │   │   ├── TaxCategory.kt          # Standard, Reduced, Zero, Exempt
+        │       │   │                       │   │   └── TaxEffectivePeriod.kt   # Value Object
+        │       │   │                       │   ├── calculation/
+        │       │   │                       │   │   ├── TaxCalculation.kt       # Aggregate Root
+        │       │   │                       │   │   ├── TaxCalculationId.kt
+        │       │   │                       │   │   ├── TaxLine.kt              # Entity
+        │       │   │                       │   │   ├── TaxLineId.kt
+        │       │   │                       │   │   ├── TaxableAmount.kt        # Value Object
+        │       │   │                       │   │   ├── TaxAmount.kt            # Value Object
+        │       │   │                       │   │   └── TaxBreakdown.kt         # Value Object
+        │       │   │                       │   ├── return/
+        │       │   │                       │   │   ├── TaxReturn.kt            # Aggregate Root
+        │       │   │                       │   │   ├── TaxReturnId.kt
+        │       │   │                       │   │   ├── TaxReturnPeriod.kt      # Value Object
+        │       │   │                       │   │   ├── TaxReturnStatus.kt      # Draft, Submitted, Filed, Amended
+        │       │   │                       │   │   ├── TaxReturnLine.kt        # Entity
+        │       │   │                       │   │   ├── TaxPayable.kt           # Value Object
+        │       │   │                       │   │   └── TaxRefund.kt            # Value Object
+        │       │   │                       │   ├── withholding/
+        │       │   │                       │   │   ├── WithholdingTax.kt       # Aggregate Root
+        │       │   │                       │   │   ├── WithholdingTaxId.kt
+        │       │   │                       │   │   ├── WithholdingType.kt      # Employee, Vendor, Interest, Dividend
+        │       │   │                       │   │   ├── WithholdingCertificate.kt # Entity
+        │       │   │                       │   │   └── Form1099.kt             # Entity (US specific)
+        │       │   │                       │   └── compliance/
+        │       │   │                       │       ├── TaxAuditTrail.kt        # Entity
+        │       │   │                       │       ├── TaxRuleValidation.kt    # Entity
+        │       │   │                       │       └── ComplianceCheck.kt      # Value Object
+        │       │   │                       ├── events/
+        │       │   │                       │   ├── TaxCalculatedEvent.kt
+        │       │   │                       │   ├── TaxReturnCreatedEvent.kt
+        │       │   │                       │   ├── TaxReturnSubmittedEvent.kt
+        │       │   │                       │   ├── TaxReturnFiledEvent.kt
+        │       │   │                       │   ├── WithholdingTaxRecordedEvent.kt
+        │       │   │                       │   └── TaxCodeUpdatedEvent.kt
+        │       │   │                       ├── exceptions/
+        │       │   │                       │   ├── TaxCodeNotFoundException.kt
+        │       │   │                       │   ├── InvalidTaxRateException.kt
+        │       │   │                       │   ├── TaxReturnAlreadyFiledException.kt
+        │       │   │                       │   ├── TaxJurisdictionMismatchException.kt
+        │       │   │                       │   └── TaxCalculationException.kt
+        │       │   │                       └── services/
+        │       │   │                           ├── TaxCalculationService.kt     # Domain Service
+        │       │   │                           ├── TaxRateResolverService.kt
+        │       │   │                           ├── WithholdingCalculationService.kt
+        │       │   │                           ├── TaxReturnValidationService.kt
+        │       │   │                           └── TaxComplianceService.kt
+        │       │   └── resources/
+        │       └── test/
+        │           ├── kotlin/
+        │           │   └── com/
+        │           │       └── chiroerp/
+        │           │           └── finance/
+        │           │               └── tax/
+        │           │                   └── domain/
+        │           │                       ├── TaxCodeTest.kt
+        │           │                       ├── TaxCalculationServiceTest.kt
+        │           │                       ├── TaxReturnTest.kt
+        │           │                       └── WithholdingCalculationServiceTest.kt
+        │           └── resources/
+        │
+        ├── tax-application/
+        │   ├── build.gradle.kts
+        │   └── src/
+        │       ├── main/
+        │       │   ├── kotlin/
+        │       │   │   └── com/
+        │       │   │       └── chiroerp/
+        │       │   │           └── finance/
+        │       │   │               └── tax/
+        │       │   │                   └── application/
+        │       │   │                       ├── port/
+        │       │   │                       │   ├── input/
+        │       │   │                       │   │   ├── command/
+        │       │   │                       │   │   │   ├── CreateTaxCodeCommand.kt
+        │       │   │                       │   │   │   ├── UpdateTaxCodeCommand.kt
+        │       │   │                       │   │   │   ├── CalculateTaxCommand.kt
+        │       │   │                       │   │   │   ├── CreateTaxReturnCommand.kt
+        │       │   │                       │   │   │   ├── SubmitTaxReturnCommand.kt
+        │       │   │                       │   │   │   ├── FileTaxReturnCommand.kt
+        │       │   │                       │   │   │   ├── AmendTaxReturnCommand.kt
+        │       │   │                       │   │   │   ├── RecordWithholdingCommand.kt
+        │       │   │                       │   │   │   └── GenerateWithholdingCertificateCommand.kt
+        │       │   │                       │   │   └── query/
+        │       │   │                       │   │       ├── GetTaxCodeByIdQuery.kt
+        │       │   │                       │   │       ├── GetTaxCodesByJurisdictionQuery.kt
+        │       │   │                       │   │       ├── GetTaxReturnQuery.kt
+        │       │   │                       │   │       ├── GetTaxReturnsByPeriodQuery.kt
+        │       │   │                       │   │       ├── GetTaxLiabilityReportQuery.kt
+        │       │   │                       │   │       ├── GetWithholdingReportQuery.kt
+        │       │   │                       │   │       └── GetTaxAuditTrailQuery.kt
+        │       │   │                       │   └── output/
+        │       │   │                       │       ├── TaxCodeRepository.kt
+        │       │   │                       │       ├── TaxReturnRepository.kt
+        │       │   │                       │       ├── WithholdingRepository.kt
+        │       │   │                       │       ├── TaxCalculationRepository.kt
+        │       │   │                       │       ├── GeneralLedgerPort.kt           # GL integration
+        │       │   │                       │       ├── ARTaxPort.kt                   # AR tax data
+        │       │   │                       │       ├── APTaxPort.kt                   # AP tax data
+        │       │   │                       │       ├── ExternalTaxServicePort.kt      # Avalara, Vertex, etc.
+        │       │   │                       │       ├── TaxAuthorityPort.kt            # E-filing integration
+        │       │   │                       │       ├── TaxReturnReadRepository.kt     # Read model
+        │       │   │                       │       └── EventPublisherPort.kt
+        │       │   │                       └── service/
+        │       │   │                           ├── command/
+        │       │   │                           │   ├── TaxCodeCommandHandler.kt
+        │       │   │                           │   ├── TaxCalculationCommandHandler.kt
+        │       │   │                           │   ├── TaxReturnCommandHandler.kt
+        │       │   │                           │   └── WithholdingCommandHandler.kt
+        │       │   │                           └── query/
+        │       │   │                               ├── TaxCodeQueryHandler.kt
+        │       │   │                               ├── TaxReturnQueryHandler.kt
+        │       │   │                               └── WithholdingQueryHandler.kt
+        │       │   └── resources/
+        │       └── test/
+        │           ├── kotlin/
+        │           │   └── com/
+        │           │       └── chiroerp/
+        │           │           └── finance/
+        │           │               └── tax/
+        │           │                   └── application/
+        │           │                       ├── TaxCodeCommandHandlerTest.kt
+        │           │                       ├── TaxCalculationCommandHandlerTest.kt
+        │           │                       ├── TaxReturnCommandHandlerTest.kt
+        │           │                       └── WithholdingCommandHandlerTest.kt
+        │           └── resources/
+        │
+        └── tax-infrastructure/
+            ├── build.gradle.kts
+            └── src/
+                ├── main/
+                │   ├── kotlin/
+                │   │   └── com/
+                │   │       └── chiroerp/
+                │   │           └── finance/
+                │   │               └── tax/
+                │   │                   └── infrastructure/
+                │   │                       ├── adapter/
+                │   │                       │   ├── input/
+                │   │                       │   │   ├── rest/
+                │   │                       │   │   │   ├── TaxCodeResource.kt
+                │   │                       │   │   │   ├── TaxCalculationResource.kt
+                │   │                       │   │   │   ├── TaxReturnResource.kt
+                │   │                       │   │   │   ├── WithholdingResource.kt
+                │   │                       │   │   │   └── dto/
+                │   │                       │   │   │       ├── request/
+                │   │                       │   │   │       │   ├── CreateTaxCodeRequest.kt
+                │   │                       │   │   │       │   ├── CalculateTaxRequest.kt
+                │   │                       │   │   │       │   ├── CreateTaxReturnRequest.kt
+                │   │                       │   │   │       │   └── RecordWithholdingRequest.kt
+                │   │                       │   │   │       └── response/
+                │   │                       │   │   │           ├── TaxCodeDto.kt
+                │   │                       │   │   │           ├── TaxCalculationDto.kt
+                │   │                       │   │   │           ├── TaxReturnDto.kt
+                │   │                       │   │   │           ├── TaxReturnLineDto.kt
+                │   │                       │   │   │           ├── WithholdingDto.kt
+                │   │                       │   │   │           └── TaxLiabilityReportDto.kt
+                │   │                       │   │   └── event/
+                │   │                       │   │       ├── InvoicePostedEventConsumer.kt    # AR tax
+                │   │                       │   │       ├── BillPostedEventConsumer.kt       # AP tax
+                │   │                       │   │       └── PayrollEventConsumer.kt          # Withholding
+                │   │                       │   └── output/
+                │   │                       │       ├── persistence/
+                │   │                       │       │   └── jpa/
+                │   │                       │       │       ├── TaxCodeJpaAdapter.kt
+                │   │                       │       │       ├── TaxReturnJpaAdapter.kt
+                │   │                       │       │       ├── WithholdingJpaAdapter.kt
+                │   │                       │       │       ├── entity/
+                │   │                       │       │       │   ├── TaxCodeEntity.kt
+                │   │                       │       │       │   ├── TaxRateEntity.kt
+                │   │                       │       │       │   ├── TaxCalculationEntity.kt
+                │   │                       │       │       │   ├── TaxReturnEntity.kt
+                │   │                       │       │       │   ├── TaxReturnLineEntity.kt
+                │   │                       │       │       │   ├── WithholdingTaxEntity.kt
+                │   │                       │       │       │   ├── WithholdingCertificateEntity.kt
+                │   │                       │       │       │   └── EventOutboxEntity.kt
+                │   │                       │       │       └── repository/
+                │   │                       │       │           ├── TaxCodeJpaRepository.kt
+                │   │                       │       │           ├── TaxReturnJpaRepository.kt
+                │   │                       │       │           ├── WithholdingJpaRepository.kt
+                │   │                       │       │           └── EventOutboxRepository.kt
+                │   │                       │       ├── reporting/
+                │   │                       │       │   ├── TaxLiabilityReadAdapter.kt
+                │   │                       │       │   ├── WithholdingReportAdapter.kt
+                │   │                       │       │   └── document/
+                │   │                       │       │       ├── TaxReturnDocument.kt
+                │   │                       │       │       ├── VATReturnDocument.kt
+                │   │                       │       │       └── WithholdingCertificateDocument.kt
+                │   │                       │       ├── integration/
+                │   │                       │       │   ├── GLTaxAdapter.kt
+                │   │                       │       │   ├── ARTaxAdapter.kt
+                │   │                       │       │   └── APTaxAdapter.kt
+                │   │                       │       ├── external/
+                │   │                       │       │   ├── AvalaraTaxAdapter.kt           # US Sales Tax
+                │   │                       │       │   ├── VertexTaxAdapter.kt            # Enterprise Tax
+                │   │                       │       │   └── TaxJarAdapter.kt               # SMB Tax
+                │   │                       │       ├── filing/
+                │   │                       │       │   ├── EFilingAdapter.kt              # Generic e-filing
+                │   │                       │       │   ├── IRSEFilingAdapter.kt           # US IRS
+                │   │                       │       │   └── VATEFilingAdapter.kt           # EU VAT
+                │   │                       │       └── messaging/
+                │   │                       │           └── kafka/
+                │   │                       │               ├── TaxEventPublisher.kt
+                │   │                       │               └── schema/
+                │   │                       │                   ├── TaxCalculatedSchema.avro
+                │   │                       │                   └── TaxReturnFiledSchema.avro
+                │   │                       ├── configuration/
+                │   │                       │   ├── TaxDependencyInjection.kt
+                │   │                       │   ├── PersistenceConfiguration.kt
+                │   │                       │   ├── MessagingConfiguration.kt
+                │   │                       │   └── ExternalTaxConfiguration.kt
+                │   │                       └── FinanceTaxApplication.kt
+                │   └── resources/
+                │       ├── application.yml
+                │       ├── application-dev.yml
+                │       ├── application-prod.yml
+                │       └── db/
+                │           └── migration/
+                │               ├── V1__create_tax_schema.sql
+                │               ├── V2__create_tax_code_tables.sql
+                │               ├── V3__create_tax_calculation_tables.sql
+                │               ├── V4__create_tax_return_tables.sql
+                │               ├── V5__create_withholding_tables.sql
+                │               └── V6__create_event_outbox_table.sql
+                └── test/
+                    ├── kotlin/
+                    │   └── com/
+                    │       └── chiroerp/
+                    │           └── finance/
+                    │               └── tax/
+                    │                   └── infrastructure/
+                    │                       ├── TaxCodeResourceTest.kt
+                    │                       ├── TaxReturnResourceTest.kt
+                    │                       ├── TaxCodeJpaAdapterTest.kt
+                    │                       └── TaxCalculationIntegrationTest.kt
+                    └── resources/
+                        └── application-test.yml
+
+├── mdm/                                         # Master Data Governance (ADR-027)
+│   │                                            # Golden records, data quality, stewardship
+│   │                                            # Ports: 9701-9705
 │   │
-│   ├── finance-gl/
-│   │   ├── V001__create_journal_entry_table.sql
-│   │   ├── V002__create_account_table.sql
-│   │   └── [other migrations...]
+│   ├── mdm-shared/                              # Shared types for MDM context
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── mdm/
+│   │       │   │               └── shared/
+│   │       │   │                   ├── MasterRecordId.kt
+│   │       │   │                   ├── MasterDomain.kt               # CUSTOMER, VENDOR, PRODUCT, COA, COST_CENTER
+│   │       │   │                   ├── RecordStatus.kt               # DRAFT, ACTIVE, RETIRED, BLOCKED
+│   │       │   │                   ├── ChangeRequestId.kt
+│   │       │   │                   ├── ChangeRequestStatus.kt        # PENDING, APPROVED, REJECTED
+│   │       │   │                   ├── DataQualityScore.kt
+│   │       │   │                   └── GoldenRecordReference.kt
+│   │       │   └── resources/
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── mdm/
+│   │           │               └── shared/
+│   │           │                   └── MasterDomainTest.kt
+│   │           └── resources/
 │   │
-│   ├── inventory-core/
-│   │   ├── V001__create_stock_table.sql
-│   │   ├── V002__create_storage_location_table.sql
-│   │   └── [other migrations...]
+│   ├── mdm-hub/                                 # Port 9701 - Golden Record Management
+│   │   ├── hub-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── hub/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── record/
+│   │   │       │   │                       │   │   ├── MasterRecord.kt              # Aggregate Root
+│   │   │       │   │                       │   │   ├── MasterRecordVersion.kt
+│   │   │       │   │                       │   │   ├── RecordAttribute.kt           # Entity
+│   │   │       │   │                       │   │   ├── AttributeValue.kt
+│   │   │       │   │                       │   │   ├── SurvivorshipRule.kt          # Golden record selection
+│   │   │       │   │                       │   │   └── RecordLineage.kt             # Source tracking
+│   │   │       │   │                       │   ├── request/
+│   │   │       │   │                       │   │   ├── ChangeRequest.kt             # Aggregate Root
+│   │   │       │   │                       │   │   ├── ChangeType.kt                # CREATE, UPDATE, RETIRE, MERGE
+│   │   │       │   │                       │   │   ├── ChangeDetail.kt              # Entity
+│   │   │       │   │                       │   │   ├── ImpactAnalysis.kt
+│   │   │       │   │                       │   │   └── RequestPriority.kt
+│   │   │       │   │                       │   ├── approval/
+│   │   │       │   │                       │   │   ├── ApprovalWorkflow.kt          # Aggregate Root
+│   │   │       │   │                       │   │   ├── ApprovalStep.kt              # Entity
+│   │   │       │   │                       │   │   ├── ApprovalDecision.kt          # APPROVED, REJECTED, DELEGATED
+│   │   │       │   │                       │   │   ├── Approver.kt
+│   │   │       │   │                       │   │   └── EscalationRule.kt
+│   │   │       │   │                       │   └── hierarchy/
+│   │   │       │   │                       │       ├── MasterHierarchy.kt           # Aggregate Root
+│   │   │       │   │                       │       ├── HierarchyNode.kt             # Entity
+│   │   │       │   │                       │       ├── HierarchyType.kt             # PRODUCT_CATEGORY, CUSTOMER_GROUP, GL_STRUCTURE
+│   │   │       │   │                       │       └── HierarchyVersion.kt
+│   │   │       │   │                       ├── events/
+│   │   │       │   │                       │   ├── MasterRecordCreatedEvent.kt
+│   │   │       │   │                       │   ├── MasterRecordUpdatedEvent.kt
+│   │   │       │   │                       │   ├── MasterRecordPublishedEvent.kt    # -> All domains
+│   │   │       │   │                       │   ├── MasterRecordRetiredEvent.kt
+│   │   │       │   │                       │   ├── ChangeRequestSubmittedEvent.kt
+│   │   │       │   │                       │   ├── ChangeRequestApprovedEvent.kt
+│   │   │       │   │                       │   ├── ChangeRequestRejectedEvent.kt
+│   │   │       │   │                       │   └── HierarchyChangedEvent.kt
+│   │   │       │   │                       ├── exceptions/
+│   │   │       │   │                       │   ├── RecordNotFoundException.kt
+│   │   │       │   │                       │   ├── DuplicateRecordException.kt
+│   │   │       │   │                       │   ├── ApprovalRequiredException.kt
+│   │   │       │   │                       │   └── DependencyBlocksRetirementException.kt
+│   │   │       │   │                       └── services/
+│   │   │       │   │                           ├── SurvivorshipService.kt           # Golden record selection
+│   │   │       │   │                           ├── LineageTrackingService.kt
+│   │   │       │   │                           └── DependencyCheckService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   ├── hub-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── hub/
+│   │   │       │   │                   └── application/
+│   │   │       │   │                       ├── port/
+│   │   │       │   │                       │   ├── input/
+│   │   │       │   │                       │   │   ├── command/
+│   │   │       │   │                       │   │   │   ├── CreateMasterRecordCommand.kt
+│   │   │       │   │                       │   │   │   ├── UpdateMasterRecordCommand.kt
+│   │   │       │   │                       │   │   │   ├── RetireMasterRecordCommand.kt
+│   │   │       │   │                       │   │   │   ├── SubmitChangeRequestCommand.kt
+│   │   │       │   │                       │   │   │   ├── ApproveChangeRequestCommand.kt
+│   │   │       │   │                       │   │   │   └── RejectChangeRequestCommand.kt
+│   │   │       │   │                       │   │   └── query/
+│   │   │       │   │                       │   │       ├── GetMasterRecordQuery.kt
+│   │   │       │   │                       │   │       ├── SearchMasterRecordsQuery.kt
+│   │   │       │   │                       │   │       ├── GetChangeRequestQuery.kt
+│   │   │       │   │                       │   │       ├── GetPendingApprovalsQuery.kt
+│   │   │       │   │                       │   │       └── GetHierarchyQuery.kt
+│   │   │       │   │                       │   └── output/
+│   │   │       │   │                       │       ├── MasterRecordRepository.kt
+│   │   │       │   │                       │       ├── ChangeRequestRepository.kt
+│   │   │       │   │                       │       ├── HierarchyRepository.kt
+│   │   │       │   │                       │       └── MasterDataEventPublisher.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── command/
+│   │   │       │   │                           │   ├── MasterRecordCommandHandler.kt
+│   │   │       │   │                           │   ├── ChangeRequestCommandHandler.kt
+│   │   │       │   │                           │   └── ApprovalCommandHandler.kt
+│   │   │       │   │                           └── query/
+│   │   │       │   │                               ├── MasterRecordQueryHandler.kt
+│   │   │       │   │                               └── ChangeRequestQueryHandler.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   └── hub-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           ├── main/
+│   │           │   ├── kotlin/
+│   │           │   │   └── com/
+│   │           │   │       └── chiroerp/
+│   │           │   │           └── mdm/
+│   │           │   │               └── hub/
+│   │           │   │                   └── infrastructure/
+│   │           │   │                       ├── adapter/
+│   │           │   │                       │   ├── input/
+│   │           │   │                       │   │   └── rest/
+│   │           │   │                       │   │       ├── MasterRecordResource.kt
+│   │           │   │                       │   │       ├── ChangeRequestResource.kt
+│   │           │   │                       │   │       ├── HierarchyResource.kt
+│   │           │   │                       │   │       └── dto/
+│   │           │   │                       │   │           ├── request/
+│   │           │   │                       │   │           │   ├── CreateRecordRequest.kt
+│   │           │   │                       │   │           │   ├── UpdateRecordRequest.kt
+│   │           │   │                       │   │           │   └── SubmitChangeRequest.kt
+│   │           │   │                       │   │           └── response/
+│   │           │   │                       │   │               ├── MasterRecordDto.kt
+│   │           │   │                       │   │               ├── ChangeRequestDto.kt
+│   │           │   │                       │   │               └── HierarchyDto.kt
+│   │           │   │                       │   └── output/
+│   │           │   │                       │       ├── persistence/
+│   │           │   │                       │       │   └── jpa/
+│   │           │   │                       │       │       ├── MasterRecordJpaAdapter.kt
+│   │           │   │                       │       │       ├── ChangeRequestJpaAdapter.kt
+│   │           │   │                       │       │       ├── entity/
+│   │           │   │                       │       │       │   ├── MasterRecordEntity.kt
+│   │           │   │                       │       │       │   ├── ChangeRequestEntity.kt
+│   │           │   │                       │       │       │   └── HierarchyEntity.kt
+│   │           │   │                       │       │       └── repository/
+│   │           │   │                       │       │           ├── MasterRecordJpaRepository.kt
+│   │           │   │                       │       │           └── ChangeRequestJpaRepository.kt
+│   │           │   │                       │       └── messaging/
+│   │           │   │                       │           └── MasterDataKafkaPublisher.kt
+│   │           │   │                       ├── configuration/
+│   │           │   │                       │   └── MdmHubDependencyInjection.kt
+│   │           │   │                       └── MdmHubApplication.kt
+│   │           │   └── resources/
+│   │           │       ├── application.yml
+│   │           │       └── db/
+│   │           │           └── migration/
+│   │           │               ├── V1__create_mdm_hub_schema.sql
+│   │           │               ├── V2__create_master_record_tables.sql
+│   │           │               ├── V3__create_change_request_tables.sql
+│   │           │               ├── V4__create_hierarchy_tables.sql
+│   │           │               └── V5__create_event_outbox_table.sql
+│   │           └── test/
+│   │               ├── kotlin/
+│   │               └── resources/
 │   │
-│   └── [other services...]
+│   ├── mdm-data-quality/                        # Port 9702 - Validation & Quality Scoring
+│   │   ├── data-quality-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── quality/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── rule/
+│   │   │       │   │                       │   │   ├── ValidationRule.kt            # Aggregate Root
+│   │   │       │   │                       │   │   ├── ValidationRuleId.kt
+│   │   │       │   │                       │   │   ├── RuleType.kt                  # FORMAT, COMPLETENESS, REFERENCE, CUSTOM
+│   │   │       │   │                       │   │   ├── RuleExpression.kt
+│   │   │       │   │                       │   │   ├── RuleSeverity.kt              # ERROR, WARNING, INFO
+│   │   │       │   │                       │   │   └── RuleScope.kt                 # Per domain/attribute
+│   │   │       │   │                       │   ├── score/
+│   │   │       │   │                       │   │   ├── QualityScore.kt              # Aggregate Root
+│   │   │       │   │                       │   │   ├── QualityDimension.kt          # COMPLETENESS, ACCURACY, CONSISTENCY, TIMELINESS
+│   │   │       │   │                       │   │   ├── DimensionScore.kt            # Entity
+│   │   │       │   │                       │   │   └── ScoreThreshold.kt
+│   │   │       │   │                       │   └── result/
+│   │   │       │   │                       │       ├── ValidationResult.kt          # Aggregate Root
+│   │   │       │   │                       │       ├── ValidationError.kt           # Entity
+│   │   │       │   │                       │       └── RemediationSuggestion.kt
+│   │   │       │   │                       ├── events/
+│   │   │       │   │                       │   ├── ValidationRuleCreatedEvent.kt
+│   │   │       │   │                       │   ├── RecordValidatedEvent.kt
+│   │   │       │   │                       │   ├── DataQualityScoreUpdatedEvent.kt  # -> Analytics
+│   │   │       │   │                       │   └── QualityThresholdBreachedEvent.kt
+│   │   │       │   │                       └── services/
+│   │   │       │   │                           ├── ValidationEngine.kt
+│   │   │       │   │                           ├── QualityScoreCalculator.kt
+│   │   │       │   │                           └── ReferenceIntegrityChecker.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   ├── data-quality-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── quality/
+│   │   │       │   │                   └── application/
+│   │   │       │   │                       ├── port/
+│   │   │       │   │                       │   ├── input/
+│   │   │       │   │                       │   │   ├── command/
+│   │   │       │   │                       │   │   │   ├── CreateValidationRuleCommand.kt
+│   │   │       │   │                       │   │   │   ├── ValidateRecordCommand.kt
+│   │   │       │   │                       │   │   │   └── RecalculateQualityScoreCommand.kt
+│   │   │       │   │                       │   │   └── query/
+│   │   │       │   │                       │   │       ├── GetValidationRulesQuery.kt
+│   │   │       │   │                       │   │       ├── GetQualityScoreQuery.kt
+│   │   │       │   │                       │   │       └── GetValidationErrorsQuery.kt
+│   │   │       │   │                       │   └── output/
+│   │   │       │   │                       │       ├── ValidationRuleRepository.kt
+│   │   │       │   │                       │       ├── QualityScoreRepository.kt
+│   │   │       │   │                       │       └── QualityEventPublisher.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── ValidationCommandHandler.kt
+│   │   │       │   │                           └── QualityScoreQueryHandler.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   └── data-quality-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           ├── main/
+│   │           │   ├── kotlin/
+│   │           │   │   └── com/
+│   │           │   │       └── chiroerp/
+│   │           │   │           └── mdm/
+│   │           │   │               └── quality/
+│   │           │   │                   └── infrastructure/
+│   │           │   │                       ├── adapter/
+│   │           │   │                       │   ├── input/
+│   │           │   │                       │   │   └── rest/
+│   │           │   │                       │   │       ├── ValidationRuleResource.kt
+│   │           │   │                       │   │       ├── QualityScoreResource.kt
+│   │           │   │                       │   │       └── dto/
+│   │           │   │                       │   └── output/
+│   │           │   │                       │       └── persistence/
+│   │           │   │                       │           └── jpa/
+│   │           │   │                       │               ├── ValidationRuleJpaAdapter.kt
+│   │           │   │                       │               └── QualityScoreJpaAdapter.kt
+│   │           │   │                       └── MdmDataQualityApplication.kt
+│   │           │   └── resources/
+│   │           │       ├── application.yml
+│   │           │       └── db/
+│   │           │           └── migration/
+│   │           │               ├── V1__create_quality_schema.sql
+│   │           │               ├── V2__create_validation_rule_tables.sql
+│   │           │               └── V3__create_quality_score_tables.sql
+│   │           └── test/
+│   │               ├── kotlin/
+│   │               └── resources/
+│   │
+│   ├── mdm-stewardship/                         # Port 9703 - Approval Workflows & SoD
+│   │   ├── stewardship-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── stewardship/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── task/
+│   │   │       │   │                       │   │   ├── StewardshipTask.kt           # Aggregate Root
+│   │   │       │   │                       │   │   ├── TaskId.kt
+│   │   │       │   │                       │   │   ├── TaskType.kt                  # APPROVAL, REVIEW, REMEDIATION
+│   │   │       │   │                       │   │   ├── TaskStatus.kt                # PENDING, IN_PROGRESS, COMPLETED
+│   │   │       │   │                       │   │   ├── TaskAssignment.kt
+│   │   │       │   │                       │   │   └── TaskPriority.kt
+│   │   │       │   │                       │   ├── steward/
+│   │   │       │   │                       │   │   ├── DataSteward.kt               # Aggregate Root
+│   │   │       │   │                       │   │   ├── StewardId.kt
+│   │   │       │   │                       │   │   ├── StewardRole.kt               # DOMAIN_STEWARD, DATA_OWNER, APPROVER
+│   │   │       │   │                       │   │   ├── DomainAssignment.kt          # Which domains they steward
+│   │   │       │   │                       │   │   └── DelegationRule.kt
+│   │   │       │   │                       │   └── queue/
+│   │   │       │   │                       │       ├── ApprovalQueue.kt             # Aggregate Root
+│   │   │       │   │                       │       ├── QueueItem.kt                 # Entity
+│   │   │       │   │                       │       └── QueuePrioritization.kt
+│   │   │       │   │                       ├── events/
+│   │   │       │   │                       │   ├── TaskAssignedEvent.kt
+│   │   │       │   │                       │   ├── TaskCompletedEvent.kt
+│   │   │       │   │                       │   ├── TaskEscalatedEvent.kt
+│   │   │       │   │                       │   └── StewardDelegatedEvent.kt
+│   │   │       │   │                       └── services/
+│   │   │       │   │                           ├── TaskAssignmentService.kt
+│   │   │       │   │                           ├── SodEnforcementService.kt         # Segregation of Duties
+│   │   │       │   │                           └── EscalationService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   ├── stewardship-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── mdm/
+│   │   │                           └── stewardship/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── command/
+│   │   │                                   │   │   │   ├── AssignTaskCommand.kt
+│   │   │                                   │   │   │   ├── CompleteTaskCommand.kt
+│   │   │                                   │   │   │   └── DelegateApprovalCommand.kt
+│   │   │                                   │   │   └── query/
+│   │   │                                   │   │       ├── GetMyTasksQuery.kt
+│   │   │                                   │   │       └── GetApprovalQueueQuery.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── TaskRepository.kt
+│   │   │                                   │       └── StewardRepository.kt
+│   │   │                                   └── service/
+│   │   │                                       └── StewardshipCommandHandler.kt
+│   │   └── stewardship-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── mdm/
+│   │               │               └── stewardship/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   └── input/
+│   │               │                       │       └── rest/
+│   │               │                       │           ├── TaskResource.kt
+│   │               │                       │           └── ApprovalQueueResource.kt
+│   │               │                       └── MdmStewardshipApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── mdm-match-merge/                         # Port 9704 - Duplicate Detection & Survivorship
+│   │   ├── match-merge-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── mdm/
+│   │   │       │   │               └── matchmerge/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── match/
+│   │   │       │   │                       │   │   ├── MatchRule.kt                 # Aggregate Root
+│   │   │       │   │                       │   │   ├── MatchRuleId.kt
+│   │   │       │   │                       │   │   ├── MatchCriteria.kt             # EXACT, FUZZY, PHONETIC
+│   │   │       │   │                       │   │   ├── MatchWeight.kt
+│   │   │       │   │                       │   │   └── MatchThreshold.kt
+│   │   │       │   │                       │   ├── candidate/
+│   │   │       │   │                       │   │   ├── DuplicateCandidate.kt        # Aggregate Root
+│   │   │       │   │                       │   │   ├── CandidateId.kt
+│   │   │       │   │                       │   │   ├── MatchScore.kt
+│   │   │       │   │                       │   │   ├── CandidateStatus.kt           # PENDING_REVIEW, CONFIRMED, REJECTED
+│   │   │       │   │                       │   │   └── CandidatePair.kt
+│   │   │       │   │                       │   └── merge/
+│   │   │       │   │                       │       ├── MergeDecision.kt             # Aggregate Root
+│   │   │       │   │                       │       ├── MergeRule.kt                 # Survivorship rules
+│   │   │       │   │                       │       ├── AttributeSurvivorship.kt     # MOST_RECENT, MOST_COMPLETE, SOURCE_PRIORITY
+│   │   │       │   │                       │       └── MergeResult.kt
+│   │   │       │   │                       ├── events/
+│   │   │       │   │                       │   ├── DuplicateCandidateFoundEvent.kt
+│   │   │       │   │                       │   ├── MergeCompletedEvent.kt
+│   │   │       │   │                       │   └── RecordsMergedEvent.kt
+│   │   │       │   │                       └── services/
+│   │   │       │   │                           ├── MatchingEngine.kt
+│   │   │       │   │                           ├── FuzzyMatchService.kt
+│   │   │       │   │                           └── SurvivorshipEngine.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   │           ├── kotlin/
+│   │   │           └── resources/
+│   │   ├── match-merge-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── mdm/
+│   │   │                           └── matchmerge/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── command/
+│   │   │                                   │   │   │   ├── RunDuplicateDetectionCommand.kt
+│   │   │                                   │   │   │   ├── ApproveMergeCommand.kt
+│   │   │                                   │   │   │   └── RejectCandidateCommand.kt
+│   │   │                                   │   │   └── query/
+│   │   │                                   │   │       ├── GetDuplicateCandidatesQuery.kt
+│   │   │                                   │   │       └── GetMatchRulesQuery.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── MatchRuleRepository.kt
+│   │   │                                   │       └── CandidateRepository.kt
+│   │   │                                   └── service/
+│   │   │                                       └── MatchMergeCommandHandler.kt
+│   │   └── match-merge-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── mdm/
+│   │               │               └── matchmerge/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   └── input/
+│   │               │                       │       └── rest/
+│   │               │                       │           ├── MatchRuleResource.kt
+│   │               │                       │           └── DuplicateCandidateResource.kt
+│   │               │                       └── MdmMatchMergeApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   └── mdm-analytics/                           # Port 9705 - Quality KPIs & Dashboards
+│       ├── analytics-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       ├── main/
+│       │       │   ├── kotlin/
+│       │       │   │   └── com/
+│       │       │   │       └── chiroerp/
+│       │       │   │           └── mdm/
+│       │       │   │               └── analytics/
+│       │       │   │                   └── domain/
+│       │       │   │                       ├── model/
+│       │       │   │                       │   ├── kpi/
+│       │       │   │                       │   │   ├── QualityKpi.kt               # Aggregate Root
+│       │       │   │                       │   │   ├── KpiId.kt
+│       │       │   │                       │   │   ├── KpiType.kt                  # COMPLETENESS, ACCURACY, TIMELINESS
+│       │       │   │                       │   │   ├── KpiValue.kt
+│       │       │   │                       │   │   └── KpiTrend.kt
+│       │       │   │                       │   ├── report/
+│       │       │   │                       │   │   ├── QualityReport.kt            # Aggregate Root
+│       │       │   │                       │   │   ├── ReportId.kt
+│       │       │   │                       │   │   ├── ReportPeriod.kt
+│       │       │   │                       │   │   └── DomainBreakdown.kt
+│       │       │   │                       │   └── stewardship/
+│       │       │   │                       │       ├── StewardshipMetric.kt
+│       │       │   │                       │       ├── ApprovalTurnaround.kt
+│       │       │   │                       │       └── TaskBacklog.kt
+│       │       │   │                       ├── events/
+│       │       │   │                       │   ├── KpiCalculatedEvent.kt
+│       │       │   │                       │   └── QualityAlertTriggeredEvent.kt
+│       │       │   │                       └── services/
+│       │       │   │                           ├── KpiCalculationService.kt
+│       │       │   │                           └── TrendAnalysisService.kt
+│       │       │   └── resources/
+│       │       └── test/
+│       │           ├── kotlin/
+│       │           └── resources/
+│       ├── analytics-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── mdm/
+│       │                           └── analytics/
+│       │                               └── application/
+│       │                                   ├── port/
+│       │                                   │   ├── input/
+│       │                                   │   │   └── query/
+│       │                                   │   │       ├── GetQualityDashboardQuery.kt
+│       │                                   │   │       ├── GetKpiTrendsQuery.kt
+│       │                                   │   │       └── GetStewardshipMetricsQuery.kt
+│       │                                   │   └── output/
+│       │                                   │       └── KpiRepository.kt
+│       │                                   └── service/
+│       │                                       └── AnalyticsQueryHandler.kt
+│       └── analytics-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/
+│               └── main/
+│                   ├── kotlin/
+│                   │   └── com/
+│                   │       └── chiroerp/
+│                   │           └── mdm/
+│                   │               └── analytics/
+│                   │                   └── infrastructure/
+│                   │                       ├── adapter/
+│                   │                       │   └── input/
+│                   │                       │       └── rest/
+│                   │                       │           ├── DashboardResource.kt
+│                   │                       │           └── KpiResource.kt
+│                   │                       └── MdmAnalyticsApplication.kt
+│                   └── resources/
+│                       └── application.yml
 │
-├── build.gradle.kts                            # Root Gradle build (Kotlin DSL)
-├── settings.gradle.kts                         # Gradle settings (multi-module)
-├── gradle.properties                           # Gradle properties
-├── gradlew                                     # Gradle wrapper (Unix)
-├── gradlew.bat                                 # Gradle wrapper (Windows)
+├── inventory/                                   # INVENTORY BOUNDED CONTEXT
+│   │
+│   ├── inventory-shared/                        # Shared types across inventory subdomains
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       └── main/
+│   │           └── kotlin/
+│   │               └── com/
+│   │                   └── chiroerp/
+│   │                       └── inventory/
+│   │                           └── shared/
+│   │                               ├── valueobjects/                # ADR-006: Context-specific value objects
+│   │                               │   ├── Quantity.kt              # Inventory-specific quantity handling
+│   │                               │   ├── Money.kt                 # Inventory valuation money (may differ from finance)
+│   │                               │   └── Weight.kt                # Physical weight measurements
+│   │                               ├── ItemId.kt
+│   │                               ├── LocationId.kt
+│   │                               ├── LotNumber.kt
+│   │                               ├── SerialNumber.kt
+│   │                               ├── MovementType.kt              # RECEIPT, ISSUE, TRANSFER, ADJUSTMENT
+│   │                               ├── StockStatus.kt               # AVAILABLE, RESERVED, DAMAGED, IN_TRANSIT
+│   │                               ├── ValuationMethod.kt           # FIFO, WAC, STANDARD
+│   │                               └── UnitOfMeasure.kt
+│   │
+│   ├── inventory-core/                          # Port 9001 - Stock Ledger, Valuation, Reservations
+│   │   ├── core-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── inventory/
+│   │   │       │   │               └── core/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── item/
+│   │   │       │   │                       │   │   ├── Item.kt                      # Aggregate Root (uses shared ItemId)
+│   │   │       │   │                       │   │   ├── ItemType.kt                  # STOCKED, NON_STOCK, SERVICE
+│   │   │       │   │                       │   │   ├── ItemStatus.kt                # ACTIVE, BLOCKED, DISCONTINUED
+│   │   │       │   │                       │   │   ├── ItemVariant.kt               # Entity
+│   │   │       │   │                       │   │   ├── VariantId.kt
+│   │   │       │   │                       │   │   ├── Barcode.kt
+│   │   │       │   │                       │   │   ├── UoM.kt
+│   │   │       │   │                       │   │   ├── UoMConversion.kt
+│   │   │       │   │                       │   │   └── ItemAttribute.kt             # Size, color, style
+│   │   │       │   │                       │   ├── location/
+│   │   │       │   │                       │   │   ├── Location.kt                  # Aggregate Root (uses shared LocationId)
+│   │   │       │   │                       │   │   ├── LocationType.kt              # STORE, WAREHOUSE, VENDOR, IN_TRANSIT
+│   │   │       │   │                       │   │   ├── Bin.kt                       # Entity
+│   │   │       │   │                       │   │   ├── BinId.kt
+│   │   │       │   │                       │   │   ├── Capacity.kt
+│   │   │       │   │                       │   │   └── TemperatureZone.kt
+│   │   │       │   │                       │   ├── stock/
+│   │   │       │   │                       │   │   ├── StockLedger.kt               # Aggregate Root (uses shared MovementType, StockStatus)
+│   │   │       │   │                       │   │   ├── StockMovement.kt             # Entity
+│   │   │       │   │                       │   │   ├── StockLot.kt                  # Entity
+│   │   │       │   │                       │   │   ├── StockSerial.kt               # Entity
+│   │   │       │   │                       │   │   └── ExpiryDate.kt
+│   │   │       │   │                       │   ├── reservation/
+│   │   │       │   │                       │   │   ├── Reservation.kt               # Aggregate Root
+│   │   │       │   │                       │   │   ├── ReservationId.kt
+│   │   │       │   │                       │   │   ├── ReservationStatus.kt         # PENDING, CONFIRMED, RELEASED, CANCELLED
+│   │   │       │   │                       │   │   ├── AllocationRule.kt
+│   │   │       │   │                       │   │   └── ChannelPriority.kt
+│   │   │       │   │                       │   ├── valuation/
+│   │   │       │   │                       │   │   ├── CostLayer.kt                 # Aggregate Root
+│   │   │       │   │                       │   │   ├── CostLayerId.kt
+│   │   │       │   │                       │   │   ├── ValuationMethod.kt           # FIFO, WAC, STANDARD
+│   │   │       │   │                       │   │   ├── LandedCost.kt                # Entity
+│   │   │       │   │                       │   │   ├── CurrencyRate.kt
+│   │   │       │   │                       │   │   └── ValuationRun.kt              # Aggregate Root
+│   │   │       │   │                       │   └── counting/
+│   │   │       │   │                       │       ├── CycleCount.kt                # Aggregate Root
+│   │   │       │   │                       │       ├── CycleCountLine.kt            # Entity
+│   │   │       │   │                       │       ├── CountStatus.kt               # PLANNED, IN_PROGRESS, APPROVED, POSTED
+│   │   │       │   │                       │       └── VarianceReason.kt
+│   │   │       │   │                       ├── event/
+│   │   │       │   │                       │   ├── StockReceivedEvent.kt
+│   │   │       │   │                       │   ├── StockIssuedEvent.kt
+│   │   │       │   │                       │   ├── StockTransferredEvent.kt
+│   │   │       │   │                       │   ├── StockAdjustedEvent.kt
+│   │   │       │   │                       │   ├── ReservationCreatedEvent.kt
+│   │   │       │   │                       │   ├── ReservationReleasedEvent.kt
+│   │   │       │   │                       │   ├── CycleCountPostedEvent.kt
+│   │   │       │   │                       │   ├── InventoryValuationPostedEvent.kt
+│   │   │       │   │                       │   ├── LotExpiredEvent.kt
+│   │   │       │   │                       │   └── ItemDiscontinuedEvent.kt
+│   │   │       │   │                       ├── exception/
+│   │   │       │   │                       │   ├── InsufficientStockException.kt
+│   │   │       │   │                       │   ├── InvalidMovementTypeException.kt
+│   │   │       │   │                       │   ├── ReservationNotFoundException.kt
+│   │   │       │   │                       │   ├── InvalidUoMConversionException.kt
+│   │   │       │   │                       │   ├── PeriodClosedException.kt
+│   │   │       │   │                       │   └── LotExpiredException.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── ValuationService.kt
+│   │   │       │   │                           ├── AllocationService.kt
+│   │   │       │   │                           └── UoMConversionService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   ├── core-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── inventory/
+│   │   │                           └── core/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── ReceiveStockUseCase.kt
+│   │   │                                   │   │   ├── IssueStockUseCase.kt
+│   │   │                                   │   │   ├── TransferStockUseCase.kt
+│   │   │                                   │   │   ├── AdjustStockUseCase.kt
+│   │   │                                   │   │   ├── CreateReservationUseCase.kt
+│   │   │                                   │   │   ├── ReleaseReservationUseCase.kt
+│   │   │                                   │   │   ├── ExecuteCycleCountUseCase.kt
+│   │   │                                   │   │   └── RunValuationUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── StockLedgerRepository.kt
+│   │   │                                   │       ├── ReservationRepository.kt
+│   │   │                                   │       ├── ItemRepository.kt
+│   │   │                                   │       ├── LocationRepository.kt
+│   │   │                                   │       ├── CostLayerRepository.kt
+│   │   │                                   │       ├── GLPort.kt
+│   │   │                                   │       └── WMSPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── ReceiveStockCommand.kt
+│   │   │                                   │   ├── IssueStockCommand.kt
+│   │   │                                   │   ├── TransferStockCommand.kt
+│   │   │                                   │   ├── AdjustStockCommand.kt
+│   │   │                                   │   ├── CreateReservationCommand.kt
+│   │   │                                   │   ├── ReleaseReservationCommand.kt
+│   │   │                                   │   └── PostCycleCountCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetStockOnHandQuery.kt
+│   │   │                                   │   ├── GetReservationsQuery.kt
+│   │   │                                   │   ├── GetStockMovementsQuery.kt
+│   │   │                                   │   └── GetValuationReportQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── ReceiveStockCommandHandler.kt
+│   │   │                                       ├── IssueStockCommandHandler.kt
+│   │   │                                       ├── ReservationCommandHandler.kt
+│   │   │                                       ├── CycleCountCommandHandler.kt
+│   │   │                                       └── StockQueryHandler.kt
+│   │   └── core-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── inventory/
+│   │               │               └── core/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── StockResource.kt
+│   │               │                       │   │       ├── ReservationResource.kt
+│   │               │                       │   │       ├── ItemResource.kt
+│   │               │                       │   │       ├── LocationResource.kt
+│   │               │                       │   │       └── CycleCountResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── StockLedgerJpaRepository.kt
+│   │               │                       │       │   ├── ReservationJpaRepository.kt
+│   │               │                       │       │   ├── ItemJpaRepository.kt
+│   │               │                       │       │   └── CostLayerJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       └── external/
+│   │               │                       │           ├── GLAdapter.kt
+│   │               │                       │           └── WMSAdapter.kt
+│   │               │                       └── InventoryCoreApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── inventory-warehouse/                     # Port 9002 - WMS: Wave Planning, Tasks, Putaway, Pick
+│   │   ├── warehouse-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── inventory/
+│   │   │       │   │               └── warehouse/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── zone/
+│   │   │       │   │                       │   │   ├── WarehouseZone.kt             # Aggregate Root
+│   │   │       │   │                       │   │   ├── ZoneId.kt
+│   │   │       │   │                       │   │   └── ZoneType.kt                  # BULK, PICK, STAGING, RETURNS
+│   │   │       │   │                       │   ├── bin/
+│   │   │       │   │                       │   │   ├── Bin.kt                       # Aggregate Root
+│   │   │       │   │                       │   │   ├── BinId.kt
+│   │   │       │   │                       │   │   ├── BinType.kt                   # FLOOR, RACK, FLOW_RACK
+│   │   │       │   │                       │   │   └── BinCapacity.kt
+│   │   │       │   │                       │   ├── wave/
+│   │   │       │   │                       │   │   ├── PickWave.kt                  # Aggregate Root
+│   │   │       │   │                       │   │   ├── WaveId.kt
+│   │   │       │   │                       │   │   ├── WaveStatus.kt                # PLANNED, RELEASED, IN_PROGRESS, COMPLETED
+│   │   │       │   │                       │   │   ├── WaveLine.kt                  # Entity
+│   │   │       │   │                       │   │   └── WavePriority.kt
+│   │   │       │   │                       │   ├── task/
+│   │   │       │   │                       │   │   ├── Task.kt                      # Aggregate Root
+│   │   │       │   │                       │   │   ├── TaskId.kt
+│   │   │       │   │                       │   │   ├── TaskType.kt                  # PICK, PUTAWAY, REPLENISH, COUNT, KIT_ASSEMBLY, REPACK
+│   │   │       │   │                       │   │   ├── TaskStatus.kt                # PENDING, ASSIGNED, IN_PROGRESS, COMPLETED
+│   │   │       │   │                       │   │   └── TaskAssignment.kt            # Entity
+│   │   │       │   │                       │   ├── putaway/
+│   │   │       │   │                       │   │   ├── PutawayRule.kt               # Aggregate Root
+│   │   │       │   │                       │   │   ├── PutawayRuleId.kt
+│   │   │       │   │                       │   │   └── PutawayStrategy.kt           # DIRECTED, RANDOM, ZONE_BASED
+│   │   │       │   │                       │   ├── replenishment/
+│   │   │       │   │                       │   │   ├── ReplenishmentRule.kt         # Aggregate Root
+│   │   │       │   │                       │   │   ├── ReplenishmentType.kt         # MIN_MAX, DEMAND_DRIVEN
+│   │   │       │   │                       │   │   └── ReplenishmentTrigger.kt
+│   │   │       │   │                       │   └── labor/
+│   │   │       │   │                       │       ├── LaborStandard.kt             # Aggregate Root
+│   │   │       │   │                       │       ├── LaborMetric.kt
+│   │   │       │   │                       │       └── ProductivityKpi.kt
+│   │   │       │   │                       ├── event/
+│   │   │       │   │                       │   ├── WaveReleasedEvent.kt
+│   │   │       │   │                       │   ├── TaskCreatedEvent.kt
+│   │   │       │   │                       │   ├── TaskCompletedEvent.kt
+│   │   │       │   │                       │   ├── PutawayConfirmedEvent.kt
+│   │   │       │   │                       │   ├── PickConfirmedEvent.kt
+│   │   │       │   │                       │   └── ReplenishmentTriggeredEvent.kt
+│   │   │       │   │                       ├── exception/
+│   │   │       │   │                       │   ├── BinCapacityExceededException.kt
+│   │   │       │   │                       │   ├── WaveAlreadyReleasedException.kt
+│   │   │       │   │                       │   └── TaskNotFoundException.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── SlottingService.kt
+│   │   │       │   │                           ├── WavePlanningService.kt
+│   │   │       │   │                           └── PathOptimizationService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   ├── warehouse-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── inventory/
+│   │   │                           └── warehouse/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── ReleaseWaveUseCase.kt
+│   │   │                                   │   │   ├── CreateTaskUseCase.kt
+│   │   │                                   │   │   ├── CompleteTaskUseCase.kt
+│   │   │                                   │   │   ├── ConfirmPutawayUseCase.kt
+│   │   │                                   │   │   └── TriggerReplenishmentUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── WaveRepository.kt
+│   │   │                                   │       ├── TaskRepository.kt
+│   │   │                                   │       ├── BinRepository.kt
+│   │   │                                   │       ├── InventoryPort.kt
+│   │   │                                   │       └── AutomationPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── ReleaseWaveCommand.kt
+│   │   │                                   │   ├── CreateTaskCommand.kt
+│   │   │                                   │   ├── CompleteTaskCommand.kt
+│   │   │                                   │   └── ConfirmPutawayCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetWaveStatusQuery.kt
+│   │   │                                   │   ├── GetTasksQuery.kt
+│   │   │                                   │   └── GetBinUtilizationQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── WaveCommandHandler.kt
+│   │   │                                       ├── TaskCommandHandler.kt
+│   │   │                                       └── WarehouseQueryHandler.kt
+│   │   └── warehouse-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── inventory/
+│   │               │               └── warehouse/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   ├── rest/
+│   │               │                       │   │   │   ├── WaveResource.kt
+│   │               │                       │   │   │   ├── TaskResource.kt
+│   │               │                       │   │   │   └── BinResource.kt
+│   │               │                       │   │   └── rf/
+│   │               │                       │   │       └── RfDeviceController.kt    # RF/IoT device integration
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── WaveJpaRepository.kt
+│   │               │                       │       │   ├── TaskJpaRepository.kt
+│   │               │                       │       │   └── BinJpaRepository.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── InventoryWarehouseApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── inventory-valuation/                     # Port 9005 - Cost Layers, Landed Cost, FX Revaluation
+│   │   ├── valuation-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── inventory/
+│   │   │       │   │               └── valuation/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── costlayer/
+│   │   │       │   │                       │   │   ├── CostLayer.kt                 # Aggregate Root
+│   │   │       │   │                       │   │   ├── CostLayerId.kt
+│   │   │       │   │                       │   │   ├── CostType.kt                  # MATERIAL, LABOR, OVERHEAD, FREIGHT
+│   │   │       │   │                       │   │   └── CostLayerEntry.kt            # Entity
+│   │   │       │   │                       │   ├── valuation/
+│   │   │       │   │                       │   │   ├── ValuationRun.kt              # Aggregate Root
+│   │   │       │   │                       │   │   ├── ValuationRunId.kt
+│   │   │       │   │                       │   │   ├── ValuationMethod.kt           # FIFO, WAC, STANDARD
+│   │   │       │   │                       │   │   └── ValuationResult.kt           # Entity
+│   │   │       │   │                       │   ├── landed/
+│   │   │       │   │                       │   │   ├── LandedCost.kt                # Aggregate Root
+│   │   │       │   │                       │   │   ├── LandedCostId.kt
+│   │   │       │   │                       │   │   ├── AllocationBasis.kt           # QUANTITY, VALUE, WEIGHT
+│   │   │       │   │                       │   │   └── LandedCostLine.kt            # Entity
+│   │   │       │   │                       │   └── fx/
+│   │   │       │   │                       │       ├── FxRevaluation.kt             # Aggregate Root
+│   │   │       │   │                       │       ├── FxRevaluationId.kt
+│   │   │       │   │                       │       └── FxGainLoss.kt                # Entity
+│   │   │       │   │                       ├── event/
+│   │   │       │   │                       │   ├── ValuationRunCompletedEvent.kt
+│   │   │       │   │                       │   ├── LandedCostAllocatedEvent.kt
+│   │   │       │   │                       │   ├── FxRevaluationPostedEvent.kt
+│   │   │       │   │                       │   └── CostLayerCreatedEvent.kt
+│   │   │       │   │                       ├── exception/
+│   │   │       │   │                       │   ├── InvalidValuationMethodException.kt
+│   │   │       │   │                       │   ├── AllocationBasisMismatchException.kt
+│   │   │       │   │                       │   └── PeriodAlreadyClosedException.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── FifoValuationService.kt
+│   │   │       │   │                           ├── WeightedAverageService.kt
+│   │   │       │   │                           └── LandedCostAllocationService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   ├── valuation-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── inventory/
+│   │   │                           └── valuation/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── RunValuationUseCase.kt
+│   │   │                                   │   │   ├── AllocateLandedCostUseCase.kt
+│   │   │                                   │   │   └── PostFxRevaluationUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── CostLayerRepository.kt
+│   │   │                                   │       ├── ValuationRunRepository.kt
+│   │   │                                   │       ├── FxRatePort.kt
+│   │   │                                   │       └── GLPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── RunValuationCommand.kt
+│   │   │                                   │   ├── AllocateLandedCostCommand.kt
+│   │   │                                   │   └── PostFxRevaluationCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetCostLayersQuery.kt
+│   │   │                                   │   ├── GetValuationReportQuery.kt
+│   │   │                                   │   └── GetLandedCostQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── ValuationCommandHandler.kt
+│   │   │                                       ├── LandedCostCommandHandler.kt
+│   │   │                                       └── ValuationQueryHandler.kt
+│   │   └── valuation-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── inventory/
+│   │               │               └── valuation/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── ValuationResource.kt
+│   │               │                       │   │       ├── CostLayerResource.kt
+│   │               │                       │   │       └── LandedCostResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── CostLayerJpaRepository.kt
+│   │               │                       │       │   └── ValuationRunJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       └── external/
+│   │               │                       │           ├── GLAdapter.kt
+│   │               │                       │           └── FxRateAdapter.kt
+│   │               │                       └── InventoryValuationApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── inventory-atp/                           # Port 9006 - ATP Calculation, Channel Allocation, Safety Stock
+│   │   ├── atp-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── inventory/
+│   │   │       │   │               └── atp/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── allocation/
+│   │   │       │   │                       │   │   ├── AllocationPool.kt            # Aggregate Root
+│   │   │       │   │                       │   │   ├── AllocationPoolId.kt
+│   │   │       │   │                       │   │   ├── AllocationStatus.kt          # AVAILABLE, COMMITTED, RELEASED
+│   │   │       │   │                       │   │   └── AllocationLine.kt            # Entity
+│   │   │       │   │                       │   ├── channel/
+│   │   │       │   │                       │   │   ├── ChannelAllocation.kt         # Aggregate Root
+│   │   │       │   │                       │   │   ├── ChannelId.kt
+│   │   │       │   │                       │   │   ├── ChannelType.kt               # POS, ECOMMERCE, WHOLESALE, B2B
+│   │   │       │   │                       │   │   └── ChannelQuota.kt              # Entity
+│   │   │       │   │                       │   ├── safety/
+│   │   │       │   │                       │   │   ├── SafetyStock.kt               # Aggregate Root
+│   │   │       │   │                       │   │   ├── SafetyStockLevel.kt
+│   │   │       │   │                       │   │   └── ReorderPoint.kt
+│   │   │       │   │                       │   └── rule/
+│   │   │       │   │                       │       ├── ReservationRule.kt           # Aggregate Root
+│   │   │       │   │                       │       ├── RuleId.kt
+│   │   │       │   │                       │       └── PriorityMatrix.kt            # Entity
+│   │   │       │   │                       ├── event/
+│   │   │       │   │                       │   ├── AvailabilityCalculatedEvent.kt
+│   │   │       │   │                       │   ├── AllocationCommittedEvent.kt
+│   │   │       │   │                       │   ├── AllocationReleasedEvent.kt
+│   │   │       │   │                       │   └── ReservationDeniedEvent.kt
+│   │   │       │   │                       ├── exception/
+│   │   │       │   │                       │   ├── InsufficientATPException.kt
+│   │   │       │   │                       │   ├── ChannelQuotaExceededException.kt
+│   │   │       │   │                       │   └── SafetyStockViolationException.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── AtpCalculationService.kt
+│   │   │       │   │                           ├── ChannelPriorityService.kt
+│   │   │       │   │                           └── SlaAllocationService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   ├── atp-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── inventory/
+│   │   │                           └── atp/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── CalculateAtpUseCase.kt
+│   │   │                                   │   │   ├── AllocateStockUseCase.kt
+│   │   │                                   │   │   └── ReleaseAllocationUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── AllocationRepository.kt
+│   │   │                                   │       ├── ChannelAllocationRepository.kt
+│   │   │                                   │       └── InventoryPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── AllocateStockCommand.kt
+│   │   │                                   │   ├── ReleaseAllocationCommand.kt
+│   │   │                                   │   └── UpdateSafetyStockCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetAtpQuery.kt
+│   │   │                                   │   ├── GetChannelAvailabilityQuery.kt
+│   │   │                                   │   └── GetAllocationStatusQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── AtpQueryHandler.kt
+│   │   │                                       └── AllocationCommandHandler.kt
+│   │   └── atp-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── inventory/
+│   │               │               └── atp/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── AtpResource.kt
+│   │               │                       │   │       ├── AllocationResource.kt
+│   │               │                       │   │       └── ChannelResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── AllocationJpaRepository.kt
+│   │               │                       │       │   └── ChannelAllocationJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       └── cache/
+│   │               │                       │           └── RedisAtpCache.kt
+│   │               │                       └── InventoryAtpApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── inventory-traceability/                  # Port 9007 - Lot/Serial Tracking, FEFO, Recall Management
+│   │   ├── traceability-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       ├── main/
+│   │   │       │   ├── kotlin/
+│   │   │       │   │   └── com/
+│   │   │       │   │       └── chiroerp/
+│   │   │       │   │           └── inventory/
+│   │   │       │   │               └── traceability/
+│   │   │       │   │                   └── domain/
+│   │   │       │   │                       ├── model/
+│   │   │       │   │                       │   ├── lot/
+│   │   │       │   │                       │   │   ├── Lot.kt                       # Aggregate Root
+│   │   │       │   │                       │   │   ├── LotNumber.kt
+│   │   │       │   │                       │   │   ├── LotStatus.kt                 # ACTIVE, EXPIRED, RECALLED
+│   │   │       │   │                       │   │   ├── ManufactureDate.kt
+│   │   │       │   │                       │   │   └── ExpiryDate.kt
+│   │   │       │   │                       │   ├── serial/
+│   │   │       │   │                       │   │   ├── Serial.kt                    # Aggregate Root
+│   │   │       │   │                       │   │   ├── SerialNumber.kt
+│   │   │       │   │                       │   │   └── SerialStatus.kt              # ACTIVE, RETURNED, SCRAPPED
+│   │   │       │   │                       │   ├── trace/
+│   │   │       │   │                       │   │   ├── TraceChain.kt                # Aggregate Root
+│   │   │       │   │                       │   │   ├── TraceChainId.kt
+│   │   │       │   │                       │   │   ├── MovementHistory.kt           # Entity
+│   │   │       │   │                       │   │   └── SourceDocument.kt
+│   │   │       │   │                       │   └── recall/
+│   │   │       │   │                       │       ├── RecallCase.kt                # Aggregate Root
+│   │   │       │   │                       │       ├── RecallCaseId.kt
+│   │   │       │   │                       │       ├── RecallStatus.kt              # OPEN, IN_PROGRESS, CLOSED
+│   │   │       │   │                       │       └── RecallReason.kt
+│   │   │       │   │                       ├── event/
+│   │   │       │   │                       │   ├── LotCreatedEvent.kt
+│   │   │       │   │                       │   ├── SerialRegisteredEvent.kt
+│   │   │       │   │                       │   ├── LotExpiredEvent.kt
+│   │   │       │   │                       │   ├── RecallInitiatedEvent.kt
+│   │   │       │   │                       │   └── RecallClosedEvent.kt
+│   │   │       │   │                       ├── exception/
+│   │   │       │   │                       │   ├── DuplicateSerialException.kt
+│   │   │       │   │                       │   ├── LotAlreadyExpiredException.kt
+│   │   │       │   │                       │   └── RecallNotFoundException.kt
+│   │   │       │   │                       └── service/
+│   │   │       │   │                           ├── FefoAllocationService.kt
+│   │   │       │   │                           └── TraceChainService.kt
+│   │   │       │   └── resources/
+│   │   │       └── test/
+│   │   ├── traceability-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── inventory/
+│   │   │                           └── traceability/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── CreateLotUseCase.kt
+│   │   │                                   │   │   ├── RegisterSerialUseCase.kt
+│   │   │                                   │   │   ├── InitiateRecallUseCase.kt
+│   │   │                                   │   │   └── GetTraceChainUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── LotRepository.kt
+│   │   │                                   │       ├── SerialRepository.kt
+│   │   │                                   │       ├── RecallCaseRepository.kt
+│   │   │                                   │       └── TraceChainRepository.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── CreateLotCommand.kt
+│   │   │                                   │   ├── RegisterSerialCommand.kt
+│   │   │                                   │   ├── InitiateRecallCommand.kt
+│   │   │                                   │   └── CloseRecallCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetLotQuery.kt
+│   │   │                                   │   ├── GetSerialHistoryQuery.kt
+│   │   │                                   │   ├── GetTraceChainQuery.kt
+│   │   │                                   │   └── GetExpiringLotsQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── LotCommandHandler.kt
+│   │   │                                       ├── RecallCommandHandler.kt
+│   │   │                                       └── TraceabilityQueryHandler.kt
+│   │   └── traceability-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── inventory/
+│   │               │               └── traceability/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── LotResource.kt
+│   │   │                                   │   │       ├── SerialResource.kt
+│   │               │                       │   │       └── RecallResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── LotJpaRepository.kt
+│   │               │                       │       │   ├── SerialJpaRepository.kt
+│   │               │                       │       │   └── RecallCaseJpaRepository.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── InventoryTraceabilityApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   └── inventory-advanced-ops/                  # Port 9008 - Packaging, Kitting, Repack, Catch Weight
+│       ├── advanced-ops-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       ├── main/
+│       │       │   ├── kotlin/
+│       │       │   │   └── com/
+│       │       │   │       └── chiroerp/
+│       │       │   │           └── inventory/
+│       │       │   │               └── advancedops/
+│       │       │   │                   └── domain/
+│       │       │   │                       ├── model/
+│       │       │   │                       │   ├── packaging/
+│       │       │   │                       │   │   ├── PackagingLevel.kt            # Aggregate Root
+│       │       │   │                       │   │   ├── PackagingLevelId.kt
+│       │       │   │                       │   │   ├── PackagingType.kt             # PALLET, CASE, INNER_PACK, EACH
+│       │       │   │                       │   │   ├── GTIN.kt
+│       │       │   │                       │   │   └── TiHiConfig.kt                # Entity (cases/layer, layers/pallet)
+│       │       │   │                       │   ├── kit/
+│       │       │   │                       │   │   ├── Kit.kt                       # Aggregate Root
+│       │       │   │                       │   │   ├── KitId.kt
+│       │       │   │                       │   │   ├── KitType.kt                   # STATIC, DYNAMIC, VIRTUAL, CONFIGURABLE
+│       │       │   │                       │   │   ├── KitComponent.kt              # Entity
+│       │       │   │                       │   │   ├── KitBom.kt                    # Entity
+│       │       │   │                       │   │   └── SubstitutionRule.kt
+│       │       │   │                       │   ├── assembly/
+│       │       │   │                       │   │   ├── KitAssembly.kt               # Aggregate Root
+│       │       │   │                       │   │   ├── KitAssemblyId.kt
+│       │       │   │                       │   │   ├── AssemblyStatus.kt            # PLANNED, IN_PROGRESS, COMPLETED
+│       │       │   │                       │   │   └── AssemblyVariance.kt          # Entity
+│       │       │   │                       │   ├── repack/
+│       │       │   │                       │   │   ├── RepackOrder.kt               # Aggregate Root
+│       │       │   │                       │   │   ├── RepackOrderId.kt
+│       │       │   │                       │   │   ├── RepackType.kt                # BREAK_BULK, RELABEL, VAS
+│       │       │   │                       │   │   └── RepackLine.kt                # Entity
+│       │       │   │                       │   └── catchweight/
+│       │       │   │                       │       ├── CatchWeightItem.kt           # Aggregate Root
+│       │       │   │                       │       ├── CatchWeightItemId.kt
+│       │       │   │                       │       ├── NominalWeight.kt
+│       │       │   │                       │       ├── ActualWeight.kt
+│       │       │   │                       │       └── WeightVariance.kt
+│       │       │   │                       ├── event/
+│       │       │   │                       │   ├── KitAssembledEvent.kt
+│       │       │   │                       │   ├── KitDisassembledEvent.kt
+│       │       │   │                       │   ├── RepackCompletedEvent.kt
+│       │       │   │                       │   ├── CatchWeightRecordedEvent.kt
+│       │       │   │                       │   └── PackagingLevelCreatedEvent.kt
+│       │       │   │                       ├── exception/
+│       │       │   │                       │   ├── InsufficientComponentsException.kt
+│       │       │   │                       │   ├── InvalidKitBomException.kt
+│       │       │   │                       │   ├── WeightToleranceExceededException.kt
+│       │       │   │                       │   └── GtinAlreadyExistsException.kt
+│       │       │   │                       └── service/
+│       │       │   │                           ├── KitAtpService.kt
+│       │       │   │                           ├── CostRollupService.kt
+│       │       │   │                           └── UomConversionService.kt
+│       │       │   └── resources/
+│       │       └── test/
+│       ├── advanced-ops-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── inventory/
+│       │                           └── advancedops/
+│       │                               └── application/
+│       │                                   ├── port/
+│       │                                   │   ├── input/
+│       │                                   │   │   ├── AssembleKitUseCase.kt
+│       │                                   │   │   ├── DisassembleKitUseCase.kt
+│       │                                   │   │   ├── ExecuteRepackUseCase.kt
+│       │                                   │   │   ├── RecordCatchWeightUseCase.kt
+│       │                                   │   │   └── ManagePackagingUseCase.kt
+│       │                                   │   └── output/
+│       │                                   │       ├── KitRepository.kt
+│       │                                   │       ├── RepackOrderRepository.kt
+│       │                                   │       ├── CatchWeightRepository.kt
+│       │                                   │       ├── PackagingRepository.kt
+│       │                                   │       ├── CoreInventoryPort.kt
+│       │                                   │       └── GLPort.kt
+│       │                                   ├── command/
+│       │                                   │   ├── AssembleKitCommand.kt
+│       │                                   │   ├── DisassembleKitCommand.kt
+│       │                                   │   ├── CreateRepackOrderCommand.kt
+│       │                                   │   ├── RecordCatchWeightCommand.kt
+│       │                                   │   └── CreatePackagingLevelCommand.kt
+│       │                                   ├── query/
+│       │                                   │   ├── GetKitBomQuery.kt
+│       │                                   │   ├── GetKitAtpQuery.kt
+│       │                                   │   ├── GetRepackOrderQuery.kt
+│       │                                   │   └── GetPackagingHierarchyQuery.kt
+│       │                                   └── service/
+│       │                                       ├── KitCommandHandler.kt
+│       │                                       ├── RepackCommandHandler.kt
+│       │                                       └── AdvancedOpsQueryHandler.kt
+│       └── advanced-ops-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/
+│               └── main/
+│                   ├── kotlin/
+│                   │   └── com/
+│                   │       └── chiroerp/
+│                   │           └── inventory/
+│                   │               └── advancedops/
+│                   │                   └── infrastructure/
+│                   │                       ├── adapter/
+│                   │                       │   ├── input/
+│                   │                       │   │   └── rest/
+│                   │                       │   │       ├── KitResource.kt
+│                   │                       │   │       ├── RepackResource.kt
+│                   │                       │   │       ├── CatchWeightResource.kt
+│                   │                       │   │       └── PackagingResource.kt
+│                   │                       │   └── output/
+│                   │                       │       ├── persistence/
+│                   │                       │       │   ├── KitJpaRepository.kt
+│                   │                       │       │   ├── RepackOrderJpaRepository.kt
+│                   │                       │       │   └── PackagingJpaRepository.kt
+│                   │                       │       ├── messaging/
+│                   │                       │       │   └── KafkaEventPublisher.kt
+│                   │                       │       └── external/
+│                   │                       │           ├── CoreInventoryAdapter.kt
+│                   │                       │           ├── GLAdapter.kt
+│                   │                       │           └── ScaleApiAdapter.kt
+│                   │                       └── InventoryAdvancedOpsApplication.kt
+│                   └── resources/
+│                       └── application.yml
 │
-├── docker-compose.yml                          # Local development stack (all services)
-├── docker-compose.override.yml                 # Local overrides (ports, env vars)
+└── inventory-forecasting/                       # Port 9009 - AI Demand Forecasting & Replenishment
+    ├── forecasting-domain/
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       └── main/
+    │           └── kotlin/
+    │               └── com/
+    │                   └── chiroerp/
+    │                       └── inventory/
+    │                           └── forecasting/
+    │                               └── domain/
+    │                                   ├── model/
+    │                                   │   ├── forecast/
+    │                                   │   │   ├── DemandForecast.kt            # Aggregate Root
+    │                                   │   │   ├── ForecastId.kt
+    │                                   │   │   ├── ForecastHorizon.kt
+    │                                   │   │   ├── ForecastGranularity.kt       # SKU-Store-Week
+    │                                   │   │   ├── ConfidenceInterval.kt
+    │                                   │   │   └── ForecastAccuracy.kt          # MAPE, MAE, RMSE, Bias
+    │                                   │   ├── model/
+    │                                   │   │   ├── ForecastModel.kt             # Aggregate Root
+    │                                   │   │   ├── ModelId.kt
+    │                                   │   │   ├── ModelType.kt                 # ARIMA, Prophet, XGBoost, LSTM, Transformer
+    │                                   │   │   ├── ModelVersion.kt
+    │                                   │   │   ├── ModelParameters.kt
+    │                                   │   │   └── ModelPerformance.kt
+    │                                   │   ├── replenishment/
+    │                                   │   │   ├── ReorderPoint.kt              # Aggregate Root
+    │                                   │   │   ├── SafetyStock.kt
+    │                                   │   │   ├── ServiceLevel.kt              # 90%, 95%, 99%
+    │                                   │   │   ├── LeadTime.kt
+    │                                   │   │   └── ReplenishmentRecommendation.kt
+    │                                   │   ├── allocation/
+    │                                   │   │   ├── AllocationPlan.kt            # Aggregate Root (Multi-Echelon)
+    │                                   │   │   ├── AllocationId.kt
+    │                                   │   │   ├── DCAllocation.kt              # DC → Store allocation
+    │                                   │   │   ├── StoreAllocation.kt
+    │                                   │   │   └── AllocationPriority.kt
+    │                                   │   ├── seasonality/
+    │                                   │   │   ├── SeasonalityPattern.kt
+    │                                   │   │   ├── SeasonalDecomposition.kt     # STL Decomposition
+    │                                   │   │   ├── HolidayEffect.kt
+    │                                   │   │   └── WeeklyCycle.kt
+    │                                   │   ├── promotion/
+    │                                   │   │   ├── PromotionImpact.kt
+    │                                   │   │   ├── UpliftCalculation.kt
+    │                                   │   │   ├── Cannibalization.kt
+    │                                   │   │   └── HaloEffect.kt
+    │                                   │   └── externalsignal/
+    │                                   │       ├── WeatherSignal.kt
+    │                                   │       ├── EventSignal.kt
+    │                                   │       ├── CompetitorSignal.kt
+    │                                   │       └── EconomicIndicator.kt
+    │                                   ├── event/
+    │                                   │   ├── ForecastGeneratedEvent.kt
+    │                                   │   ├── ModelTrainedEvent.kt
+    │                                   │   ├── ModelAccuracyDegradedEvent.kt
+    │                                   │   ├── ReorderPointTriggeredEvent.kt
+    │                                   │   ├── ReplenishmentRecommendedEvent.kt
+    │                                   │   └── AllocationPlanCreatedEvent.kt
+    │                                   ├── exception/
+    │                                   │   ├── InsufficientHistoryException.kt
+    │                                   │   ├── ModelTrainingFailedException.kt
+    │                                   │   └── ForecastAccuracyBelowThresholdException.kt
+    │                                   └── service/
+    │                                       ├── TimeSeriesForecastingService.kt
+    │                                       ├── SeasonalityDetectionService.kt
+    │                                       ├── PromotionImpactService.kt
+    │                                       ├── ReorderPointCalculationService.kt
+    │                                       └── MultiEchelonOptimizationService.kt
+    ├── forecasting-application/
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       └── main/
+    │           └── kotlin/
+    │               └── com/
+    │                   └── chiroerp/
+    │                       └── inventory/
+    │                           └── forecasting/
+    │                               └── application/
+    │                                   ├── port/
+    │                                   │   ├── input/
+    │                                   │   │   ├── GenerateForecastUseCase.kt
+    │                                   │   │   ├── TrainModelUseCase.kt
+    │                                   │   │   ├── CalculateReorderPointUseCase.kt
+    │                                   │   │   ├── CreateAllocationPlanUseCase.kt
+    │                                   │   │   └── GetReplenishmentRecommendationsUseCase.kt
+    │                                   │   └── output/
+    │                                   │       ├── ForecastRepository.kt
+    │                                   │       ├── ModelRepository.kt
+    │                                   │       ├── AllocationRepository.kt
+    │                                   │       ├── SalesHistoryPort.kt
+    │                                   │       ├── InventoryLevelPort.kt
+    │                                   │       ├── WeatherApiPort.kt
+    │                                   │       ├── EventApiPort.kt
+    │                                   │       └── EventPublisherPort.kt
+    │                                   ├── command/
+    │                                   │   ├── GenerateForecastCommand.kt
+    │                                   │   ├── TrainModelCommand.kt
+    │                                   │   ├── RetrainModelCommand.kt
+    │                                   │   ├── CalculateReorderPointCommand.kt
+    │                                   │   ├── CreateAllocationPlanCommand.kt
+    │                                   │   └── CreateReplenishmentPlanCommand.kt
+    │                                   ├── query/
+    │                                   │   ├── GetForecastQuery.kt
+    │                                   │   ├── GetForecastAccuracyQuery.kt
+    │                                   │   ├── GetSeasonalityPatternsQuery.kt
+    │                                   │   ├── GetAllocationPlanQuery.kt
+    │                                   │   ├── GetReplenishmentRecommendationsQuery.kt
+    │                                   │   └── WhatIfAnalysisQuery.kt
+    │                                   └── service/
+    │                                       ├── ForecastCommandHandler.kt
+    │                                       ├── ModelCommandHandler.kt
+    │                                       ├── AllocationCommandHandler.kt
+    │                                       └── ReplenishmentCommandHandler.kt
+    └── forecasting-infrastructure/
+        ├── build.gradle.kts
+        └── src/
+            └── main/
+                ├── kotlin/
+                │   └── com/
+                │       └── chiroerp/
+                │           └── inventory/
+                │               └── forecasting/
+                │                   └── infrastructure/
+                │                       ├── adapter/
+                │                       │   ├── input/
+                │                       │   │   └── rest/
+                │                       │   │       ├── ForecastResource.kt
+                │                       │   │       ├── ModelResource.kt
+                │                       │   │       ├── AllocationResource.kt
+                │                       │   │       └── ReplenishmentResource.kt
+                │                       │   └── output/
+                │                       │       ├── persistence/
+                │                       │       │   ├── ForecastJpaRepository.kt
+                │                       │       │   ├── ModelJpaRepository.kt
+                │                       │       │   └── AllocationJpaRepository.kt
+                │                       │       ├── ml/
+                │                       │       │   ├── ArimaModelAdapter.kt
+                │                       │       │   ├── ProphetModelAdapter.kt
+                │                       │       │   ├── XGBoostModelAdapter.kt
+                │                       │       │   ├── LSTMModelAdapter.kt
+                │                       │       │   └── TransformerModelAdapter.kt
+                │                       │       ├── external/
+                │                       │       │   ├── OpenWeatherMapAdapter.kt
+                │                       │       │   ├── TicketmasterAdapter.kt
+                │                       │       │   ├── EconomicDataAdapter.kt
+                │                       │       │   └── CoreInventoryAdapter.kt
+                │                       │       └── messaging/
+                │                       │           └── KafkaEventPublisher.kt
+                │                       ├── mlops/
+                │                       │   ├── MLflowIntegration.kt
+                │                       │   ├── ModelRegistry.kt
+                │                       │   └── AutoRetrainScheduler.kt
+                │                       └── InventoryForecastingApplication.kt
+                └── resources/
+                    └── application.yml
+
+├── analytics/                                   # ANALYTICS & REPORTING BOUNDED CONTEXT (ADR-016)
+│   │
+│   ├── analytics-shared/                        # Shared types across analytics subdomains
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       └── main/
+│   │           └── kotlin/
+│   │               └── com/
+│   │                   └── chiroerp/
+│   │                       └── analytics/
+│   │                           └── shared/
+│   │                               ├── DimensionId.kt
+│   │                               ├── FactId.kt
+│   │                               ├── CubeId.kt
+│   │                               ├── KpiId.kt
+│   │                               ├── DashboardId.kt
+│   │                               ├── ReportScheduleId.kt
+│   │                               ├── TimeGrain.kt              # DAILY, WEEKLY, MONTHLY, QUARTERLY, YEARLY
+│   │                               ├── SCDType.kt                # TYPE1, TYPE2
+│   │                               └── RefreshStatus.kt          # STARTED, COMPLETED, FAILED
+│   │
+│   ├── analytics-warehouse/                     # Port 9801 - Data Warehouse, Facts, Dimensions, ETL
+│   │   ├── warehouse-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── warehouse/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── load/
+│   │   │                                   │   │   ├── WarehouseLoad.kt         # Aggregate Root
+│   │   │                                   │   │   ├── WarehouseLoadId.kt
+│   │   │                                   │   │   ├── LoadStatus.kt            # STARTED, COMPLETED, FAILED
+│   │   │                                   │   │   └── LoadBatch.kt
+│   │   │                                   │   ├── dimension/
+│   │   │                                   │   │   ├── DimensionModel.kt        # Aggregate Root
+│   │   │                                   │   │   ├── DimensionId.kt
+│   │   │                                   │   │   ├── DimensionVersion.kt
+│   │   │                                   │   │   ├── SCDType.kt               # TYPE1, TYPE2
+│   │   │                                   │   │   ├── DimCustomer.kt           # Entity
+│   │   │                                   │   │   ├── DimProduct.kt            # Entity
+│   │   │                                   │   │   ├── DimDate.kt               # Entity
+│   │   │                                   │   │   ├── DimTime.kt               # Entity
+│   │   │                                   │   │   ├── DimCompany.kt            # Entity
+│   │   │                                   │   │   └── DimCostCenter.kt         # Entity
+│   │   │                                   │   └── fact/
+│   │   │                                   │       ├── FactTable.kt             # Aggregate Root
+│   │   │                                   │       ├── FactDefinition.kt
+│   │   │                                   │       ├── FactPartition.kt
+│   │   │                                   │       ├── FactInvoice.kt           # Entity
+│   │   │                                   │       ├── FactPayment.kt           # Entity
+│   │   │                                   │       ├── FactJournalEntry.kt      # Entity
+│   │   │                                   │       ├── FactSalesOrder.kt        # Entity
+│   │   │                                   │       └── FactInventoryMovement.kt # Entity
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── WarehouseLoadStartedEvent.kt
+│   │   │                                   │   ├── WarehouseLoadCompletedEvent.kt
+│   │   │                                   │   ├── DimensionUpdatedEvent.kt
+│   │   │                                   │   └── FactPartitionPublishedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── LoadFailedException.kt
+│   │   │                                   │   ├── DimensionNotFoundException.kt
+│   │   │                                   │   ├── FactDefinitionInvalidException.kt
+│   │   │                                   │   └── PartitionWriteException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── LoadOrchestrationService.kt
+│   │   │                                       ├── DimensionService.kt
+│   │   │                                       └── FactPublishingService.kt
+│   │   ├── warehouse-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── warehouse/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── LoadWarehouseUseCase.kt
+│   │   │                                   │   │   ├── RefreshDimensionUseCase.kt
+│   │   │                                   │   │   └── PublishFactUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── WarehouseLoadRepository.kt
+│   │   │                                   │       ├── DimensionRepository.kt
+│   │   │                                   │       ├── FactRepository.kt
+│   │   │                                   │       ├── CDCSourceAdapter.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── StartLoadCommand.kt
+│   │   │                                   │   ├── RefreshDimensionCommand.kt
+│   │   │                                   │   └── PublishFactCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetLoadStatusQuery.kt
+│   │   │                                   │   ├── GetDimensionQuery.kt
+│   │   │                                   │   └── GetFactDataQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── WarehouseCommandHandler.kt
+│   │   │                                       └── WarehouseQueryHandler.kt
+│   │   └── warehouse-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── analytics/
+│   │               │               └── warehouse/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── LoadResource.kt
+│   │               │                       │   │       ├── DimensionResource.kt
+│   │               │                       │   │       └── FactResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── WarehouseLoadJpaRepository.kt
+│   │               │                       │       │   ├── DimensionJpaRepository.kt
+│   │               │                       │       │   └── FactJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       ├── cdc/
+│   │               │                       │       │   ├── DebeziumAdapter.kt
+│   │               │                       │       │   └── CDCConnectorConfig.kt
+│   │               │                       │       └── etl/
+│   │               │                       │           ├── DbtAdapter.kt
+│   │               │                       │           └── StagingTableLoader.kt
+│   │               │                       └── AnalyticsWarehouseApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── analytics-olap/                          # Port 9802 - OLAP/Cube Engine, Aggregations
+│   │   ├── olap-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── olap/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── cube/
+│   │   │                                   │   │   ├── CubeDefinition.kt        # Aggregate Root
+│   │   │                                   │   │   ├── CubeId.kt
+│   │   │                                   │   │   ├── Measure.kt
+│   │   │                                   │   │   └── DimensionRef.kt
+│   │   │                                   │   ├── refresh/
+│   │   │                                   │   │   ├── CubeRefresh.kt           # Entity
+│   │   │                                   │   │   ├── RefreshStatus.kt         # STARTED, COMPLETED, FAILED
+│   │   │                                   │   │   └── RefreshWindow.kt
+│   │   │                                   │   └── aggregate/
+│   │   │                                   │       ├── AggregateSnapshot.kt     # Entity
+│   │   │                                   │       ├── AggregateKey.kt
+│   │   │                                   │       └── AggregateValue.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── CubeRefreshedEvent.kt
+│   │   │                                   │   ├── CubeRefreshFailedEvent.kt
+│   │   │                                   │   └── AggregateSnapshotPublishedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── CubeNotFoundException.kt
+│   │   │                                   │   ├── RefreshFailedException.kt
+│   │   │                                   │   └── DimensionMissingException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── CubeRefreshService.kt
+│   │   │                                       ├── AggregationService.kt
+│   │   │                                       └── QueryOptimizationService.kt
+│   │   ├── olap-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── olap/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── RefreshCubeUseCase.kt
+│   │   │                                   │   │   ├── QueryCubeUseCase.kt
+│   │   │                                   │   │   └── ManageCubeUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── CubeRepository.kt
+│   │   │                                   │       ├── AggregateRepository.kt
+│   │   │                                   │       ├── WarehouseAdapter.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── RefreshCubeCommand.kt
+│   │   │                                   │   ├── CreateCubeCommand.kt
+│   │   │                                   │   └── DeleteCubeCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetCubeDataQuery.kt
+│   │   │                                   │   ├── GetAggregateQuery.kt
+│   │   │                                   │   └── ListCubesQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── OlapCommandHandler.kt
+│   │   │                                       └── OlapQueryHandler.kt
+│   │   └── olap-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── analytics/
+│   │               │               └── olap/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── CubeResource.kt
+│   │               │                       │   │       ├── AggregateResource.kt
+│   │               │                       │   │       └── QueryResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── CubeJpaRepository.kt
+│   │               │                       │       │   └── AggregateJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       └── cache/
+│   │               │                       │           └── RedisCubeCache.kt
+│   │               │                       └── AnalyticsOlapApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── analytics-kpi/                           # Port 9803 - KPI Engine, Thresholds, Alerts
+│   │   ├── kpi-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── kpi/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── definition/
+│   │   │                                   │   │   ├── KPIDefinition.kt         # Aggregate Root
+│   │   │                                   │   │   ├── KpiId.kt
+│   │   │                                   │   │   ├── Formula.kt
+│   │   │                                   │   │   └── Threshold.kt
+│   │   │                                   │   ├── result/
+│   │   │                                   │   │   ├── KPIResult.kt             # Entity
+│   │   │                                   │   │   ├── ResultPeriod.kt
+│   │   │                                   │   │   └── ResultStatus.kt
+│   │   │                                   │   └── alert/
+│   │   │                                   │       ├── KpiAlert.kt              # Entity
+│   │   │                                   │       ├── AlertSeverity.kt         # INFO, WARNING, CRITICAL
+│   │   │                                   │       └── AlertRecipient.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── KpiCalculatedEvent.kt
+│   │   │                                   │   ├── KpiThresholdBreachedEvent.kt
+│   │   │                                   │   └── KpiDefinitionUpdatedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── KpiNotFoundException.kt
+│   │   │                                   │   ├── InvalidFormulaException.kt
+│   │   │                                   │   └── ThresholdInvalidException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── KpiCalculationService.kt
+│   │   │                                       ├── ThresholdEvaluationService.kt
+│   │   │                                       └── KpiSchedulingService.kt
+│   │   ├── kpi-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── analytics/
+│   │   │                           └── kpi/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── CalculateKpiUseCase.kt
+│   │   │                                   │   │   ├── ManageKpiUseCase.kt
+│   │   │                                   │   │   └── AlertKpiUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── KpiRepository.kt
+│   │   │                                   │       ├── KpiResultRepository.kt
+│   │   │                                   │       ├── WarehouseAdapter.kt
+│   │   │                                   │       ├── OlapAdapter.kt
+│   │   │                                   │       ├── AlertNotificationPort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── CalculateKpiCommand.kt
+│   │   │                                   │   ├── CreateKpiCommand.kt
+│   │   │                                   │   ├── UpdateKpiCommand.kt
+│   │   │                                   │   └── DeleteKpiCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetKpiResultQuery.kt
+│   │   │                                   │   ├── GetKpiHistoryQuery.kt
+│   │   │                                   │   └── ListKpisQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── KpiCommandHandler.kt
+│   │   │                                       └── KpiQueryHandler.kt
+│   │   └── kpi-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── analytics/
+│   │               │               └── kpi/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── KpiResource.kt
+│   │               │                       │   │       ├── KpiResultResource.kt
+│   │               │                       │   │       └── AlertResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── KpiJpaRepository.kt
+│   │               │                       │       │   └── KpiResultJpaRepository.kt
+│   │               │                       │       ├── messaging/
+│   │               │                       │       │   └── KafkaEventPublisher.kt
+│   │               │                       │       ├── notification/
+│   │               │                       │       │   ├── EmailNotificationAdapter.kt
+│   │               │                       │       │   └── SlackNotificationAdapter.kt
+│   │               │                       │       └── scheduler/
+│   │               │                       │           └── QuartzKpiScheduler.kt
+│   │               │                       └── AnalyticsKpiApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── analytics-dashboard/                     # Port 9804 (inline) - Dashboard Builder, Widgets
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       └── main/
+│   │           └── kotlin/
+│   │               └── com/
+│   │                   └── chiroerp/
+│   │                       └── analytics/
+│   │                           └── dashboard/
+│   │                               ├── model/
+│   │                               │   ├── Dashboard.kt                 # Aggregate Root
+│   │                               │   ├── DashboardId.kt
+│   │                               │   ├── Widget.kt                    # Entity
+│   │                               │   ├── WidgetId.kt
+│   │                               │   ├── WidgetType.kt                # KPI, CHART, TABLE, MAP
+│   │                               │   ├── LayoutPosition.kt
+│   │                               │   └── DashboardShare.kt            # Entity
+│   │                               ├── event/
+│   │                               │   ├── DashboardPublishedEvent.kt
+│   │                               │   └── DashboardSharedEvent.kt
+│   │                               ├── service/
+│   │                               │   ├── DashboardService.kt
+│   │                               │   └── WidgetService.kt
+│   │                               └── DashboardModule.kt
+│   │
+│   ├── analytics-scheduler/                     # Port 9805 (inline) - Report Scheduler, Delivery
+│   │   ├── build.gradle.kts
+│   │   └── src/
+│   │       └── main/
+│   │           └── kotlin/
+│   │               └── com/
+│   │                   └── chiroerp/
+│   │                       └── analytics/
+│   │                           └── scheduler/
+│   │                               ├── model/
+│   │                               │   ├── ReportSchedule.kt            # Aggregate Root
+│   │                               │   ├── ScheduleId.kt
+│   │                               │   ├── CronExpression.kt
+│   │                               │   ├── DeliveryTarget.kt            # Entity
+│   │                               │   ├── DeliveryType.kt              # EMAIL, SFTP, PORTAL
+│   │                               │   └── RetentionPolicy.kt
+│   │                               ├── event/
+│   │                               │   ├── ReportScheduledEvent.kt
+│   │                               │   └── ReportDeliveredEvent.kt
+│   │                               ├── service/
+│   │                               │   ├── SchedulerService.kt
+│   │                               │   └── DeliveryService.kt
+│   │                               └── SchedulerModule.kt
+│   │
+│   └── analytics-embedded/                      # Port 9806 (inline) - Embedded Analytics, Contextual KPIs
+│       ├── build.gradle.kts
+│       └── src/
+│           └── main/
+│               └── kotlin/
+│                   └── com/
+│                       └── chiroerp/
+│                           └── analytics/
+│                               └── embedded/
+│                                   ├── model/
+│                                   │   ├── EmbeddedWidget.kt            # Aggregate Root
+│                                   │   ├── WidgetId.kt
+│                                   │   ├── WidgetContext.kt             # CUSTOMER_DETAIL, PRODUCT_VIEW, etc.
+│                                   │   ├── InsightCache.kt              # Entity
+│                                   │   ├── CacheKey.kt
+│                                   │   └── QueryTemplate.kt
+│                                   ├── event/
+│                                   │   ├── EmbeddedWidgetPublishedEvent.kt
+│                                   │   └── InsightCacheRefreshedEvent.kt
+│                                   ├── service/
+│                                   │   ├── EmbeddedWidgetService.kt
+│                                   │   └── InsightCacheService.kt
+│                                   └── EmbeddedModule.kt
 │
-├── .gitignore                                  # Git ignore rules
-├── .editorconfig                               # Editor config
-├── .env.example                                # Environment variables template
+├── commerce/                                    # COMMERCE BOUNDED CONTEXT (ADR-025) - Omnichannel
+│   │
+│   ├── commerce-shared/                         # ADR-006 COMPLIANT: Identifiers, VOs, Enums ONLY
+│   │   ├── build.gradle.kts                     # NO domain models, NO business logic
+│   │   └── src/
+│   │       └── main/
+│   │           └── kotlin/
+│   │               └── com/
+│   │                   └── chiroerp/
+│   │                       └── commerce/
+│   │                           └── shared/
+│   │                               ├── identifiers/            # Typed IDs only
+│   │                               │   ├── ProductId.kt
+│   │                               │   ├── CategoryId.kt
+│   │                               │   ├── OrderId.kt
+│   │                               │   └── CustomerId.kt
+│   │                               ├── valueobjects/           # Context-specific VOs (duplicated per ADR-006)
+│   │                               │   ├── Money.kt            # Commerce-specific Money VO
+│   │                               │   ├── SKU.kt
+│   │                               │   ├── Price.kt
+│   │                               │   ├── Discount.kt
+│   │                               │   ├── Tax.kt
+│   │                               │   └── Address.kt          # Commerce-specific Address VO
+│   │                               └── enums/                  # Enumerations only
+│   │                                   ├── OrderStatus.kt
+│   │                                   ├── PaymentStatus.kt
+│   │                                   ├── FulfillmentStatus.kt
+│   │                                   └── ProductStatus.kt
+│   │
+│   ├── commerce-ecommerce/                      # Port 9301 - E-Commerce (B2C/D2C Online)
+│   │   ├── ecommerce-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── ecommerce/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── storefront/
+│   │   │                                   │   │   ├── OnlineStore.kt           # Aggregate Root
+│   │   │                                   │   │   ├── StoreId.kt
+│   │   │                                   │   │   ├── Storefront.kt
+│   │   │                                   │   │   ├── ProductListing.kt
+│   │   │                                   │   │   ├── SearchFilter.kt
+│   │   │                                   │   │   ├── CategoryTree.kt
+│   │   │                                   │   │   └── FacetedNavigation.kt
+│   │   │                                   │   ├── cart/
+│   │   │                                   │   │   ├── ShoppingCart.kt          # Aggregate Root
+│   │   │                                   │   │   ├── CartId.kt
+│   │   │                                   │   │   ├── CartItem.kt              # Entity
+│   │   │                                   │   │   ├── Wishlist.kt              # Aggregate Root
+│   │   │                                   │   │   ├── SavedForLater.kt
+│   │   │                                   │   │   └── CartExpiration.kt
+│   │   │                                   │   ├── checkout/
+│   │   │                                   │   │   ├── Checkout.kt              # Aggregate Root
+│   │   │                                   │   │   ├── CheckoutId.kt
+│   │   │                                   │   │   ├── ShippingMethod.kt
+│   │   │                                   │   │   ├── PaymentMethod.kt
+│   │   │                                   │   │   ├── GuestCheckout.kt
+│   │   │                                   │   │   ├── AddressValidation.kt
+│   │   │                                   │   │   └── CheckoutStep.kt
+│   │   │                                   │   ├── order/
+│   │   │                                   │   │   ├── OnlineOrder.kt           # Aggregate Root
+│   │   │                                   │   │   ├── OrderId.kt
+│   │   │                                   │   │   ├── OrderLine.kt             # Entity
+│   │   │                                   │   │   ├── OrderStatus.kt
+│   │   │                                   │   │   ├── OrderTracking.kt
+│   │   │                                   │   │   ├── DeliveryStatus.kt
+│   │   │                                   │   │   ├── Shipment.kt
+│   │   │                                   │   │   └── TrackingNumber.kt
+│   │   │                                   │   ├── promotion/
+│   │   │                                   │   │   ├── Promotion.kt             # Aggregate Root
+│   │   │                                   │   │   ├── PromotionId.kt
+│   │   │                                   │   │   ├── CouponCode.kt
+│   │   │                                   │   │   ├── DiscountRule.kt
+│   │   │                                   │   │   ├── PromotionCondition.kt
+│   │   │                                   │   │   ├── FlashSale.kt
+│   │   │                                   │   │   ├── BundleOffer.kt
+│   │   │                                   │   │   └── PromotionValidity.kt
+│   │   │                                   │   ├── review/
+│   │   │                                   │   │   ├── ProductReview.kt         # Aggregate Root
+│   │   │                                   │   │   ├── ReviewId.kt
+│   │   │                                   │   │   ├── Rating.kt
+│   │   │                                   │   │   ├── ReviewText.kt
+│   │   │                                   │   │   ├── ReviewModeration.kt
+│   │   │                                   │   │   ├── ReviewVote.kt
+│   │   │                                   │   │   └── VerifiedPurchase.kt
+│   │   │                                   │   └── customer/
+│   │   │                                   │       ├── OnlineCustomer.kt        # Aggregate Root
+│   │   │                                   │       ├── CustomerAccount.kt
+│   │   │                                   │       ├── OrderHistory.kt
+│   │   │                                   │       ├── PaymentProfile.kt
+│   │   │                                   │       └── ShippingAddress.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── CartAbandonedEvent.kt
+│   │   │                                   │   ├── OrderPlacedOnlineEvent.kt
+│   │   │                                   │   ├── CheckoutStartedEvent.kt
+│   │   │                                   │   ├── PaymentFailedEvent.kt
+│   │   │                                   │   ├── ReviewSubmittedEvent.kt
+│   │   │                                   │   ├── WishlistUpdatedEvent.kt
+│   │   │                                   │   └── ShipmentDispatchedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── CartNotFoundException.kt
+│   │   │                                   │   ├── CheckoutValidationException.kt
+│   │   │                                   │   ├── InvalidCouponException.kt
+│   │   │                                   │   └── OutOfStockException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── PersonalizationService.kt
+│   │   │                                       ├── RecommendationEngine.kt
+│   │   │                                       ├── SEOOptimizationService.kt
+│   │   │                                       ├── PricingEngine.kt
+│   │   │                                       └── InventoryCheckService.kt
+│   │   ├── ecommerce-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── ecommerce/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── AddToCartUseCase.kt
+│   │   │                                   │   │   ├── CheckoutUseCase.kt
+│   │   │                                   │   │   ├── PlaceOrderUseCase.kt
+│   │   │                                   │   │   └── SearchProductsUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── CartRepository.kt
+│   │   │                                   │       ├── OrderRepository.kt
+│   │   │                                   │       ├── ReviewRepository.kt
+│   │   │                                   │       ├── PromotionRepository.kt
+│   │   │                                   │       ├── ProductCatalogPort.kt
+│   │   │                                   │       ├── InventoryServicePort.kt
+│   │   │                                   │       ├── PaymentGatewayPort.kt
+│   │   │                                   │       ├── ShippingServicePort.kt
+│   │   │                                   │       ├── TaxCalculationPort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── AddToCartCommand.kt
+│   │   │                                   │   ├── UpdateCartItemCommand.kt
+│   │   │                                   │   ├── RemoveFromCartCommand.kt
+│   │   │                                   │   ├── CheckoutCommand.kt
+│   │   │                                   │   ├── ApplyCouponCommand.kt
+│   │   │                                   │   ├── PlaceOrderCommand.kt
+│   │   │                                   │   └── SubmitReviewCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── SearchProductsQuery.kt
+│   │   │                                   │   ├── GetCartQuery.kt
+│   │   │                                   │   ├── TrackOrderQuery.kt
+│   │   │                                   │   ├── GetProductDetailsQuery.kt
+│   │   │                                   │   ├── GetReviewsQuery.kt
+│   │   │                                   │   └── GetOrderHistoryQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── CartCommandHandler.kt
+│   │   │                                       ├── CheckoutCommandHandler.kt
+│   │   │                                       ├── OrderCommandHandler.kt
+│   │   │                                       ├── ProductSearchQueryHandler.kt
+│   │   │                                       └── ReviewCommandHandler.kt
+│   │   └── ecommerce-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── commerce/
+│   │               │               └── ecommerce/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   ├── rest/
+│   │               │                       │   │   │   ├── StorefrontResource.kt
+│   │               │                       │   │   │   ├── CartResource.kt
+│   │               │                       │   │   │   ├── CheckoutResource.kt
+│   │               │                       │   │   │   ├── OrderResource.kt
+│   │               │                       │   │   │   ├── ReviewResource.kt
+│   │               │                       │   │   │   └── ProductSearchResource.kt
+│   │               │                       │   │   └── graphql/
+│   │               │                       │   │       ├── ProductResolver.kt
+│   │               │                       │   │       ├── CartMutation.kt
+│   │               │                       │   │       ├── OrderQuery.kt
+│   │               │                       │   │       └── schema.graphqls
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── CartJpaRepository.kt
+│   │               │                       │       │   ├── OrderJpaRepository.kt
+│   │               │                       │       │   └── ReviewJpaRepository.kt
+│   │               │                       │       ├── cache/
+│   │               │                       │       │   ├── RedisCartCache.kt
+│   │               │                       │       │   └── RedisProductCache.kt
+│   │               │                       │       ├── search/
+│   │               │                       │       │   ├── ElasticsearchAdapter.kt
+│   │               │                       │       │   └── ProductIndexer.kt
+│   │               │                       │       ├── payment/
+│   │               │                       │       │   ├── StripeAdapter.kt
+│   │               │                       │       │   ├── PayPalAdapter.kt
+│   │               │                       │       │   └── BraintreeAdapter.kt
+│   │               │                       │       ├── shipping/
+│   │               │                       │       │   ├── ShippoAdapter.kt
+│   │               │                       │       │   ├── FedExAdapter.kt
+│   │               │                       │       │   └── UPSAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── CommerceEcommerceApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── commerce-pos/                            # Port 9302 - Point of Sale (Retail Store)
+│   │   ├── pos-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── pos/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── transaction/
+│   │   │                                   │   │   ├── POSTransaction.kt        # Aggregate Root
+│   │   │                                   │   │   ├── TransactionId.kt
+│   │   │                                   │   │   ├── LineItem.kt              # Entity
+│   │   │                                   │   │   ├── TransactionStatus.kt
+│   │   │                                   │   │   ├── Receipt.kt
+│   │   │                                   │   │   ├── ReceiptNumber.kt
+│   │   │                                   │   │   └── TransactionType.kt       # SALE, RETURN, EXCHANGE
+│   │   │                                   │   ├── register/
+│   │   │                                   │   │   ├── CashRegister.kt          # Aggregate Root
+│   │   │                                   │   │   ├── RegisterId.kt
+│   │   │                                   │   │   ├── CashDrawer.kt            # Entity
+│   │   │                                   │   │   ├── Shift.kt                 # Entity
+│   │   │                                   │   │   ├── ShiftId.kt
+│   │   │                                   │   │   ├── CashCount.kt
+│   │   │                                   │   │   └── RegisterStatus.kt
+│   │   │                                   │   ├── payment/
+│   │   │                                   │   │   ├── POSPayment.kt            # Entity
+│   │   │                                   │   │   ├── PaymentId.kt
+│   │   │                                   │   │   ├── PaymentType.kt           # CASH, CARD, MOBILE, GIFT_CARD
+│   │   │                                   │   │   ├── TenderAmount.kt
+│   │   │                                   │   │   ├── ChangeAmount.kt
+│   │   │                                   │   │   └── SplitPayment.kt
+│   │   │                                   │   ├── loyalty/
+│   │   │                                   │   │   ├── LoyaltyCard.kt           # Aggregate Root
+│   │   │                                   │   │   ├── LoyaltyId.kt
+│   │   │                                   │   │   ├── LoyaltyPoints.kt
+│   │   │                                   │   │   ├── PointsRedemption.kt
+│   │   │                                   │   │   └── MemberDiscount.kt
+│   │   │                                   │   └── hardware/
+│   │   │                                   │       ├── BarcodeScanner.kt
+│   │   │                                   │       ├── ReceiptPrinter.kt
+│   │   │                                   │       ├── CardTerminal.kt
+│   │   │                                   │       └── CustomerDisplay.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── TransactionCompletedEvent.kt
+│   │   │                                   │   ├── TransactionVoidedEvent.kt
+│   │   │                                   │   ├── ShiftOpenedEvent.kt
+│   │   │                                   │   ├── ShiftClosedEvent.kt
+│   │   │                                   │   ├── DrawerOpenedEvent.kt
+│   │   │                                   │   ├── CashDropEvent.kt
+│   │   │                                   │   └── LoyaltyPointsEarnedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── RegisterClosedException.kt
+│   │   │                                   │   ├── InsufficientCashException.kt
+│   │   │                                   │   ├── ShiftNotOpenException.kt
+│   │   │                                   │   ├── PaymentDeclinedException.kt
+│   │   │                                   │   └── HardwareConnectionException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── TransactionService.kt
+│   │   │                                       ├── ShiftManagementService.kt
+│   │   │                                       ├── CashManagementService.kt
+│   │   │                                       └── LoyaltyService.kt
+│   │   ├── pos-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── pos/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── StartTransactionUseCase.kt
+│   │   │                                   │   │   ├── AddItemUseCase.kt
+│   │   │                                   │   │   ├── ProcessPaymentUseCase.kt
+│   │   │                                   │   │   └── ManageShiftUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── TransactionRepository.kt
+│   │   │                                   │       ├── RegisterRepository.kt
+│   │   │                                   │       ├── ShiftRepository.kt
+│   │   │                                   │       ├── LoyaltyRepository.kt
+│   │   │                                   │       ├── InventoryServicePort.kt
+│   │   │                                   │       ├── PaymentTerminalPort.kt
+│   │   │                                   │       ├── PrinterPort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── StartTransactionCommand.kt
+│   │   │                                   │   ├── AddLineItemCommand.kt
+│   │   │                                   │   ├── RemoveLineItemCommand.kt
+│   │   │                                   │   ├── ApplyDiscountCommand.kt
+│   │   │                                   │   ├── ProcessPaymentCommand.kt
+│   │   │                                   │   ├── VoidTransactionCommand.kt
+│   │   │                                   │   ├── OpenShiftCommand.kt
+│   │   │                                   │   ├── CloseShiftCommand.kt
+│   │   │                                   │   └── CashDropCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetCurrentTransactionQuery.kt
+│   │   │                                   │   ├── GetShiftSummaryQuery.kt
+│   │   │                                   │   ├── GetDrawerBalanceQuery.kt
+│   │   │                                   │   └── GetSalesReportQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── TransactionCommandHandler.kt
+│   │   │                                       ├── ShiftCommandHandler.kt
+│   │   │                                       ├── PaymentCommandHandler.kt
+│   │   │                                       └── POSQueryHandler.kt
+│   │   └── pos-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── commerce/
+│   │               │               └── pos/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── TransactionResource.kt
+│   │               │                       │   │       ├── RegisterResource.kt
+│   │               │                       │   │       ├── ShiftResource.kt
+│   │               │                       │   │       └── ReportResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── TransactionJpaRepository.kt
+│   │               │                       │       │   ├── RegisterJpaRepository.kt
+│   │               │                       │       │   └── ShiftJpaRepository.kt
+│   │               │                       │       ├── hardware/
+│   │               │                       │       │   ├── EpsonPrinterAdapter.kt
+│   │               │                       │       │   ├── VerifoneTerminalAdapter.kt
+│   │               │                       │       │   ├── SymbolScannerAdapter.kt
+│   │               │                       │       │   └── USBHardwareManager.kt
+│   │               │                       │       ├── offline/
+│   │               │                       │       │   ├── OfflineSyncAdapter.kt
+│   │               │                       │       │   └── LocalStorageAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── CommercePOSApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── commerce-b2b/                            # Port 9303 - B2B Commerce (Business Customers)
+│   │   ├── b2b-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── b2b/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── account/
+│   │   │                                   │   │   ├── BusinessAccount.kt       # Aggregate Root
+│   │   │                                   │   │   ├── AccountId.kt
+│   │   │                                   │   │   ├── CompanyProfile.kt
+│   │   │                                   │   │   ├── TaxExemption.kt
+│   │   │                                   │   │   ├── CreditLimit.kt
+│   │   │                                   │   │   ├── PaymentTerms.kt
+│   │   │                                   │   │   └── AccountStatus.kt
+│   │   │                                   │   ├── buyer/
+│   │   │                                   │   │   ├── Buyer.kt                 # Entity
+│   │   │                                   │   │   ├── BuyerId.kt
+│   │   │                                   │   │   ├── BuyerRole.kt
+│   │   │                                   │   │   ├── ApprovalWorkflow.kt
+│   │   │                                   │   │   ├── PurchasingAuthority.kt
+│   │   │                                   │   │   └── SpendingLimit.kt
+│   │   │                                   │   ├── contract/
+│   │   │                                   │   │   ├── Contract.kt              # Aggregate Root
+│   │   │                                   │   │   ├── ContractId.kt
+│   │   │                                   │   │   ├── ContractTerm.kt
+│   │   │                                   │   │   ├── PricingAgreement.kt
+│   │   │                                   │   │   ├── VolumeDiscount.kt
+│   │   │                                   │   │   ├── PaymentTerm.kt
+│   │   │                                   │   │   ├── SLA.kt
+│   │   │                                   │   │   └── ContractValidity.kt
+│   │   │                                   │   ├── quote/
+│   │   │                                   │   │   ├── Quote.kt                 # Aggregate Root
+│   │   │                                   │   │   ├── QuoteId.kt
+│   │   │                                   │   │   ├── QuoteRequest.kt
+│   │   │                                   │   │   ├── QuoteLine.kt             # Entity
+│   │   │                                   │   │   ├── QuoteStatus.kt
+│   │   │                                   │   │   ├── QuoteValidity.kt
+│   │   │                                   │   │   └── Negotiation.kt
+│   │   │                                   │   ├── order/
+│   │   │                                   │   │   ├── B2BOrder.kt              # Aggregate Root
+│   │   │                                   │   │   ├── B2BOrderId.kt
+│   │   │                                   │   │   ├── PurchaseOrder.kt
+│   │   │                                   │   │   ├── BlanketOrder.kt
+│   │   │                                   │   │   ├── OrderLine.kt
+│   │   │                                   │   │   ├── ApprovalStatus.kt
+│   │   │                                   │   │   ├── ApprovalChain.kt
+│   │   │                                   │   │   ├── BulkDiscount.kt
+│   │   │                                   │   │   └── ScheduledDelivery.kt
+│   │   │                                   │   └── catalog/
+│   │   │                                   │       ├── B2BCatalog.kt            # Aggregate Root
+│   │   │                                   │       ├── CatalogId.kt
+│   │   │                                   │       ├── CustomPricing.kt
+│   │   │                                   │       ├── TierPricing.kt
+│   │   │                                   │       ├── NegotiatedPrice.kt
+│   │   │                                   │       └── MinimumOrderQuantity.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── QuoteRequestedEvent.kt
+│   │   │                                   │   ├── QuoteApprovedEvent.kt
+│   │   │                                   │   ├── OrderApprovedEvent.kt
+│   │   │                                   │   ├── OrderRejectedEvent.kt
+│   │   │                                   │   ├── ContractSignedEvent.kt
+│   │   │                                   │   ├── CreditLimitExceededEvent.kt
+│   │   │                                   │   └── B2BOrderPlacedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── CreditLimitExceededException.kt
+│   │   │                                   │   ├── ApprovalRequiredException.kt
+│   │   │                                   │   ├── ContractExpiredException.kt
+│   │   │                                   │   └── InvalidQuoteException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── ApprovalWorkflowService.kt
+│   │   │                                       ├── ContractPricingService.kt
+│   │   │                                       ├── CreditCheckService.kt
+│   │   │                                       └── QuoteNegotiationService.kt
+│   │   ├── b2b-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── commerce/
+│   │   │                           └── b2b/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── CreateQuoteUseCase.kt
+│   │   │                                   │   │   ├── ApproveOrderUseCase.kt
+│   │   │                                   │   │   ├── ManageContractUseCase.kt
+│   │   │                                   │   │   └── CheckCreditUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── B2BOrderRepository.kt
+│   │   │                                   │       ├── QuoteRepository.kt
+│   │   │                                   │       ├── ContractRepository.kt
+│   │   │                                   │       ├── AccountRepository.kt
+│   │   │                                   │       ├── CreditServicePort.kt
+│   │   │                                   │       ├── WorkflowEnginePort.kt
+│   │   │                                   │       ├── PricingEnginePort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── CreateQuoteCommand.kt
+│   │   │                                   │   ├── ApproveQuoteCommand.kt
+│   │   │                                   │   ├── CreateB2BOrderCommand.kt
+│   │   │                                   │   ├── ApproveOrderCommand.kt
+│   │   │                                   │   ├── RejectOrderCommand.kt
+│   │   │                                   │   └── ManageContractCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── CheckCreditLimitQuery.kt
+│   │   │                                   │   ├── GetCustomPricingQuery.kt
+│   │   │                                   │   ├── GetAccountDetailsQuery.kt
+│   │   │                                   │   ├── GetQuoteStatusQuery.kt
+│   │   │                                   │   └── GetContractDetailsQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── QuoteCommandHandler.kt
+│   │   │                                       ├── B2BOrderCommandHandler.kt
+│   │   │                                       ├── ContractCommandHandler.kt
+│   │   │                                       └── AccountQueryHandler.kt
+│   │   └── b2b-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── commerce/
+│   │               │               └── b2b/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   ├── rest/
+│   │               │                       │   │   │   ├── B2BOrderResource.kt
+│   │               │                       │   │   │   ├── QuoteResource.kt
+│   │               │                       │   │   │   ├── ContractResource.kt
+│   │               │                       │   │   │   └── AccountResource.kt
+│   │               │                       │   │   └── event/
+│   │               │                       │   │       └── ApprovalEventConsumer.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── B2BOrderJpaRepository.kt
+│   │               │                       │       │   ├── QuoteJpaRepository.kt
+│   │               │                       │       │   └── ContractJpaRepository.kt
+│   │               │                       │       ├── workflow/
+│   │               │                       │       │   ├── CamundaWorkflowAdapter.kt
+│   │               │                       │       │   └── ApprovalProcessAdapter.kt
+│   │               │                       │       ├── credit/
+│   │               │                       │       │   └── CreditBureauAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── CommerceB2BApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   └── commerce-marketplace/                    # Port 9304 - Marketplace (Multi-seller)
+│       ├── marketplace-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── commerce/
+│       │                           └── marketplace/
+│       │                               └── domain/
+│       │                                   ├── model/
+│       │                                   │   ├── seller/
+│       │                                   │   │   ├── Seller.kt                # Aggregate Root
+│       │                                   │   │   ├── SellerId.kt
+│       │                                   │   │   ├── SellerProfile.kt
+│       │                                   │   │   ├── SellerRating.kt
+│       │                                   │   │   ├── SellerPerformance.kt
+│       │                                   │   │   ├── SellerStatus.kt
+│       │                                   │   │   └── VerificationStatus.kt
+│       │                                   │   ├── listing/
+│       │                                   │   │   ├── ProductListing.kt        # Aggregate Root
+│       │                                   │   │   ├── ListingId.kt
+│       │                                   │   │   ├── ListingStatus.kt
+│       │                                   │   │   ├── ListingApproval.kt
+│       │                                   │   │   ├── ListingCategory.kt
+│       │                                   │   │   └── ListingVisibility.kt
+│       │                                   │   ├── commission/
+│       │                                   │   │   ├── Commission.kt            # Aggregate Root
+│       │                                   │   │   ├── CommissionId.kt
+│       │                                   │   │   ├── CommissionRule.kt
+│       │                                   │   │   ├── CommissionTier.kt
+│       │                                   │   │   ├── CommissionRate.kt
+│       │                                   │   │   └── CommissionPayout.kt
+│       │                                   │   └── fulfillment/
+│       │                                   │       ├── FulfillmentOption.kt
+│       │                                   │       ├── SellerFulfillment.kt
+│       │                                   │       ├── PlatformFulfillment.kt
+│       │                                   │       └── HybridFulfillment.kt
+│       │                                   ├── event/
+│       │                                   │   ├── SellerOnboardedEvent.kt
+│       │                                   │   ├── SellerVerifiedEvent.kt
+│       │                                   │   ├── ListingCreatedEvent.kt
+│       │                                   │   ├── ListingApprovedEvent.kt
+│       │                                   │   ├── ListingRejectedEvent.kt
+│       │                                   │   └── CommissionCalculatedEvent.kt
+│       │                                   ├── exception/
+│       │                                   │   ├── SellerNotVerifiedException.kt
+│       │                                   │   ├── ListingRejectionException.kt
+│       │                                   │   └── InvalidCommissionException.kt
+│       │                                   └── service/
+│       │                                       ├── CommissionCalculationService.kt
+│       │                                       ├── SellerVerificationService.kt
+│       │                                       └── ListingModerationService.kt
+│       ├── marketplace-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── commerce/
+│       │                           └── marketplace/
+│       │                               └── application/
+│       │                                   ├── port/
+│       │                                   │   ├── input/
+│       │                                   │   │   ├── OnboardSellerUseCase.kt
+│       │                                   │   │   ├── CreateListingUseCase.kt
+│       │                                   │   │   ├── ApproveListingUseCase.kt
+│       │                                   │   │   └── CalculateCommissionUseCase.kt
+│       │                                   │   └── output/
+│       │                                   │       ├── SellerRepository.kt
+│       │                                   │       ├── ListingRepository.kt
+│       │                                   │       ├── CommissionRepository.kt
+│       │                                   │       └── EventPublisherPort.kt
+│       │                                   ├── command/
+│       │                                   │   ├── OnboardSellerCommand.kt
+│       │                                   │   ├── VerifySellerCommand.kt
+│       │                                   │   ├── CreateListingCommand.kt
+│       │                                   │   ├── ApproveListingCommand.kt
+│       │                                   │   ├── RejectListingCommand.kt
+│       │                                   │   └── CalculateCommissionCommand.kt
+│       │                                   ├── query/
+│       │                                   │   ├── GetSellerPerformanceQuery.kt
+│       │                                   │   ├── GetListingDetailsQuery.kt
+│       │                                   │   ├── SearchListingsQuery.kt
+│       │                                   │   └── GetCommissionReportQuery.kt
+│       │                                   └── service/
+│       │                                       ├── SellerCommandHandler.kt
+│       │                                       ├── ListingCommandHandler.kt
+│       │                                       └── CommissionCommandHandler.kt
+│       └── marketplace-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/
+│               └── main/
+│                   ├── kotlin/
+│                   │   └── com/
+│                   │       └── chiroerp/
+│                   │           └── commerce/
+│                   │               └── marketplace/
+│                   │                   └── infrastructure/
+│                   │                       ├── adapter/
+│                   │                       │   ├── input/
+│                   │                       │   │   └── rest/
+│                   │                       │   │       ├── SellerResource.kt
+│                   │                       │   │       ├── ListingResource.kt
+│                   │                       │   │       └── CommissionResource.kt
+│                   │                       │   └── output/
+│                   │                       │       ├── persistence/
+│                   │                       │       │   ├── SellerJpaRepository.kt
+│                   │                       │       │   └── ListingJpaRepository.kt
+│                   │                       │       ├── search/
+│                   │                       │       │   └── ListingSearchAdapter.kt
+│                   │                       │       └── messaging/
+│                   │                       │           └── KafkaEventPublisher.kt
+│                   │                       └── CommerceMarketplaceApplication.kt
+│                   └── resources/
+│                       └── application.yml
 │
-├── README.md                                   # Project README
-├── CONTRIBUTING.md                             # Contribution guidelines
-├── LICENSE                                     # Project license
+└── commerce-pricing/                            # Port 9305 - Dynamic Pricing & Markdown Optimization
+    ├── pricing-domain/
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       └── main/
+    │           └── kotlin/
+    │               └── com/
+    │                   └── chiroerp/
+    │                       └── commerce/
+    │                           └── pricing/
+    │                               └── domain/
+    │                                   ├── model/
+    │                                   │   ├── elasticity/
+    │                                   │   │   ├── PriceElasticity.kt           # Aggregate Root
+    │                                   │   │   ├── ElasticityId.kt
+    │                                   │   │   ├── ElasticityCurve.kt
+    │                                   │   │   ├── CrossElasticity.kt
+    │                                   │   │   └── DemandFunction.kt
+    │                                   │   ├── optimization/
+    │                                   │   │   ├── PriceOptimization.kt         # Aggregate Root
+    │                                   │   │   ├── OptimizationId.kt
+    │                                   │   │   ├── OptimizationConstraint.kt
+    │                                   │   │   ├── PriceFloor.kt
+    │                                   │   │   ├── PriceCeiling.kt
+    │                                   │   │   └── CompetitorPriceConstraint.kt
+    │                                   │   ├── markdown/
+    │                                   │   │   ├── MarkdownPlan.kt              # Aggregate Root
+    │                                   │   │   ├── MarkdownId.kt
+    │                                   │   │   ├── MarkdownSchedule.kt
+    │                                   │   │   ├── MarkdownDepth.kt
+    │                                   │   │   ├── ClearanceTarget.kt
+    │                                   │   │   └── SeasonEndDate.kt
+    │                                   │   ├── competitive/
+    │                                   │   │   ├── CompetitorPrice.kt
+    │                                   │   │   ├── PricePosition.kt
+    │                                   │   │   ├── PriceIndex.kt
+    │                                   │   │   └── MarketPriceRange.kt
+    │                                   │   └── scenario/
+    │                                   │       ├── PricingScenario.kt
+    │                                   │       ├── WhatIfAnalysis.kt
+    │                                   │       ├── RevenueProjection.kt
+    │                                   │       └── MarginImpact.kt
+    │                                   ├── event/
+    │                                   │   ├── PriceOptimizedEvent.kt
+    │                                   │   ├── MarkdownScheduledEvent.kt
+    │                                   │   ├── MarkdownExecutedEvent.kt
+    │                                   │   ├── CompetitorPriceChangedEvent.kt
+    │                                   │   └── ElasticityCalculatedEvent.kt
+    │                                   ├── exception/
+    │                                   │   ├── PriceBelowFloorException.kt
+    │                                   │   ├── PriceAboveCeilingException.kt
+    │                                   │   └── InsufficientDataForElasticityException.kt
+    │                                   └── service/
+    │                                       ├── ElasticityCalculationService.kt
+    │                                       ├── PriceOptimizationService.kt
+    │                                       ├── MarkdownOptimizationService.kt
+    │                                       └── CompetitorPriceMonitoringService.kt
+    ├── pricing-application/
+    │   ├── build.gradle.kts
+    │   └── src/
+    │       └── main/
+    │           └── kotlin/
+    │               └── com/
+    │                   └── chiroerp/
+    │                       └── commerce/
+    │                           └── pricing/
+    │                               └── application/
+    │                                   ├── port/
+    │                                   │   ├── input/
+    │                                   │   │   ├── OptimizePriceUseCase.kt
+    │                                   │   │   ├── CalculateElasticityUseCase.kt
+    │                                   │   │   ├── CreateMarkdownPlanUseCase.kt
+    │                                   │   │   └── RunPricingScenarioUseCase.kt
+    │                                   │   └── output/
+    │                                   │       ├── ElasticityRepository.kt
+    │                                   │       ├── MarkdownRepository.kt
+    │                                   │       ├── CompetitorPricePort.kt
+    │                                   │       ├── SalesHistoryPort.kt
+    │                                   │       └── EventPublisherPort.kt
+    │                                   ├── command/
+    │                                   │   ├── OptimizePriceCommand.kt
+    │                                   │   ├── CalculateElasticityCommand.kt
+    │                                   │   ├── CreateMarkdownPlanCommand.kt
+    │                                   │   ├── ExecuteMarkdownCommand.kt
+    │                                   │   └── UpdateCompetitorPriceCommand.kt
+    │                                   ├── query/
+    │                                   │   ├── GetOptimalPriceQuery.kt
+    │                                   │   ├── GetElasticityCurveQuery.kt
+    │                                   │   ├── GetMarkdownScheduleQuery.kt
+    │                                   │   ├── GetCompetitorPriceIndexQuery.kt
+    │                                   │   └── PricingWhatIfQuery.kt
+    │                                   └── service/
+    │                                       ├── PriceOptimizationCommandHandler.kt
+    │                                       ├── ElasticityCommandHandler.kt
+    │                                       └── MarkdownCommandHandler.kt
+    └── pricing-infrastructure/
+        ├── build.gradle.kts
+        └── src/
+            └── main/
+                ├── kotlin/
+                │   └── com/
+                │       └── chiroerp/
+                │           └── commerce/
+                │               └── pricing/
+                │                   └── infrastructure/
+                │                       ├── adapter/
+                │                       │   ├── input/
+                │                       │   │   └── rest/
+                │                       │   │       ├── PriceOptimizationResource.kt
+                │                       │   │       ├── ElasticityResource.kt
+                │                       │   │       └── MarkdownResource.kt
+                │                       │   └── output/
+                │                       │       ├── persistence/
+                │                       │       │   ├── ElasticityJpaRepository.kt
+                │                       │       │   └── MarkdownJpaRepository.kt
+                │                       │       ├── ml/
+                │                       │       │   ├── ElasticityModelAdapter.kt
+                │                       │       │   └── OptimizationSolverAdapter.kt
+                │                       │       ├── external/
+                │                       │       │   ├── CompetitorScraperAdapter.kt
+                │                       │       │   └── PriceAggregatorAdapter.kt
+                │                       │       └── messaging/
+                │                       │           └── KafkaEventPublisher.kt
+                │                       └── CommercePricingApplication.kt
+                └── resources/
+                    └── application.yml
+
+├── hr/                                          # HUMAN CAPITAL MANAGEMENT (HCM) BOUNDED CONTEXT
+│   │
+│   ├── hr-shared/                               # ADR-006 COMPLIANT: Identifiers and value objects only
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/hr/shared/
+│   │       ├── identifiers/
+│   │       │   ├── EmployeeId.kt
+│   │       │   ├── DepartmentId.kt
+│   │       │   ├── PositionId.kt
+│   │       │   ├── ShiftId.kt
+│   │       │   ├── ExpenseReportId.kt
+│   │       │   ├── TravelRequestId.kt
+│   │       │   ├── TimesheetId.kt
+│   │       │   ├── ContractorId.kt               # Contingent Workforce
+│   │       │   ├── RequisitionId.kt              # Contingent Workforce
+│   │       │   ├── StaffingSupplierId.kt         # Contingent Workforce
+│   │       │   ├── RateCardId.kt                 # Contingent Workforce
+│   │       │   ├── SOWId.kt                      # Professional Services
+│   │       │   ├── MSAId.kt                      # Professional Services
+│   │       │   ├── DeliverableId.kt              # Professional Services
+│   │       │   ├── MilestoneId.kt                # Professional Services
+│   │       │   ├── ConsultingFirmId.kt           # Professional Services
+│   │       │   └── EngagementId.kt               # Professional Services
+│   │       ├── valueobjects/
+│   │       │   ├── RateRange.kt                  # Min/max rate for requisition
+│   │       │   ├── SkillRequirementVO.kt         # Skill + proficiency level
+│   │       │   ├── ComplianceStatusVO.kt         # Compliance check result
+│   │       │   └── BudgetAmountVO.kt             # SOW/engagement budget
+│   │       └── enums/
+│   │           ├── ApprovalStatus.kt             # PENDING, APPROVED, REJECTED
+│   │           ├── EmploymentType.kt             # FULL_TIME, PART_TIME, CONTRACTOR, TEMP
+│   │           ├── ContractorStatus.kt           # CANDIDATE, ONBOARDING, ACTIVE, OFFBOARDED
+│   │           ├── SOWStatus.kt                  # DRAFT, NEGOTIATION, APPROVED, ACTIVE, AMENDED, CLOSED
+│   │           ├── SOWType.kt                    # FIXED_PRICE, TIME_AND_MATERIALS, RETAINER, MILESTONE
+│   │           └── DeliverableStatus.kt          # NOT_STARTED, IN_PROGRESS, SUBMITTED, ACCEPTED, REJECTED
+│   │
+│   ├── hr-core/                                 # Port 9101 - Core HR (Employee, Organization, Payroll Integration)
+│   │   ├── core-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── core/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── employee/
+│   │   │                                   │   │   ├── Employee.kt              # Aggregate Root (uses shared EmployeeId)
+│   │   │                                   │   │   ├── EmployeeProfile.kt
+│   │   │                                   │   │   ├── EmploymentStatus.kt      # ACTIVE, ON_LEAVE, TERMINATED
+│   │   │                                   │   │   ├── EmploymentType.kt
+│   │   │                                   │   │   ├── JobAssignment.kt
+│   │   │                                   │   │   └── Compensation.kt
+│   │   │                                   │   ├── organization/
+│   │   │                                   │   │   ├── Organization.kt          # Aggregate Root
+│   │   │                                   │   │   ├── OrganizationId.kt
+│   │   │                                   │   │   ├── Department.kt
+│   │   │                                   │   │   ├── Position.kt
+│   │   │                                   │   │   ├── JobGrade.kt
+│   │   │                                   │   │   └── OrgHierarchy.kt
+│   │   │                                   │   ├── payroll/
+│   │   │                                   │   │   ├── PayrollRun.kt            # Aggregate Root
+│   │   │                                   │   │   ├── PayrollRunId.kt
+│   │   │                                   │   │   ├── PayPeriod.kt
+│   │   │                                   │   │   ├── PayrollItem.kt
+│   │   │                                   │   │   ├── Deduction.kt
+│   │   │                                   │   │   └── TaxWithholding.kt
+│   │   │                                   │   └── benefits/
+│   │   │                                   │       ├── BenefitPlan.kt
+│   │   │                                   │       ├── BenefitEnrollment.kt
+│   │   │                                   │       └── BenefitCoverage.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── EmployeeHiredEvent.kt
+│   │   │                                   │   ├── EmployeeTerminatedEvent.kt
+│   │   │                                   │   ├── EmployeePromotedEvent.kt
+│   │   │                                   │   ├── EmployeeTransferredEvent.kt
+│   │   │                                   │   ├── PayrollProcessedEvent.kt
+│   │   │                                   │   └── BenefitEnrolledEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── EmployeeNotFoundException.kt
+│   │   │                                   │   ├── InvalidJobAssignmentException.kt
+│   │   │                                   │   └── PayrollAlreadyProcessedException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── CompensationCalculationService.kt
+│   │   │                                       ├── TaxCalculationService.kt
+│   │   │                                       └── BenefitEligibilityService.kt
+│   │   ├── core-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── core/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── HireEmployeeUseCase.kt
+│   │   │                                   │   │   ├── TerminateEmployeeUseCase.kt
+│   │   │                                   │   │   ├── ProcessPayrollUseCase.kt
+│   │   │                                   │   │   └── EnrollBenefitsUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── EmployeeRepository.kt
+│   │   │                                   │       ├── OrganizationRepository.kt
+│   │   │                                   │       ├── PayrollRepository.kt
+│   │   │                                   │       ├── TaxProviderPort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── HireEmployeeCommand.kt
+│   │   │                                   │   ├── TerminateEmployeeCommand.kt
+│   │   │                                   │   ├── PromoteEmployeeCommand.kt
+│   │   │                                   │   ├── TransferEmployeeCommand.kt
+│   │   │                                   │   └── ProcessPayrollCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetEmployeeQuery.kt
+│   │   │                                   │   ├── GetOrgChartQuery.kt
+│   │   │                                   │   ├── GetPayrollSummaryQuery.kt
+│   │   │                                   │   └── GetHeadcountReportQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── EmployeeCommandHandler.kt
+│   │   │                                       ├── PayrollCommandHandler.kt
+│   │   │                                       └── HRQueryHandler.kt
+│   │   └── core-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── hr/
+│   │               │               └── core/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── EmployeeResource.kt
+│   │               │                       │   │       ├── OrganizationResource.kt
+│   │               │                       │   │       └── PayrollResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── EmployeeJpaRepository.kt
+│   │               │                       │       │   └── PayrollJpaRepository.kt
+│   │               │                       │       ├── external/
+│   │               │                       │       │   ├── ADPPayrollAdapter.kt
+│   │               │                       │       │   └── TaxProviderAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── HRCoreApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── hr-travel-expense/                       # Port 9901 - Travel & Expense Management (ADR-054)
+│   │   ├── travel-expense-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── travelexpense/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── travel/
+│   │   │                                   │   │   ├── TravelRequest.kt         # Aggregate Root
+│   │   │                                   │   │   ├── TravelRequestId.kt
+│   │   │                                   │   │   ├── TravelItinerary.kt
+│   │   │                                   │   │   ├── TravelSegment.kt         # Flight, Hotel, Car
+│   │   │                                   │   │   ├── TravelPolicy.kt
+│   │   │                                   │   │   └── TravelApproval.kt
+│   │   │                                   │   ├── expense/
+│   │   │                                   │   │   ├── ExpenseReport.kt         # Aggregate Root
+│   │   │                                   │   │   ├── ExpenseReportId.kt
+│   │   │                                   │   │   ├── ExpenseLine.kt
+│   │   │                                   │   │   ├── ExpenseCategory.kt       # Meals, Transport, Lodging, etc.
+│   │   │                                   │   │   ├── ExpensePolicy.kt
+│   │   │                                   │   │   ├── PolicyViolation.kt
+│   │   │                                   │   │   └── ExpenseApproval.kt
+│   │   │                                   │   ├── receipt/
+│   │   │                                   │   │   ├── Receipt.kt               # Aggregate Root
+│   │   │                                   │   │   ├── ReceiptId.kt
+│   │   │                                   │   │   ├── ReceiptImage.kt
+│   │   │                                   │   │   ├── OCRResult.kt
+│   │   │                                   │   │   └── ReceiptValidation.kt
+│   │   │                                   │   ├── card/
+│   │   │                                   │   │   ├── CorporateCard.kt         # Aggregate Root
+│   │   │                                   │   │   ├── CardTransaction.kt
+│   │   │                                   │   │   ├── CardReconciliation.kt
+│   │   │                                   │   │   └── TransactionMatch.kt
+│   │   │                                   │   └── mileage/
+│   │   │                                   │       ├── MileageLog.kt
+│   │   │                                   │       ├── MileageRate.kt
+│   │   │                                   │       └── PerDiem.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── TravelRequestSubmittedEvent.kt
+│   │   │                                   │   ├── TravelRequestApprovedEvent.kt
+│   │   │                                   │   ├── ExpenseReportSubmittedEvent.kt
+│   │   │                                   │   ├── ExpenseReportApprovedEvent.kt
+│   │   │                                   │   ├── ReceiptCapturedEvent.kt
+│   │   │                                   │   ├── CardTransactionReceivedEvent.kt
+│   │   │                                   │   └── CardReconciliationCompletedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── PolicyViolationException.kt
+│   │   │                                   │   ├── ReceiptRequiredException.kt
+│   │   │                                   │   └── DuplicateExpenseException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── PolicyEnforcementService.kt
+│   │   │                                       ├── ReceiptMatchingService.kt
+│   │   │                                       ├── MileageCalculationService.kt
+│   │   │                                       └── PerDiemCalculationService.kt
+│   │   ├── travel-expense-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── travelexpense/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── SubmitTravelRequestUseCase.kt
+│   │   │                                   │   │   ├── SubmitExpenseReportUseCase.kt
+│   │   │                                   │   │   ├── CaptureReceiptUseCase.kt
+│   │   │                                   │   │   └── ReconcileCardTransactionsUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── TravelRequestRepository.kt
+│   │   │                                   │       ├── ExpenseReportRepository.kt
+│   │   │                                   │       ├── ReceiptRepository.kt
+│   │   │                                   │       ├── OCRServicePort.kt
+│   │   │                                   │       ├── CardFeedPort.kt
+│   │   │                                   │       ├── GDSBookingPort.kt
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── SubmitTravelRequestCommand.kt
+│   │   │                                   │   ├── ApproveTravelRequestCommand.kt
+│   │   │                                   │   ├── SubmitExpenseReportCommand.kt
+│   │   │                                   │   ├── ApproveExpenseReportCommand.kt
+│   │   │                                   │   ├── CaptureReceiptCommand.kt
+│   │   │                                   │   └── ReconcileCardCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetTravelRequestQuery.kt
+│   │   │                                   │   ├── GetExpenseReportQuery.kt
+│   │   │                                   │   ├── GetPendingApprovalsQuery.kt
+│   │   │                                   │   └── GetSpendAnalyticsQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── TravelCommandHandler.kt
+│   │   │                                       ├── ExpenseCommandHandler.kt
+│   │   │                                       └── CardReconciliationCommandHandler.kt
+│   │   └── travel-expense-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── hr/
+│   │               │               └── travelexpense/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── TravelRequestResource.kt
+│   │               │                       │   │       ├── ExpenseReportResource.kt
+│   │               │                       │   │       ├── ReceiptResource.kt
+│   │               │                       │   │       └── CardReconciliationResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── TravelRequestJpaRepository.kt
+│   │               │                       │       │   ├── ExpenseReportJpaRepository.kt
+│   │               │                       │       │   └── ReceiptJpaRepository.kt
+│   │               │                       │       ├── external/
+│   │               │                       │       │   ├── SabreGDSAdapter.kt
+│   │               │                       │       │   ├── AmadeusGDSAdapter.kt
+│   │               │                       │       │   ├── VisaCardFeedAdapter.kt
+│   │               │                       │       │   ├── MastercardFeedAdapter.kt
+│   │               │                       │       │   ├── AmexFeedAdapter.kt
+│   │               │                       │       │   └── AWSTextractOCRAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── HRTravelExpenseApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   ├── hr-contingent-workforce/                 # Port 9904 - Contingent Workforce / VMS (ADR-052)
+│   │   ├── contingent-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/contingent/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── requisition/
+│   │   │       │   │   ├── ContractorRequisition.kt      # Aggregate Root - T&M contractor request
+│   │   │       │   │   ├── RequisitionId.kt
+│   │   │       │   │   ├── RequisitionStatus.kt          # DRAFT, SUBMITTED, APPROVED, FILLED, CLOSED
+│   │   │       │   │   ├── JobRequirements.kt
+│   │   │       │   │   ├── SkillRequirement.kt
+│   │   │       │   │   └── RateRange.kt
+│   │   │       │   ├── contractor/
+│   │   │       │   │   ├── Contractor.kt                 # Aggregate Root - Individual contractor
+│   │   │       │   │   ├── ContractorId.kt
+│   │   │       │   │   ├── ContractorProfile.kt
+│   │   │       │   │   ├── ContractorStatus.kt           # CANDIDATE, ONBOARDING, ACTIVE, OFFBOARDED
+│   │   │       │   │   ├── SkillSet.kt
+│   │   │       │   │   ├── Certification.kt
+│   │   │       │   │   ├── ComplianceRecord.kt           # Background check, I-9, certifications
+│   │   │       │   │   └── CoEmploymentRisk.kt           # Classification assessment
+│   │   │       │   ├── supplier/
+│   │   │       │   │   ├── StaffingSupplier.kt           # Aggregate Root - Staffing agency
+│   │   │       │   │   ├── SupplierId.kt
+│   │   │       │   │   ├── RateCard.kt                   # Rate by role/skill/geography
+│   │   │       │   │   ├── RateCardVersion.kt            # Versioned rate cards
+│   │   │       │   │   ├── SupplierScorecard.kt          # Quality, fill rate, compliance
+│   │   │       │   │   └── PreferredSupplierTier.kt      # Tier 1, 2, 3
+│   │   │       │   ├── timesheet/
+│   │   │       │   │   ├── ContractorTimesheet.kt        # Aggregate Root
+│   │   │       │   │   ├── TimesheetId.kt
+│   │   │       │   │   ├── TimeEntry.kt
+│   │   │       │   │   ├── TimesheetStatus.kt            # DRAFT, SUBMITTED, APPROVED, REJECTED
+│   │   │       │   │   ├── TimesheetApproval.kt
+│   │   │       │   │   └── OvertimeCalculation.kt
+│   │   │       │   ├── expense/
+│   │   │       │   │   ├── ContractorExpense.kt          # Aggregate Root
+│   │   │       │   │   ├── ExpenseId.kt
+│   │   │       │   │   ├── ExpenseLineItem.kt
+│   │   │       │   │   └── ExpenseApproval.kt
+│   │   │       │   └── matching/
+│   │   │       │       ├── CandidateMatch.kt
+│   │   │       │       ├── SkillMatchScore.kt
+│   │   │       │       └── AIRecommendation.kt
+│   │   │       ├── event/
+│   │   │       │   ├── RequisitionCreatedEvent.kt
+│   │   │       │   ├── RequisitionApprovedEvent.kt
+│   │   │       │   ├── CandidateSubmittedEvent.kt
+│   │   │       │   ├── ContractorOnboardedEvent.kt
+│   │   │       │   ├── ContractorOffboardedEvent.kt
+│   │   │       │   ├── ComplianceExpiredEvent.kt
+│   │   │       │   ├── TimesheetSubmittedEvent.kt
+│   │   │       │   ├── TimesheetApprovedEvent.kt
+│   │   │       │   └── RateCardUpdatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RequisitionNotApprovedException.kt
+│   │   │       │   ├── RateCardExceededException.kt
+│   │   │       │   ├── ContractorNotComplianceException.kt
+│   │   │       │   └── CoEmploymentRiskException.kt
+│   │   │       └── service/
+│   │   │           ├── SkillMatchingService.kt
+│   │   │           ├── AIMatchingService.kt
+│   │   │           ├── RateCardValidationService.kt
+│   │   │           ├── ComplianceCheckService.kt
+│   │   │           └── SupplierScorecardService.kt
+│   │   ├── contingent-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/contingent/application/
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateRequisitionUseCase.kt
+│   │   │       │   │   ├── SubmitCandidateUseCase.kt
+│   │   │       │   │   ├── OnboardContractorUseCase.kt
+│   │   │       │   │   ├── OffboardContractorUseCase.kt
+│   │   │       │   │   ├── ApproveTimesheetUseCase.kt
+│   │   │       │   │   └── ManageRateCardUseCase.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── RequisitionRepository.kt
+│   │   │       │       ├── ContractorRepository.kt
+│   │   │       │       ├── StaffingSupplierRepository.kt
+│   │   │       │       ├── TimesheetRepository.kt
+│   │   │       │       ├── ResumeParsingPort.kt
+│   │   │       │       ├── BackgroundCheckPort.kt
+│   │   │       │       ├── ProjectAccountingPort.kt        # Integration with ADR-036
+│   │   │       │       └── EventPublisherPort.kt
+│   │   │       ├── command/
+│   │   │       │   ├── CreateRequisitionCommand.kt
+│   │   │       │   ├── ApproveRequisitionCommand.kt
+│   │   │       │   ├── SubmitCandidateCommand.kt
+│   │   │       │   ├── OnboardContractorCommand.kt
+│   │   │       │   ├── OffboardContractorCommand.kt
+│   │   │       │   ├── UpdateComplianceCommand.kt
+│   │   │       │   ├── SubmitTimesheetCommand.kt
+│   │   │       │   ├── ApproveTimesheetCommand.kt
+│   │   │       │   └── UpdateRateCardCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRequisitionQuery.kt
+│   │   │       │   ├── GetCandidateMatchesQuery.kt
+│   │   │       │   ├── GetContractorQuery.kt
+│   │   │       │   ├── GetContractorComplianceQuery.kt
+│   │   │       │   ├── GetSupplierScorecardQuery.kt
+│   │   │       │   ├── GetRateCardQuery.kt
+│   │   │       │   └── GetContingentSpendQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── RequisitionCommandHandler.kt
+│   │   │           ├── ContractorCommandHandler.kt
+│   │   │           ├── TimesheetCommandHandler.kt
+│   │   │           └── ContingentQueryHandler.kt
+│   │   └── contingent-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/hr/contingent/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── RequisitionResource.kt           # REST API (Port 9904)
+│   │           │   │       ├── ContractorResource.kt
+│   │           │   │       ├── StaffingSupplierResource.kt
+│   │           │   │       ├── RateCardResource.kt
+│   │           │   │       ├── TimesheetResource.kt
+│   │           │   │       └── SupplierPortalResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RequisitionJpaRepository.kt
+│   │           │       │   ├── ContractorJpaRepository.kt
+│   │           │       │   ├── StaffingSupplierJpaRepository.kt
+│   │           │       │   └── TimesheetJpaRepository.kt
+│   │           │       ├── ml/
+│   │           │       │   ├── SkillMatchingMLAdapter.kt
+│   │           │       │   └── ResumeParsingMLAdapter.kt
+│   │           │       ├── external/
+│   │           │       │   ├── BackgroundCheckAdapter.kt
+│   │           │       │   └── I9VerificationAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── HRContingentWorkforceApplication.kt
+│   │
+│   ├── hr-professional-services/                # Port 9907 - Professional Services / SOW Management (ADR-052)
+│   │   ├── professional-services-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/professionalservices/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── sow/
+│   │   │       │   │   ├── StatementOfWork.kt            # Aggregate Root - SOW lifecycle
+│   │   │       │   │   ├── SOWId.kt
+│   │   │       │   │   ├── SOWStatus.kt                  # DRAFT, NEGOTIATION, APPROVED, ACTIVE, AMENDED, CLOSED
+│   │   │       │   │   ├── SOWType.kt                    # FIXED_PRICE, TIME_AND_MATERIALS, RETAINER, MILESTONE
+│   │   │       │   │   ├── SOWScope.kt                   # Scope of work definition
+│   │   │       │   │   ├── SOWBudget.kt                  # Budget and fee structure
+│   │   │       │   │   ├── SOWAmendment.kt               # Change orders
+│   │   │       │   │   └── SOWExtension.kt               # Extension options
+│   │   │       │   ├── deliverable/
+│   │   │       │   │   ├── Deliverable.kt                # Aggregate Root - Deliverable tracking
+│   │   │       │   │   ├── DeliverableId.kt
+│   │   │       │   │   ├── DeliverableStatus.kt          # NOT_STARTED, IN_PROGRESS, SUBMITTED, ACCEPTED, REJECTED
+│   │   │       │   │   ├── AcceptanceCriteria.kt
+│   │   │       │   │   ├── DeliverableApproval.kt
+│   │   │       │   │   └── DeliverablePayment.kt         # Payment tied to acceptance
+│   │   │       │   ├── milestone/
+│   │   │       │   │   ├── Milestone.kt                  # Aggregate Root
+│   │   │       │   │   ├── MilestoneId.kt
+│   │   │       │   │   ├── MilestoneStatus.kt
+│   │   │       │   │   ├── MilestonePayment.kt
+│   │   │       │   │   └── MilestoneSchedule.kt
+│   │   │       │   ├── msa/
+│   │   │       │   │   ├── MasterServiceAgreement.kt     # Aggregate Root - Framework agreement
+│   │   │       │   │   ├── MSAId.kt
+│   │   │       │   │   ├── MSATerms.kt                   # Legal terms, liability, IP
+│   │   │       │   │   ├── MSARateSchedule.kt            # Agreed rate schedules
+│   │   │       │   │   └── MSARenewal.kt
+│   │   │       │   ├── consultant/
+│   │   │       │   │   ├── ConsultingFirm.kt             # Aggregate Root - Consulting company
+│   │   │       │   │   ├── ConsultingFirmId.kt
+│   │   │       │   │   ├── FirmCapabilities.kt           # Areas of expertise
+│   │   │       │   │   ├── FirmScorecard.kt              # Quality, delivery, cost
+│   │   │       │   │   └── PreferredVendorStatus.kt
+│   │   │       │   └── engagement/
+│   │   │       │       ├── ServiceEngagement.kt          # Aggregate Root - Active engagement
+│   │   │       │       ├── EngagementId.kt
+│   │   │       │       ├── EngagementTeam.kt             # Named resources assigned
+│   │   │       │       ├── EngagementStatus.kt
+│   │   │       │       └── EngagementRisk.kt             # Delivery risk assessment
+│   │   │       ├── event/
+│   │   │       │   ├── SOWCreatedEvent.kt
+│   │   │       │   ├── SOWApprovedEvent.kt
+│   │   │       │   ├── SOWAmendedEvent.kt
+│   │   │       │   ├── DeliverableSubmittedEvent.kt
+│   │   │       │   ├── DeliverableAcceptedEvent.kt
+│   │   │       │   ├── DeliverableRejectedEvent.kt
+│   │   │       │   ├── MilestoneCompletedEvent.kt
+│   │   │       │   ├── MilestonePaymentTriggeredEvent.kt
+│   │   │       │   ├── MSACreatedEvent.kt
+│   │   │       │   ├── MSARenewedEvent.kt
+│   │   │       │   └── EngagementCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── SOWNotFoundException.kt
+│   │   │       │   ├── SOWBudgetExceededException.kt
+│   │   │       │   ├── DeliverableNotAcceptedException.kt
+│   │   │       │   ├── MSAExpiredException.kt
+│   │   │       │   └── MilestoneOverdueException.kt
+│   │   │       └── service/
+│   │   │           ├── SOWLifecycleService.kt
+│   │   │           ├── DeliverableTrackingService.kt
+│   │   │           ├── MilestonePaymentService.kt
+│   │   │           ├── MSAManagementService.kt
+│   │   │           └── FirmScorecardService.kt
+│   │   ├── professional-services-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/professionalservices/application/
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateSOWUseCase.kt
+│   │   │       │   │   ├── ApproveSOWUseCase.kt
+│   │   │       │   │   ├── AmendSOWUseCase.kt
+│   │   │       │   │   ├── TrackDeliverableUseCase.kt
+│   │   │       │   │   ├── AcceptDeliverableUseCase.kt
+│   │   │       │   │   ├── ManageMSAUseCase.kt
+│   │   │       │   │   └── ManageEngagementUseCase.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── SOWRepository.kt
+│   │   │       │       ├── DeliverableRepository.kt
+│   │   │       │       ├── MilestoneRepository.kt
+│   │   │       │       ├── MSARepository.kt
+│   │   │       │       ├── ConsultingFirmRepository.kt
+│   │   │       │       ├── EngagementRepository.kt
+│   │   │       │       ├── FinanceAPPort.kt              # Invoice triggering
+│   │   │       │       ├── ProjectAccountingPort.kt      # Cost allocation
+│   │   │       │       └── EventPublisherPort.kt
+│   │   │       ├── command/
+│   │   │       │   ├── CreateSOWCommand.kt
+│   │   │       │   ├── SubmitSOWForApprovalCommand.kt
+│   │   │       │   ├── ApproveSOWCommand.kt
+│   │   │       │   ├── AmendSOWCommand.kt
+│   │   │       │   ├── ExtendSOWCommand.kt
+│   │   │       │   ├── CloseSOWCommand.kt
+│   │   │       │   ├── SubmitDeliverableCommand.kt
+│   │   │       │   ├── AcceptDeliverableCommand.kt
+│   │   │       │   ├── RejectDeliverableCommand.kt
+│   │   │       │   ├── CompleteMilestoneCommand.kt
+│   │   │       │   ├── CreateMSACommand.kt
+│   │   │       │   └── RenewMSACommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetSOWQuery.kt
+│   │   │       │   ├── GetSOWsByStatusQuery.kt
+│   │   │       │   ├── GetDeliverableStatusQuery.kt
+│   │   │       │   ├── GetMilestoneScheduleQuery.kt
+│   │   │       │   ├── GetMSAQuery.kt
+│   │   │       │   ├── GetConsultingFirmScorecardQuery.kt
+│   │   │       │   ├── GetEngagementQuery.kt
+│   │   │       │   └── GetProfessionalServicesSpendQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── SOWCommandHandler.kt
+│   │   │           ├── DeliverableCommandHandler.kt
+│   │   │           ├── MSACommandHandler.kt
+│   │   │           └── ProfessionalServicesQueryHandler.kt
+│   │   └── professional-services-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/hr/professionalservices/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── SOWResource.kt                # REST API (Port 9907)
+│   │           │   │       ├── DeliverableResource.kt
+│   │           │   │       ├── MilestoneResource.kt
+│   │           │   │       ├── MSAResource.kt
+│   │           │   │       ├── ConsultingFirmResource.kt
+│   │           │   │       └── EngagementResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── SOWJpaRepository.kt
+│   │           │       │   ├── DeliverableJpaRepository.kt
+│   │           │       │   ├── MilestoneJpaRepository.kt
+│   │           │       │   ├── MSAJpaRepository.kt
+│   │           │       │   └── ConsultingFirmJpaRepository.kt
+│   │           │       ├── integration/
+│   │           │       │   ├── FinanceAPAdapter.kt           # Trigger invoices
+│   │           │       │   └── ProjectAccountingAdapter.kt   # Cost allocation
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── HRProfessionalServicesApplication.kt
+│   │
+│   ├── hr-workforce-scheduling/                 # Port 9905 - Workforce Scheduling / WFM (ADR-055)
+│   │   ├── scheduling-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── scheduling/
+│   │   │                               └── domain/
+│   │   │                                   ├── model/
+│   │   │                                   │   ├── schedule/
+│   │   │                                   │   │   ├── Schedule.kt              # Aggregate Root
+│   │   │                                   │   │   ├── ScheduleId.kt
+│   │   │                                   │   │   ├── ScheduleStatus.kt        # DRAFT, PUBLISHED, FINALIZED
+│   │   │                                   │   │   ├── SchedulePeriod.kt
+│   │   │                                   │   │   └── ScheduleVersion.kt
+│   │   │                                   │   ├── shift/
+│   │   │                                   │   │   ├── Shift.kt                 # Aggregate Root
+│   │   │                                   │   │   ├── ShiftId.kt
+│   │   │                                   │   │   ├── ShiftTemplate.kt
+│   │   │                                   │   │   ├── ShiftAssignment.kt
+│   │   │                                   │   │   ├── ShiftSwapRequest.kt
+│   │   │                                   │   │   └── OpenShift.kt
+│   │   │                                   │   ├── timeattendance/
+│   │   │                                   │   │   ├── TimeAttendance.kt        # Aggregate Root
+│   │   │                                   │   │   ├── ClockEvent.kt            # CLOCK_IN, CLOCK_OUT, BREAK_START, BREAK_END
+│   │   │                                   │   │   ├── AttendanceException.kt
+│   │   │                                   │   │   └── OvertimeRecord.kt
+│   │   │                                   │   ├── availability/
+│   │   │                                   │   │   ├── EmployeeAvailability.kt
+│   │   │                                   │   │   ├── TimeOffRequest.kt
+│   │   │                                   │   │   └── PreferredShifts.kt
+│   │   │                                   │   ├── compliance/
+│   │   │                                   │   │   ├── LaborRule.kt
+│   │   │                                   │   │   ├── BreakRule.kt
+│   │   │                                   │   │   ├── OvertimeRule.kt
+│   │   │                                   │   │   ├── ConsecutiveShiftRule.kt
+│   │   │                                   │   │   └── ComplianceViolation.kt
+│   │   │                                   │   └── forecast/
+│   │   │                                   │       ├── LaborDemandForecast.kt
+│   │   │                                   │       ├── ForecastedCoverage.kt
+│   │   │                                   │       └── LaborBudget.kt
+│   │   │                                   ├── event/
+│   │   │                                   │   ├── SchedulePublishedEvent.kt
+│   │   │                                   │   ├── ShiftAssignedEvent.kt
+│   │   │                                   │   ├── ShiftSwapApprovedEvent.kt
+│   │   │                                   │   ├── ClockInRecordedEvent.kt
+│   │   │                                   │   ├── ClockOutRecordedEvent.kt
+│   │   │                                   │   ├── OvertimeWorkedEvent.kt
+│   │   │                                   │   ├── ComplianceViolationDetectedEvent.kt
+│   │   │                                   │   └── TimeOffApprovedEvent.kt
+│   │   │                                   ├── exception/
+│   │   │                                   │   ├── ShiftConflictException.kt
+│   │   │                                   │   ├── ComplianceViolationException.kt
+│   │   │                                   │   ├── InsufficientCoverageException.kt
+│   │   │                                   │   └── OvertimeLimitExceededException.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── ScheduleOptimizationService.kt
+│   │   │                                       ├── ComplianceCheckService.kt
+│   │   │                                       ├── LaborForecastingService.kt
+│   │   │                                       └── ShiftSwapValidationService.kt
+│   │   ├── scheduling-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/
+│   │   │       └── main/
+│   │   │           └── kotlin/
+│   │   │               └── com/
+│   │   │                   └── chiroerp/
+│   │   │                       └── hr/
+│   │   │                           └── scheduling/
+│   │   │                               └── application/
+│   │   │                                   ├── port/
+│   │   │                                   │   ├── input/
+│   │   │                                   │   │   ├── CreateScheduleUseCase.kt
+│   │   │                                   │   │   ├── AssignShiftUseCase.kt
+│   │   │                                   │   │   ├── RecordTimeAttendanceUseCase.kt
+│   │   │                                   │   │   ├── RequestShiftSwapUseCase.kt
+│   │   │                                   │   │   └── OptimizeScheduleUseCase.kt
+│   │   │                                   │   └── output/
+│   │   │                                   │       ├── ScheduleRepository.kt
+│   │   │                                   │       ├── ShiftRepository.kt
+│   │   │                                   │       ├── TimeAttendanceRepository.kt
+│   │   │                                   │       ├── AvailabilityRepository.kt
+│   │   │                                   │       ├── DemandSignalPort.kt       # POS/PMS/EHR integration
+│   │   │                                   │       └── EventPublisherPort.kt
+│   │   │                                   ├── command/
+│   │   │                                   │   ├── CreateScheduleCommand.kt
+│   │   │                                   │   ├── PublishScheduleCommand.kt
+│   │   │                                   │   ├── AssignShiftCommand.kt
+│   │   │                                   │   ├── RecordClockInCommand.kt
+│   │   │                                   │   ├── RecordClockOutCommand.kt
+│   │   │                                   │   ├── RequestShiftSwapCommand.kt
+│   │   │                                   │   ├── ApproveShiftSwapCommand.kt
+│   │   │                                   │   ├── RequestTimeOffCommand.kt
+│   │   │                                   │   └── OptimizeScheduleCommand.kt
+│   │   │                                   ├── query/
+│   │   │                                   │   ├── GetScheduleQuery.kt
+│   │   │                                   │   ├── GetEmployeeScheduleQuery.kt
+│   │   │                                   │   ├── GetOpenShiftsQuery.kt
+│   │   │                                   │   ├── GetTimeAttendanceQuery.kt
+│   │   │                                   │   ├── GetComplianceReportQuery.kt
+│   │   │                                   │   └── GetLaborCostForecastQuery.kt
+│   │   │                                   └── service/
+│   │   │                                       ├── ScheduleCommandHandler.kt
+│   │   │                                       ├── ShiftCommandHandler.kt
+│   │   │                                       ├── TimeAttendanceCommandHandler.kt
+│   │   │                                       └── ScheduleOptimizationHandler.kt
+│   │   └── scheduling-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/
+│   │           └── main/
+│   │               ├── kotlin/
+│   │               │   └── com/
+│   │               │       └── chiroerp/
+│   │               │           └── hr/
+│   │               │               └── scheduling/
+│   │               │                   └── infrastructure/
+│   │               │                       ├── adapter/
+│   │               │                       │   ├── input/
+│   │               │                       │   │   └── rest/
+│   │               │                       │   │       ├── ScheduleResource.kt
+│   │               │                       │   │       ├── ShiftResource.kt
+│   │               │                       │   │       ├── TimeAttendanceResource.kt
+│   │               │                       │   │       └── EmployeeSelfServiceResource.kt
+│   │               │                       │   └── output/
+│   │               │                       │       ├── persistence/
+│   │               │                       │       │   ├── ScheduleJpaRepository.kt
+│   │               │                       │       │   ├── ShiftJpaRepository.kt
+│   │               │                       │       │   └── TimeAttendanceJpaRepository.kt
+│   │               │                       │       ├── external/
+│   │               │                       │       │   ├── POSDemandSignalAdapter.kt
+│   │               │                       │       │   ├── PMSDemandSignalAdapter.kt
+│   │               │                       │       │   └── TimeclockAdapter.kt
+│   │               │                       │       ├── ml/
+│   │               │                       │       │   ├── LaborForecastingMLAdapter.kt
+│   │               │                       │       │   └── ScheduleOptimizationMLAdapter.kt
+│   │               │                       │       └── messaging/
+│   │               │                       │           └── KafkaEventPublisher.kt
+│   │               │                       └── HRWorkforceSchedulingApplication.kt
+│   │               └── resources/
+│   │                   └── application.yml
+│   │
+│   └── hr-analytics/                            # Port 9906 - HCM Analytics
+│       ├── analytics-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── hr/
+│       │                           └── analytics/
+│       │                               └── domain/
+│       │                                   ├── model/
+│       │                                   │   ├── workforce/
+│       │                                   │   │   ├── HeadcountMetric.kt
+│       │                                   │   │   ├── TurnoverRate.kt
+│       │                                   │   │   ├── AttritionRisk.kt
+│       │                                   │   │   └── DiversityMetric.kt
+│       │                                   │   ├── spend/
+│       │                                   │   │   ├── TravelSpendAnalysis.kt
+│       │                                   │   │   ├── ContingentSpendAnalysis.kt
+│       │                                   │   │   └── LaborCostAnalysis.kt
+│       │                                   │   └── compliance/
+│       │                                   │       ├── PolicyComplianceRate.kt
+│       │                                   │       ├── LaborComplianceScore.kt
+│       │                                   │       └── AuditFinding.kt
+│       │                                   ├── event/
+│       │                                   │   └── AnalyticsRefreshedEvent.kt
+│       │                                   └── service/
+│       │                                       ├── WorkforceAnalyticsService.kt
+│       │                                       ├── SpendAnalyticsService.kt
+│       │                                       └── ComplianceAnalyticsService.kt
+│       ├── analytics-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/
+│       │       └── main/
+│       │           └── kotlin/
+│       │               └── com/
+│       │                   └── chiroerp/
+│       │                       └── hr/
+│       │                           └── analytics/
+│       │                               └── application/
+│       │                                   ├── port/
+│       │                                   │   ├── input/
+│       │                                   │   │   ├── GetWorkforceKPIsUseCase.kt
+│       │                                   │   │   ├── GetSpendAnalyticsUseCase.kt
+│       │                                   │   │   └── GetComplianceDashboardUseCase.kt
+│       │                                   │   └── output/
+│       │                                   │       ├── HRCorePort.kt
+│       │                                   │       ├── TravelExpensePort.kt
+│       │                                   │       ├── ContingentWorkforcePort.kt
+│       │                                   │       ├── SchedulingPort.kt
+│       │                                   │       └── EventPublisherPort.kt
+│       │                                   ├── query/
+│       │                                   │   ├── GetHeadcountTrendQuery.kt
+│       │                                   │   ├── GetTurnoverAnalysisQuery.kt
+│       │                                   │   ├── GetTravelSpendByDeptQuery.kt
+│       │                                   │   ├── GetContingentSpendByCategoryQuery.kt
+│       │                                   │   ├── GetLaborCostVarianceQuery.kt
+│       │                                   │   └── GetComplianceScoreQuery.kt
+│       │                                   └── service/
+│       │                                       └── HRAnalyticsQueryHandler.kt
+│       └── analytics-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/
+│               └── main/
+│                   ├── kotlin/
+│                   │   └── com/
+│                   │       └── chiroerp/
+│                   │           └── hr/
+│                   │               └── analytics/
+│                   │                   └── infrastructure/
+│                   │                       ├── adapter/
+│                   │                       │   ├── input/
+│                   │                       │   │   └── rest/
+│                   │                       │   │       ├── WorkforceAnalyticsResource.kt
+│                   │                       │   │       ├── SpendAnalyticsResource.kt
+│                   │                       │   │       └── ComplianceDashboardResource.kt
+│                   │                       │   └── output/
+│                   │                       │       ├── persistence/
+│                   │                       │       │   └── AnalyticsJpaRepository.kt
+│                   │                       │       └── messaging/
+│                   │                       │           └── KafkaEventPublisher.kt
+│                   │                       └── HRAnalyticsApplication.kt
+│                   └── resources/
+│                       └── application.yml
 │
-└── [configuration files...]
+├── procurement/                                        # Procurement Bounded Context (ADR-023)
+│   ├── procurement-shared/                            # Shared procurement types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/procurement/shared/
+│   │       ├── PurchaseOrderId.kt
+│   │       ├── RequisitionId.kt
+│   │       ├── VendorId.kt
+│   │       ├── ReceiptId.kt
+│   │       ├── InvoiceMatchId.kt
+│   │       ├── ProcurementStatus.kt
+│   │       ├── ApprovalLevel.kt
+│   │       └── MatchType.kt
+│   │
+│   ├── procurement-core/                              # Port 9201 - Requisitions, PO lifecycle, approvals
+│   │   ├── core-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/core/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Requisition.kt                 # Aggregate root
+│   │   │       │   ├── RequisitionLine.kt
+│   │   │       │   ├── RequisitionApproval.kt
+│   │   │       │   ├── PurchaseOrder.kt               # Aggregate root
+│   │   │       │   ├── PurchaseOrderLine.kt
+│   │   │       │   ├── POApproval.kt
+│   │   │       │   ├── ApprovalWorkflow.kt            # Aggregate root
+│   │   │       │   ├── ApprovalStep.kt
+│   │   │       │   ├── ApprovalRule.kt
+│   │   │       │   ├── POChange.kt                    # Aggregate root
+│   │   │       │   ├── ChangeReason.kt
+│   │   │       │   └── ChangeApproval.kt
+│   │   │       ├── event/
+│   │   │       │   ├── PurchaseRequisitionSubmittedEvent.kt
+│   │   │       │   ├── PurchaseRequisitionApprovedEvent.kt
+│   │   │       │   ├── PurchaseOrderCreatedEvent.kt
+│   │   │       │   ├── PurchaseOrderApprovedEvent.kt
+│   │   │       │   ├── PurchaseOrderIssuedEvent.kt
+│   │   │       │   ├── PurchaseOrderChangedEvent.kt
+│   │   │       │   └── PurchaseOrderCancelledEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RequisitionNotFoundException.kt
+│   │   │       │   ├── PurchaseOrderNotFoundException.kt
+│   │   │       │   ├── ApprovalRequiredException.kt
+│   │   │       │   ├── BudgetExceededException.kt
+│   │   │       │   └── ChangeControlViolationException.kt
+│   │   │       └── service/
+│   │   │           ├── ApprovalRoutingService.kt
+│   │   │           ├── BudgetCheckService.kt
+│   │   │           └── SoDValidationService.kt
+│   │   ├── core-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/core/application/
+│   │   │       ├── command/
+│   │   │       │   ├── SubmitRequisitionCommand.kt
+│   │   │       │   ├── ApproveRequisitionCommand.kt
+│   │   │       │   ├── CreatePurchaseOrderCommand.kt
+│   │   │       │   ├── ApprovePurchaseOrderCommand.kt
+│   │   │       │   ├── IssuePurchaseOrderCommand.kt
+│   │   │       │   ├── ChangePurchaseOrderCommand.kt
+│   │   │       │   └── CancelPurchaseOrderCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRequisitionQuery.kt
+│   │   │       │   ├── ListRequisitionsQuery.kt
+│   │   │       │   ├── GetPurchaseOrderQuery.kt
+│   │   │       │   ├── ListPurchaseOrdersQuery.kt
+│   │   │       │   └── GetApprovalQueueQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── SubmitRequisitionHandler.kt
+│   │   │       │   ├── ApproveRequisitionHandler.kt
+│   │   │       │   ├── CreatePurchaseOrderHandler.kt
+│   │   │       │   ├── ApprovePurchaseOrderHandler.kt
+│   │   │       │   └── ChangePurchaseOrderHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── RequisitionUseCase.kt
+│   │   │           │   └── PurchaseOrderUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── RequisitionRepositoryPort.kt
+│   │   │               ├── PurchaseOrderRepositoryPort.kt
+│   │   │               ├── ApprovalRepositoryPort.kt
+│   │   │               └── ProcurementEventPublisherPort.kt
+│   │   └── core-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/procurement/core/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── RequisitionResource.kt
+│   │           │   │   │   ├── PurchaseOrderResource.kt
+│   │           │   │   │   └── ApprovalResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RequisitionJpaRepository.kt
+│   │           │       │   ├── PurchaseOrderJpaRepository.kt
+│   │           │       │   └── ApprovalJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ProcurementCoreApplication.kt
+│   │
+│   ├── procurement-sourcing/                          # Port 9202 - RFQ/RFP, quotes, awards
+│   │   ├── sourcing-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/sourcing/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── RFQ.kt                         # Aggregate root
+│   │   │       │   ├── RFQLine.kt
+│   │   │       │   ├── RFQInvitation.kt
+│   │   │       │   ├── Quote.kt                       # Aggregate root
+│   │   │       │   ├── QuoteLine.kt
+│   │   │       │   ├── QuoteValidity.kt
+│   │   │       │   ├── SupplierBid.kt                 # Aggregate root
+│   │   │       │   ├── BidEvaluation.kt
+│   │   │       │   ├── EvaluationScorecard.kt
+│   │   │       │   ├── AwardDecision.kt               # Aggregate root
+│   │   │       │   ├── AwardApproval.kt
+│   │   │       │   └── AwardNotification.kt
+│   │   │       ├── event/
+│   │   │       │   ├── RFQIssuedEvent.kt
+│   │   │       │   ├── RFQAmendedEvent.kt
+│   │   │       │   ├── QuoteSubmittedEvent.kt
+│   │   │       │   ├── QuoteEvaluatedEvent.kt
+│   │   │       │   ├── AwardGrantedEvent.kt
+│   │   │       │   └── AwardRejectedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RFQNotFoundException.kt
+│   │   │       │   ├── QuoteNotFoundException.kt
+│   │   │       │   ├── BidDeadlinePassedException.kt
+│   │   │       │   └── AwardPolicyViolationException.kt
+│   │   │       └── service/
+│   │   │           ├── QuoteComparisonService.kt
+│   │   │           ├── BidEvaluationService.kt
+│   │   │           └── AwardComplianceService.kt
+│   │   ├── sourcing-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/sourcing/application/
+│   │   │       ├── command/
+│   │   │       │   ├── IssueRFQCommand.kt
+│   │   │       │   ├── AmendRFQCommand.kt
+│   │   │       │   ├── SubmitQuoteCommand.kt
+│   │   │       │   ├── EvaluateQuotesCommand.kt
+│   │   │       │   └── GrantAwardCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRFQQuery.kt
+│   │   │       │   ├── ListRFQsQuery.kt
+│   │   │       │   ├── GetQuotesForRFQQuery.kt
+│   │   │       │   └── GetAwardDecisionQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── IssueRFQHandler.kt
+│   │   │       │   ├── SubmitQuoteHandler.kt
+│   │   │       │   └── GrantAwardHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── RFQUseCase.kt
+│   │   │           │   └── AwardUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── RFQRepositoryPort.kt
+│   │   │               ├── QuoteRepositoryPort.kt
+│   │   │               ├── AwardRepositoryPort.kt
+│   │   │               └── SourcingEventPublisherPort.kt
+│   │   └── sourcing-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/procurement/sourcing/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── RFQResource.kt
+│   │           │   │   │   ├── QuoteResource.kt
+│   │           │   │   │   └── AwardResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RFQJpaRepository.kt
+│   │           │       │   ├── QuoteJpaRepository.kt
+│   │           │       │   └── AwardJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ProcurementSourcingApplication.kt
+│   │
+│   ├── procurement-suppliers/                         # Port 9203 - Vendor onboarding, compliance, lifecycle
+│   │   ├── suppliers-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/suppliers/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Supplier.kt                    # Aggregate root
+│   │   │       │   ├── SupplierProfile.kt
+│   │   │       │   ├── SupplierContact.kt
+│   │   │       │   ├── SupplierClassification.kt
+│   │   │       │   ├── SupplierCompliance.kt          # Aggregate root
+│   │   │       │   ├── ComplianceDocument.kt
+│   │   │       │   ├── CertificationRecord.kt
+│   │   │       │   ├── SupplierScorecard.kt           # Aggregate root
+│   │   │       │   ├── PerformanceMetric.kt
+│   │   │       │   └── SupplierRisk.kt
+│   │   │       ├── event/
+│   │   │       │   ├── VendorCreatedEvent.kt
+│   │   │       │   ├── VendorUpdatedEvent.kt
+│   │   │       │   ├── SupplierActivatedEvent.kt
+│   │   │       │   ├── SupplierBlockedEvent.kt
+│   │   │       │   ├── ComplianceDocumentExpiredEvent.kt
+│   │   │       │   └── SupplierScorecardUpdatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── SupplierNotFoundException.kt
+│   │   │       │   ├── ComplianceViolationException.kt
+│   │   │       │   └── DuplicateSupplierException.kt
+│   │   │       └── service/
+│   │   │           ├── KYCValidationService.kt
+│   │   │           ├── RiskClassificationService.kt
+│   │   │           └── ScorecardCalculationService.kt
+│   │   ├── suppliers-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/suppliers/application/
+│   │   │       ├── command/
+│   │   │       │   ├── OnboardSupplierCommand.kt
+│   │   │       │   ├── UpdateSupplierCommand.kt
+│   │   │       │   ├── ActivateSupplierCommand.kt
+│   │   │       │   ├── BlockSupplierCommand.kt
+│   │   │       │   └── UploadComplianceDocumentCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetSupplierQuery.kt
+│   │   │       │   ├── ListSuppliersQuery.kt
+│   │   │       │   ├── GetSupplierScorecardQuery.kt
+│   │   │       │   └── GetExpiringDocumentsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── OnboardSupplierHandler.kt
+│   │   │       │   ├── UpdateSupplierHandler.kt
+│   │   │       │   └── BlockSupplierHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── SupplierUseCase.kt
+│   │   │           │   └── ComplianceUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── SupplierRepositoryPort.kt
+│   │   │               ├── ComplianceRepositoryPort.kt
+│   │   │               └── SupplierEventPublisherPort.kt
+│   │   └── suppliers-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/procurement/suppliers/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── SupplierResource.kt
+│   │           │   │   │   ├── ComplianceResource.kt
+│   │           │   │   │   └── ScorecardResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── SupplierJpaRepository.kt
+│   │           │       │   └── ComplianceJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ProcurementSuppliersApplication.kt
+│   │
+│   ├── procurement-receiving/                         # Port 9204 - Goods receipt, service entry, inspection
+│   │   ├── receiving-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/receiving/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── GoodsReceipt.kt                # Aggregate root
+│   │   │       │   ├── ReceiptLine.kt
+│   │   │       │   ├── ReceiptQuantity.kt
+│   │   │       │   ├── ServiceEntry.kt                # Aggregate root
+│   │   │       │   ├── ServiceEntryLine.kt
+│   │   │       │   ├── ServiceAcceptance.kt
+│   │   │       │   ├── InspectionResult.kt            # Aggregate root
+│   │   │       │   ├── InspectionCriteria.kt
+│   │   │       │   ├── QualityCheckpoint.kt
+│   │   │       │   ├── VendorReturn.kt                # Aggregate root
+│   │   │       │   └── ReturnReason.kt
+│   │   │       ├── event/
+│   │   │       │   ├── GoodsReceivedEvent.kt
+│   │   │       │   ├── GoodsReceiptPostedEvent.kt
+│   │   │       │   ├── ServiceEntryPostedEvent.kt
+│   │   │       │   ├── InspectionCompletedEvent.kt
+│   │   │       │   ├── InspectionFailedEvent.kt
+│   │   │       │   └── VendorReturnCreatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── ReceiptNotFoundException.kt
+│   │   │       │   ├── PONotFoundForReceiptException.kt
+│   │   │       │   ├── QuantityMismatchException.kt
+│   │   │       │   └── InspectionRequiredException.kt
+│   │   │       └── service/
+│   │   │           ├── ReceiptValidationService.kt
+│   │   │           ├── InspectionRuleService.kt
+│   │   │           └── ReturnProcessingService.kt
+│   │   ├── receiving-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/procurement/receiving/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateGoodsReceiptCommand.kt
+│   │   │       │   ├── PostGoodsReceiptCommand.kt
+│   │   │       │   ├── CreateServiceEntryCommand.kt
+│   │   │       │   ├── PostServiceEntryCommand.kt
+│   │   │       │   ├── RecordInspectionCommand.kt
+│   │   │       │   └── CreateVendorReturnCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetGoodsReceiptQuery.kt
+│   │   │       │   ├── ListGoodsReceiptsQuery.kt
+│   │   │       │   ├── GetServiceEntryQuery.kt
+│   │   │       │   └── GetPendingInspectionsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateGoodsReceiptHandler.kt
+│   │   │       │   ├── PostGoodsReceiptHandler.kt
+│   │   │       │   └── RecordInspectionHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── ReceivingUseCase.kt
+│   │   │           │   └── InspectionUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── GoodsReceiptRepositoryPort.kt
+│   │   │               ├── ServiceEntryRepositoryPort.kt
+│   │   │               ├── InspectionRepositoryPort.kt
+│   │   │               └── ReceivingEventPublisherPort.kt
+│   │   └── receiving-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/procurement/receiving/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── GoodsReceiptResource.kt
+│   │           │   │   │   ├── ServiceEntryResource.kt
+│   │           │   │   │   └── InspectionResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── GoodsReceiptJpaRepository.kt
+│   │           │       │   ├── ServiceEntryJpaRepository.kt
+│   │           │       │   └── InspectionJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ProcurementReceivingApplication.kt
+│   │
+│   └── procurement-invoice-match/                     # Port 9205 - 2/3-way match, GR/IR reconciliation
+│       ├── invoice-match-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/procurement/invoicematch/domain/
+│       │       ├── model/
+│       │       │   ├── InvoiceMatch.kt                # Aggregate root
+│       │       │   ├── MatchLine.kt
+│       │       │   ├── MatchResult.kt
+│       │       │   ├── MatchException.kt              # Aggregate root
+│       │       │   ├── ExceptionType.kt
+│       │       │   ├── ExceptionResolution.kt
+│       │       │   ├── ToleranceRule.kt               # Aggregate root
+│       │       │   ├── ToleranceType.kt
+│       │       │   ├── GRIRAccount.kt
+│       │       │   └── ReconciliationEntry.kt
+│       │       ├── event/
+│       │       │   ├── InvoiceMatchCompletedEvent.kt
+│       │       │   ├── MatchExceptionCreatedEvent.kt
+│       │       │   ├── MatchExceptionResolvedEvent.kt
+│       │       │   ├── GRIRClearedEvent.kt
+│       │       │   └── ToleranceExceededEvent.kt
+│       │       ├── exception/
+│       │       │   ├── MatchNotFoundException.kt
+│       │       │   ├── InvoiceAlreadyMatchedException.kt
+│       │       │   ├── GRNotFoundForMatchException.kt
+│       │       │   └── ToleranceExceededException.kt
+│       │       └── service/
+│       │           ├── TwoWayMatchService.kt
+│       │           ├── ThreeWayMatchService.kt
+│       │           ├── ToleranceCheckService.kt
+│       │           └── GRIRReconciliationService.kt
+│       ├── invoice-match-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/procurement/invoicematch/application/
+│       │       ├── command/
+│       │       │   ├── PerformTwoWayMatchCommand.kt
+│       │       │   ├── PerformThreeWayMatchCommand.kt
+│       │       │   ├── ResolveMatchExceptionCommand.kt
+│       │       │   ├── ApproveVarianceCommand.kt
+│       │       │   └── ClearGRIRCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetInvoiceMatchQuery.kt
+│       │       │   ├── ListMatchExceptionsQuery.kt
+│       │       │   ├── GetGRIRStatusQuery.kt
+│       │       │   └── GetUnmatchedInvoicesQuery.kt
+│       │       ├── handler/
+│       │       │   ├── PerformTwoWayMatchHandler.kt
+│       │       │   ├── PerformThreeWayMatchHandler.kt
+│       │       │   └── ResolveMatchExceptionHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── InvoiceMatchUseCase.kt
+│       │           │   └── GRIRUseCase.kt
+│       │           └── output/
+│       │               ├── InvoiceMatchRepositoryPort.kt
+│       │               ├── MatchExceptionRepositoryPort.kt
+│       │               ├── ToleranceRepositoryPort.kt
+│       │               └── InvoiceMatchEventPublisherPort.kt
+│       └── invoice-match-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/procurement/invoicematch/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── InvoiceMatchResource.kt
+│               │   │   │   ├── MatchExceptionResource.kt
+│               │   │   │   └── GRIRResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── InvoiceMatchJpaRepository.kt
+│               │       │   ├── MatchExceptionJpaRepository.kt
+│               │       │   └── ToleranceJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── ProcurementInvoiceMatchApplication.kt
+│
+├── maintenance/                                        # Plant Maintenance Bounded Context (ADR-040)
+│   ├── maintenance-shared/                            # Shared maintenance types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/maintenance/shared/
+│   │       ├── EquipmentId.kt
+│   │       ├── WorkOrderId.kt
+│   │       ├── MaintenancePlanId.kt
+│   │       ├── FunctionalLocationId.kt
+│   │       ├── MaintenanceType.kt
+│   │       ├── Priority.kt
+│   │       └── CriticalityLevel.kt
+│   │
+│   ├── maintenance-equipment/                         # Port 9401 - Equipment hierarchy, attributes, classifications
+│   │   ├── equipment-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/equipment/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Equipment.kt                   # Aggregate root
+│   │   │       │   ├── EquipmentAttributes.kt
+│   │   │       │   ├── EquipmentHistory.kt
+│   │   │       │   ├── FunctionalLocation.kt          # Aggregate root
+│   │   │       │   ├── LocationHierarchy.kt
+│   │   │       │   ├── EquipmentClass.kt              # Aggregate root
+│   │   │       │   ├── ClassAttribute.kt
+│   │   │       │   ├── WarrantyInfo.kt
+│   │   │       │   ├── InstallationRecord.kt
+│   │   │       │   └── DocumentLink.kt
+│   │   │       ├── event/
+│   │   │       │   ├── EquipmentCreatedEvent.kt
+│   │   │       │   ├── EquipmentUpdatedEvent.kt
+│   │   │       │   ├── EquipmentAssignedEvent.kt
+│   │   │       │   ├── EquipmentInstalledEvent.kt
+│   │   │       │   ├── EquipmentStatusChangedEvent.kt
+│   │   │       │   └── FunctionalLocationCreatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── EquipmentNotFoundException.kt
+│   │   │       │   ├── FunctionalLocationNotFoundException.kt
+│   │   │       │   └── DuplicateEquipmentException.kt
+│   │   │       └── service/
+│   │   │           ├── EquipmentClassificationService.kt
+│   │   │           └── HierarchyValidationService.kt
+│   │   ├── equipment-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/equipment/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateEquipmentCommand.kt
+│   │   │       │   ├── UpdateEquipmentCommand.kt
+│   │   │       │   ├── AssignEquipmentCommand.kt
+│   │   │       │   ├── InstallEquipmentCommand.kt
+│   │   │       │   └── CreateFunctionalLocationCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetEquipmentQuery.kt
+│   │   │       │   ├── ListEquipmentQuery.kt
+│   │   │       │   ├── GetEquipmentHierarchyQuery.kt
+│   │   │       │   └── GetFunctionalLocationQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateEquipmentHandler.kt
+│   │   │       │   ├── UpdateEquipmentHandler.kt
+│   │   │       │   └── AssignEquipmentHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── EquipmentUseCase.kt
+│   │   │           │   └── FunctionalLocationUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── EquipmentRepositoryPort.kt
+│   │   │               ├── FunctionalLocationRepositoryPort.kt
+│   │   │               └── EquipmentEventPublisherPort.kt
+│   │   └── equipment-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/equipment/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── EquipmentResource.kt
+│   │           │   │   │   └── FunctionalLocationResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── EquipmentJpaRepository.kt
+│   │           │       │   └── FunctionalLocationJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceEquipmentApplication.kt
+│   │
+│   ├── maintenance-work-orders/                       # Port 9402 - Work order planning, execution, settlement
+│   │   ├── work-orders-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/workorders/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── WorkOrder.kt                   # Aggregate root
+│   │   │       │   ├── WorkOrderOperation.kt
+│   │   │       │   ├── WorkOrderComponent.kt
+│   │   │       │   ├── MaintenanceTask.kt             # Aggregate root
+│   │   │       │   ├── TaskList.kt
+│   │   │       │   ├── TaskStep.kt
+│   │   │       │   ├── Confirmation.kt                # Aggregate root
+│   │   │       │   ├── LaborTime.kt
+│   │   │       │   ├── MaterialConsumption.kt
+│   │   │       │   └── CostSettlement.kt
+│   │   │       ├── event/
+│   │   │       │   ├── WorkOrderCreatedEvent.kt
+│   │   │       │   ├── WorkOrderReleasedEvent.kt
+│   │   │       │   ├── WorkOrderStartedEvent.kt
+│   │   │       │   ├── WorkOrderCompletedEvent.kt
+│   │   │       │   ├── WorkOrderClosedEvent.kt
+│   │   │       │   ├── ConfirmationPostedEvent.kt
+│   │   │       │   └── MaintenanceCostPostedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── WorkOrderNotFoundException.kt
+│   │   │       │   ├── WorkOrderNotReleasedException.kt
+│   │   │       │   ├── InvalidConfirmationException.kt
+│   │   │       │   └── CostSettlementFailedException.kt
+│   │   │       └── service/
+│   │   │           ├── WorkOrderPlanningService.kt
+│   │   │           ├── CostSettlementService.kt
+│   │   │           └── LOTOComplianceService.kt
+│   │   ├── work-orders-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/workorders/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateWorkOrderCommand.kt
+│   │   │       │   ├── ReleaseWorkOrderCommand.kt
+│   │   │       │   ├── StartWorkOrderCommand.kt
+│   │   │       │   ├── CompleteWorkOrderCommand.kt
+│   │   │       │   ├── PostConfirmationCommand.kt
+│   │   │       │   └── SettleCostsCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetWorkOrderQuery.kt
+│   │   │       │   ├── ListWorkOrdersQuery.kt
+│   │   │       │   ├── GetWorkOrderBacklogQuery.kt
+│   │   │       │   └── GetConfirmationsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateWorkOrderHandler.kt
+│   │   │       │   ├── ReleaseWorkOrderHandler.kt
+│   │   │       │   ├── CompleteWorkOrderHandler.kt
+│   │   │       │   └── PostConfirmationHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── WorkOrderUseCase.kt
+│   │   │           │   └── ConfirmationUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── WorkOrderRepositoryPort.kt
+│   │   │               ├── ConfirmationRepositoryPort.kt
+│   │   │               └── WorkOrderEventPublisherPort.kt
+│   │   └── work-orders-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/workorders/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── WorkOrderResource.kt
+│   │           │   │   │   └── ConfirmationResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── WorkOrderJpaRepository.kt
+│   │           │       │   └── ConfirmationJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceWorkOrdersApplication.kt
+│   │
+│   ├── maintenance-preventive/                        # Port 9403 - Maintenance plans, schedules, triggers
+│   │   ├── preventive-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/preventive/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MaintenancePlan.kt             # Aggregate root
+│   │   │       │   ├── PlanItem.kt
+│   │   │       │   ├── PlanCycle.kt
+│   │   │       │   ├── MaintenanceSchedule.kt         # Aggregate root
+│   │   │       │   ├── ScheduleItem.kt
+│   │   │       │   ├── CallHorizon.kt
+│   │   │       │   ├── Counter.kt                     # Aggregate root
+│   │   │       │   ├── CounterReading.kt
+│   │   │       │   └── Trigger.kt
+│   │   │       ├── event/
+│   │   │       │   ├── MaintenancePlanCreatedEvent.kt
+│   │   │       │   ├── MaintenancePlanActivatedEvent.kt
+│   │   │       │   ├── MaintenanceScheduleGeneratedEvent.kt
+│   │   │       │   ├── CounterReadingRecordedEvent.kt
+│   │   │       │   └── PMTriggerFiredEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── MaintenancePlanNotFoundException.kt
+│   │   │       │   ├── InvalidCycleException.kt
+│   │   │       │   └── CounterNotFoundException.kt
+│   │   │       └── service/
+│   │   │           ├── ScheduleGenerationService.kt
+│   │   │           ├── TriggerEvaluationService.kt
+│   │   │           └── PMComplianceService.kt
+│   │   ├── preventive-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/preventive/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateMaintenancePlanCommand.kt
+│   │   │       │   ├── ActivateMaintenancePlanCommand.kt
+│   │   │       │   ├── GenerateScheduleCommand.kt
+│   │   │       │   ├── RecordCounterReadingCommand.kt
+│   │   │       │   └── TriggerPreventiveMaintenanceCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMaintenancePlanQuery.kt
+│   │   │       │   ├── ListMaintenancePlansQuery.kt
+│   │   │       │   ├── GetScheduleQuery.kt
+│   │   │       │   └── GetPMComplianceQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateMaintenancePlanHandler.kt
+│   │   │       │   ├── GenerateScheduleHandler.kt
+│   │   │       │   └── RecordCounterReadingHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── MaintenancePlanUseCase.kt
+│   │   │           │   └── ScheduleUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── MaintenancePlanRepositoryPort.kt
+│   │   │               ├── ScheduleRepositoryPort.kt
+│   │   │               ├── CounterRepositoryPort.kt
+│   │   │               └── PreventiveEventPublisherPort.kt
+│   │   └── preventive-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/preventive/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── MaintenancePlanResource.kt
+│   │           │   │   │   ├── ScheduleResource.kt
+│   │           │   │   │   └── CounterResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── MaintenancePlanJpaRepository.kt
+│   │           │       │   ├── ScheduleJpaRepository.kt
+│   │           │       │   └── CounterJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenancePreventiveApplication.kt
+│   │
+│   ├── maintenance-breakdown/                         # Port 9404 - Failure notifications, corrective actions
+│   │   ├── breakdown-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/breakdown/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── BreakdownNotification.kt       # Aggregate root
+│   │   │       │   ├── FailureDetails.kt
+│   │   │       │   ├── SeverityLevel.kt
+│   │   │       │   ├── DowntimeRecord.kt              # Aggregate root
+│   │   │       │   ├── DowntimeDuration.kt
+│   │   │       │   ├── ReasonCode.kt
+│   │   │       │   └── RootCause.kt
+│   │   │       ├── event/
+│   │   │       │   ├── BreakdownReportedEvent.kt
+│   │   │       │   ├── BreakdownAcknowledgedEvent.kt
+│   │   │       │   ├── CorrectiveWorkOrderCreatedEvent.kt
+│   │   │       │   ├── DowntimeStartedEvent.kt
+│   │   │       │   └── DowntimeEndedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── BreakdownNotFoundException.kt
+│   │   │       │   └── InvalidDowntimeRecordException.kt
+│   │   │       └── service/
+│   │   │           ├── BreakdownTriageService.kt
+│   │   │           ├── DowntimeCalculationService.kt
+│   │   │           └── EmergencyDispatchService.kt
+│   │   ├── breakdown-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/breakdown/application/
+│   │   │       ├── command/
+│   │   │       │   ├── ReportBreakdownCommand.kt
+│   │   │       │   ├── AcknowledgeBreakdownCommand.kt
+│   │   │       │   ├── CreateCorrectiveOrderCommand.kt
+│   │   │       │   ├── StartDowntimeCommand.kt
+│   │   │       │   └── EndDowntimeCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetBreakdownQuery.kt
+│   │   │       │   ├── ListActiveBreakdownsQuery.kt
+│   │   │       │   └── GetDowntimeHistoryQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── ReportBreakdownHandler.kt
+│   │   │       │   ├── AcknowledgeBreakdownHandler.kt
+│   │   │       │   └── CreateCorrectiveOrderHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── BreakdownUseCase.kt
+│   │   │           │   └── DowntimeUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── BreakdownRepositoryPort.kt
+│   │   │               ├── DowntimeRepositoryPort.kt
+│   │   │               └── BreakdownEventPublisherPort.kt
+│   │   └── breakdown-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/breakdown/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── BreakdownResource.kt
+│   │           │   │   │   └── DowntimeResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── BreakdownJpaRepository.kt
+│   │           │       │   └── DowntimeJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceBreakdownApplication.kt
+│   │
+│   ├── maintenance-scheduling/                        # Port 9405 - Calendars, resource allocation
+│   │   ├── scheduling-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/scheduling/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MaintenanceCalendar.kt         # Aggregate root
+│   │   │       │   ├── BlackoutWindow.kt
+│   │   │       │   ├── WorkingHours.kt
+│   │   │       │   ├── ScheduleWindow.kt              # Aggregate root
+│   │   │       │   ├── WindowPriority.kt
+│   │   │       │   ├── ResourceAllocation.kt          # Aggregate root
+│   │   │       │   ├── TechnicianAssignment.kt
+│   │   │       │   └── SkillRequirement.kt
+│   │   │       ├── event/
+│   │   │       │   ├── MaintenanceSchedulePublishedEvent.kt
+│   │   │       │   ├── MaintenanceWindowScheduledEvent.kt
+│   │   │       │   ├── ResourceAllocatedEvent.kt
+│   │   │       │   └── ScheduleConflictDetectedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── ScheduleNotFoundException.kt
+│   │   │       │   ├── ResourceNotAvailableException.kt
+│   │   │       │   └── ScheduleConflictException.kt
+│   │   │       └── service/
+│   │   │           ├── ScheduleOptimizationService.kt
+│   │   │           ├── ResourceMatchingService.kt
+│   │   │           └── ConflictResolutionService.kt
+│   │   ├── scheduling-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/scheduling/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateMaintenanceCalendarCommand.kt
+│   │   │       │   ├── ScheduleMaintenanceWindowCommand.kt
+│   │   │       │   ├── AllocateResourceCommand.kt
+│   │   │       │   └── PublishScheduleCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMaintenanceCalendarQuery.kt
+│   │   │       │   ├── ListScheduleWindowsQuery.kt
+│   │   │       │   ├── GetResourceAvailabilityQuery.kt
+│   │   │       │   └── GetScheduleConflictsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateMaintenanceCalendarHandler.kt
+│   │   │       │   ├── ScheduleMaintenanceWindowHandler.kt
+│   │   │       │   └── AllocateResourceHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── CalendarUseCase.kt
+│   │   │           │   └── ResourceAllocationUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── CalendarRepositoryPort.kt
+│   │   │               ├── ScheduleWindowRepositoryPort.kt
+│   │   │               ├── ResourceRepositoryPort.kt
+│   │   │               └── SchedulingEventPublisherPort.kt
+│   │   └── scheduling-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/scheduling/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── CalendarResource.kt
+│   │           │   │   │   ├── ScheduleWindowResource.kt
+│   │           │   │   │   └── ResourceAllocationResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── CalendarJpaRepository.kt
+│   │           │       │   └── ScheduleWindowJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceSchedulingApplication.kt
+│   │
+│   ├── maintenance-spare-parts/                       # Port 9406 - Parts catalog, reservations
+│   │   ├── spare-parts-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/spareparts/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── SparePart.kt                   # Aggregate root
+│   │   │       │   ├── PartSpecification.kt
+│   │   │       │   ├── CriticalityLevel.kt
+│   │   │       │   ├── EquipmentBOM.kt                # Aggregate root
+│   │   │       │   ├── BOMLine.kt
+│   │   │       │   ├── PartReservation.kt             # Aggregate root
+│   │   │       │   ├── ReservationLine.kt
+│   │   │       │   └── PartIssue.kt
+│   │   │       ├── event/
+│   │   │       │   ├── SparePartCreatedEvent.kt
+│   │   │       │   ├── SparePartReservedEvent.kt
+│   │   │       │   ├── SparePartIssuedEvent.kt
+│   │   │       │   ├── ReservationCancelledEvent.kt
+│   │   │       │   └── CriticalSpareShortageEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── SparePartNotFoundException.kt
+│   │   │       │   ├── InsufficientStockException.kt
+│   │   │       │   └── ReservationNotFoundException.kt
+│   │   │       └── service/
+│   │   │           ├── PartAvailabilityService.kt
+│   │   │           ├── ReservationService.kt
+│   │   │           └── CriticalSparesPlanningService.kt
+│   │   ├── spare-parts-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/spareparts/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateSparePartCommand.kt
+│   │   │       │   ├── ReserveSparePartCommand.kt
+│   │   │       │   ├── IssueSparePartCommand.kt
+│   │   │       │   ├── CancelReservationCommand.kt
+│   │   │       │   └── UpdateEquipmentBOMCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetSparePartQuery.kt
+│   │   │       │   ├── ListSparePartsQuery.kt
+│   │   │       │   ├── GetEquipmentBOMQuery.kt
+│   │   │       │   └── GetCriticalSparesQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateSparePartHandler.kt
+│   │   │       │   ├── ReserveSparePartHandler.kt
+│   │   │       │   └── IssueSparePartHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── SparePartUseCase.kt
+│   │   │           │   └── ReservationUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── SparePartRepositoryPort.kt
+│   │   │               ├── BOMRepositoryPort.kt
+│   │   │               ├── ReservationRepositoryPort.kt
+│   │   │               └── SparePartsEventPublisherPort.kt
+│   │   └── spare-parts-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/spareparts/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── SparePartResource.kt
+│   │           │   │   │   ├── BOMResource.kt
+│   │           │   │   │   └── ReservationResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── SparePartJpaRepository.kt
+│   │           │       │   ├── BOMJpaRepository.kt
+│   │           │       │   └── ReservationJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceSparePartsApplication.kt
+│   │
+│   ├── maintenance-analytics/                         # Port 9407 - MTBF, MTTR, availability KPIs
+│   │   ├── analytics-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/analytics/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MaintenanceKPI.kt              # Aggregate root
+│   │   │       │   ├── KPIMetric.kt
+│   │   │       │   ├── KPIPeriod.kt
+│   │   │       │   ├── AvailabilityMetric.kt          # Aggregate root
+│   │   │       │   ├── UptimeRecord.kt
+│   │   │       │   ├── DowntimeSummary.kt
+│   │   │       │   ├── ReliabilityMetric.kt
+│   │   │       │   └── CostVariance.kt
+│   │   │       ├── event/
+│   │   │       │   ├── MaintenanceKPICalculatedEvent.kt
+│   │   │       │   ├── DowntimeRecordedEvent.kt
+│   │   │       │   ├── AvailabilityUpdatedEvent.kt
+│   │   │       │   ├── KPIThresholdBreachedEvent.kt
+│   │   │       │   └── CostVarianceDetectedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── KPICalculationException.kt
+│   │   │       │   └── InsufficientDataException.kt
+│   │   │       └── service/
+│   │   │           ├── MTBFCalculationService.kt
+│   │   │           ├── MTTRCalculationService.kt
+│   │   │           ├── AvailabilityCalculationService.kt
+│   │   │           └── CostVarianceService.kt
+│   │   ├── analytics-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/analytics/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CalculateKPICommand.kt
+│   │   │       │   ├── RecordDowntimeCommand.kt
+│   │   │       │   ├── UpdateAvailabilityCommand.kt
+│   │   │       │   └── SetKPIThresholdCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMaintenanceKPIQuery.kt
+│   │   │       │   ├── ListKPIHistoryQuery.kt
+│   │   │       │   ├── GetAvailabilityQuery.kt
+│   │   │       │   └── GetCostVarianceQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CalculateKPIHandler.kt
+│   │   │       │   ├── RecordDowntimeHandler.kt
+│   │   │       │   └── UpdateAvailabilityHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── KPIUseCase.kt
+│   │   │           │   └── AvailabilityUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── KPIRepositoryPort.kt
+│   │   │               ├── AvailabilityRepositoryPort.kt
+│   │   │               └── AnalyticsEventPublisherPort.kt
+│   │   └── analytics-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/analytics/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── KPIResource.kt
+│   │           │   │   │   └── AvailabilityResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── KPIJpaRepository.kt
+│   │           │       │   └── AvailabilityJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceAnalyticsApplication.kt
+│   │
+│   ├── maintenance-commissioning/                     # Port 9408 - Asset commissioning (Advanced ALM)
+│   │   ├── commissioning-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/commissioning/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── CommissioningProject.kt        # Aggregate root
+│   │   │       │   ├── PreCommissioningChecklist.kt
+│   │   │       │   ├── ChecklistItem.kt
+│   │   │       │   ├── TestingAcceptance.kt           # Aggregate root
+│   │   │       │   ├── TestResult.kt
+│   │   │       │   ├── PerformanceBenchmark.kt
+│   │   │       │   ├── GoLiveAuthorization.kt         # Aggregate root
+│   │   │       │   ├── SafetyCertification.kt
+│   │   │       │   └── CapitalizationTrigger.kt
+│   │   │       ├── event/
+│   │   │       │   ├── AssetReceivedForCommissioningEvent.kt
+│   │   │       │   ├── PreCommissioningChecklistCompletedEvent.kt
+│   │   │       │   ├── TestingAndAcceptanceCompletedEvent.kt
+│   │   │       │   ├── AssetCommissionedEvent.kt
+│   │   │       │   └── CapitalizationTriggeredEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── CommissioningNotFoundException.kt
+│   │   │       │   ├── ChecklistIncompleteException.kt
+│   │   │       │   └── SafetyCertificationRequiredException.kt
+│   │   │       └── service/
+│   │   │           ├── ChecklistValidationService.kt
+│   │   │           ├── TestingCoordinationService.kt
+│   │   │           └── GoLiveAuthorizationService.kt
+│   │   ├── commissioning-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/commissioning/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateCommissioningProjectCommand.kt
+│   │   │       │   ├── CompleteChecklistItemCommand.kt
+│   │   │       │   ├── RecordTestResultCommand.kt
+│   │   │       │   ├── AuthorizeGoLiveCommand.kt
+│   │   │       │   └── TriggerCapitalizationCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetCommissioningProjectQuery.kt
+│   │   │       │   ├── ListPendingCommissioningsQuery.kt
+│   │   │       │   └── GetChecklistStatusQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateCommissioningProjectHandler.kt
+│   │   │       │   ├── CompleteChecklistItemHandler.kt
+│   │   │       │   └── AuthorizeGoLiveHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   └── CommissioningUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── CommissioningRepositoryPort.kt
+│   │   │               └── CommissioningEventPublisherPort.kt
+│   │   └── commissioning-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/commissioning/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── CommissioningResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── CommissioningJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceCommissioningApplication.kt
+│   │
+│   ├── maintenance-decommissioning/                   # Port 9409 - Asset decommissioning (Advanced ALM)
+│   │   ├── decommissioning-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/decommissioning/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── DecommissioningRequest.kt      # Aggregate root
+│   │   │       │   ├── ImpactAssessment.kt
+│   │   │       │   ├── DependencyAnalysis.kt
+│   │   │       │   ├── DisposalPlan.kt                # Aggregate root
+│   │   │       │   ├── DisposalOption.kt
+│   │   │       │   ├── EnvironmentalCompliance.kt
+│   │   │       │   ├── DisposalExecution.kt           # Aggregate root
+│   │   │       │   └── DisposalCertificate.kt
+│   │   │       ├── event/
+│   │   │       │   ├── DecommissioningRequestCreatedEvent.kt
+│   │   │       │   ├── ImpactAssessmentCompletedEvent.kt
+│   │   │       │   ├── DisposalPlanApprovedEvent.kt
+│   │   │       │   ├── AssetDecommissionedEvent.kt
+│   │   │       │   └── DisposalPostingTriggeredEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── DecommissioningNotFoundException.kt
+│   │   │       │   ├── ActiveDependenciesException.kt
+│   │   │       │   └── EnvironmentalComplianceRequiredException.kt
+│   │   │       └── service/
+│   │   │           ├── ImpactAnalysisService.kt
+│   │   │           ├── DisposalOptionService.kt
+│   │   │           └── EnvironmentalComplianceService.kt
+│   │   ├── decommissioning-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/decommissioning/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateDecommissioningRequestCommand.kt
+│   │   │       │   ├── PerformImpactAssessmentCommand.kt
+│   │   │       │   ├── ApproveDisposalPlanCommand.kt
+│   │   │       │   ├── ExecuteDecommissioningCommand.kt
+│   │   │       │   └── TriggerDisposalPostingCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetDecommissioningRequestQuery.kt
+│   │   │       │   ├── ListPendingDecommissioningsQuery.kt
+│   │   │       │   └── GetImpactAssessmentQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateDecommissioningRequestHandler.kt
+│   │   │       │   ├── PerformImpactAssessmentHandler.kt
+│   │   │       │   └── ExecuteDecommissioningHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   └── DecommissioningUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── DecommissioningRepositoryPort.kt
+│   │   │               └── DecommissioningEventPublisherPort.kt
+│   │   └── decommissioning-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/decommissioning/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── DecommissioningResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── DecommissioningJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceDecommissioningApplication.kt
+│   │
+│   ├── maintenance-health-scoring/                    # Port 9410 - Asset health scoring (Advanced ALM)
+│   │   ├── health-scoring-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/healthscoring/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── HealthScore.kt                 # Aggregate root
+│   │   │       │   ├── HealthDimension.kt
+│   │   │       │   ├── DimensionWeight.kt
+│   │   │       │   ├── ConditionAssessment.kt         # Aggregate root
+│   │   │       │   ├── ConditionState.kt
+│   │   │       │   ├── AssessmentCriteria.kt
+│   │   │       │   ├── Inspection.kt                  # Aggregate root
+│   │   │       │   ├── InspectionType.kt
+│   │   │       │   ├── InspectionResult.kt
+│   │   │       │   └── AlertThreshold.kt
+│   │   │       ├── event/
+│   │   │       │   ├── HealthScoreCalculatedEvent.kt
+│   │   │       │   ├── ConditionAssessmentCompletedEvent.kt
+│   │   │       │   ├── InspectionRecordedEvent.kt
+│   │   │       │   ├── CriticalHealthAlertRaisedEvent.kt
+│   │   │       │   └── HealthScoreDegradedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── HealthScoreNotFoundException.kt
+│   │   │       │   ├── InsufficientInspectionDataException.kt
+│   │   │       │   └── InvalidHealthDimensionException.kt
+│   │   │       └── service/
+│   │   │           ├── HealthScoreCalculationService.kt
+│   │   │           ├── ConditionEvaluationService.kt
+│   │   │           └── AlertThresholdService.kt
+│   │   ├── health-scoring-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/maintenance/healthscoring/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CalculateHealthScoreCommand.kt
+│   │   │       │   ├── RecordInspectionCommand.kt
+│   │   │       │   ├── UpdateConditionAssessmentCommand.kt
+│   │   │       │   └── SetAlertThresholdCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetHealthScoreQuery.kt
+│   │   │       │   ├── ListHealthScoreHistoryQuery.kt
+│   │   │       │   ├── GetConditionAssessmentQuery.kt
+│   │   │       │   └── GetCriticalAssetsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CalculateHealthScoreHandler.kt
+│   │   │       │   ├── RecordInspectionHandler.kt
+│   │   │       │   └── UpdateConditionAssessmentHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── HealthScoreUseCase.kt
+│   │   │           │   └── InspectionUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── HealthScoreRepositoryPort.kt
+│   │   │               ├── InspectionRepositoryPort.kt
+│   │   │               └── HealthScoringEventPublisherPort.kt
+│   │   └── health-scoring-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/maintenance/healthscoring/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── HealthScoreResource.kt
+│   │           │   │   │   └── InspectionResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── HealthScoreJpaRepository.kt
+│   │           │       │   └── InspectionJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MaintenanceHealthScoringApplication.kt
+│   │
+│   └── maintenance-eol-planning/                      # Port 9411 - End-of-life planning (Advanced ALM)
+│       ├── eol-planning-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/maintenance/eolplanning/domain/
+│       │       ├── model/
+│       │       │   ├── EOLIndicator.kt                # Aggregate root
+│       │       │   ├── IndicatorType.kt
+│       │       │   ├── TriggerCriteria.kt
+│       │       │   ├── ReplacementForecast.kt         # Aggregate root
+│       │       │   ├── ForecastPeriod.kt
+│       │       │   ├── PrioritizationMatrix.kt
+│       │       │   ├── TCOAnalysis.kt                 # Aggregate root
+│       │       │   ├── CostComponent.kt
+│       │       │   ├── LifecycleCost.kt
+│       │       │   └── AssetRegistry.kt
+│       │       ├── event/
+│       │       │   ├── EOLIndicatorTriggeredEvent.kt
+│       │       │   ├── AssetFlaggedForReplacementEvent.kt
+│       │       │   ├── ReplacementForecastCreatedEvent.kt
+│       │       │   ├── TCOAnalysisCompletedEvent.kt
+│       │       │   └── CAPEXBudgetRequestCreatedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── EOLPlanningNotFoundException.kt
+│       │       │   ├── InvalidIndicatorException.kt
+│       │       │   └── ForecastCalculationException.kt
+│       │       └── service/
+│       │           ├── EOLIndicatorEvaluationService.kt
+│       │           ├── ReplacementPrioritizationService.kt
+│       │           └── TCOCalculationService.kt
+│       ├── eol-planning-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/maintenance/eolplanning/application/
+│       │       ├── command/
+│       │       │   ├── EvaluateEOLIndicatorsCommand.kt
+│       │       │   ├── FlagAssetForReplacementCommand.kt
+│       │       │   ├── CreateReplacementForecastCommand.kt
+│       │       │   ├── PerformTCOAnalysisCommand.kt
+│       │       │   └── SubmitCAPEXBudgetRequestCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetEOLIndicatorsQuery.kt
+│       │       │   ├── ListReplacementCandidatesQuery.kt
+│       │       │   ├── GetReplacementForecastQuery.kt
+│       │       │   └── GetTCOAnalysisQuery.kt
+│       │       ├── handler/
+│       │       │   ├── EvaluateEOLIndicatorsHandler.kt
+│       │       │   ├── CreateReplacementForecastHandler.kt
+│       │       │   └── PerformTCOAnalysisHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── EOLPlanningUseCase.kt
+│       │           │   └── TCOAnalysisUseCase.kt
+│       │           └── output/
+│       │               ├── EOLIndicatorRepositoryPort.kt
+│       │               ├── ForecastRepositoryPort.kt
+│       │               ├── TCORepositoryPort.kt
+│       │               └── EOLPlanningEventPublisherPort.kt
+│       └── eol-planning-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/maintenance/eolplanning/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── EOLPlanningResource.kt
+│               │   │   │   └── TCOAnalysisResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── EOLIndicatorJpaRepository.kt
+│               │       │   ├── ForecastJpaRepository.kt
+│               │       │   └── TCOJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── MaintenanceEOLPlanningApplication.kt
+│
+├── field-service/                                    # Field Service Operations Bounded Context (ADR-042)
+│   ├── fsm-shared/                                   # ADR-006 COMPLIANT: Identifiers and value objects only
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/fieldservice/shared/
+│   │       ├── identifiers/
+│   │       │   ├── ServiceOrderId.kt                 # Unique ID for service order
+│   │       │   ├── FieldTechnicianId.kt              # Field technician identifier
+│   │       │   ├── ServiceRequestId.kt               # Customer service request ID
+│   │       │   ├── DispatchId.kt                     # Dispatch assignment ID
+│   │       │   ├── TimeEntryId.kt                    # Time tracking entry ID
+│   │       │   ├── PartsConsumptionId.kt             # Parts consumption record ID
+│   │       │   ├── RmaRequestId.kt                   # Return Merchandise Authorization ID
+│   │       │   ├── RepairOrderId.kt                  # Customer repair order ID
+│   │       │   ├── RepairQuoteId.kt                  # Repair quote identifier
+│   │       │   ├── CustomerEquipmentId.kt            # Customer-owned equipment ID
+│   │       │   ├── DiagnosisResultId.kt              # Diagnosis result identifier
+│   │       │   └── DepotTechnicianId.kt              # Depot repair technician ID
+│   │       ├── valueobjects/
+│   │       │   ├── ServicePriority.kt                # Priority (emergency, high, normal, low)
+│   │       │   ├── ServiceLocation.kt                # Customer site location VO
+│   │       │   ├── ServiceWindowVO.kt                # Preferred time window
+│   │       │   ├── TechnicianSkillVO.kt              # Skill requirement matching
+│   │       │   ├── RepairPricingVO.kt                # Labor rates, parts markup
+│   │       │   ├── WarrantyTermsVO.kt                # Warranty coverage terms
+│   │       │   └── ShippingAddressVO.kt              # Customer return shipping address
+│   │       └── enums/
+│   │           ├── ServiceOrderStatus.kt             # Status enumeration
+│   │           ├── DispatchStatus.kt                 # Dispatch state enum
+│   │           ├── RmaStatus.kt                      # RMA workflow states
+│   │           ├── RepairOrderStatus.kt              # Repair order workflow states
+│   │           ├── RepairDecisionType.kt             # Repair, scrap, return-as-is
+│   │           └── WarrantyType.kt                   # In-warranty, out-of-warranty, extended
+│   │
+│   ├── fsm-service-orders/                           # Service Order Management (Port 9601)
+│   │   ├── service-orders-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ServiceOrder.kt               # Service order aggregate root
+│   │   │       │   ├── ServiceOrderLine.kt           # Service activities/tasks
+│   │   │       │   ├── ServiceRequest.kt             # Incoming customer request
+│   │   │       │   ├── CustomerAsset.kt              # Customer equipment being serviced
+│   │   │       │   ├── ServiceContract.kt            # SLA/warranty reference
+│   │   │       │   ├── BillingDetails.kt             # Billable hours, materials, travel
+│   │   │       │   ├── TimeAndMaterials.kt           # T&M billing model
+│   │   │       │   └── FixedPriceBilling.kt          # Fixed price contracts
+│   │   │       ├── event/
+│   │   │       │   ├── ServiceOrderCreatedEvent.kt
+│   │   │       │   ├── ServiceOrderScheduledEvent.kt
+│   │   │       │   ├── ServiceOrderCompletedEvent.kt
+│   │   │       │   ├── ServiceOrderBilledEvent.kt
+│   │   │       │   └── ServiceOrderCancelledEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── ServiceOrderNotFoundException.kt
+│   │   │       │   ├── InvalidServiceOrderStateException.kt
+│   │   │       │   └── ContractValidationException.kt
+│   │   │       └── service/
+│   │   │           ├── ServiceOrderCreationService.kt
+│   │   │           ├── ContractValidationService.kt
+│   │   │           ├── BillingCalculationService.kt
+│   │   │           └── SLAComplianceService.kt
+│   │   ├── service-orders-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateServiceOrderCommand.kt
+│   │   │       │   ├── UpdateServiceOrderCommand.kt
+│   │   │       │   ├── ScheduleServiceOrderCommand.kt
+│   │   │       │   ├── CompleteServiceOrderCommand.kt
+│   │   │       │   ├── GenerateInvoiceCommand.kt
+│   │   │       │   └── CancelServiceOrderCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetServiceOrderQuery.kt
+│   │   │       │   ├── ListServiceOrdersQuery.kt
+│   │   │       │   ├── GetPendingOrdersQuery.kt
+│   │   │       │   └── GetBillableOrdersQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateServiceOrderHandler.kt
+│   │   │       │   ├── UpdateServiceOrderHandler.kt
+│   │   │       │   ├── CompleteServiceOrderHandler.kt
+│   │   │       │   └── ServiceOrderQueryHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── ServiceOrderUseCase.kt
+│   │   │           │   └── BillingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ServiceOrderRepositoryPort.kt
+│   │   │               ├── ContractRepositoryPort.kt
+│   │   │               ├── BillingPort.kt
+│   │   │               └── ServiceOrderEventPublisherPort.kt
+│   │   └── service-orders-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── ServiceOrderResource.kt          # REST API (Port 9601)
+│   │           │   │   │   └── ServiceOrderDto.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaServiceOrderConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ServiceOrderJpaRepository.kt
+│   │           │       │   ├── ServiceOrderJpaEntity.kt
+│   │           │       │   └── ContractJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── integration/
+│   │           │           └── FinanceARAdapter.kt              # Invoice generation
+│   │           └── FieldServiceOrdersApplication.kt
+│   │
+│   ├── fsm-dispatch/                                 # Dispatch & Scheduling (Port 9602)
+│   │   ├── dispatch-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Dispatch.kt                   # Dispatch aggregate root
+│   │   │       │   ├── FieldTechnician.kt            # Technician with skills & availability
+│   │   │       │   ├── TechnicianSkills.kt           # Skill matrix for matching
+│   │   │       │   ├── TechnicianAvailability.kt     # Calendar/schedule
+│   │   │       │   ├── ServiceTerritory.kt           # Geographic territory
+│   │   │       │   ├── RouteOptimization.kt          # Optimal routing
+│   │   │       │   ├── ScheduleSlot.kt               # Available time slots
+│   │   │       │   └── TravelTime.kt                 # Estimated travel between sites
+│   │   │       ├── event/
+│   │   │       │   ├── TechnicianDispatchedEvent.kt
+│   │   │       │   ├── DispatchRescheduledEvent.kt
+│   │   │       │   ├── TechnicianEnRouteEvent.kt
+│   │   │       │   ├── TechnicianArrivedEvent.kt
+│   │   │       │   └── DispatchCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── NoAvailableTechnicianException.kt
+│   │   │       │   ├── SkillMismatchException.kt
+│   │   │       │   └── SchedulingConflictException.kt
+│   │   │       └── service/
+│   │   │           ├── DispatchAssignmentService.kt
+│   │   │           ├── SkillMatchingService.kt
+│   │   │           ├── RouteOptimizationService.kt
+│   │   │           └── TerritoryManagementService.kt
+│   │   ├── dispatch-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/application/
+│   │   │       ├── command/
+│   │   │       │   ├── AssignTechnicianCommand.kt
+│   │   │       │   ├── RescheduleDispatchCommand.kt
+│   │   │       │   ├── UpdateTechnicianStatusCommand.kt
+│   │   │       │   ├── OptimizeRouteCommand.kt
+│   │   │       │   └── UpdateAvailabilityCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetAvailableTechniciansQuery.kt
+│   │   │       │   ├── GetTechnicianScheduleQuery.kt
+│   │   │       │   ├── GetOptimalRouteQuery.kt
+│   │   │       │   └── GetTerritoryWorkloadQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── AssignTechnicianHandler.kt
+│   │   │       │   ├── RescheduleDispatchHandler.kt
+│   │   │       │   └── DispatchQueryHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── DispatchUseCase.kt
+│   │   │           │   └── SchedulingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── DispatchRepositoryPort.kt
+│   │   │               ├── TechnicianRepositoryPort.kt
+│   │   │               ├── RouteOptimizationPort.kt
+│   │   │               └── DispatchEventPublisherPort.kt
+│   │   └── dispatch-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── DispatchResource.kt              # REST API (Port 9602)
+│   │           │   │   │   ├── TechnicianResource.kt
+│   │           │   │   │   └── ScheduleResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaDispatchConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── DispatchJpaRepository.kt
+│   │           │       │   ├── TechnicianJpaRepository.kt
+│   │           │       │   └── TerritoryJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── external/
+│   │           │           └── GoogleMapsRouteAdapter.kt        # Route optimization
+│   │           └── FieldServiceDispatchApplication.kt
+│   │
+│   └── fsm-parts-consumption/                        # Parts & Material Consumption (Port 9603)
+│       ├── parts-consumption-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/parts/domain/
+│       │       ├── model/
+│       │       │   ├── PartsConsumption.kt           # Parts consumption aggregate
+│       │       │   ├── FieldInventory.kt             # Technician truck/van inventory
+│       │       │   ├── PartUsage.kt                  # Part consumed on service order
+│       │       │   ├── ReplenishmentRequest.kt       # Request for restocking
+│       │       │   ├── TruckStock.kt                 # Mobile stock levels
+│       │       │   └── WarrantyPart.kt               # Parts under warranty claim
+│       │       ├── event/
+│       │       │   ├── PartConsumedEvent.kt
+│       │       │   ├── InventoryDepletedEvent.kt
+│       │       │   ├── ReplenishmentRequestedEvent.kt
+│       │       │   ├── TruckRestockedEvent.kt
+│       │       │   └── WarrantyClaimCreatedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── InsufficientPartsException.kt
+│       │       │   ├── PartNotFoundException.kt
+│       │       │   └── WarrantyValidationException.kt
+│       │       └── service/
+│       │           ├── PartsConsumptionService.kt
+│       │           ├── TruckInventoryService.kt
+│       │           └── WarrantyClaimService.kt
+│       ├── parts-consumption-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/parts/application/
+│       │       ├── command/
+│       │       │   ├── ConsumePartCommand.kt
+│       │       │   ├── RequestReplenishmentCommand.kt
+│       │       │   ├── RestockTruckCommand.kt
+│       │       │   ├── CreateWarrantyClaimCommand.kt
+│       │       │   └── AdjustTruckInventoryCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetTruckInventoryQuery.kt
+│       │       │   ├── GetConsumptionHistoryQuery.kt
+│       │       │   ├── GetPendingReplenishmentsQuery.kt
+│       │       │   └── GetWarrantyClaimsQuery.kt
+│       │       ├── handler/
+│       │       │   ├── ConsumePartHandler.kt
+│       │       │   ├── RequestReplenishmentHandler.kt
+│       │       │   └── PartsQueryHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── PartsConsumptionUseCase.kt
+│       │           │   └── TruckInventoryUseCase.kt
+│       │           └── output/
+│       │               ├── PartsConsumptionRepositoryPort.kt
+│       │               ├── TruckInventoryRepositoryPort.kt
+│       │               ├── WarehouseIntegrationPort.kt
+│       │               └── PartsEventPublisherPort.kt
+│       └── parts-consumption-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/fieldservice/parts/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── PartsConsumptionResource.kt      # REST API (Port 9603)
+│               │   │   │   ├── TruckInventoryResource.kt
+│               │   │   │   └── WarrantyClaimResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaPartsConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── PartsConsumptionJpaRepository.kt
+│               │       │   ├── TruckInventoryJpaRepository.kt
+│               │       │   └── WarrantyClaimJpaRepository.kt
+│               │       ├── messaging/
+│               │       │   └── KafkaEventPublisher.kt
+│               │       └── integration/
+│               │           └── InventoryWarehouseAdapter.kt     # Inventory integration
+│               └── FieldServicePartsApplication.kt
+│
+│   └── fsm-repair-depot/                             # Customer Repair/RMA Services (Port 9604)
+│       ├── repair-depot-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/domain/
+│       │       ├── model/
+│       │       │   ├── RepairOrder.kt                # Aggregate root - customer repair order
+│       │       │   ├── RepairOrderLine.kt            # Line items (labor, parts, services)
+│       │       │   ├── RepairOrderStatus.kt          # Received, diagnosing, quoted, approved, repairing, testing, complete, shipped
+│       │       │   ├── RmaRequest.kt                 # Return Merchandise Authorization
+│       │       │   ├── RmaStatus.kt                  # Requested, approved, received, processed
+│       │       │   ├── CustomerEquipment.kt          # Customer-owned equipment received
+│       │       │   ├── EquipmentCondition.kt         # Condition assessment on receipt
+│       │       │   ├── DiagnosisResult.kt            # Fault found, root cause, recommendations
+│       │       │   ├── RepairQuote.kt                # Quote for customer approval
+│       │       │   ├── QuoteLineItem.kt              # Labor, parts, shipping costs
+│       │       │   ├── RepairDecision.kt             # Repair, scrap, return as-is
+│       │       │   ├── RepairTechnician.kt           # Depot repair technician
+│       │       │   ├── TechnicianSkillLevel.kt       # Skill certifications for repair
+│       │       │   ├── WarrantyEvaluation.kt         # Check if warranty applies
+│       │       │   ├── OutOfWarrantyRepair.kt        # Paid repair services
+│       │       │   ├── TestResult.kt                 # Post-repair testing
+│       │       │   ├── QualityCertification.kt       # QA sign-off
+│       │       │   └── ShipmentTracking.kt           # Return shipping to customer
+│       │       ├── event/
+│       │       │   ├── RmaRequestedEvent.kt
+│       │       │   ├── RmaApprovedEvent.kt
+│       │       │   ├── EquipmentReceivedEvent.kt
+│       │       │   ├── DiagnosisCompletedEvent.kt
+│       │       │   ├── QuoteSentEvent.kt
+│       │       │   ├── QuoteApprovedEvent.kt
+│       │       │   ├── QuoteRejectedEvent.kt
+│       │       │   ├── RepairStartedEvent.kt
+│       │       │   ├── RepairCompletedEvent.kt
+│       │       │   ├── TestPassedEvent.kt
+│       │       │   ├── TestFailedEvent.kt
+│       │       │   ├── EquipmentShippedEvent.kt
+│       │       │   └── RepairBilledEvent.kt
+│       │       ├── exception/
+│       │       │   ├── RmaNotFoundException.kt
+│       │       │   ├── RepairOrderNotFoundException.kt
+│       │       │   ├── QuoteExpiredException.kt
+│       │       │   ├── WarrantyExpiredException.kt
+│       │       │   └── DiagnosisRequiredException.kt
+│       │       └── service/
+│       │           ├── RmaCreationService.kt          # RMA request & approval workflow
+│       │           ├── RepairIntakeService.kt         # Equipment receipt & inspection
+│       │           ├── DiagnosisService.kt            # Fault finding & root cause
+│       │           ├── QuotingService.kt              # Quote generation & pricing
+│       │           ├── WarrantyValidationService.kt   # Warranty check & claim
+│       │           ├── RepairExecutionService.kt      # Repair work coordination
+│       │           ├── QualityTestingService.kt       # Post-repair testing & QA
+│       │           └── ReturnShippingService.kt       # Ship repaired equipment
+│       ├── repair-depot-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/application/
+│       │       ├── command/
+│       │       │   ├── CreateRmaRequestCommand.kt
+│       │       │   ├── ApproveRmaCommand.kt
+│       │       │   ├── ReceiveEquipmentCommand.kt
+│       │       │   ├── RecordDiagnosisCommand.kt
+│       │       │   ├── CreateRepairQuoteCommand.kt
+│       │       │   ├── ApproveQuoteCommand.kt
+│       │       │   ├── RejectQuoteCommand.kt
+│       │       │   ├── StartRepairCommand.kt
+│       │       │   ├── CompleteRepairCommand.kt
+│       │       │   ├── RecordTestResultCommand.kt
+│       │       │   ├── ShipEquipmentCommand.kt
+│       │       │   └── BillRepairCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetRmaStatusQuery.kt
+│       │       │   ├── GetRepairOrderQuery.kt
+│       │       │   ├── GetRepairQueueQuery.kt
+│       │       │   ├── GetPendingQuotesQuery.kt
+│       │       │   ├── GetRepairHistoryQuery.kt
+│       │       │   └── GetRepairMetricsQuery.kt
+│       │       ├── handler/
+│       │       │   ├── RmaCommandHandler.kt
+│       │       │   ├── RepairOrderCommandHandler.kt
+│       │       │   ├── RepairQueryHandler.kt
+│       │       │   └── RepairDepotEventHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── RmaUseCase.kt
+│       │           │   ├── RepairIntakeUseCase.kt
+│       │           │   ├── DiagnosisUseCase.kt
+│       │           │   ├── QuotingUseCase.kt
+│       │           │   ├── RepairExecutionUseCase.kt
+│       │           │   └── ReturnShippingUseCase.kt
+│       │           └── output/
+│       │               ├── RepairOrderRepositoryPort.kt
+│       │               ├── RmaRepositoryPort.kt
+│       │               ├── CustomerEquipmentRepositoryPort.kt
+│       │               ├── InventoryPartsPort.kt           # Parts consumption from inventory
+│       │               ├── WarrantyCheckPort.kt            # CRM contract/warranty lookup
+│       │               ├── BillingPort.kt                  # Finance AR integration
+│       │               ├── ShippingIntegrationPort.kt      # Carrier integration
+│       │               └── RepairDepotEventPublisherPort.kt
+│       └── repair-depot-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── RmaResource.kt               # REST API (Port 9604)
+│               │   │   │   ├── RepairOrderResource.kt
+│               │   │   │   ├── DiagnosisResource.kt
+│               │   │   │   ├── QuoteResource.kt
+│               │   │   │   └── RepairMetricsResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaRepairConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── RepairOrderJpaRepository.kt
+│               │       │   ├── RmaJpaRepository.kt
+│               │       │   ├── CustomerEquipmentJpaRepository.kt
+│               │       │   └── DiagnosisResultJpaRepository.kt
+│               │       ├── messaging/
+│               │       │   └── KafkaEventPublisher.kt
+│               │       └── integration/
+│               │           ├── InventoryPartsAdapter.kt     # Inventory for repair parts
+│               │           ├── CrmWarrantyAdapter.kt        # CRM contract lookup
+│               │           ├── FinanceARAdapter.kt          # Invoice generation
+│               │           └── ShippingCarrierAdapter.kt    # FedEx/UPS/DHL integration
+│               └── FieldServiceRepairDepotApplication.kt
+
+├── fleet/                                            # Fleet Management Bounded Context (ADR-053)
+│   ├── fleet-shared/                                 # ADR-006 COMPLIANT: Identifiers only
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/fleet/shared/
+│   │       ├── VehicleId.kt
+│   │       ├── DriverId.kt
+│   │       ├── FleetPoolId.kt
+│   │       ├── FuelTransactionId.kt
+│   │       ├── TelematicsEventId.kt
+│   │       ├── MaintenanceRecordId.kt
+│   │       └── IncidentId.kt
+│   │
+│   ├── fleet-vehicle-master/                         # Vehicle Master Data (Port 9761)
+│   │   ├── vehicle-master-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/vehiclemaster/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Vehicle.kt                    # Vehicle aggregate root
+│   │   │       │   ├── VehicleStatus.kt              # Active, idle, maintenance, retired
+│   │   │       │   ├── VehicleType.kt                # Sedan, van, truck, trailer
+│   │   │       │   ├── FleetClassification.kt        # Delivery, sales, executive, service
+│   │   │       │   ├── FleetPool.kt                  # Fleet pool aggregate
+│   │   │       │   ├── PoolType.kt                   # Delivery, sales, service, executive
+│   │   │       │   ├── VehicleHierarchy.kt           # Fleet → Pool → Vehicle
+│   │   │       │   ├── TechnicalSpec.kt              # Engine, fuel, capacity specs
+│   │   │       │   ├── EngineType.kt                 # Gasoline, diesel, hybrid, electric
+│   │   │       │   ├── AcquisitionDetails.kt         # Purchase/lease, cost, supplier
+│   │   │       │   ├── HomeLocation.kt               # Garage/depot assignment
+│   │   │       │   └── AssetLink.kt                  # Fixed asset integration
+│   │   │       ├── event/
+│   │   │       │   ├── VehicleCreatedEvent.kt
+│   │   │       │   ├── VehicleUpdatedEvent.kt
+│   │   │       │   ├── VehicleStatusChangedEvent.kt
+│   │   │       │   ├── VehicleAssignedToPoolEvent.kt
+│   │   │       │   ├── VehicleTransferredEvent.kt
+│   │   │       │   └── VehicleRetiredEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── VehicleNotFoundException.kt
+│   │   │       │   ├── FleetPoolNotFoundException.kt
+│   │   │       │   └── DuplicateVINException.kt
+│   │   │       └── service/
+│   │   │           ├── VehicleRegistrationService.kt
+│   │   │           ├── FleetHierarchyService.kt
+│   │   │           └── AssetIntegrationService.kt
+│   │   ├── vehicle-master-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/vehiclemaster/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateVehicleCommand.kt
+│   │   │       │   ├── UpdateVehicleCommand.kt
+│   │   │       │   ├── AssignToPoolCommand.kt
+│   │   │       │   ├── TransferVehicleCommand.kt
+│   │   │       │   ├── RetireVehicleCommand.kt
+│   │   │       │   └── CreateFleetPoolCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetVehicleQuery.kt
+│   │   │       │   ├── ListVehiclesQuery.kt
+│   │   │       │   ├── GetFleetPoolQuery.kt
+│   │   │       │   └── GetVehicleHierarchyQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── VehicleMasterCommandHandler.kt
+│   │   │       │   ├── VehicleMasterQueryHandler.kt
+│   │   │       │   └── VehicleMasterEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── VehicleUseCase.kt
+│   │   │           │   └── FleetPoolUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── VehicleRepositoryPort.kt
+│   │   │               ├── FleetPoolRepositoryPort.kt
+│   │   │               ├── FixedAssetPort.kt
+│   │   │               └── VehicleMasterEventPublisherPort.kt
+│   │   └── vehicle-master-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/vehiclemaster/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── VehicleResource.kt
+│   │           │   │   │   └── FleetPoolResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── VehicleJpaRepository.kt
+│   │           │       │   └── FleetPoolJpaRepository.kt
+│   │           │       ├── fixedasset/
+│   │           │       │   └── FixedAssetServiceAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetVehicleMasterApplication.kt
+│   │
+│   ├── fleet-driver-management/                      # Driver Management (Port 9762)
+│   │   ├── driver-management-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/drivermanagement/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Driver.kt                     # Driver aggregate root
+│   │   │       │   ├── DriverLicense.kt              # License number, class, expiration
+│   │   │       │   ├── LicenseClass.kt               # CDL, standard, motorcycle
+│   │   │       │   ├── Endorsement.kt                # Hazmat, passenger, tanker
+│   │   │       │   ├── MedicalCertification.kt       # DOT physical status
+│   │   │       │   ├── DriverAssignment.kt           # Driver to vehicle assignment
+│   │   │       │   ├── AssignmentType.kt             # Permanent, temporary, pool
+│   │   │       │   ├── DriverSafetyScore.kt          # Safety score calculation
+│   │   │       │   ├── SafetyEvent.kt                # Speeding, harsh braking events
+│   │   │       │   ├── TrainingRecord.kt             # Training and certifications
+│   │   │       │   ├── MVRRecord.kt                  # Motor vehicle record
+│   │   │       │   └── DisciplinaryAction.kt         # Improvement plans
+│   │   │       ├── event/
+│   │   │       │   ├── DriverCreatedEvent.kt
+│   │   │       │   ├── DriverAssignedToVehicleEvent.kt
+│   │   │       │   ├── DriverUnassignedEvent.kt
+│   │   │       │   ├── LicenseExpiringSoonEvent.kt
+│   │   │       │   ├── SafetyScoreUpdatedEvent.kt
+│   │   │       │   ├── SafetyEventRecordedEvent.kt
+│   │   │       │   └── TrainingCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── DriverNotFoundException.kt
+│   │   │       │   ├── LicenseExpiredException.kt
+│   │   │       │   ├── InvalidAssignmentException.kt
+│   │   │       │   └── MedicalCertExpiredException.kt
+│   │   │       └── service/
+│   │   │           ├── DriverAssignmentService.kt
+│   │   │           ├── SafetyScoreCalculationService.kt
+│   │   │           ├── LicenseValidationService.kt
+│   │   │           └── ComplianceCheckService.kt
+│   │   ├── driver-management-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/drivermanagement/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateDriverCommand.kt
+│   │   │       │   ├── UpdateDriverCommand.kt
+│   │   │       │   ├── AssignDriverToVehicleCommand.kt
+│   │   │       │   ├── UnassignDriverCommand.kt
+│   │   │       │   ├── UpdateLicenseCommand.kt
+│   │   │       │   ├── RecordTrainingCommand.kt
+│   │   │       │   └── RecordSafetyEventCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetDriverQuery.kt
+│   │   │       │   ├── ListDriversQuery.kt
+│   │   │       │   ├── GetDriverAssignmentsQuery.kt
+│   │   │       │   ├── GetSafetyScoreQuery.kt
+│   │   │       │   └── GetExpiringLicensesQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── DriverManagementCommandHandler.kt
+│   │   │       │   ├── DriverManagementQueryHandler.kt
+│   │   │       │   └── DriverManagementEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── DriverUseCase.kt
+│   │   │           │   └── DriverAssignmentUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── DriverRepositoryPort.kt
+│   │   │               ├── AssignmentRepositoryPort.kt
+│   │   │               ├── HRIntegrationPort.kt
+│   │   │               └── DriverManagementEventPublisherPort.kt
+│   │   └── driver-management-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/drivermanagement/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── DriverResource.kt
+│   │           │   │   │   └── DriverAssignmentResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── DriverJpaRepository.kt
+│   │           │       │   └── AssignmentJpaRepository.kt
+│   │           │       ├── hr/
+│   │           │       │   └── HRServiceAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetDriverManagementApplication.kt
+│   │
+│   ├── fleet-telematics/                             # Telematics Integration (Port 9763)
+│   │   ├── telematics-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/telematics/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── TelematicsEvent.kt            # Telematics event aggregate
+│   │   │       │   ├── EventType.kt                  # Location, speeding, harsh_brake
+│   │   │       │   ├── GPSLocation.kt                # Latitude, longitude, timestamp
+│   │   │       │   ├── VehicleDiagnostics.kt         # Engine diagnostics aggregate
+│   │   │       │   ├── DiagnosticTroubleCode.kt      # DTC codes
+│   │   │       │   ├── EngineMetrics.kt              # Engine hours, fuel level
+│   │   │       │   ├── DriverBehavior.kt             # Behavior aggregate
+│   │   │       │   ├── SpeedingEvent.kt              # Over limit events
+│   │   │       │   ├── HarshBrakingEvent.kt          # Harsh braking
+│   │   │       │   ├── RapidAccelerationEvent.kt     # Rapid acceleration
+│   │   │       │   ├── IdleTimeEvent.kt              # Idle tracking
+│   │   │       │   ├── Geofence.kt                   # Geofence definition
+│   │   │       │   ├── GeofenceViolation.kt          # Boundary violation
+│   │   │       │   └── TripRecord.kt                 # Trip tracking
+│   │   │       ├── event/
+│   │   │       │   ├── TelematicsEventReceivedEvent.kt
+│   │   │       │   ├── GPSLocationUpdatedEvent.kt
+│   │   │       │   ├── DiagnosticAlertRaisedEvent.kt
+│   │   │       │   ├── SpeedingDetectedEvent.kt
+│   │   │       │   ├── HarshBrakingDetectedEvent.kt
+│   │   │       │   ├── GeofenceViolationEvent.kt
+│   │   │       │   ├── TripStartedEvent.kt
+│   │   │       │   └── TripEndedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── TelematicsDataNotFoundException.kt
+│   │   │       │   ├── GeofenceNotFoundException.kt
+│   │   │       │   └── InvalidTelematicsEventException.kt
+│   │   │       └── service/
+│   │   │           ├── TelematicsIngestionService.kt
+│   │   │           ├── GPSTrackingService.kt
+│   │   │           ├── DiagnosticsMonitoringService.kt
+│   │   │           ├── DriverBehaviorAnalysisService.kt
+│   │   │           └── GeofenceMonitoringService.kt
+│   │   ├── telematics-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/telematics/application/
+│   │   │       ├── command/
+│   │   │       │   ├── IngestTelematicsEventCommand.kt
+│   │   │       │   ├── UpdateGPSLocationCommand.kt
+│   │   │       │   ├── RecordDiagnosticCodeCommand.kt
+│   │   │       │   ├── RecordDriverBehaviorCommand.kt
+│   │   │       │   ├── CreateGeofenceCommand.kt
+│   │   │       │   └── StartTripCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetVehicleLocationQuery.kt
+│   │   │       │   ├── GetTripHistoryQuery.kt
+│   │   │       │   ├── GetDiagnosticsQuery.kt
+│   │   │       │   ├── GetDriverBehaviorEventsQuery.kt
+│   │   │       │   └── GetGeofenceViolationsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── TelematicsCommandHandler.kt
+│   │   │       │   ├── TelematicsQueryHandler.kt
+│   │   │       │   └── TelematicsEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── TelematicsIngestionUseCase.kt
+│   │   │           │   └── GeofenceUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── TelematicsEventRepositoryPort.kt
+│   │   │               ├── GPSLocationRepositoryPort.kt
+│   │   │               ├── TripRepositoryPort.kt
+│   │   │               └── TelematicsEventPublisherPort.kt
+│   │   └── telematics-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/telematics/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── TelematicsResource.kt
+│   │           │   │   │   ├── GPSTrackingResource.kt
+│   │           │   │   │   └── GeofenceResource.kt
+│   │           │   │   ├── webhook/
+│   │           │   │   │   └── TelematicsWebhookReceiver.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── TelematicsEventJpaRepository.kt
+│   │           │       │   ├── GPSLocationJpaRepository.kt
+│   │           │       │   └── TripJpaRepository.kt
+│   │           │       ├── telematics-vendors/
+│   │           │       │   ├── GeotabAdapter.kt
+│   │           │       │   ├── SamsaraAdapter.kt
+│   │           │       │   └── VerizonConnectAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetTelematicsApplication.kt
+│   │
+│   ├── fleet-fuel-management/                        # Fuel Card Management (Port 9764)
+│   │   ├── fuel-management-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/fuelmanagement/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── FuelTransaction.kt            # Fuel transaction aggregate
+│   │   │       │   ├── FuelCard.kt                   # Fuel card master
+│   │   │       │   ├── CardProvider.kt               # WEX, Voyager, Shell Fleet
+│   │   │       │   ├── CardRestriction.kt            # Fuel type, merchant limits
+│   │   │       │   ├── FuelPurchase.kt               # Purchase details
+│   │   │       │   ├── FuelType.kt                   # Gasoline, diesel, electric
+│   │   │       │   ├── FuelEfficiency.kt             # MPG calculation
+│   │   │       │   ├── FuelCostAllocation.kt         # Cost center allocation
+│   │   │       │   ├── FuelAnomaly.kt                # Fraud detection
+│   │   │       │   ├── FuelBudget.kt                 # Budget tracking
+│   │   │       │   └── FuelTaxRecovery.kt            # Fuel tax credits
+│   │   │       ├── event/
+│   │   │       │   ├── FuelTransactionRecordedEvent.kt
+│   │   │       │   ├── FuelCardIssuedEvent.kt
+│   │   │       │   ├── FuelAnomalyDetectedEvent.kt
+│   │   │       │   ├── FuelEfficiencyCalculatedEvent.kt
+│   │   │       │   ├── FuelCostAllocatedEvent.kt
+│   │   │       │   └── FuelBudgetExceededEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── FuelTransactionNotFoundException.kt
+│   │   │       │   ├── FuelCardNotFoundException.kt
+│   │   │       │   ├── InvalidFuelTransactionException.kt
+│   │   │       │   └── FuelBudgetExceededException.kt
+│   │   │       └── service/
+│   │   │           ├── FuelTransactionProcessingService.kt
+│   │   │           ├── FuelEfficiencyCalculationService.kt
+│   │   │           ├── FuelAnomalyDetectionService.kt
+│   │   │           ├── FuelCostAllocationService.kt
+│   │   │           └── FuelTaxRecoveryService.kt
+│   │   ├── fuel-management-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/fuelmanagement/application/
+│   │   │       ├── command/
+│   │   │       │   ├── ImportFuelTransactionsCommand.kt
+│   │   │       │   ├── RecordFuelTransactionCommand.kt
+│   │   │       │   ├── IssueFuelCardCommand.kt
+│   │   │       │   ├── AllocateFuelCostCommand.kt
+│   │   │       │   ├── SetFuelBudgetCommand.kt
+│   │   │       │   └── ProcessFuelTaxRecoveryCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetFuelTransactionsQuery.kt
+│   │   │       │   ├── GetFuelEfficiencyQuery.kt
+│   │   │       │   ├── GetFuelCostByVehicleQuery.kt
+│   │   │       │   ├── GetFuelAnomaliesQuery.kt
+│   │   │       │   └── GetFuelBudgetVarianceQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── FuelManagementCommandHandler.kt
+│   │   │       │   ├── FuelManagementQueryHandler.kt
+│   │   │       │   └── FuelManagementEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── FuelTransactionUseCase.kt
+│   │   │           │   └── FuelCardUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── FuelTransactionRepositoryPort.kt
+│   │   │               ├── FuelCardRepositoryPort.kt
+│   │   │               ├── ControllingPort.kt
+│   │   │               └── FuelManagementEventPublisherPort.kt
+│   │   └── fuel-management-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/fuelmanagement/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── FuelTransactionResource.kt
+│   │           │   │   │   └── FuelCardResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── FuelTransactionJpaRepository.kt
+│   │           │       │   └── FuelCardJpaRepository.kt
+│   │           │       ├── fuel-card-providers/
+│   │           │       │   ├── WEXAdapter.kt
+│   │           │       │   ├── VoyagerAdapter.kt
+│   │           │       │   ├── ComdataAdapter.kt
+│   │           │       │   └── ShellFleetAdapter.kt
+│   │           │       ├── controlling/
+│   │           │       │   └── ControllingServiceAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetFuelManagementApplication.kt
+│   │
+│   ├── fleet-maintenance/                            # Fleet Maintenance (Port 9765)
+│   │   ├── maintenance-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/maintenance/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MaintenanceSchedule.kt        # PM schedule aggregate
+│   │   │       │   ├── ScheduleType.kt               # Mileage-based, time-based
+│   │   │       │   ├── MaintenanceRecord.kt          # Service history aggregate
+│   │   │       │   ├── ServiceType.kt                # Oil change, tire rotation, brake
+│   │   │       │   ├── ServiceProvider.kt            # Dealership, fleet shop
+│   │   │       │   ├── InspectionRecord.kt           # DVIR, annual, DOT
+│   │   │       │   ├── InspectionType.kt             # Pre-trip, post-trip, annual
+│   │   │       │   ├── InspectionDefect.kt           # Defect tracking
+│   │   │       │   ├── RecallCampaign.kt             # Safety recalls
+│   │   │       │   ├── WarrantyTracking.kt           # Warranty claims
+│   │   │       │   ├── DowntimeRecord.kt             # Vehicle downtime
+│   │   │       │   └── LoanerVehicle.kt              # Replacement vehicle
+│   │   │       ├── event/
+│   │   │       │   ├── MaintenanceDueEvent.kt
+│   │   │       │   ├── MaintenanceCompletedEvent.kt
+│   │   │       │   ├── InspectionCompletedEvent.kt
+│   │   │       │   ├── InspectionFailedEvent.kt
+│   │   │       │   ├── RecallNotificationEvent.kt
+│   │   │       │   ├── WarrantyClaimSubmittedEvent.kt
+│   │   │       │   ├── VehicleDowntimeStartedEvent.kt
+│   │   │       │   └── VehicleReturnedToServiceEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── MaintenanceNotFoundException.kt
+│   │   │       │   ├── InspectionNotFoundException.kt
+│   │   │       │   ├── OverdueMaintenanceException.kt
+│   │   │       │   └── InspectionFailedException.kt
+│   │   │       └── service/
+│   │   │           ├── MaintenanceSchedulingService.kt
+│   │   │           ├── InspectionManagementService.kt
+│   │   │           ├── RecallTrackingService.kt
+│   │   │           ├── WarrantyManagementService.kt
+│   │   │           └── DowntimeTrackingService.kt
+│   │   ├── maintenance-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/maintenance/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateMaintenanceScheduleCommand.kt
+│   │   │       │   ├── RecordMaintenanceCommand.kt
+│   │   │       │   ├── RecordInspectionCommand.kt
+│   │   │       │   ├── ReportInspectionDefectCommand.kt
+│   │   │       │   ├── ProcessRecallCommand.kt
+│   │   │       │   ├── SubmitWarrantyClaimCommand.kt
+│   │   │       │   └── RecordDowntimeCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMaintenanceScheduleQuery.kt
+│   │   │       │   ├── GetMaintenanceHistoryQuery.kt
+│   │   │       │   ├── GetDueMaintenanceQuery.kt
+│   │   │       │   ├── GetInspectionHistoryQuery.kt
+│   │   │       │   ├── GetActiveRecallsQuery.kt
+│   │   │       │   └── GetDowntimeReportQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── FleetMaintenanceCommandHandler.kt
+│   │   │       │   ├── FleetMaintenanceQueryHandler.kt
+│   │   │       │   └── FleetMaintenanceEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── MaintenanceScheduleUseCase.kt
+│   │   │           │   └── InspectionUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── MaintenanceScheduleRepositoryPort.kt
+│   │   │               ├── MaintenanceRecordRepositoryPort.kt
+│   │   │               ├── InspectionRepositoryPort.kt
+│   │   │               ├── PlantMaintenancePort.kt
+│   │   │               └── FleetMaintenanceEventPublisherPort.kt
+│   │   └── maintenance-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/maintenance/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── MaintenanceScheduleResource.kt
+│   │           │   │   │   └── InspectionResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── MaintenanceScheduleJpaRepository.kt
+│   │           │       │   ├── MaintenanceRecordJpaRepository.kt
+│   │           │       │   └── InspectionJpaRepository.kt
+│   │           │       ├── plant-maintenance/
+│   │           │       │   └── PlantMaintenanceServiceAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetMaintenanceApplication.kt
+│   │
+│   ├── fleet-compliance/                             # Compliance Management (Port 9766)
+│   │   ├── compliance-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/compliance/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── VehicleRegistration.kt        # Registration aggregate
+│   │   │       │   ├── RegistrationState.kt          # State-specific registration
+│   │   │       │   ├── IRPRegistration.kt            # Interstate registration
+│   │   │       │   ├── InsurancePolicy.kt            # Insurance aggregate
+│   │   │       │   ├── InsuranceCoverage.kt          # Coverage types
+│   │   │       │   ├── InsuranceClaim.kt             # Claims tracking
+│   │   │       │   ├── DOTCompliance.kt              # DOT compliance aggregate
+│   │   │       │   ├── FMCSACarrier.kt               # Carrier info
+│   │   │       │   ├── HoursOfService.kt             # HOS tracking
+│   │   │       │   ├── ELDRecord.kt                  # Electronic logging
+│   │   │       │   ├── DriverQualificationFile.kt    # DQ file
+│   │   │       │   ├── DrugAlcoholTest.kt            # Testing records
+│   │   │       │   ├── EnvironmentalCompliance.kt    # Emissions, CARB
+│   │   │       │   └── COIGeneration.kt              # Certificate of Insurance
+│   │   │       ├── event/
+│   │   │       │   ├── RegistrationExpiringSoonEvent.kt
+│   │   │       │   ├── RegistrationRenewedEvent.kt
+│   │   │       │   ├── InsuranceExpiringSoonEvent.kt
+│   │   │       │   ├── InsuranceClaimFiledEvent.kt
+│   │   │       │   ├── DOTViolationRecordedEvent.kt
+│   │   │       │   ├── HOSViolationDetectedEvent.kt
+│   │   │       │   ├── DQFileUpdatedEvent.kt
+│   │   │       │   └── EmissionsTestDueEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RegistrationExpiredException.kt
+│   │   │       │   ├── InsuranceLapsedException.kt
+│   │   │       │   ├── DOTComplianceViolationException.kt
+│   │   │       │   └── HOSViolationException.kt
+│   │   │       └── service/
+│   │   │           ├── RegistrationTrackingService.kt
+│   │   │           ├── InsuranceManagementService.kt
+│   │   │           ├── DOTComplianceService.kt
+│   │   │           ├── HOSMonitoringService.kt
+│   │   │           ├── DQFileManagementService.kt
+│   │   │           └── EnvironmentalComplianceService.kt
+│   │   ├── compliance-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/compliance/application/
+│   │   │       ├── command/
+│   │   │       │   ├── RenewRegistrationCommand.kt
+│   │   │       │   ├── UpdateInsurancePolicyCommand.kt
+│   │   │       │   ├── FileInsuranceClaimCommand.kt
+│   │   │       │   ├── RecordHOSEntryCommand.kt
+│   │   │       │   ├── UpdateDQFileCommand.kt
+│   │   │       │   ├── RecordDrugTestCommand.kt
+│   │   │       │   └── RecordEmissionsTestCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRegistrationStatusQuery.kt
+│   │   │       │   ├── GetExpiringRegistrationsQuery.kt
+│   │   │       │   ├── GetInsuranceCoverageQuery.kt
+│   │   │       │   ├── GetOpenClaimsQuery.kt
+│   │   │       │   ├── GetDOTComplianceStatusQuery.kt
+│   │   │       │   ├── GetHOSReportQuery.kt
+│   │   │       │   └── GetDQFileStatusQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── ComplianceCommandHandler.kt
+│   │   │       │   ├── ComplianceQueryHandler.kt
+│   │   │       │   └── ComplianceEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── RegistrationUseCase.kt
+│   │   │           │   ├── InsuranceUseCase.kt
+│   │   │           │   └── DOTComplianceUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── RegistrationRepositoryPort.kt
+│   │   │               ├── InsuranceRepositoryPort.kt
+│   │   │               ├── DOTComplianceRepositoryPort.kt
+│   │   │               ├── ELDIntegrationPort.kt
+│   │   │               └── ComplianceEventPublisherPort.kt
+│   │   └── compliance-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/compliance/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── RegistrationResource.kt
+│   │           │   │   │   ├── InsuranceResource.kt
+│   │           │   │   │   └── DOTComplianceResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RegistrationJpaRepository.kt
+│   │           │       │   ├── InsuranceJpaRepository.kt
+│   │           │       │   └── DOTComplianceJpaRepository.kt
+│   │           │       ├── eld-providers/
+│   │           │       │   └── ELDIntegrationAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetComplianceApplication.kt
+│   │
+│   ├── fleet-utilization/                            # Utilization & TCO (Port 9767)
+│   │   ├── utilization-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/utilization/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── UtilizationMetric.kt          # Utilization aggregate
+│   │   │       │   ├── MileageTracking.kt            # Miles/km driven
+│   │   │       │   ├── EngineHours.kt                # Hours operated
+│   │   │       │   ├── TripCount.kt                  # Trips and stops
+│   │   │       │   ├── IdleTimeMetric.kt             # Idle percentage
+│   │   │       │   ├── UtilizationRate.kt            # Use vs available
+│   │   │       │   ├── CostTracking.kt               # Cost aggregate
+│   │   │       │   ├── FuelCostPerMile.kt            # Fuel cost analysis
+│   │   │       │   ├── MaintenanceCostRatio.kt       # Maintenance to value
+│   │   │       │   ├── TotalCostOfOwnership.kt       # TCO calculation
+│   │   │       │   ├── TCOComponent.kt               # TCO breakdown
+│   │   │       │   ├── FleetKPI.kt                   # Fleet KPIs aggregate
+│   │   │       │   ├── AccidentRate.kt               # Accidents per vehicle
+│   │   │       │   └── ReplacementCycle.kt           # Vehicle replacement
+│   │   │       ├── event/
+│   │   │       │   ├── UtilizationCalculatedEvent.kt
+│   │   │       │   ├── TCOCalculatedEvent.kt
+│   │   │       │   ├── LowUtilizationAlertEvent.kt
+│   │   │       │   ├── HighTCOAlertEvent.kt
+│   │   │       │   ├── ReplacementRecommendedEvent.kt
+│   │   │       │   └── FleetKPIUpdatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── UtilizationDataNotFoundException.kt
+│   │   │       │   └── TCOCalculationException.kt
+│   │   │       └── service/
+│   │   │           ├── UtilizationCalculationService.kt
+│   │   │           ├── TCOCalculationService.kt
+│   │   │           ├── FleetKPIService.kt
+│   │   │           ├── BenchmarkingService.kt
+│   │   │           └── ReplacementPlanningService.kt
+│   │   ├── utilization-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fleet/utilization/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CalculateUtilizationCommand.kt
+│   │   │       │   ├── CalculateTCOCommand.kt
+│   │   │       │   ├── UpdateFleetKPICommand.kt
+│   │   │       │   └── RunBenchmarkCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetUtilizationQuery.kt
+│   │   │       │   ├── GetTCOQuery.kt
+│   │   │       │   ├── GetFleetKPIsQuery.kt
+│   │   │       │   ├── GetCostPerMileQuery.kt
+│   │   │       │   ├── GetBenchmarkComparisonQuery.kt
+│   │   │       │   └── GetReplacementCandidatesQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── UtilizationCommandHandler.kt
+│   │   │       │   ├── UtilizationQueryHandler.kt
+│   │   │       │   └── UtilizationEventHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── UtilizationUseCase.kt
+│   │   │           │   └── TCOUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── UtilizationRepositoryPort.kt
+│   │   │               ├── TCORepositoryPort.kt
+│   │   │               ├── FleetKPIRepositoryPort.kt
+│   │   │               └── UtilizationEventPublisherPort.kt
+│   │   └── utilization-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fleet/utilization/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── UtilizationResource.kt
+│   │           │   │   │   ├── TCOResource.kt
+│   │           │   │   │   └── FleetKPIResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── UtilizationJpaRepository.kt
+│   │           │       │   ├── TCOJpaRepository.kt
+│   │           │       │   └── FleetKPIJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── FleetUtilizationApplication.kt
+│   │
+│   └── fleet-lifecycle/                              # Vehicle Lifecycle (Port 9768)
+│       ├── lifecycle-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fleet/lifecycle/domain/
+│       │       ├── model/
+│       │       │   ├── VehicleAcquisition.kt         # Acquisition aggregate
+│       │       │   ├── AcquisitionType.kt            # Purchase, lease
+│       │       │   ├── AcquisitionApproval.kt        # Approval workflow
+│       │       │   ├── VehicleDeployment.kt          # Deployment aggregate
+│       │       │   ├── TelematicsInstallation.kt     # Device setup
+│       │       │   ├── FuelCardIssuance.kt           # Card issuance
+│       │       │   ├── TollTagIssuance.kt            # Toll tag setup
+│       │       │   ├── VehicleTransfer.kt            # Transfer aggregate
+│       │       │   ├── TransferType.kt               # Inter-location, pool change
+│       │       │   ├── VehicleDisposal.kt            # Disposal aggregate
+│       │       │   ├── DisposalMethod.kt             # Sell, trade-in, auction, scrap
+│       │       │   ├── DisposalApproval.kt           # Approval workflow
+│       │       │   └── DisposalAccounting.kt         # Asset disposal posting
+│       │       ├── event/
+│       │       │   ├── AcquisitionRequestedEvent.kt
+│       │       │   ├── AcquisitionApprovedEvent.kt
+│       │       │   ├── VehicleReceivedEvent.kt
+│       │       │   ├── VehicleDeployedEvent.kt
+│       │       │   ├── VehicleTransferredEvent.kt
+│       │       │   ├── DisposalRequestedEvent.kt
+│       │       │   ├── DisposalApprovedEvent.kt
+│       │       │   ├── VehicleDisposedEvent.kt
+│       │       │   └── AssetDisposalPostedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── AcquisitionNotFoundException.kt
+│       │       │   ├── DeploymentNotFoundException.kt
+│       │       │   ├── TransferNotFoundException.kt
+│       │       │   └── DisposalNotApprovedException.kt
+│       │       └── service/
+│       │           ├── AcquisitionWorkflowService.kt
+│       │           ├── DeploymentService.kt
+│       │           ├── TransferService.kt
+│       │           ├── DisposalWorkflowService.kt
+│       │           └── AssetDisposalPostingService.kt
+│       ├── lifecycle-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fleet/lifecycle/application/
+│       │       ├── command/
+│       │       │   ├── RequestAcquisitionCommand.kt
+│       │       │   ├── ApproveAcquisitionCommand.kt
+│       │       │   ├── ReceiveVehicleCommand.kt
+│       │       │   ├── DeployVehicleCommand.kt
+│       │       │   ├── TransferVehicleCommand.kt
+│       │       │   ├── RequestDisposalCommand.kt
+│       │       │   ├── ApproveDisposalCommand.kt
+│       │       │   └── ExecuteDisposalCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetAcquisitionStatusQuery.kt
+│       │       │   ├── GetPendingAcquisitionsQuery.kt
+│       │       │   ├── GetDeploymentStatusQuery.kt
+│       │       │   ├── GetTransferHistoryQuery.kt
+│       │       │   ├── GetDisposalCandidatesQuery.kt
+│       │       │   └── GetDisposalStatusQuery.kt
+│       │       ├── handler/
+│       │       │   ├── LifecycleCommandHandler.kt
+│       │       │   ├── LifecycleQueryHandler.kt
+│       │       │   └── LifecycleEventHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── AcquisitionUseCase.kt
+│       │           │   ├── DeploymentUseCase.kt
+│       │           │   └── DisposalUseCase.kt
+│       │           └── output/
+│       │               ├── AcquisitionRepositoryPort.kt
+│       │               ├── DeploymentRepositoryPort.kt
+│       │               ├── DisposalRepositoryPort.kt
+│       │               ├── ProcurementPort.kt
+│       │               ├── FixedAssetPort.kt
+│       │               └── LifecycleEventPublisherPort.kt
+│       └── lifecycle-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/fleet/lifecycle/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── AcquisitionResource.kt
+│               │   │   │   ├── DeploymentResource.kt
+│               │   │   │   └── DisposalResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── AcquisitionJpaRepository.kt
+│               │       │   ├── DeploymentJpaRepository.kt
+│               │       │   └── DisposalJpaRepository.kt
+│               │       ├── procurement/
+│               │       │   └── ProcurementServiceAdapter.kt
+│               │       ├── fixed-asset/
+│               │       │   └── FixedAssetServiceAdapter.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── FleetLifecycleApplication.kt
+│
+├── manufacturing/                                    # Manufacturing bounded context (ADR-037, ADR-039)
+│   ├── manufacturing-shared/                         # ADR-006 COMPLIANT: Identifiers only
+│   │   └── src/main/kotlin/com/chiroerp/manufacturing/shared/
+│   │       ├── ManufacturingId.kt
+│   │       ├── ProductionOrderId.kt
+│   │       ├── WorkOrderId.kt
+│   │       ├── BomId.kt
+│   │       ├── RoutingId.kt
+│   │       ├── WorkCenterId.kt
+│   │       ├── InspectionPlanId.kt                   # QM: Inspection plan identifier
+│   │       ├── InspectionLotId.kt                    # QM: Inspection lot identifier
+│   │       ├── InspectionCharacteristicId.kt         # QM: Quality characteristic ID
+│   │       ├── NonconformanceId.kt                   # QM: NCR identifier
+│   │       ├── CAPAId.kt                             # QM: CAPA identifier
+│   │       ├── CertificateId.kt                      # QM: CoA/CoC identifier
+│   │       └── QualityScoreId.kt                     # QM: Supplier quality score ID
+│   │
+│   ├── manufacturing-mrp/                            # MRP Planning (Port 9351)
+│   │   ├── mrp-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/mrp/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MRPRun.kt                     # MRP run execution
+│   │   │       │   ├── MRPArea.kt                    # Planning area
+│   │   │       │   ├── DemandElement.kt              # Independent/dependent demand
+│   │   │       │   ├── SupplyElement.kt              # Receipts, orders, transfers
+│   │   │       │   ├── PlannedOrder.kt               # Planned production/purchase
+│   │   │       │   ├── NetRequirement.kt             # Net requirement calculation
+│   │   │       │   ├── PeggingRelationship.kt        # Demand/supply pegging
+│   │   │       │   ├── PlanningHorizon.kt            # Planning fence, frozen zone
+│   │   │       │   ├── LotSizingRule.kt              # Fixed, EOQ, period
+│   │   │       │   ├── SafetyStock.kt                # Safety stock calculation
+│   │   │       │   └── ExceptionMessage.kt           # MRP exceptions
+│   │   │       ├── event/
+│   │   │       │   ├── MRPRunCompletedEvent.kt
+│   │   │       │   ├── PlannedOrderCreatedEvent.kt
+│   │   │       │   ├── PlannedOrderConvertedEvent.kt
+│   │   │       │   └── ExceptionMessageGeneratedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── RunMRPUseCase.kt
+│   │   │       │   │   ├── ConvertPlannedOrderUseCase.kt
+│   │   │       │   │   └── MRPQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── MRPRunRepository.kt
+│   │   │       │       ├── PlannedOrderRepository.kt
+│   │   │       │       ├── DemandRepository.kt
+│   │   │       │       └── InventoryQueryPort.kt
+│   │   │       └── service/
+│   │   │           ├── MRPCalculationService.kt
+│   │   │           ├── NetRequirementCalculator.kt
+│   │   │           ├── LotSizingService.kt
+│   │   │           └── PeggingService.kt
+│   │   ├── mrp-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/mrp/application/
+│   │   │       ├── command/
+│   │   │       │   ├── RunMRPCommand.kt
+│   │   │       │   ├── ConvertToProductionOrderCommand.kt
+│   │   │       │   ├── ConvertToPurchaseRequisitionCommand.kt
+│   │   │       │   └── FirmPlannedOrderCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMRPRunResultQuery.kt
+│   │   │       │   ├── GetPlannedOrdersQuery.kt
+│   │   │       │   ├── GetExceptionMessagesQuery.kt
+│   │   │       │   └── GetPeggingQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── MRPCommandHandler.kt
+│   │   │           ├── MRPQueryHandler.kt
+│   │   │           └── MRPEventHandler.kt
+│   │   └── mrp-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/mrp/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── MRPController.kt
+│   │           │   │       ├── PlannedOrderController.kt
+│   │           │   │       └── MRPExceptionController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── MRPRunJpaRepository.kt
+│   │           │       │   ├── PlannedOrderJpaRepository.kt
+│   │           │       │   └── DemandJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingMRPApplication.kt
+│   │
+│   ├── manufacturing-production/                     # Production Orders (Port 9352)
+│   │   ├── production-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/production/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ProductionOrder.kt            # Production order header
+│   │   │       │   ├── ProductionOrderType.kt        # Standard, rework, prototype
+│   │   │       │   ├── ProductionOrderStatus.kt      # Created, released, confirmed, closed
+│   │   │       │   ├── ProductionOperation.kt        # Routing operations
+│   │   │       │   ├── OperationSequence.kt          # Operation scheduling
+│   │   │       │   ├── MaterialComponent.kt          # BOM components
+│   │   │       │   ├── ComponentReservation.kt       # Material reservation
+│   │   │       │   ├── ProductionConfirmation.kt     # Time/quantity confirmation
+│   │   │       │   ├── GoodsIssue.kt                 # Material issue
+│   │   │       │   ├── GoodsReceipt.kt               # Production receipt
+│   │   │       │   ├── WIPTracking.kt                # Work in progress
+│   │   │       │   ├── Scrap.kt                      # Scrap recording
+│   │   │       │   └── Rework.kt                     # Rework handling
+│   │   │       ├── event/
+│   │   │       │   ├── ProductionOrderCreatedEvent.kt
+│   │   │       │   ├── ProductionOrderReleasedEvent.kt
+│   │   │       │   ├── ProductionOrderConfirmedEvent.kt
+│   │   │       │   ├── MaterialIssuedEvent.kt
+│   │   │       │   ├── ProductionReceiptPostedEvent.kt
+│   │   │       │   ├── ScrapRecordedEvent.kt
+│   │   │       │   └── ProductionOrderClosedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateProductionOrderUseCase.kt
+│   │   │       │   │   ├── ReleaseProductionOrderUseCase.kt
+│   │   │       │   │   ├── ConfirmProductionUseCase.kt
+│   │   │       │   │   └── ProductionOrderQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── ProductionOrderRepository.kt
+│   │   │       │       ├── ConfirmationRepository.kt
+│   │   │       │       ├── InventoryServicePort.kt
+│   │   │       │       └── CostingServicePort.kt
+│   │   │       └── service/
+│   │   │           ├── ProductionOrderService.kt
+│   │   │           ├── MaterialAvailabilityService.kt
+│   │   │           ├── ConfirmationService.kt
+│   │   │           └── WIPCalculationService.kt
+│   │   ├── production-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/production/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateProductionOrderCommand.kt
+│   │   │       │   ├── ReleaseProductionOrderCommand.kt
+│   │   │       │   ├── ConfirmOperationCommand.kt
+│   │   │       │   ├── IssueMaterialCommand.kt
+│   │   │       │   ├── PostGoodsReceiptCommand.kt
+│   │   │       │   ├── RecordScrapCommand.kt
+│   │   │       │   └── CloseProductionOrderCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetProductionOrderQuery.kt
+│   │   │       │   ├── GetProductionOrdersQuery.kt
+│   │   │       │   ├── GetConfirmationsQuery.kt
+│   │   │       │   └── GetWIPQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ProductionCommandHandler.kt
+│   │   │           ├── ProductionQueryHandler.kt
+│   │   │           └── ProductionEventHandler.kt
+│   │   └── production-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/production/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── ProductionOrderController.kt
+│   │           │   │       ├── ConfirmationController.kt
+│   │           │   │       └── GoodsMovementController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ProductionOrderJpaRepository.kt
+│   │           │       │   ├── OperationJpaRepository.kt
+│   │           │       │   └── ConfirmationJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingProductionApplication.kt
+│   │
+│   ├── manufacturing-shopfloor/                      # Shop Floor Execution (Port 9353)
+│   │   ├── shopfloor-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/shopfloor/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── WorkCenter.kt                 # Work center master
+│   │   │       │   ├── WorkCenterGroup.kt            # Work center grouping
+│   │   │       │   ├── Machine.kt                    # Machine/resource
+│   │   │       │   ├── Operator.kt                   # Operator assignment
+│   │   │       │   ├── DispatchList.kt               # Work dispatch queue
+│   │   │       │   ├── OperationExecution.kt         # Operation tracking
+│   │   │       │   ├── TimeTicket.kt                 # Time recording
+│   │   │       │   ├── LaborConfirmation.kt          # Labor hours
+│   │   │       │   ├── MachineConfirmation.kt        # Machine hours
+│   │   │       │   ├── QuantityConfirmation.kt       # Good/scrap quantities
+│   │   │       │   ├── DowntimeRecord.kt             # Machine downtime
+│   │   │       │   └── ShiftSchedule.kt              # Shift patterns
+│   │   │       ├── event/
+│   │   │       │   ├── OperationStartedEvent.kt
+│   │   │       │   ├── OperationCompletedEvent.kt
+│   │   │       │   ├── TimeTicketPostedEvent.kt
+│   │   │       │   ├── DowntimeRecordedEvent.kt
+│   │   │       │   └── WorkCenterStatusChangedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── StartOperationUseCase.kt
+│   │   │       │   │   ├── CompleteOperationUseCase.kt
+│   │   │       │   │   ├── RecordTimeUseCase.kt
+│   │   │       │   │   └── ShopFloorQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── WorkCenterRepository.kt
+│   │   │       │       ├── DispatchListRepository.kt
+│   │   │       │       ├── TimeTicketRepository.kt
+│   │   │       │       └── ProductionOrderPort.kt
+│   │   │       └── service/
+│   │   │           ├── DispatchService.kt
+│   │   │           ├── ExecutionService.kt
+│   │   │           ├── TimeRecordingService.kt
+│   │   │           └── DowntimeService.kt
+│   │   ├── shopfloor-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/shopfloor/application/
+│   │   │       ├── command/
+│   │   │       │   ├── StartOperationCommand.kt
+│   │   │       │   ├── CompleteOperationCommand.kt
+│   │   │       │   ├── PostTimeTicketCommand.kt
+│   │   │       │   ├── RecordDowntimeCommand.kt
+│   │   │       │   └── AssignOperatorCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetDispatchListQuery.kt
+│   │   │       │   ├── GetWorkCenterStatusQuery.kt
+│   │   │       │   ├── GetTimeTicketsQuery.kt
+│   │   │       │   └── GetDowntimeQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ShopFloorCommandHandler.kt
+│   │   │           ├── ShopFloorQueryHandler.kt
+│   │   │           └── ShopFloorEventHandler.kt
+│   │   └── shopfloor-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/shopfloor/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── ShopFloorController.kt
+│   │           │   │       ├── DispatchController.kt
+│   │           │   │       └── TimeTicketController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── WorkCenterJpaRepository.kt
+│   │           │       │   ├── DispatchListJpaRepository.kt
+│   │           │       │   └── TimeTicketJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingShopFloorApplication.kt
+│   │
+│   ├── manufacturing-bom/                            # BOM Management (Port 9354)
+│   │   ├── bom-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/bom/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── BillOfMaterial.kt             # BOM header
+│   │   │       │   ├── BOMItem.kt                    # BOM component
+│   │   │       │   ├── BOMCategory.kt                # Production, engineering, costing
+│   │   │       │   ├── BOMStatus.kt                  # Active, inactive, obsolete
+│   │   │       │   ├── AlternateBOM.kt               # Alternate BOM
+│   │   │       │   ├── ComponentAlternate.kt         # Component substitutes
+│   │   │       │   ├── Effectivity.kt                # Date/serial effectivity
+│   │   │       │   ├── Routing.kt                    # Routing header
+│   │   │       │   ├── RoutingOperation.kt           # Operation details
+│   │   │       │   ├── OperationResource.kt          # Resource assignment
+│   │   │       │   ├── SetupTime.kt                  # Setup time
+│   │   │       │   ├── RunTime.kt                    # Run time per unit
+│   │   │       │   ├── PhantomBOM.kt                 # Phantom/subassembly
+│   │   │       │   └── EngineeringChange.kt          # ECN/ECO tracking
+│   │   │       ├── event/
+│   │   │       │   ├── BOMCreatedEvent.kt
+│   │   │       │   ├── BOMUpdatedEvent.kt
+│   │   │       │   ├── RoutingCreatedEvent.kt
+│   │   │       │   ├── RoutingUpdatedEvent.kt
+│   │   │       │   └── EngineeringChangeApprovedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateBOMUseCase.kt
+│   │   │       │   │   ├── UpdateBOMUseCase.kt
+│   │   │       │   │   ├── CreateRoutingUseCase.kt
+│   │   │       │   │   └── BOMQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── BOMRepository.kt
+│   │   │       │       ├── RoutingRepository.kt
+│   │   │       │       ├── MaterialMasterPort.kt
+│   │   │       │       └── WorkCenterPort.kt
+│   │   │       └── service/
+│   │   │           ├── BOMService.kt
+│   │   │           ├── BOMExplosionService.kt
+│   │   │           ├── RoutingService.kt
+│   │   │           └── EffectivityService.kt
+│   │   ├── bom-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/bom/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateBOMCommand.kt
+│   │   │       │   ├── UpdateBOMCommand.kt
+│   │   │       │   ├── AddBOMItemCommand.kt
+│   │   │       │   ├── CreateRoutingCommand.kt
+│   │   │       │   ├── AddOperationCommand.kt
+│   │   │       │   └── ApproveEngineeringChangeCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetBOMQuery.kt
+│   │   │       │   ├── ExplodeBOMQuery.kt
+│   │   │       │   ├── GetRoutingQuery.kt
+│   │   │       │   └── GetWhereUsedQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── BOMCommandHandler.kt
+│   │   │           ├── BOMQueryHandler.kt
+│   │   │           └── BOMEventHandler.kt
+│   │   └── bom-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/bom/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── BOMController.kt
+│   │           │   │       ├── RoutingController.kt
+│   │           │   │       └── EngineeringChangeController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── BOMJpaRepository.kt
+│   │           │       │   ├── BOMItemJpaRepository.kt
+│   │           │       │   └── RoutingJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingBOMApplication.kt
+│   │
+│   ├── manufacturing-costing/                        # Product Costing (Port 9355)
+│   │   ├── costing-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/costing/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── CostingRun.kt                 # Product costing run
+│   │   │       │   ├── CostEstimate.kt               # Standard cost estimate
+│   │   │       │   ├── CostComponent.kt              # Material, labor, overhead
+│   │   │       │   ├── CostElement.kt                # Cost element mapping
+│   │   │       │   ├── ActivityType.kt               # Labor, machine, setup
+│   │   │       │   ├── ActivityRate.kt               # Activity cost rate
+│   │   │       │   ├── OverheadRate.kt               # Overhead calculation
+│   │   │       │   ├── CostRollup.kt                 # Multi-level cost rollup
+│   │   │       │   ├── WIPValuation.kt               # WIP inventory value
+│   │   │       │   ├── ProductionVariance.kt         # Actual vs standard
+│   │   │       │   ├── VarianceCategory.kt           # Price, quantity, efficiency
+│   │   │       │   ├── CostCenter.kt                 # Cost center linkage
+│   │   │       │   └── SettlementRule.kt             # Variance settlement
+│   │   │       ├── event/
+│   │   │       │   ├── CostEstimateCreatedEvent.kt
+│   │   │       │   ├── CostEstimateReleasedEvent.kt
+│   │   │       │   ├── WIPPostedEvent.kt
+│   │   │       │   ├── ProductionVariancePostedEvent.kt
+│   │   │       │   └── VarianceSettledEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── RunProductCostingUseCase.kt
+│   │   │       │   │   ├── PostWIPUseCase.kt
+│   │   │       │   │   ├── CalculateVarianceUseCase.kt
+│   │   │       │   │   └── CostingQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── CostEstimateRepository.kt
+│   │   │       │       ├── VarianceRepository.kt
+│   │   │       │       ├── BOMPort.kt
+│   │   │       │       └── ControllingPort.kt
+│   │   │       └── service/
+│   │   │           ├── ProductCostingService.kt
+│   │   │           ├── CostRollupService.kt
+│   │   │           ├── WIPCalculationService.kt
+│   │   │           └── VarianceAnalysisService.kt
+│   │   ├── costing-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/costing/application/
+│   │   │       ├── command/
+│   │   │       │   ├── RunProductCostingCommand.kt
+│   │   │       │   ├── ReleaseCostEstimateCommand.kt
+│   │   │       │   ├── PostWIPCommand.kt
+│   │   │       │   ├── CalculateVarianceCommand.kt
+│   │   │       │   └── SettleVarianceCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetCostEstimateQuery.kt
+│   │   │       │   ├── GetCostComponentsQuery.kt
+│   │   │       │   ├── GetWIPValueQuery.kt
+│   │   │       │   └── GetVarianceQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── CostingCommandHandler.kt
+│   │   │           ├── CostingQueryHandler.kt
+│   │   │           └── CostingEventHandler.kt
+│   │   └── costing-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/costing/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── CostingController.kt
+│   │           │   │       ├── WIPController.kt
+│   │           │   │       └── VarianceController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── CostEstimateJpaRepository.kt
+│   │           │       │   ├── WIPJpaRepository.kt
+│   │           │       │   └── VarianceJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingCostingApplication.kt
+│   │
+│   ├── manufacturing-capacity/                       # Capacity Planning (Port 9356)
+│   │   ├── capacity-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/capacity/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── CapacityPlan.kt               # Capacity planning run
+│   │   │       │   ├── WorkCenterCapacity.kt         # Available capacity
+│   │   │       │   ├── CapacityLoad.kt               # Planned load
+│   │   │       │   ├── CapacityConstraint.kt         # Bottleneck constraints
+│   │   │       │   ├── CapacityBucket.kt             # Time bucket
+│   │   │       │   ├── FiniteScheduling.kt           # Finite capacity logic
+│   │   │       │   ├── InfiniteScheduling.kt         # Infinite capacity logic
+│   │   │       │   ├── CapacityLeveling.kt           # Load balancing
+│   │   │       │   ├── OverloadException.kt          # Capacity overload
+│   │   │       │   └── CapacityCalendar.kt           # Working calendar
+│   │   │       ├── event/
+│   │   │       │   ├── CapacityPlanCreatedEvent.kt
+│   │   │       │   ├── CapacityOverloadDetectedEvent.kt
+│   │   │       │   └── CapacityLeveledEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── RunCapacityPlanningUseCase.kt
+│   │   │       │   │   ├── LevelCapacityUseCase.kt
+│   │   │       │   │   └── CapacityQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── CapacityPlanRepository.kt
+│   │   │       │       ├── WorkCenterPort.kt
+│   │   │       │       └── ProductionOrderPort.kt
+│   │   │       └── service/
+│   │   │           ├── CapacityPlanningService.kt
+│   │   │           ├── CapacityLoadingService.kt
+│   │   │           └── CapacityLevelingService.kt
+│   │   ├── capacity-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/capacity/application/
+│   │   │       ├── command/
+│   │   │       │   ├── RunCapacityPlanningCommand.kt
+│   │   │       │   ├── LevelCapacityCommand.kt
+│   │   │       │   └── AdjustCapacityCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetCapacityPlanQuery.kt
+│   │   │       │   ├── GetCapacityLoadQuery.kt
+│   │   │       │   └── GetOverloadsQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── CapacityCommandHandler.kt
+│   │   │           ├── CapacityQueryHandler.kt
+│   │   │           └── CapacityEventHandler.kt
+│   │   └── capacity-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/capacity/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── CapacityController.kt
+│   │           │   │       └── LoadController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── CapacityPlanJpaRepository.kt
+│   │           │       │   └── CapacityLoadJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingCapacityApplication.kt
+│   │
+│   ├── manufacturing-subcontracting/                 # Subcontracting (Port 9357)
+│   │   ├── subcontracting-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/subcontracting/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── SubcontractOrder.kt           # Subcontract PO
+│   │   │       │   ├── ExternalOperation.kt          # External routing op
+│   │   │       │   ├── ComponentProvision.kt         # Component shipment
+│   │   │       │   ├── SubcontractReceipt.kt         # Receipt from vendor
+│   │   │       │   ├── SubcontractorStock.kt         # Stock at subcontractor
+│   │   │       │   ├── ServiceEntry.kt               # Service confirmation
+│   │   │       │   └── SubcontractCost.kt            # Subcontract costing
+│   │   │       ├── event/
+│   │   │       │   ├── SubcontractOrderCreatedEvent.kt
+│   │   │       │   ├── ComponentsProvidedEvent.kt
+│   │   │       │   ├── SubcontractReceiptPostedEvent.kt
+│   │   │       │   └── ServiceEntryPostedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateSubcontractOrderUseCase.kt
+│   │   │       │   │   ├── ProvideComponentsUseCase.kt
+│   │   │       │   │   └── SubcontractingQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── SubcontractOrderRepository.kt
+│   │   │       │       ├── ProcurementPort.kt
+│   │   │       │       └── InventoryPort.kt
+│   │   │       └── service/
+│   │   │           ├── SubcontractingService.kt
+│   │   │           ├── ComponentProvisionService.kt
+│   │   │           └── SubcontractReceiptService.kt
+│   │   ├── subcontracting-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/subcontracting/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateSubcontractOrderCommand.kt
+│   │   │       │   ├── ProvideComponentsCommand.kt
+│   │   │       │   ├── PostSubcontractReceiptCommand.kt
+│   │   │       │   └── PostServiceEntryCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetSubcontractOrderQuery.kt
+│   │   │       │   ├── GetComponentProvisionsQuery.kt
+│   │   │       │   └── GetSubcontractorStockQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── SubcontractingCommandHandler.kt
+│   │   │           ├── SubcontractingQueryHandler.kt
+│   │   │           └── SubcontractingEventHandler.kt
+│   │   └── subcontracting-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/subcontracting/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── SubcontractingController.kt
+│   │           │   │       └── ComponentProvisionController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── SubcontractOrderJpaRepository.kt
+│   │           │       │   └── ComponentProvisionJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingSubcontractingApplication.kt
+│   │
+│   ├── manufacturing-analytics/                      # Manufacturing Analytics (Port 9358)
+│   │   ├── analytics-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/analytics/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ManufacturingKPI.kt           # KPI definitions
+│   │   │       │   ├── OEE.kt                        # Overall equipment effectiveness
+│   │   │       │   ├── Availability.kt               # Equipment availability
+│   │   │       │   ├── Performance.kt                # Performance rate
+│   │   │       │   ├── QualityRate.kt                # Quality/yield rate
+│   │   │       │   ├── Throughput.kt                 # Throughput metrics
+│   │   │       │   ├── CycleTime.kt                  # Cycle time analysis
+│   │   │       │   ├── YieldAnalysis.kt              # First pass yield
+│   │   │       │   ├── ScrapAnalysis.kt              # Scrap analysis
+│   │   │       │   ├── WIPVariance.kt                # WIP variance tracking
+│   │   │       │   └── ProductionReport.kt           # Production reports
+│   │   │       ├── event/
+│   │   │       │   ├── OEECalculatedEvent.kt
+│   │   │       │   ├── YieldCalculatedEvent.kt
+│   │   │       │   └── ManufacturingKPIUpdatedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CalculateOEEUseCase.kt
+│   │   │       │   │   ├── AnalyzeYieldUseCase.kt
+│   │   │       │   │   └── ManufacturingAnalyticsQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── KPIRepository.kt
+│   │   │       │       ├── ProductionDataPort.kt
+│   │   │       │       └── AnalyticsWarehousePort.kt
+│   │   │       └── service/
+│   │   │           ├── OEECalculationService.kt
+│   │   │           ├── YieldAnalysisService.kt
+│   │   │           └── KPICalculationService.kt
+│   │   ├── analytics-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/analytics/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CalculateOEECommand.kt
+│   │   │       │   ├── CalculateYieldCommand.kt
+│   │   │       │   └── GenerateProductionReportCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetOEEQuery.kt
+│   │   │       │   ├── GetYieldQuery.kt
+│   │   │       │   ├── GetThroughputQuery.kt
+│   │   │       │   └── GetProductionReportQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ManufacturingAnalyticsCommandHandler.kt
+│   │   │           ├── ManufacturingAnalyticsQueryHandler.kt
+│   │   │           └── ManufacturingAnalyticsEventHandler.kt
+│   │   └── analytics-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/analytics/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── OEEController.kt
+│   │           │   │       ├── YieldController.kt
+│   │           │   │       └── ProductionReportController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── KPIJpaRepository.kt
+│   │           │       │   └── ProductionDataJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ManufacturingAnalyticsApplication.kt
+│   │
+│   ├── manufacturing-process/                        # Process Manufacturing Extension (Port 9359)
+│   │   ├── process-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/process/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── recipe/
+│   │   │       │   │   ├── MasterRecipe.kt           # Aggregate Root
+│   │   │       │   │   ├── RecipeId.kt
+│   │   │       │   │   ├── RecipeVersion.kt
+│   │   │       │   │   ├── FormulaComposition.kt     # Ingredients, quantities
+│   │   │       │   │   ├── Ingredient.kt             # Entity
+│   │   │       │   │   ├── IngredientTolerance.kt    # +/- tolerance
+│   │   │       │   │   ├── ProcessPhase.kt           # Entity (mixing, heating, etc.)
+│   │   │       │   │   ├── PhaseSequence.kt
+│   │   │       │   │   ├── PhaseParameter.kt         # Temperature, pressure, duration
+│   │   │       │   │   ├── ScalingFactor.kt          # Batch size scaling
+│   │   │       │   │   └── RecipeApprovalStatus.kt   # Draft, Approved, Obsolete
+│   │   │       │   ├── processorder/
+│   │   │       │   │   ├── ProcessOrder.kt           # Aggregate Root
+│   │   │       │   │   ├── ProcessOrderId.kt
+│   │   │       │   │   ├── ProcessOrderStatus.kt     # Created, Released, In-Process, Completed
+│   │   │       │   │   ├── BatchSize.kt
+│   │   │       │   │   ├── PhaseExecution.kt         # Entity
+│   │   │       │   │   ├── PhaseStatus.kt            # Not Started, In Progress, Completed, Skipped, Hold
+│   │   │       │   │   ├── InProcessCheck.kt         # Entity (quality checks during production)
+│   │   │       │   │   ├── YieldCalculation.kt       # Actual vs theoretical yield
+│   │   │       │   │   └── MaterialConsumption.kt    # Actual ingredient usage
+│   │   │       │   ├── genealogy/
+│   │   │       │   │   ├── BatchGenealogy.kt         # Aggregate Root
+│   │   │       │   │   ├── GenealogyId.kt
+│   │   │       │   │   ├── LotTraceability.kt        # Forward/backward tracing
+│   │   │       │   │   ├── InputLot.kt               # Entity (source materials)
+│   │   │       │   │   ├── OutputLot.kt              # Entity (finished products)
+│   │   │       │   │   ├── TraceChain.kt             # Multi-level trace
+│   │   │       │   │   ├── GenealogyTree.kt          # Hierarchical trace structure
+│   │   │       │   │   └── RecallImpactAnalysis.kt   # Which lots affected by recall
+│   │   │       │   ├── coproduct/
+│   │   │       │   │   ├── JointProduction.kt        # Aggregate Root
+│   │   │       │   │   ├── CoProduct.kt              # Entity (main co-product)
+│   │   │       │   │   ├── ByProduct.kt              # Entity (secondary output)
+│   │   │       │   │   ├── CostAllocationMethod.kt   # Sales Value, Physical Units, NRV
+│   │   │       │   │   ├── AllocationRule.kt
+│   │   │       │   │   ├── CoProductYield.kt         # Expected vs actual
+│   │   │       │   │   ├── ByProductRevenue.kt       # Revenue from by-product sales
+│   │   │       │   │   └── ByProductDisposalCost.kt  # Disposal if not sold
+│   │   │       │   ├── campaign/
+│   │   │       │   │   ├── ProductionCampaign.kt     # Aggregate Root
+│   │   │       │   │   ├── CampaignId.kt
+│   │   │       │   │   ├── CampaignType.kt           # Multi-batch run, Product family
+│   │   │       │   │   ├── CampaignSchedule.kt
+│   │   │       │   │   ├── BatchSequence.kt          # Entity (ordered batches)
+│   │   │       │   │   ├── CleaningValidation.kt     # Between campaigns
+│   │   │       │   │   ├── CampaignCosting.kt        # Aggregated campaign costs
+│   │   │       │   │   ├── SetupOptimization.kt      # Minimize changeovers
+│   │   │       │   │   └── CampaignEfficiency.kt     # Campaign-level KPIs
+│   │   │       │   └── continuous/
+│   │   │       │       ├── ContinuousProduction.kt   # Aggregate Root
+│   │   │       │       ├── ProductionRun.kt
+│   │   │       │       ├── FlowRate.kt               # Continuous flow metrics
+│   │   │       │       ├── EquipmentLoad.kt          # Real-time equipment state
+│   │   │       │       ├── ProcessVariable.kt        # Entity (temp, pressure monitoring)
+│   │   │       │       ├── VariableControlLimit.kt   # Upper/lower control limits
+│   │   │       │       ├── ProcessDeviation.kt       # Out-of-spec alerts
+│   │   │       │       └── ContinuousYield.kt        # Real-time yield tracking
+│   │   │       ├── event/
+│   │   │       │   ├── RecipeCreatedEvent.kt
+│   │   │       │   ├── RecipeApprovedEvent.kt
+│   │   │       │   ├── ProcessOrderCreatedEvent.kt
+│   │   │       │   ├── ProcessOrderReleasedEvent.kt
+│   │   │       │   ├── PhaseStartedEvent.kt
+│   │   │       │   ├── PhaseCompletedEvent.kt
+│   │   │       │   ├── InProcessCheckFailedEvent.kt
+│   │   │       │   ├── YieldDeviationDetectedEvent.kt
+│   │   │       │   ├── BatchGenealogyRecordedEvent.kt
+│   │   │       │   ├── CoProductProducedEvent.kt
+│   │   │       │   ├── ByProductDisposedEvent.kt
+│   │   │       │   ├── CampaignStartedEvent.kt
+│   │   │       │   ├── CampaignCompletedEvent.kt
+│   │   │       │   ├── CleaningValidationCompletedEvent.kt
+│   │   │       │   ├── ProcessDeviationDetectedEvent.kt
+│   │   │       │   └── ProcessOrderCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RecipeNotFoundException.kt
+│   │   │       │   ├── InvalidRecipeVersionException.kt
+│   │   │       │   ├── PhaseExecutionException.kt
+│   │   │       │   ├── YieldToleranceExceededException.kt
+│   │   │       │   ├── GenealogyTraceException.kt
+│   │   │       │   ├── InvalidAllocationMethodException.kt
+│   │   │       │   ├── CampaignScheduleConflictException.kt
+│   │   │       │   └── ProcessVariableOutOfRangeException.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateRecipeUseCase.kt
+│   │   │       │   │   ├── ApproveRecipeUseCase.kt
+│   │   │       │   │   ├── CreateProcessOrderUseCase.kt
+│   │   │       │   │   ├── ExecutePhaseUseCase.kt
+│   │   │       │   │   ├── RecordBatchGenealogyUseCase.kt
+│   │   │       │   │   ├── AllocateCoProductCostsUseCase.kt
+│   │   │       │   │   ├── ManageCampaignUseCase.kt
+│   │   │       │   │   ├── MonitorContinuousProductionUseCase.kt
+│   │   │       │   │   └── ProcessQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── RecipeRepository.kt
+│   │   │       │       ├── ProcessOrderRepository.kt
+│   │   │       │       ├── GenealogyRepository.kt
+│   │   │       │       ├── JointProductionRepository.kt
+│   │   │       │       ├── CampaignRepository.kt
+│   │   │       │       ├── InventoryPort.kt
+│   │   │       │       ├── CostingPort.kt
+│   │   │       │       └── ProcessEventPublisherPort.kt
+│   │   │       └── service/
+│   │   │           ├── RecipeManagementService.kt
+│   │   │           ├── RecipeScalingService.kt
+│   │   │           ├── ProcessOrderExecutionService.kt
+│   │   │           ├── YieldCalculationService.kt
+│   │   │           ├── GenealogyTrackingService.kt
+│   │   │           ├── CoProductAllocationService.kt
+│   │   │           ├── CampaignPlanningService.kt
+│   │   │           └── ProcessVariableMonitoringService.kt
+│   │   ├── process-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/process/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateRecipeCommand.kt
+│   │   │       │   ├── UpdateRecipeCommand.kt
+│   │   │       │   ├── ApproveRecipeCommand.kt
+│   │   │       │   ├── CreateProcessOrderCommand.kt
+│   │   │       │   ├── ReleaseProcessOrderCommand.kt
+│   │   │       │   ├── StartPhaseCommand.kt
+│   │   │       │   ├── CompletePhaseCommand.kt
+│   │   │       │   ├── RecordInProcessCheckCommand.kt
+│   │   │       │   ├── CompleteProcessOrderCommand.kt
+│   │   │       │   ├── RecordBatchGenealogyCommand.kt
+│   │   │       │   ├── AllocateCoProductCostsCommand.kt
+│   │   │       │   ├── CreateCampaignCommand.kt
+│   │   │       │   ├── StartCampaignCommand.kt
+│   │   │       │   ├── CompleteCampaignCommand.kt
+│   │   │       │   └── RecordProcessDeviationCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRecipeQuery.kt
+│   │   │       │   ├── GetRecipeVersionHistoryQuery.kt
+│   │   │       │   ├── GetProcessOrderQuery.kt
+│   │   │       │   ├── GetPhaseExecutionStatusQuery.kt
+│   │   │       │   ├── GetBatchGenealogyQuery.kt
+│   │   │       │   ├── GetForwardTraceQuery.kt
+│   │   │       │   ├── GetBackwardTraceQuery.kt
+│   │   │       │   ├── GetCoProductAllocationQuery.kt
+│   │   │       │   ├── GetCampaignQuery.kt
+│   │   │       │   ├── GetCampaignEfficiencyQuery.kt
+│   │   │       │   └── GetProcessYieldQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ProcessCommandHandler.kt
+│   │   │           ├── ProcessQueryHandler.kt
+│   │   │           └── ProcessEventHandler.kt
+│   │   └── process-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/process/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── RecipeResource.kt
+│   │           │   │       ├── ProcessOrderResource.kt
+│   │           │   │       ├── GenealogyResource.kt
+│   │           │   │       ├── CoProductResource.kt
+│   │           │   │       ├── CampaignResource.kt
+│   │           │   │       └── ContinuousProductionResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RecipeJpaRepository.kt
+│   │           │       │   ├── ProcessOrderJpaRepository.kt
+│   │           │       │   ├── GenealogyJpaRepository.kt
+│   │           │       │   ├── JointProductionJpaRepository.kt
+│   │           │       │   └── CampaignJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── scada/
+│   │           │           ├── ScadaIntegrationAdapter.kt     # SCADA/DCS integration
+│   │           │           ├── ProcessVariableCollector.kt    # Real-time data collection
+│   │           │           └── OpcUaAdapter.kt                # OPC UA protocol
+│   │           └── ManufacturingProcessApplication.kt
+│   │
+│   ├── manufacturing-quality/                        # Quality Management - Incorporated (ADR-039)
+│   │   │
+│   │   ├── quality-inspection-planning/              # Inspection Planning (Port 9501)
+│   │   │   ├── inspection-planning-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/inspectionplanning/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── InspectionPlan.kt         # Inspection plan master
+│   │   │   │       │   ├── InspectionCharacteristic.kt # Quality characteristics
+│   │   │   │       │   ├── CharacteristicType.kt     # Quantitative/qualitative
+│   │   │   │       │   ├── SamplingProcedure.kt      # Sampling rules
+│   │   │   │       │   ├── SampleSize.kt             # Sample size calculation
+│   │   │   │       │   ├── InspectionTrigger.kt      # GR, production, delivery
+│   │   │   │       │   ├── InspectionPoint.kt        # Inspection points
+│   │   │   │       │   ├── ControlLimit.kt           # Upper/lower limits
+│   │   │   │       │   ├── MasterInspectionCharacteristic.kt # MIC master
+│   │   │   │       │   ├── InspectionMethod.kt       # Test methods
+│   │   │   │       │   └── InspectionEquipment.kt    # Calibrated equipment
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── InspectionPlanCreatedEvent.kt
+│   │   │   │       │   ├── InspectionPlanActivatedEvent.kt
+│   │   │   │       │   └── CharacteristicAddedEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── CreateInspectionPlanUseCase.kt
+│   │   │   │       │   │   ├── ActivateInspectionPlanUseCase.kt
+│   │   │   │       │   │   └── InspectionPlanQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── InspectionPlanRepository.kt
+│   │   │   │       │       ├── CharacteristicRepository.kt
+│   │   │   │       │       └── MaterialMasterPort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── InspectionPlanService.kt
+│   │   │   │           ├── SamplingService.kt
+│   │   │   │           └── CharacteristicService.kt
+│   │   │   ├── inspection-planning-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/inspectionplanning/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateInspectionPlanCommand.kt
+│   │   │   │       │   ├── ActivateInspectionPlanCommand.kt
+│   │   │   │       │   ├── AddCharacteristicCommand.kt
+│   │   │   │       │   └── DefineSamplingProcedureCommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetInspectionPlanQuery.kt
+│   │   │   │       │   ├── GetCharacteristicsQuery.kt
+│   │   │   │       │   └── GetSamplingProcedureQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── InspectionPlanCommandHandler.kt
+│   │   │   │           ├── InspectionPlanQueryHandler.kt
+│   │   │   │           └── InspectionPlanEventHandler.kt
+│   │   │   └── inspection-planning-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/inspectionplanning/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── InspectionPlanController.kt
+│   │   │           │   │       └── CharacteristicController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── InspectionPlanJpaRepository.kt
+│   │   │           │       │   └── CharacteristicJpaRepository.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualityInspectionPlanningApplication.kt
+│   │   │
+│   │   ├── quality-execution/                        # Quality Execution (Port 9502)
+│   │   │   ├── execution-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/execution/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── InspectionLot.kt          # Inspection lot
+│   │   │   │       │   ├── InspectionLotOrigin.kt    # GR, production, delivery
+│   │   │   │       │   ├── InspectionResult.kt       # Result recording
+│   │   │   │       │   ├── ResultValuation.kt        # Pass/fail/conditional
+│   │   │   │       │   ├── UsageDecision.kt          # Accept/reject/scrap
+│   │   │   │       │   ├── StockPosting.kt           # Quality stock posting
+│   │   │   │       │   ├── Defect.kt                 # Defect recording
+│   │   │   │       │   ├── DefectType.kt             # Defect classification
+│   │   │   │       │   ├── DefectCode.kt             # Defect codes
+│   │   │   │       │   ├── SampleRecord.kt           # Sample tracking
+│   │   │   │       │   └── InspectionHistory.kt      # Inspection history
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── InspectionLotCreatedEvent.kt
+│   │   │   │       │   ├── ResultRecordedEvent.kt
+│   │   │   │       │   ├── UsageDecisionMadeEvent.kt
+│   │   │   │       │   ├── StockBlockedEvent.kt
+│   │   │   │       │   └── StockReleasedEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── CreateInspectionLotUseCase.kt
+│   │   │   │       │   │   ├── RecordResultUseCase.kt
+│   │   │   │       │   │   ├── MakeUsageDecisionUseCase.kt
+│   │   │   │       │   │   └── QualityExecutionQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── InspectionLotRepository.kt
+│   │   │   │       │       ├── ResultRepository.kt
+│   │   │   │       │       ├── InventoryPort.kt
+│   │   │   │       │       └── InspectionPlanPort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── InspectionLotService.kt
+│   │   │   │           ├── ResultRecordingService.kt
+│   │   │   │           ├── UsageDecisionService.kt
+│   │   │   │           └── StockPostingService.kt
+│   │   │   ├── execution-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/execution/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateInspectionLotCommand.kt
+│   │   │   │       │   ├── RecordResultCommand.kt
+│   │   │   │       │   ├── MakeUsageDecisionCommand.kt
+│   │   │   │       │   ├── BlockStockCommand.kt
+│   │   │   │       │   └── ReleaseStockCommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetInspectionLotQuery.kt
+│   │   │   │       │   ├── GetResultsQuery.kt
+│   │   │   │       │   ├── GetDefectsQuery.kt
+│   │   │   │       │   └── GetInspectionHistoryQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── QualityExecutionCommandHandler.kt
+│   │   │   │           ├── QualityExecutionQueryHandler.kt
+│   │   │   │           └── QualityExecutionEventHandler.kt
+│   │   │   └── execution-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/execution/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── InspectionLotController.kt
+│   │   │           │   │       ├── ResultController.kt
+│   │   │           │   │       └── UsageDecisionController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── InspectionLotJpaRepository.kt
+│   │   │           │       │   ├── ResultJpaRepository.kt
+│   │   │           │       │   └── DefectJpaRepository.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualityExecutionApplication.kt
+│   │   │
+│   │   ├── quality-nonconformance/                   # Nonconformance (Port 9503)
+│   │   │   ├── nonconformance-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/nonconformance/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Nonconformance.kt         # NCR header
+│   │   │   │       │   ├── NonconformanceType.kt     # Internal, supplier, customer
+│   │   │   │       │   ├── NonconformanceStatus.kt   # Open, under review, closed
+│   │   │   │       │   ├── DefectRecord.kt           # Defect details
+│   │   │   │       │   ├── Disposition.kt            # Use as-is, rework, scrap
+│   │   │   │       │   ├── DispositionApproval.kt    # MRB approval
+│   │   │   │       │   ├── QualityCost.kt            # Cost of quality
+│   │   │   │       │   ├── InternalFailureCost.kt    # Scrap, rework costs
+│   │   │   │       │   ├── ExternalFailureCost.kt    # Warranty, returns
+│   │   │   │       │   ├── AppraisalCost.kt          # Inspection costs
+│   │   │   │       │   ├── PreventionCost.kt         # Training, process improvement
+│   │   │   │       │   ├── CostRecovery.kt           # Supplier recovery
+│   │   │   │       │   └── ContainmentAction.kt      # Immediate containment
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── NonconformanceCreatedEvent.kt
+│   │   │   │       │   ├── DispositionDecidedEvent.kt
+│   │   │   │       │   ├── QualityCostPostedEvent.kt
+│   │   │   │       │   └── NonconformanceClosedEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── CreateNonconformanceUseCase.kt
+│   │   │   │       │   │   ├── RecordDispositionUseCase.kt
+│   │   │   │       │   │   ├── PostQualityCostUseCase.kt
+│   │   │   │       │   │   └── NonconformanceQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── NonconformanceRepository.kt
+│   │   │   │       │       ├── DispositionRepository.kt
+│   │   │   │       │       ├── QualityCostRepository.kt
+│   │   │   │       │       └── ControllingPort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── NonconformanceService.kt
+│   │   │   │           ├── DispositionService.kt
+│   │   │   │           ├── QualityCostService.kt
+│   │   │   │           └── CostRecoveryService.kt
+│   │   │   ├── nonconformance-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/nonconformance/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateNonconformanceCommand.kt
+│   │   │   │       │   ├── RecordDispositionCommand.kt
+│   │   │   │       │   ├── ApproveDispositionCommand.kt
+│   │   │   │       │   ├── PostQualityCostCommand.kt
+│   │   │   │       │   └── CloseNonconformanceCommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetNonconformanceQuery.kt
+│   │   │   │       │   ├── GetDispositionsQuery.kt
+│   │   │   │       │   ├── GetQualityCostsQuery.kt
+│   │   │   │       │   └── GetCostOfQualityReportQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── NonconformanceCommandHandler.kt
+│   │   │   │           ├── NonconformanceQueryHandler.kt
+│   │   │   │           └── NonconformanceEventHandler.kt
+│   │   │   └── nonconformance-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/nonconformance/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── NonconformanceController.kt
+│   │   │           │   │       ├── DispositionController.kt
+│   │   │           │   │       └── QualityCostController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── NonconformanceJpaRepository.kt
+│   │   │           │       │   ├── DispositionJpaRepository.kt
+│   │   │           │       │   └── QualityCostJpaRepository.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualityNonconformanceApplication.kt
+│   │   │
+│   │   ├── quality-capa/                             # CAPA Management (Port 9504)
+│   │   │   ├── capa-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/capa/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── CAPA.kt                   # CAPA record
+│   │   │   │       │   ├── CAPAType.kt               # Corrective, preventive
+│   │   │   │       │   ├── CAPAStatus.kt             # Open, in progress, closed
+│   │   │   │       │   ├── RootCauseAnalysis.kt      # RCA record
+│   │   │   │       │   ├── FiveWhyAnalysis.kt        # 5-Why method
+│   │   │   │       │   ├── IshikawaDiagram.kt        # Fishbone analysis
+│   │   │   │       │   ├── FaultTreeAnalysis.kt      # FTA method
+│   │   │   │       │   ├── CorrectiveAction.kt       # Corrective actions
+│   │   │   │       │   ├── PreventiveAction.kt       # Preventive actions
+│   │   │   │       │   ├── ActionAssignment.kt       # Task assignment
+│   │   │   │       │   ├── EffectivenessReview.kt    # Effectiveness verification
+│   │   │   │       │   └── CAPAClosure.kt            # Closure documentation
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── CAPACreatedEvent.kt
+│   │   │   │       │   ├── RootCauseIdentifiedEvent.kt
+│   │   │   │       │   ├── ActionCompletedEvent.kt
+│   │   │   │       │   ├── EffectivenessVerifiedEvent.kt
+│   │   │   │       │   └── CAPAClosedEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── CreateCAPAUseCase.kt
+│   │   │   │       │   │   ├── RecordRootCauseUseCase.kt
+│   │   │   │       │   │   ├── AssignActionUseCase.kt
+│   │   │   │       │   │   └── CAPAQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── CAPARepository.kt
+│   │   │   │       │       ├── RCARepository.kt
+│   │   │   │       │       ├── ActionRepository.kt
+│   │   │   │       │       └── NonconformancePort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── CAPAService.kt
+│   │   │   │           ├── RootCauseAnalysisService.kt
+│   │   │   │           ├── ActionTrackingService.kt
+│   │   │   │           └── EffectivenessService.kt
+│   │   │   ├── capa-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/capa/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateCAPACommand.kt
+│   │   │   │       │   ├── RecordRootCauseCommand.kt
+│   │   │   │       │   ├── AssignActionCommand.kt
+│   │   │   │       │   ├── CompleteActionCommand.kt
+│   │   │   │       │   ├── VerifyEffectivenessCommand.kt
+│   │   │   │       │   └── CloseCAPACommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetCAPAQuery.kt
+│   │   │   │       │   ├── GetRootCauseAnalysisQuery.kt
+│   │   │   │       │   ├── GetActionsQuery.kt
+│   │   │   │       │   └── GetCAPAMetricsQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── CAPACommandHandler.kt
+│   │   │   │           ├── CAPAQueryHandler.kt
+│   │   │   │           └── CAPAEventHandler.kt
+│   │   │   └── capa-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/capa/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── CAPAController.kt
+│   │   │           │   │       ├── RCAController.kt
+│   │   │           │   │       └── ActionController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── CAPAJpaRepository.kt
+│   │   │           │       │   ├── RCAJpaRepository.kt
+│   │   │           │       │   └── ActionJpaRepository.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualityCAPAApplication.kt
+│   │   │
+│   │   ├── quality-supplier/                         # Supplier Quality (Port 9505)
+│   │   │   ├── supplier-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/supplier/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── SupplierQualityProfile.kt # Supplier quality master
+│   │   │   │       │   ├── VendorScorecard.kt        # Quality scorecard
+│   │   │   │       │   ├── QualityScore.kt           # Score components
+│   │   │   │       │   ├── PPMTracking.kt            # Parts per million
+│   │   │   │       │   ├── ApprovedSupplierList.kt   # ASL management
+│   │   │   │       │   ├── ASLStatus.kt              # Approved, conditional, blocked
+│   │   │   │       │   ├── SupplierAudit.kt          # Quality audits
+│   │   │   │       │   ├── AuditFinding.kt           # Audit findings
+│   │   │   │       │   ├── SupplierDevelopment.kt    # Improvement programs
+│   │   │   │       │   ├── QualityAgreement.kt       # Quality agreement
+│   │   │   │       │   └── SupplierCertification.kt  # ISO, IATF certs
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── VendorQualityScoreUpdatedEvent.kt
+│   │   │   │       │   ├── ASLStatusChangedEvent.kt
+│   │   │   │       │   ├── SupplierAuditCompletedEvent.kt
+│   │   │   │       │   └── PPMThresholdExceededEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── UpdateVendorScoreUseCase.kt
+│   │   │   │       │   │   ├── ManageASLUseCase.kt
+│   │   │   │       │   │   └── SupplierQualityQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── SupplierQualityRepository.kt
+│   │   │   │       │       ├── ScorecardRepository.kt
+│   │   │   │       │       ├── ASLRepository.kt
+│   │   │   │       │       └── ProcurementPort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── VendorScorecardService.kt
+│   │   │   │           ├── ASLManagementService.kt
+│   │   │   │           ├── PPMCalculationService.kt
+│   │   │   │           └── SupplierAuditService.kt
+│   │   │   ├── supplier-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/supplier/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── UpdateVendorScoreCommand.kt
+│   │   │   │       │   ├── ApproveSupplierCommand.kt
+│   │   │   │       │   ├── BlockSupplierCommand.kt
+│   │   │   │       │   ├── RecordAuditFindingCommand.kt
+│   │   │   │       │   └── UpdatePPMCommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetVendorScorecardQuery.kt
+│   │   │   │       │   ├── GetASLQuery.kt
+│   │   │   │       │   ├── GetPPMReportQuery.kt
+│   │   │   │       │   └── GetSupplierAuditsQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── SupplierQualityCommandHandler.kt
+│   │   │   │           ├── SupplierQualityQueryHandler.kt
+│   │   │   │           └── SupplierQualityEventHandler.kt
+│   │   │   └── supplier-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/supplier/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── VendorScorecardController.kt
+│   │   │           │   │       ├── ASLController.kt
+│   │   │           │   │       └── SupplierAuditController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── SupplierQualityJpaRepository.kt
+│   │   │           │       │   ├── ScorecardJpaRepository.kt
+│   │   │           │       │   └── ASLJpaRepository.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualitySupplierApplication.kt
+│   │   │
+│   │   ├── quality-certificates/                     # Quality Certificates (Port 9506)
+│   │   │   ├── certificates-domain/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/certificates/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── CertificateOfAnalysis.kt  # CoA document
+│   │   │   │       │   ├── CertificateOfConformance.kt # CoC document
+│   │   │   │       │   ├── CertificateTemplate.kt    # Certificate templates
+│   │   │   │       │   ├── CertificateContent.kt     # Dynamic content
+│   │   │   │       │   ├── TestResult.kt             # Test result data
+│   │   │   │       │   ├── Specification.kt          # Spec limits
+│   │   │   │       │   ├── RegulatorySubmission.kt   # FDA, EMA submissions
+│   │   │   │       │   ├── BatchRelease.kt           # Batch release decision
+│   │   │   │       │   ├── DigitalSignature.kt       # Electronic signatures
+│   │   │   │       │   └── AuditTrail.kt             # 21 CFR Part 11
+│   │   │   │       ├── event/
+│   │   │   │       │   ├── CertificateGeneratedEvent.kt
+│   │   │   │       │   ├── CertificateApprovedEvent.kt
+│   │   │   │       │   ├── BatchReleasedEvent.kt
+│   │   │   │       │   └── RegulatorySubmissionSentEvent.kt
+│   │   │   │       ├── port/
+│   │   │   │       │   ├── input/
+│   │   │   │       │   │   ├── GenerateCertificateUseCase.kt
+│   │   │   │       │   │   ├── ApproveCertificateUseCase.kt
+│   │   │   │       │   │   └── CertificateQueryPort.kt
+│   │   │   │       │   └── output/
+│   │   │   │       │       ├── CertificateRepository.kt
+│   │   │   │       │       ├── TemplateRepository.kt
+│   │   │   │       │       ├── InspectionLotPort.kt
+│   │   │   │       │       └── DocumentOutputPort.kt
+│   │   │   │       └── service/
+│   │   │   │           ├── CertificateGenerationService.kt
+│   │   │   │           ├── TemplateService.kt
+│   │   │   │           ├── BatchReleaseService.kt
+│   │   │   │           └── RegulatorySubmissionService.kt
+│   │   │   ├── certificates-application/
+│   │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/certificates/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── GenerateCoACommand.kt
+│   │   │   │       │   ├── GenerateCoCCommand.kt
+│   │   │   │       │   ├── ApproveCertificateCommand.kt
+│   │   │   │       │   ├── ReleaseBatchCommand.kt
+│   │   │   │       │   └── SubmitToRegulatoryCommand.kt
+│   │   │   │       ├── query/
+│   │   │   │       │   ├── GetCertificateQuery.kt
+│   │   │   │       │   ├── GetBatchCertificatesQuery.kt
+│   │   │   │       │   └── GetRegulatorySubmissionsQuery.kt
+│   │   │   │       └── handler/
+│   │   │   │           ├── CertificateCommandHandler.kt
+│   │   │   │           ├── CertificateQueryHandler.kt
+│   │   │   │           └── CertificateEventHandler.kt
+│   │   │   └── certificates-infrastructure/
+│   │   │       └── src/main/kotlin/com/chiroerp/manufacturing/quality/certificates/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       ├── CoAController.kt
+│   │   │           │   │       ├── CoCController.kt
+│   │   │           │   │       └── BatchReleaseController.kt
+│   │   │           │   └── output/
+│   │   │           │       ├── persistence/
+│   │   │           │       │   ├── CertificateJpaRepository.kt
+│   │   │           │       │   └── TemplateJpaRepository.kt
+│   │   │           │       ├── document/
+│   │   │           │       │   └── PDFGeneratorAdapter.kt
+│   │   │           │       └── messaging/
+│   │   │           │           └── KafkaEventPublisher.kt
+│   │   │           └── QualityCertificatesApplication.kt
+│   │   │
+│   │   └── quality-analytics/                        # Quality Analytics (Port 9507)
+│   │       ├── analytics-domain/
+│   │       │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/analytics/domain/
+│   │       │       ├── model/
+│   │       │       │   ├── QualityKPI.kt             # Quality KPIs
+│   │       │       │   ├── SPCChart.kt               # SPC control charts
+│   │       │       │   ├── ControlChart.kt           # X-bar, R, p, c charts
+│   │       │       │   ├── ProcessCapability.kt      # Cp, Cpk, Pp, Ppk
+│   │       │       │   ├── FirstPassYield.kt         # FPY calculation
+│   │       │       │   ├── RolledThroughputYield.kt  # RTY calculation
+│   │       │       │   ├── DefectRate.kt             # DPMO, DPU
+│   │       │       │   ├── CostOfQuality.kt          # COQ analysis
+│   │       │       │   ├── COQCategory.kt            # Prevention, appraisal, failure
+│   │       │       │   ├── TrendAnalysis.kt          # Quality trends
+│   │       │       │   └── ParetoAnalysis.kt         # Pareto charts
+│   │       │       ├── event/
+│   │       │       │   ├── QualityKPICalculatedEvent.kt
+│   │       │       │   ├── SPCViolationDetectedEvent.kt
+│   │       │       │   ├── ProcessOutOfControlEvent.kt
+│   │       │       │   └── COQReportGeneratedEvent.kt
+│   │       │       ├── port/
+│   │       │       │   ├── input/
+│   │       │       │   │   ├── CalculateSPCUseCase.kt
+│   │       │       │   │   ├── CalculateYieldUseCase.kt
+│   │       │       │   │   ├── CalculateCOQUseCase.kt
+│   │       │       │   │   └── QualityAnalyticsQueryPort.kt
+│   │       │       │   └── output/
+│   │       │       │       ├── QualityKPIRepository.kt
+│   │       │       │       ├── SPCRepository.kt
+│   │       │       │       ├── InspectionDataPort.kt
+│   │       │       │       └── AnalyticsWarehousePort.kt
+│   │       │       └── service/
+│   │       │           ├── SPCCalculationService.kt
+│   │       │           ├── YieldCalculationService.kt
+│   │       │           ├── ProcessCapabilityService.kt
+│   │       │           └── COQCalculationService.kt
+│   │       ├── analytics-application/
+│   │       │   └── src/main/kotlin/com/chiroerp/manufacturing/quality/analytics/application/
+│   │       │       ├── command/
+│   │       │       │   ├── CalculateSPCCommand.kt
+│   │       │       │   ├── CalculateYieldCommand.kt
+│   │       │       │   ├── CalculateCOQCommand.kt
+│   │       │       │   └── GenerateQualityReportCommand.kt
+│   │       │       ├── query/
+│   │       │       │   ├── GetSPCChartQuery.kt
+│   │       │       │   ├── GetProcessCapabilityQuery.kt
+│   │       │       │   ├── GetYieldReportQuery.kt
+│   │       │       │   └── GetCOQReportQuery.kt
+│   │       │       └── handler/
+│   │       │           ├── QualityAnalyticsCommandHandler.kt
+│   │       │           ├── QualityAnalyticsQueryHandler.kt
+│   │       │           └── QualityAnalyticsEventHandler.kt
+│   │       └── analytics-infrastructure/
+│   │           └── src/main/kotlin/com/chiroerp/manufacturing/quality/analytics/infrastructure/
+│   │               ├── adapter/
+│   │               │   ├── input/
+│   │               │   │   └── rest/
+│   │               │   │       ├── SPCController.kt
+│   │               │   │       ├── YieldController.kt
+│   │               │   │       └── COQController.kt
+│   │               │   └── output/
+│   │               │       ├── persistence/
+│   │               │       │   ├── QualityKPIJpaRepository.kt
+│   │               │       │   └── SPCJpaRepository.kt
+│   │               │       └── messaging/
+│   │               │           └── KafkaEventPublisher.kt
+│   │               └── QualityAnalyticsApplication.kt
+│
+├── crm/                                              # CRM Bounded Context (ADR-042, ADR-043)
+│   ├── crm-shared/                                   # Shared kernel for CRM domain
+│   │   └── src/main/kotlin/com/chiroerp/crm/shared/
+│   │       ├── CustomerId.kt
+│   │       ├── ContactId.kt
+│   │       ├── OpportunityId.kt
+│   │       ├── ContractId.kt
+│   │       ├── ActivityId.kt
+│   │       └── HealthScore.kt
+│   │
+│   ├── crm-customer360/                              # Customer 360 Subdomain (Port 9451)
+│   │   ├── customer360-api/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/customer360/api/
+│   │   │       ├── CustomerResource.kt               # REST endpoints
+│   │   │       ├── ContactResource.kt
+│   │   │       ├── CustomerDTO.kt
+│   │   │       ├── ContactDTO.kt
+│   │   │       └── Customer360OpenApi.kt
+│   │   ├── customer360-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/customer360/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Customer.kt                   # Customer aggregate root
+│   │   │       │   ├── CustomerProfile.kt            # Profile details
+│   │   │       │   ├── Contact.kt                    # Contact persons
+│   │   │       │   ├── ContactRole.kt                # Decision maker, buyer, etc.
+│   │   │       │   ├── Address.kt                    # Address value object
+│   │   │       │   ├── CommunicationPreference.kt    # Email, phone preferences
+│   │   │       │   ├── CustomerSegment.kt            # Segment classification
+│   │   │       │   ├── CustomerClassification.kt     # A/B/C classification
+│   │   │       │   ├── CustomerHierarchy.kt          # Parent/child relationships
+│   │   │       │   └── SocialProfile.kt              # Social media links
+│   │   │       ├── event/
+│   │   │       │   ├── CustomerCreatedEvent.kt
+│   │   │       │   ├── CustomerUpdatedEvent.kt
+│   │   │       │   ├── ContactAddedEvent.kt
+│   │   │       │   ├── ContactRemovedEvent.kt
+│   │   │       │   ├── CustomerClassificationChangedEvent.kt
+│   │   │       │   └── CustomerMergedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateCustomerUseCase.kt
+│   │   │       │   │   ├── UpdateCustomerUseCase.kt
+│   │   │       │   │   ├── ManageContactsUseCase.kt
+│   │   │       │   │   ├── MergeCustomersUseCase.kt
+│   │   │       │   │   └── CustomerQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── CustomerRepository.kt
+│   │   │       │       ├── ContactRepository.kt
+│   │   │       │       ├── CustomerSearchPort.kt
+│   │   │       │       └── CustomerEventPublisher.kt
+│   │   │       └── service/
+│   │   │           ├── CustomerDomainService.kt
+│   │   │           ├── CustomerMergeService.kt
+│   │   │           └── CustomerClassificationService.kt
+│   │   ├── customer360-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/customer360/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateCustomerCommand.kt
+│   │   │       │   ├── UpdateCustomerCommand.kt
+│   │   │       │   ├── AddContactCommand.kt
+│   │   │       │   ├── UpdateContactCommand.kt
+│   │   │       │   ├── RemoveContactCommand.kt
+│   │   │       │   ├── MergeCustomersCommand.kt
+│   │   │       │   └── ClassifyCustomerCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetCustomerQuery.kt
+│   │   │       │   ├── SearchCustomersQuery.kt
+│   │   │       │   ├── GetContactsQuery.kt
+│   │   │       │   ├── GetCustomerHierarchyQuery.kt
+│   │   │       │   └── GetCustomer360ViewQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── CustomerCommandHandler.kt
+│   │   │           ├── CustomerQueryHandler.kt
+│   │   │           └── CustomerEventHandler.kt
+│   │   └── customer360-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/crm/customer360/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── CustomerController.kt
+│   │           │   │       ├── ContactController.kt
+│   │           │   │       └── Customer360SearchController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── CustomerJpaRepository.kt
+│   │           │       │   ├── ContactJpaRepository.kt
+│   │           │       │   ├── CustomerEntity.kt
+│   │           │       │   └── ContactEntity.kt
+│   │           │       ├── search/
+│   │           │       │   └── ElasticsearchCustomerAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── Customer360Application.kt
+│   │
+│   ├── crm-pipeline/                                 # Sales Pipeline Subdomain (Port 9452)
+│   │   ├── pipeline-api/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/pipeline/api/
+│   │   │       ├── OpportunityResource.kt
+│   │   │       ├── ForecastResource.kt
+│   │   │       ├── OpportunityDTO.kt
+│   │   │       └── PipelineOpenApi.kt
+│   │   ├── pipeline-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/pipeline/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Opportunity.kt                # Opportunity aggregate root
+│   │   │       │   ├── OpportunityStage.kt           # Pipeline stages
+│   │   │       │   ├── StageTransition.kt            # Stage change history
+│   │   │       │   ├── OpportunityLineItem.kt        # Products/services
+│   │   │       │   ├── Competitor.kt                 # Competitive info
+│   │   │       │   ├── WinProbability.kt             # Probability scoring
+│   │   │       │   ├── Forecast.kt                   # Sales forecast aggregate
+│   │   │       │   ├── ForecastPeriod.kt             # Monthly/quarterly
+│   │   │       │   ├── ForecastCategory.kt           # Commit, best case, pipeline
+│   │   │       │   ├── QuotaAttainment.kt            # Rep quota tracking
+│   │   │       │   └── LossReason.kt                 # Loss analysis
+│   │   │       ├── event/
+│   │   │       │   ├── OpportunityCreatedEvent.kt
+│   │   │       │   ├── OpportunityStageChangedEvent.kt
+│   │   │       │   ├── OpportunityClosedWonEvent.kt
+│   │   │       │   ├── OpportunityClosedLostEvent.kt
+│   │   │       │   ├── ForecastUpdatedEvent.kt
+│   │   │       │   └── QuotaAchievedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateOpportunityUseCase.kt
+│   │   │       │   │   ├── UpdateOpportunityUseCase.kt
+│   │   │       │   │   ├── AdvanceStageUseCase.kt
+│   │   │       │   │   ├── CloseOpportunityUseCase.kt
+│   │   │       │   │   ├── UpdateForecastUseCase.kt
+│   │   │       │   │   └── PipelineQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── OpportunityRepository.kt
+│   │   │       │       ├── ForecastRepository.kt
+│   │   │       │       ├── CustomerPort.kt
+│   │   │       │       └── PipelineEventPublisher.kt
+│   │   │       └── service/
+│   │   │           ├── OpportunityDomainService.kt
+│   │   │           ├── ProbabilityCalculationService.kt
+│   │   │           └── ForecastAggregationService.kt
+│   │   ├── pipeline-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/pipeline/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateOpportunityCommand.kt
+│   │   │       │   ├── UpdateOpportunityCommand.kt
+│   │   │       │   ├── AdvanceStageCommand.kt
+│   │   │       │   ├── CloseWonCommand.kt
+│   │   │       │   ├── CloseLostCommand.kt
+│   │   │       │   └── UpdateForecastCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetOpportunityQuery.kt
+│   │   │       │   ├── GetPipelineQuery.kt
+│   │   │       │   ├── GetForecastQuery.kt
+│   │   │       │   ├── GetWinRateQuery.kt
+│   │   │       │   └── GetQuotaAttainmentQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── PipelineCommandHandler.kt
+│   │   │           ├── PipelineQueryHandler.kt
+│   │   │           └── PipelineEventHandler.kt
+│   │   └── pipeline-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/crm/pipeline/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── OpportunityController.kt
+│   │           │   │       ├── ForecastController.kt
+│   │           │   │       └── PipelineReportController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── OpportunityJpaRepository.kt
+│   │           │       │   ├── ForecastJpaRepository.kt
+│   │           │       │   ├── OpportunityEntity.kt
+│   │           │       │   └── ForecastEntity.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── PipelineApplication.kt
+│   │
+│   ├── crm-contracts/                                # Service Contracts Subdomain (Port 9453)
+│   │   ├── contracts-api/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/contracts/api/
+│   │   │       ├── ContractResource.kt
+│   │   │       ├── EntitlementResource.kt
+│   │   │       ├── ContractDTO.kt
+│   │   │       └── ContractsOpenApi.kt
+│   │   ├── contracts-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/contracts/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ServiceContract.kt            # Contract aggregate root
+│   │   │       │   ├── ContractType.kt               # Warranty, maintenance, support
+│   │   │       │   ├── ContractStatus.kt             # Draft, active, expired
+│   │   │       │   ├── ContractLine.kt               # Covered items
+│   │   │       │   ├── Entitlement.kt                # Service entitlements
+│   │   │       │   ├── EntitlementType.kt            # Visits, hours, unlimited
+│   │   │       │   ├── CoveredAsset.kt               # Covered equipment
+│   │   │       │   ├── SlaLevel.kt                   # Gold, Silver, Bronze
+│   │   │       │   ├── BillingSchedule.kt            # Monthly, annual, upfront
+│   │   │       │   ├── RenewalTerms.kt               # Auto-renew, terms
+│   │   │       │   └── TerminationClause.kt          # Cancellation terms
+│   │   │       ├── event/
+│   │   │       │   ├── ContractCreatedEvent.kt
+│   │   │       │   ├── ContractActivatedEvent.kt
+│   │   │       │   ├── ContractRenewedEvent.kt
+│   │   │       │   ├── ContractExpiredEvent.kt
+│   │   │       │   ├── ContractTerminatedEvent.kt
+│   │   │       │   ├── EntitlementConsumedEvent.kt
+│   │   │       │   └── EntitlementExhaustedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateContractUseCase.kt
+│   │   │       │   │   ├── ActivateContractUseCase.kt
+│   │   │       │   │   ├── RenewContractUseCase.kt
+│   │   │       │   │   ├── ConsumeEntitlementUseCase.kt
+│   │   │       │   │   ├── TerminateContractUseCase.kt
+│   │   │       │   │   └── ContractQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── ContractRepository.kt
+│   │   │       │       ├── EntitlementRepository.kt
+│   │   │       │       ├── CustomerPort.kt
+│   │   │       │       ├── BillingPort.kt
+│   │   │       │       └── ContractEventPublisher.kt
+│   │   │       └── service/
+│   │   │           ├── ContractDomainService.kt
+│   │   │           ├── EntitlementCalculationService.kt
+│   │   │           └── RenewalSchedulingService.kt
+│   │   ├── contracts-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/contracts/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateContractCommand.kt
+│   │   │       │   ├── ActivateContractCommand.kt
+│   │   │       │   ├── RenewContractCommand.kt
+│   │   │       │   ├── ConsumeEntitlementCommand.kt
+│   │   │       │   ├── AddCoveredAssetCommand.kt
+│   │   │       │   └── TerminateContractCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetContractQuery.kt
+│   │   │       │   ├── GetContractsByCustomerQuery.kt
+│   │   │       │   ├── GetEntitlementBalanceQuery.kt
+│   │   │       │   ├── GetExpiringContractsQuery.kt
+│   │   │       │   └── GetRenewalPipelineQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ContractCommandHandler.kt
+│   │   │           ├── ContractQueryHandler.kt
+│   │   │           └── ContractEventHandler.kt
+│   │   └── contracts-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/crm/contracts/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── ContractController.kt
+│   │           │   │       ├── EntitlementController.kt
+│   │           │   │       └── RenewalController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ContractJpaRepository.kt
+│   │           │       │   ├── EntitlementJpaRepository.kt
+│   │           │       │   ├── ContractEntity.kt
+│   │           │       │   └── EntitlementEntity.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ContractsApplication.kt
+│   │
+│   ├── crm-activity/                                 # Activity Tracking Subdomain (Port 9454)
+│   │   ├── activity-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/activity/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Activity.kt                   # Activity aggregate root
+│   │   │       │   ├── ActivityType.kt               # Call, email, meeting, task
+│   │   │       │   ├── Call.kt                       # Phone call record
+│   │   │       │   ├── Email.kt                      # Email interaction
+│   │   │       │   ├── Meeting.kt                    # Meeting record
+│   │   │       │   ├── Task.kt                       # Task/to-do
+│   │   │       │   ├── Note.kt                       # Notes on account
+│   │   │       │   ├── InteractionHistory.kt         # Full history
+│   │   │       │   └── TouchPoint.kt                 # Customer touchpoint
+│   │   │       ├── event/
+│   │   │       │   ├── ActivityCreatedEvent.kt
+│   │   │       │   ├── ActivityCompletedEvent.kt
+│   │   │       │   ├── CallLoggedEvent.kt
+│   │   │       │   ├── EmailTrackedEvent.kt
+│   │   │       │   └── MeetingScheduledEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── LogActivityUseCase.kt
+│   │   │       │   │   ├── CompleteActivityUseCase.kt
+│   │   │       │   │   └── ActivityQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── ActivityRepository.kt
+│   │   │       │       └── ActivityEventPublisher.kt
+│   │   │       └── service/
+│   │   │           └── ActivityDomainService.kt
+│   │   ├── activity-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/activity/application/
+│   │   │       ├── command/
+│   │   │       │   ├── LogCallCommand.kt
+│   │   │       │   ├── LogEmailCommand.kt
+│   │   │       │   ├── ScheduleMeetingCommand.kt
+│   │   │       │   ├── CreateTaskCommand.kt
+│   │   │       │   └── CompleteActivityCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetActivityHistoryQuery.kt
+│   │   │       │   ├── GetPendingTasksQuery.kt
+│   │   │       │   └── GetTouchPointsQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ActivityCommandHandler.kt
+│   │   │           └── ActivityQueryHandler.kt
+│   │   └── activity-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/crm/activity/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       └── ActivityController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ActivityJpaRepository.kt
+│   │           │       │   └── ActivityEntity.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ActivityApplication.kt
+│   │
+│   ├── crm-account-health/                           # Account Health Subdomain (Port 9455)
+│   │   ├── account-health-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/accounthealth/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── AccountHealth.kt              # Health score aggregate
+│   │   │       │   ├── HealthScore.kt                # Composite score
+│   │   │       │   ├── HealthDimension.kt            # Engagement, satisfaction, etc.
+│   │   │       │   ├── RiskSignal.kt                 # Churn indicators
+│   │   │       │   ├── ChurnPrediction.kt            # Churn probability
+│   │   │       │   ├── EngagementMetric.kt           # Engagement tracking
+│   │   │       │   ├── NpsScore.kt                   # Net promoter score
+│   │   │       │   └── HealthTrend.kt                # Trend analysis
+│   │   │       ├── event/
+│   │   │       │   ├── HealthScoreUpdatedEvent.kt
+│   │   │       │   ├── RiskSignalDetectedEvent.kt
+│   │   │       │   ├── ChurnRiskAlertEvent.kt
+│   │   │       │   └── NpsSurveyCompletedEvent.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CalculateHealthScoreUseCase.kt
+│   │   │       │   │   ├── RecordNpsUseCase.kt
+│   │   │       │   │   └── AccountHealthQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── AccountHealthRepository.kt
+│   │   │       │       ├── CustomerPort.kt
+│   │   │       │       └── AccountHealthEventPublisher.kt
+│   │   │       └── service/
+│   │   │           ├── HealthScoreCalculationService.kt
+│   │   │           └── ChurnPredictionService.kt
+│   │   ├── account-health-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/crm/accounthealth/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CalculateHealthScoreCommand.kt
+│   │   │       │   ├── RecordNpsCommand.kt
+│   │   │       │   └── EvaluateChurnRiskCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetAccountHealthQuery.kt
+│   │   │       │   ├── GetAtRiskAccountsQuery.kt
+│   │   │       │   └── GetHealthTrendQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── AccountHealthCommandHandler.kt
+│   │   │           └── AccountHealthQueryHandler.kt
+│   │   └── account-health-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/crm/accounthealth/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       └── AccountHealthController.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── AccountHealthJpaRepository.kt
+│   │           │       │   └── AccountHealthEntity.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── AccountHealthApplication.kt
+
+================
+
+settings.gradle.kts includes:
+- include("platform-shared:common-types")
+- include("platform-shared:common-messaging")
+- include("platform-shared:common-security")
+- include("platform-shared:common-observability")
+- include("platform-shared:config-model")
+- include("platform-shared:org-model")
+- include("platform-shared:workflow-model")
+- include("tenancy-identity:tenancy-shared")
+- include("tenancy-identity:tenancy-core")
+- include("tenancy-identity:identity-core")
+- include("api-gateway")
+- include("finance:finance-shared")
+- include("finance:finance-gl:gl-domain")
+- include("finance:finance-gl:gl-application")
+- include("finance:finance-gl:gl-infrastructure")
+- include("finance:finance-ar:ar-domain")
+- include("finance:finance-ar:ar-application")
+- include("finance:finance-ar:ar-infrastructure")
+- include("finance:finance-ap:ap-domain")
+- include("finance:finance-ap:ap-application")
+- include("finance:finance-ap:ap-infrastructure")
+- include("finance:finance-assets:assets-domain")
+- include("finance:finance-assets:assets-application")
+- include("finance:finance-assets:assets-infrastructure")
+- include("finance:finance-tax:tax-domain")
+- include("finance:finance-tax:tax-application")
+- include("finance:finance-tax:tax-infrastructure")
+- include("mdm:mdm-shared")
+- include("mdm:mdm-hub:hub-domain")
+- include("mdm:mdm-hub:hub-application")
+- include("mdm:mdm-hub:hub-infrastructure")
+- include("mdm:mdm-data-quality:data-quality-domain")
+- include("mdm:mdm-data-quality:data-quality-application")
+- include("mdm:mdm-data-quality:data-quality-infrastructure")
+- include("mdm:mdm-stewardship:stewardship-domain")
+- include("mdm:mdm-stewardship:stewardship-application")
+- include("mdm:mdm-stewardship:stewardship-infrastructure")
+- include("mdm:mdm-match-merge:match-merge-domain")
+- include("mdm:mdm-match-merge:match-merge-application")
+- include("mdm:mdm-match-merge:match-merge-infrastructure")
+- include("mdm:mdm-analytics:analytics-domain")
+- include("mdm:mdm-analytics:analytics-application")
+- include("mdm:mdm-analytics:analytics-infrastructure")
+- include("inventory:inventory-shared")
+- include("inventory:inventory-core:core-domain")
+- include("inventory:inventory-core:core-application")
+- include("inventory:inventory-core:core-infrastructure")
+- include("inventory:inventory-warehouse:warehouse-domain")
+- include("inventory:inventory-warehouse:warehouse-application")
+- include("inventory:inventory-warehouse:warehouse-infrastructure")
+- include("inventory:inventory-valuation:valuation-domain")
+- include("inventory:inventory-valuation:valuation-application")
+- include("inventory:inventory-valuation:valuation-infrastructure")
+- include("inventory:inventory-atp:atp-domain")
+- include("inventory:inventory-atp:atp-application")
+- include("inventory:inventory-atp:atp-infrastructure")
+- include("inventory:inventory-traceability:traceability-domain")
+- include("inventory:inventory-traceability:traceability-application")
+- include("inventory:inventory-traceability:traceability-infrastructure")
+- include("inventory:inventory-advanced-ops:advanced-ops-domain")
+- include("inventory:inventory-advanced-ops:advanced-ops-application")
+- include("inventory:inventory-advanced-ops:advanced-ops-infrastructure")
+- include("inventory:inventory-forecasting:forecasting-domain")
+- include("inventory:inventory-forecasting:forecasting-application")
+- include("inventory:inventory-forecasting:forecasting-infrastructure")
+- include("analytics:analytics-shared")
+- include("analytics:analytics-warehouse:warehouse-domain")
+- include("analytics:analytics-warehouse:warehouse-application")
+- include("analytics:analytics-warehouse:warehouse-infrastructure")
+- include("analytics:analytics-olap:olap-domain")
+- include("analytics:analytics-olap:olap-application")
+- include("analytics:analytics-olap:olap-infrastructure")
+- include("analytics:analytics-kpi:kpi-domain")
+- include("analytics:analytics-kpi:kpi-application")
+- include("analytics:analytics-kpi:kpi-infrastructure")
+- include("analytics:analytics-dashboard")
+- include("analytics:analytics-scheduler")
+- include("analytics:analytics-embedded")
+- include("commerce:commerce-shared")
+- include("commerce:commerce-ecommerce:ecommerce-domain")
+- include("commerce:commerce-ecommerce:ecommerce-application")
+- include("commerce:commerce-ecommerce:ecommerce-infrastructure")
+- include("commerce:commerce-pos:pos-domain")
+- include("commerce:commerce-pos:pos-application")
+- include("commerce:commerce-pos:pos-infrastructure")
+- include("commerce:commerce-b2b:b2b-domain")
+- include("commerce:commerce-b2b:b2b-application")
+- include("commerce:commerce-b2b:b2b-infrastructure")
+- include("commerce:commerce-marketplace:marketplace-domain")
+- include("commerce:commerce-marketplace:marketplace-application")
+- include("commerce:commerce-marketplace:marketplace-infrastructure")
+- include("commerce:commerce-pricing:pricing-domain")
+- include("commerce:commerce-pricing:pricing-application")
+- include("commerce:commerce-pricing:pricing-infrastructure")
+
+# HR Bounded Context (ports 9901-9906)
+- include("hr:hr-shared")
+- include("hr:hr-travel-expense:travel-expense-domain")
+- include("hr:hr-travel-expense:travel-expense-application")
+- include("hr:hr-travel-expense:travel-expense-infrastructure")
+- include("hr:hr-expense-receipts:expense-receipts-domain")
+- include("hr:hr-expense-receipts:expense-receipts-application")
+- include("hr:hr-expense-receipts:expense-receipts-infrastructure")
+- include("hr:hr-card-reconciliation:card-reconciliation-domain")
+- include("hr:hr-card-reconciliation:card-reconciliation-application")
+- include("hr:hr-card-reconciliation:card-reconciliation-infrastructure")
+- include("hr:hr-contingent-workforce:contingent-domain")
+- include("hr:hr-contingent-workforce:contingent-application")
+- include("hr:hr-contingent-workforce:contingent-infrastructure")
+- include("hr:hr-professional-services:professional-services-domain")
+- include("hr:hr-professional-services:professional-services-application")
+- include("hr:hr-professional-services:professional-services-infrastructure")
+- include("hr:hr-workforce-scheduling:workforce-scheduling-domain")
+- include("hr:hr-workforce-scheduling:workforce-scheduling-application")
+- include("hr:hr-workforce-scheduling:workforce-scheduling-infrastructure")
+- include("hr:hr-analytics:hr-analytics-domain")
+- include("hr:hr-analytics:hr-analytics-application")
+- include("hr:hr-analytics:hr-analytics-infrastructure")
+
+# Procurement Bounded Context (ports 9201-9205)
+- include("procurement:procurement-shared")
+- include("procurement:procurement-core:core-domain")
+- include("procurement:procurement-core:core-application")
+- include("procurement:procurement-core:core-infrastructure")
+- include("procurement:procurement-sourcing:sourcing-domain")
+- include("procurement:procurement-sourcing:sourcing-application")
+- include("procurement:procurement-sourcing:sourcing-infrastructure")
+- include("procurement:procurement-suppliers:suppliers-domain")
+- include("procurement:procurement-suppliers:suppliers-application")
+- include("procurement:procurement-suppliers:suppliers-infrastructure")
+- include("procurement:procurement-receiving:receiving-domain")
+- include("procurement:procurement-receiving:receiving-application")
+- include("procurement:procurement-receiving:receiving-infrastructure")
+- include("procurement:procurement-invoice-match:invoice-match-domain")
+- include("procurement:procurement-invoice-match:invoice-match-application")
+- include("procurement:procurement-invoice-match:invoice-match-infrastructure")
+
+# Maintenance bounded context (ADR-040 - Plant Maintenance with Physical ALM)
+- include("maintenance:maintenance-shared")
+- include("maintenance:maintenance-equipment:equipment-domain")
+- include("maintenance:maintenance-equipment:equipment-application")
+- include("maintenance:maintenance-equipment:equipment-infrastructure")
+- include("maintenance:maintenance-work-orders:work-orders-domain")
+- include("maintenance:maintenance-work-orders:work-orders-application")
+- include("maintenance:maintenance-work-orders:work-orders-infrastructure")
+- include("maintenance:maintenance-preventive:preventive-domain")
+- include("maintenance:maintenance-preventive:preventive-application")
+- include("maintenance:maintenance-preventive:preventive-infrastructure")
+- include("maintenance:maintenance-breakdown:breakdown-domain")
+- include("maintenance:maintenance-breakdown:breakdown-application")
+- include("maintenance:maintenance-breakdown:breakdown-infrastructure")
+- include("maintenance:maintenance-scheduling:scheduling-domain")
+- include("maintenance:maintenance-scheduling:scheduling-application")
+- include("maintenance:maintenance-scheduling:scheduling-infrastructure")
+- include("maintenance:maintenance-spare-parts:spare-parts-domain")
+- include("maintenance:maintenance-spare-parts:spare-parts-application")
+- include("maintenance:maintenance-spare-parts:spare-parts-infrastructure")
+- include("maintenance:maintenance-analytics:analytics-domain")
+- include("maintenance:maintenance-analytics:analytics-application")
+- include("maintenance:maintenance-analytics:analytics-infrastructure")
+- include("maintenance:maintenance-commissioning:commissioning-domain")
+- include("maintenance:maintenance-commissioning:commissioning-application")
+- include("maintenance:maintenance-commissioning:commissioning-infrastructure")
+- include("maintenance:maintenance-decommissioning:decommissioning-domain")
+- include("maintenance:maintenance-decommissioning:decommissioning-application")
+- include("maintenance:maintenance-decommissioning:decommissioning-infrastructure")
+- include("maintenance:maintenance-health-scoring:health-scoring-domain")
+- include("maintenance:maintenance-health-scoring:health-scoring-application")
+- include("maintenance:maintenance-health-scoring:health-scoring-infrastructure")
+- include("maintenance:maintenance-eol-planning:eol-planning-domain")
+- include("maintenance:maintenance-eol-planning:eol-planning-application")
+- include("maintenance:maintenance-eol-planning:eol-planning-infrastructure")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Field Service bounded context (ADR-042) - Customer-facing service operations
+# ═══════════════════════════════════════════════════════════════════════════
+- include("field-service:fsm-shared")
+- include("field-service:fsm-service-orders:service-orders-domain")
+- include("field-service:fsm-service-orders:service-orders-application")
+- include("field-service:fsm-service-orders:service-orders-infrastructure")
+- include("field-service:fsm-dispatch:dispatch-domain")
+- include("field-service:fsm-dispatch:dispatch-application")
+- include("field-service:fsm-dispatch:dispatch-infrastructure")
+- include("field-service:fsm-parts-consumption:parts-consumption-domain")
+- include("field-service:fsm-parts-consumption:parts-consumption-application")
+- include("field-service:fsm-parts-consumption:parts-consumption-infrastructure")
+
+# Manufacturing bounded context (ADR-037 - Manufacturing, ADR-039 - Quality incorporated)
+- include("manufacturing:manufacturing-shared")
+- include("manufacturing:manufacturing-mrp:mrp-domain")
+- include("manufacturing:manufacturing-mrp:mrp-application")
+- include("manufacturing:manufacturing-mrp:mrp-infrastructure")
+- include("manufacturing:manufacturing-production:production-domain")
+- include("manufacturing:manufacturing-production:production-application")
+- include("manufacturing:manufacturing-production:production-infrastructure")
+- include("manufacturing:manufacturing-shopfloor:shopfloor-domain")
+- include("manufacturing:manufacturing-shopfloor:shopfloor-application")
+- include("manufacturing:manufacturing-shopfloor:shopfloor-infrastructure")
+- include("manufacturing:manufacturing-bom:bom-domain")
+- include("manufacturing:manufacturing-bom:bom-application")
+- include("manufacturing:manufacturing-bom:bom-infrastructure")
+- include("manufacturing:manufacturing-costing:costing-domain")
+- include("manufacturing:manufacturing-costing:costing-application")
+- include("manufacturing:manufacturing-costing:costing-infrastructure")
+- include("manufacturing:manufacturing-capacity:capacity-domain")
+- include("manufacturing:manufacturing-capacity:capacity-application")
+- include("manufacturing:manufacturing-capacity:capacity-infrastructure")
+- include("manufacturing:manufacturing-subcontracting:subcontracting-domain")
+- include("manufacturing:manufacturing-subcontracting:subcontracting-application")
+- include("manufacturing:manufacturing-subcontracting:subcontracting-infrastructure")
+- include("manufacturing:manufacturing-analytics:analytics-domain")
+- include("manufacturing:manufacturing-analytics:analytics-application")
+- include("manufacturing:manufacturing-analytics:analytics-infrastructure")
+# Process Manufacturing Extension (ADR-037 - Port 9359)
+- include("manufacturing:manufacturing-process:process-domain")
+- include("manufacturing:manufacturing-process:process-application")
+- include("manufacturing:manufacturing-process:process-infrastructure")
+# Quality Management (incorporated into Manufacturing - ADR-039)
+- include("manufacturing:manufacturing-quality:quality-inspection-planning:inspection-planning-domain")
+- include("manufacturing:manufacturing-quality:quality-inspection-planning:inspection-planning-application")
+- include("manufacturing:manufacturing-quality:quality-inspection-planning:inspection-planning-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-execution:execution-domain")
+- include("manufacturing:manufacturing-quality:quality-execution:execution-application")
+- include("manufacturing:manufacturing-quality:quality-execution:execution-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-nonconformance:nonconformance-domain")
+- include("manufacturing:manufacturing-quality:quality-nonconformance:nonconformance-application")
+- include("manufacturing:manufacturing-quality:quality-nonconformance:nonconformance-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-capa:capa-domain")
+- include("manufacturing:manufacturing-quality:quality-capa:capa-application")
+- include("manufacturing:manufacturing-quality:quality-capa:capa-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-supplier:supplier-domain")
+- include("manufacturing:manufacturing-quality:quality-supplier:supplier-application")
+- include("manufacturing:manufacturing-quality:quality-supplier:supplier-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-certificates:certificates-domain")
+- include("manufacturing:manufacturing-quality:quality-certificates:certificates-application")
+- include("manufacturing:manufacturing-quality:quality-certificates:certificates-infrastructure")
+- include("manufacturing:manufacturing-quality:quality-analytics:analytics-domain")
+- include("manufacturing:manufacturing-quality:quality-analytics:analytics-application")
+- include("manufacturing:manufacturing-quality:quality-analytics:analytics-infrastructure")
+
+# CRM Bounded Context (ADR-042, ADR-043 - ports 9451-9455)
+- include("crm:crm-shared")
+- include("crm:crm-customer360:customer360-api")
+- include("crm:crm-customer360:customer360-domain")
+- include("crm:crm-customer360:customer360-application")
+- include("crm:crm-customer360:customer360-infrastructure")
+- include("crm:crm-pipeline:pipeline-api")
+- include("crm:crm-pipeline:pipeline-domain")
+- include("crm:crm-pipeline:pipeline-application")
+- include("crm:crm-pipeline:pipeline-infrastructure")
+- include("crm:crm-contracts:contracts-api")
+- include("crm:crm-contracts:contracts-domain")
+- include("crm:crm-contracts:contracts-application")
+- include("crm:crm-contracts:contracts-infrastructure")
+- include("crm:crm-activity:activity-domain")
+- include("crm:crm-activity:activity-application")
+- include("crm:crm-activity:activity-infrastructure")
+- include("crm:crm-account-health:account-health-domain")
+- include("crm:crm-account-health:account-health-application")
+- include("crm:crm-account-health:account-health-infrastructure")
+
+
+PACKAGE NAMING CONVENTION
+==========================
+
+Platform Shared:
+- com.chiroerp.shared.types.*
+- com.chiroerp.shared.messaging.*
+- com.chiroerp.shared.security.*
+- com.chiroerp.shared.observability.*
+- com.chiroerp.shared.config.*
+- com.chiroerp.shared.org.*
+- com.chiroerp.shared.workflow.*
+
+Tenancy & Identity Domain:
+- com.chiroerp.tenancy.shared.*               # Shared types (TenantId, TenantContext)
+- com.chiroerp.tenancy.core.domain.*          # Tenant aggregate, events
+- com.chiroerp.tenancy.core.application.*     # Commands, queries, services
+- com.chiroerp.tenancy.core.infrastructure.*  # JPA, Kafka, REST
+- com.chiroerp.identity.core.domain.*         # User aggregate, session, events
+- com.chiroerp.identity.core.application.*    # Auth services, commands, queries
+- com.chiroerp.identity.core.infrastructure.* # JPA, Redis, JWT, SSO
+
+API Gateway:
+- com.chiroerp.gateway.*                      # Main gateway package
+- com.chiroerp.gateway.config.*               # Configuration classes
+- com.chiroerp.gateway.routing.*              # Route resolution, service proxy
+- com.chiroerp.gateway.security.*             # JWT auth, RBAC, tenant resolution
+- com.chiroerp.gateway.ratelimit.*            # Rate limiting (Redis-backed)
+- com.chiroerp.gateway.observability.*        # Logging, metrics, tracing
+- com.chiroerp.gateway.cache.*                # Response caching
+- com.chiroerp.gateway.error.*                # Exception handling, error sanitization
+- com.chiroerp.gateway.health.*               # Health checks
+
+Finance Domain:
+- com.chiroerp.finance.shared.*
+- com.chiroerp.finance.gl.domain.*
+- com.chiroerp.finance.gl.application.*
+- com.chiroerp.finance.gl.infrastructure.*
+- com.chiroerp.finance.ar.domain.*
+- com.chiroerp.finance.ar.application.*
+- com.chiroerp.finance.ar.infrastructure.*
+- com.chiroerp.finance.ap.domain.*
+- com.chiroerp.finance.ap.application.*
+- com.chiroerp.finance.ap.infrastructure.*
+- com.chiroerp.finance.assets.domain.*
+- com.chiroerp.finance.assets.application.*
+- com.chiroerp.finance.assets.infrastructure.*
+- com.chiroerp.finance.tax.domain.*
+- com.chiroerp.finance.tax.application.*
+- com.chiroerp.finance.tax.infrastructure.*
+
+Master Data Management Domain:
+- com.chiroerp.mdm.shared.*                      # Shared types (DataDomainId, VersionInfo)
+- com.chiroerp.mdm.hub.domain.*                  # MasterRecord, ChangeRequest, ApprovalWorkflow
+- com.chiroerp.mdm.hub.application.*             # Commands, queries, services
+- com.chiroerp.mdm.hub.infrastructure.*          # JPA, Kafka, REST
+- com.chiroerp.mdm.dataquality.domain.*          # QualityRule, ValidationResult, DataProfile
+- com.chiroerp.mdm.dataquality.application.*     # Commands, queries, services
+- com.chiroerp.mdm.dataquality.infrastructure.*  # JPA, Kafka, REST
+- com.chiroerp.mdm.stewardship.domain.*          # StewardAssignment, DataIssue, WorkItem
+- com.chiroerp.mdm.stewardship.application.*     # Commands, queries, services
+- com.chiroerp.mdm.stewardship.infrastructure.*  # JPA, Kafka, REST
+- com.chiroerp.mdm.matchmerge.domain.*           # MatchRule, MatchGroup, MergeRecord
+- com.chiroerp.mdm.matchmerge.application.*      # Commands, queries, services
+- com.chiroerp.mdm.matchmerge.infrastructure.*   # JPA, Kafka, REST
+- com.chiroerp.mdm.analytics.domain.*            # QualityScore, Dashboard, KpiDefinition
+- com.chiroerp.mdm.analytics.application.*       # Commands, queries, services
+- com.chiroerp.mdm.analytics.infrastructure.*    # JPA, Kafka, REST
+
+Inventory Domain:
+- com.chiroerp.inventory.shared.*                # Shared types (ItemId, LocationId, MovementType)
+- com.chiroerp.inventory.core.domain.*           # Item, StockLedger, Reservation, CostLayer
+- com.chiroerp.inventory.core.application.*      # Commands, queries, services
+- com.chiroerp.inventory.core.infrastructure.*   # JPA, Kafka, REST
+- com.chiroerp.inventory.warehouse.domain.*      # PickWave, Task, Bin, PutawayRule
+- com.chiroerp.inventory.warehouse.application.* # Commands, queries, services
+- com.chiroerp.inventory.warehouse.infrastructure.* # JPA, Kafka, REST, RF devices
+- com.chiroerp.inventory.valuation.domain.*      # CostLayer, ValuationRun, LandedCost
+- com.chiroerp.inventory.valuation.application.* # Commands, queries, services
+- com.chiroerp.inventory.valuation.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.inventory.atp.domain.*            # AllocationPool, ChannelAllocation, SafetyStock
+- com.chiroerp.inventory.atp.application.*       # Commands, queries, services
+- com.chiroerp.inventory.atp.infrastructure.*    # JPA, Kafka, REST, Redis cache
+- com.chiroerp.inventory.traceability.domain.*   # Lot, Serial, TraceChain, RecallCase
+- com.chiroerp.inventory.traceability.application.* # Commands, queries, services
+- com.chiroerp.inventory.traceability.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.inventory.advancedops.domain.*    # PackagingLevel, Kit, RepackOrder, CatchWeight
+- com.chiroerp.inventory.advancedops.application.* # Commands, queries, services
+- com.chiroerp.inventory.advancedops.infrastructure.* # JPA, Kafka, REST, Scale API
+- com.chiroerp.inventory.forecasting.domain.*    # DemandForecast, ForecastModel, ReorderPoint, AllocationPlan, SeasonalityPattern
+- com.chiroerp.inventory.forecasting.application.* # Commands, queries, services
+- com.chiroerp.inventory.forecasting.infrastructure.* # JPA, Kafka, ML models (ARIMA, Prophet, XGBoost, LSTM), Weather/Event APIs, MLflow
+
+Analytics & Reporting Domain:
+- com.chiroerp.analytics.shared.*                    # Shared types (DimensionId, FactId, CubeId, KpiId)
+- com.chiroerp.analytics.warehouse.domain.*          # WarehouseLoad, DimensionModel, FactTable
+- com.chiroerp.analytics.warehouse.application.*     # Commands, queries, services
+- com.chiroerp.analytics.warehouse.infrastructure.*  # JPA, Kafka, CDC, ETL adapters
+- com.chiroerp.analytics.olap.domain.*               # CubeDefinition, CubeRefresh, AggregateSnapshot
+- com.chiroerp.analytics.olap.application.*          # Commands, queries, services
+- com.chiroerp.analytics.olap.infrastructure.*       # JPA, Kafka, Redis cache
+- com.chiroerp.analytics.kpi.domain.*                # KPIDefinition, KPIResult, KpiAlert
+- com.chiroerp.analytics.kpi.application.*           # Commands, queries, services
+- com.chiroerp.analytics.kpi.infrastructure.*        # JPA, Kafka, Quartz scheduler
+- com.chiroerp.analytics.dashboard.*                 # Dashboard, Widget, DashboardShare (inline module)
+- com.chiroerp.analytics.scheduler.*                 # ReportSchedule, DeliveryTarget (inline module)
+- com.chiroerp.analytics.embedded.*                  # EmbeddedWidget, InsightCache (inline module)
+
+Commerce Domain:
+- com.chiroerp.commerce.shared.catalog.*             # CatalogItem, CatalogCategory, CatalogView (shared kernel)
+- com.chiroerp.commerce.shared.pricing.*             # Price, PriceList, Discount, Promotion (shared kernel)
+- com.chiroerp.commerce.shared.order.*               # OrderLine, OrderStatus, OrderTotals (shared kernel)
+- com.chiroerp.commerce.ecommerce.domain.*           # OnlineStore, ShoppingCart, Checkout, OnlineOrder, Promotion, ProductReview, OnlineCustomer
+- com.chiroerp.commerce.ecommerce.application.*      # Commands, queries, services
+- com.chiroerp.commerce.ecommerce.infrastructure.*   # JPA, Kafka, Redis cache, Elasticsearch, Payment gateways
+- com.chiroerp.commerce.pos.domain.*                 # POSTransaction, CashRegister, CashDrawer, Payment, Receipt, Shift, StoreLocation, Terminal
+- com.chiroerp.commerce.pos.application.*            # Commands, queries, services
+- com.chiroerp.commerce.pos.infrastructure.*         # JPA, Kafka, Payment terminals, Receipt printers, Barcode scanners
+- com.chiroerp.commerce.b2b.domain.*                 # BusinessAccount, Buyer, Contract, Quote, B2BOrder, B2BCatalog, CreditLimit, ApprovalWorkflow
+- com.chiroerp.commerce.b2b.application.*            # Commands, queries, services
+- com.chiroerp.commerce.b2b.infrastructure.*         # JPA, Kafka, Credit check integrations, EDI adapters
+- com.chiroerp.commerce.marketplace.domain.*         # Seller, ProductListing, Commission, FulfillmentOption, SellerPayout, MarketplaceOrder
+- com.chiroerp.commerce.marketplace.application.*    # Commands, queries, services
+- com.chiroerp.commerce.marketplace.infrastructure.* # JPA, Kafka, Seller portal, Payout processing
+- com.chiroerp.commerce.pricing.domain.*             # PriceElasticity, PriceOptimization, MarkdownPlan, CompetitorPrice, PricingScenario
+- com.chiroerp.commerce.pricing.application.*        # Commands, queries, services
+- com.chiroerp.commerce.pricing.infrastructure.*     # JPA, Kafka, ML models, Competitor scraping, Price aggregators
+
+HR Domain (Advanced/Add-on Tiers - ADR-054, ADR-052, ADR-055):
+- com.chiroerp.hr.shared.*                           # Shared HR types (EmployeeId, CostCenter, ApprovalLevel)
+
+HR Travel & Expense (Port 9901 - Advanced Tier):
+- com.chiroerp.hr.travelexpense.domain.*             # TravelRequest, TripBooking, ExpenseReport, ExpenseLine, TravelPolicy, MileageLog, PerDiem
+- com.chiroerp.hr.travelexpense.application.*        # Commands, queries, services
+- com.chiroerp.hr.travelexpense.infrastructure.*     # JPA, Kafka, GDS/TMC integration, Credit card feeds
+
+HR Expense Receipts (Port 9902 - Advanced Tier):
+- com.chiroerp.hr.receipts.domain.*                  # Receipt, ReceiptImage, OcrResult, ReceiptMatch, ReceiptValidation
+- com.chiroerp.hr.receipts.application.*             # Commands, queries, services
+- com.chiroerp.hr.receipts.infrastructure.*          # JPA, Kafka, OCR engine, Mobile upload, Image storage
+
+HR Card Reconciliation (Port 9903 - Advanced Tier):
+- com.chiroerp.hr.cardrecon.domain.*                 # CardTransaction, CardFeed, TransactionMatch, CardStatement, ReconciliationBatch
+- com.chiroerp.hr.cardrecon.application.*            # Commands, queries, services
+- com.chiroerp.hr.cardrecon.infrastructure.*         # JPA, Kafka, Visa/Mastercard/Amex feeds, Bank integrations
+
+HR Contingent Workforce (Port 9904 - Add-on Tier):
+- com.chiroerp.hr.contingent.domain.*                # ContractorRequisition, Contractor, StaffingSupplier, RateCard, Timesheet, SkillMatching, ComplianceRecord
+- com.chiroerp.hr.contingent.application.*           # Commands, queries, services
+- com.chiroerp.hr.contingent.infrastructure.*        # JPA, Kafka, ATS integration, Vendor portal, AI matching ML models
+
+HR Professional Services (Port 9907 - Add-on Tier):
+- com.chiroerp.hr.professionalservices.domain.*      # StatementOfWork, Deliverable, Milestone, MSA, ConsultingFirm, ServiceEngagement
+- com.chiroerp.hr.professionalservices.application.* # Commands, queries, services
+- com.chiroerp.hr.professionalservices.infrastructure.* # JPA, Kafka, Finance AP integration, Project Accounting integration
+
+HR Workforce Scheduling (Port 9905 - Add-on Tier):
+- com.chiroerp.hr.scheduling.domain.*                # Shift, Schedule, ShiftTemplate, ScheduleOptimization, TimeAttendance, ShiftSwapRequest, LaborForecast, ComplianceRule
+- com.chiroerp.hr.scheduling.application.*           # Commands, queries, services
+- com.chiroerp.hr.scheduling.infrastructure.*        # JPA, Kafka, Time clock integration, Mobile app, Optimization solver
+
+HR Analytics (Port 9906 - Advanced Tier):
+- com.chiroerp.hr.analytics.domain.*                 # WorkforceKpi, SpendAnalytic, ComplianceMetric, LaborCostAnalysis
+- com.chiroerp.hr.analytics.application.*            # Commands, queries, services
+- com.chiroerp.hr.analytics.infrastructure.*         # JPA, Kafka, Dashboard rendering, Report generation
+
+Procurement Domain (Core Tier - ADR-023):
+- com.chiroerp.procurement.shared.*                  # Shared types (PurchaseOrderId, RequisitionId, VendorId, MatchType)
+
+Procurement Core (Port 9201):
+- com.chiroerp.procurement.core.domain.*             # Requisition, PurchaseOrder, ApprovalWorkflow, POChange
+- com.chiroerp.procurement.core.application.*        # Commands, queries, services
+- com.chiroerp.procurement.core.infrastructure.*     # JPA, Kafka, REST, Approval workflow engine
+
+Procurement Sourcing (Port 9202):
+- com.chiroerp.procurement.sourcing.domain.*         # RFQ, Quote, SupplierBid, AwardDecision, EvaluationScorecard
+- com.chiroerp.procurement.sourcing.application.*    # Commands, queries, services
+- com.chiroerp.procurement.sourcing.infrastructure.* # JPA, Kafka, REST, Supplier portal
+
+Procurement Suppliers (Port 9203):
+- com.chiroerp.procurement.suppliers.domain.*        # Supplier, SupplierCompliance, SupplierScorecard, SupplierRisk
+- com.chiroerp.procurement.suppliers.application.*   # Commands, queries, services
+- com.chiroerp.procurement.suppliers.infrastructure.* # JPA, Kafka, REST, KYC integration, Document storage
+
+Procurement Receiving (Port 9204):
+- com.chiroerp.procurement.receiving.domain.*        # GoodsReceipt, ServiceEntry, InspectionResult, VendorReturn
+- com.chiroerp.procurement.receiving.application.*   # Commands, queries, services
+- com.chiroerp.procurement.receiving.infrastructure.* # JPA, Kafka, REST, Barcode scanning, Quality inspection
+
+Procurement Invoice Match (Port 9205):
+- com.chiroerp.procurement.invoicematch.domain.*     # InvoiceMatch, MatchException, ToleranceRule, GRIRAccount
+- com.chiroerp.procurement.invoicematch.application.* # Commands, queries, services
+- com.chiroerp.procurement.invoicematch.infrastructure.* # JPA, Kafka, REST, AP integration
+
+Maintenance Shared:
+- com.chiroerp.maintenance.shared.*                   # MaintenanceId, EquipmentId, WorkOrderId, common events
+
+Maintenance Equipment (Port 9401):
+- com.chiroerp.maintenance.equipment.domain.*         # Equipment, FunctionalLocation, EquipmentClass, TechnicalAttribute
+- com.chiroerp.maintenance.equipment.application.*    # Commands, queries, services
+- com.chiroerp.maintenance.equipment.infrastructure.* # JPA, Kafka, REST, Asset integration
+
+Maintenance Work Orders (Port 9402):
+- com.chiroerp.maintenance.workorders.domain.*        # WorkOrder, WorkOrderOperation, MaintenanceTask, Confirmation, CostSettlement
+- com.chiroerp.maintenance.workorders.application.*   # Commands, queries, services
+- com.chiroerp.maintenance.workorders.infrastructure.* # JPA, Kafka, REST, Finance CO integration
+
+Maintenance Preventive (Port 9403):
+- com.chiroerp.maintenance.preventive.domain.*        # MaintenancePlan, MaintenanceSchedule, Counter, TriggerRule, CallHorizon
+- com.chiroerp.maintenance.preventive.application.*   # Commands, queries, services
+- com.chiroerp.maintenance.preventive.infrastructure.* # JPA, Kafka, REST, scheduling triggers
+
+Maintenance Breakdown (Port 9404):
+- com.chiroerp.maintenance.breakdown.domain.*         # BreakdownNotification, DowntimeRecord, CorrectiveAction, RootCause
+- com.chiroerp.maintenance.breakdown.application.*    # Commands, queries, services
+- com.chiroerp.maintenance.breakdown.infrastructure.* # JPA, Kafka, REST, Manufacturing downtime integration
+
+Maintenance Scheduling (Port 9405):
+- com.chiroerp.maintenance.scheduling.domain.*        # MaintenanceCalendar, ScheduleWindow, ResourceAllocation, ShutdownPlan
+- com.chiroerp.maintenance.scheduling.application.*   # Commands, queries, services
+- com.chiroerp.maintenance.scheduling.infrastructure.* # JPA, Kafka, REST, HR calendar integration
+
+Maintenance Spare Parts (Port 9406):
+- com.chiroerp.maintenance.spareparts.domain.*        # SparePart, EquipmentBOM, PartReservation, CriticalSpare
+- com.chiroerp.maintenance.spareparts.application.*   # Commands, queries, services
+- com.chiroerp.maintenance.spareparts.infrastructure.* # JPA, Kafka, REST, Inventory integration
+
+Maintenance Analytics (Port 9407):
+- com.chiroerp.maintenance.analytics.domain.*         # MaintenanceKPI, AvailabilityMetric, CostVariance, ReliabilityReport, OEEMetric
+- com.chiroerp.maintenance.analytics.application.*    # Commands, queries, calculation services
+- com.chiroerp.maintenance.analytics.infrastructure.* # JPA, Kafka, Analytics warehouse integration
+
+Maintenance Commissioning (Port 9408 - Physical ALM):
+- com.chiroerp.maintenance.commissioning.domain.*     # CommissioningProject, PreCommissioningChecklist, TestingProtocol, AcceptanceCertificate
+- com.chiroerp.maintenance.commissioning.application.* # Commands, queries, workflow services
+- com.chiroerp.maintenance.commissioning.infrastructure.* # JPA, Kafka, REST, Finance Assets capitalization (ADR-021)
+
+Maintenance Decommissioning (Port 9409 - Physical ALM):
+- com.chiroerp.maintenance.decommissioning.domain.*   # DecommissioningRequest, ImpactAssessment, DisposalPlan, EnvironmentalCompliance
+- com.chiroerp.maintenance.decommissioning.application.* # Commands, queries, approval workflow
+- com.chiroerp.maintenance.decommissioning.infrastructure.* # JPA, Kafka, REST, Finance Assets disposal
+
+Maintenance Health Scoring (Port 9410 - Physical ALM):
+- com.chiroerp.maintenance.healthscoring.domain.*     # HealthScore, ConditionAssessment, InspectionRecord, AlertThreshold
+- com.chiroerp.maintenance.healthscoring.application.* # Commands, queries, scoring engine
+- com.chiroerp.maintenance.healthscoring.infrastructure.* # JPA, Kafka, REST, IoT sensor integration
+
+Maintenance EOL Planning (Port 9411 - Physical ALM):
+- com.chiroerp.maintenance.eolplanning.domain.*       # EOLIndicator, ReplacementForecast, TCOAnalysis, CapitalBudgetRequest
+- com.chiroerp.maintenance.eolplanning.application.*  # Commands, queries, forecasting services
+- com.chiroerp.maintenance.eolplanning.infrastructure.* # JPA, Kafka, REST, Budgeting CAPEX integration (ADR-032)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT (ADR-042) - Customer-facing field service operations
+# ═══════════════════════════════════════════════════════════════════════════
+
+Field Service Shared:
+- com.chiroerp.fieldservice.shared.*                  # ServiceOrderId, FieldTechnicianId, DispatchId, PartsConsumptionId, value objects
+
+Field Service Orders (Port 9601):
+- com.chiroerp.fieldservice.serviceorders.domain.*    # ServiceOrder, ServiceOrderLine, CustomerAsset, ServiceContract, BillingDetails
+- com.chiroerp.fieldservice.serviceorders.application.* # Commands, queries, handlers
+- com.chiroerp.fieldservice.serviceorders.infrastructure.* # JPA, Kafka, Finance AR integration
+
+Field Service Dispatch (Port 9602):
+- com.chiroerp.fieldservice.dispatch.domain.*         # Dispatch, FieldTechnician, TechnicianSkills, ServiceTerritory, RouteOptimization
+- com.chiroerp.fieldservice.dispatch.application.*    # Commands, queries, handlers
+- com.chiroerp.fieldservice.dispatch.infrastructure.* # JPA, Kafka, Google Maps, Geocoding
+
+Field Service Parts Consumption (Port 9603):
+- com.chiroerp.fieldservice.parts.domain.*            # PartsConsumption, FieldInventory, TruckStock, ReplenishmentRequest, WarrantyPart
+- com.chiroerp.fieldservice.parts.application.*       # Commands, queries, handlers
+- com.chiroerp.fieldservice.parts.infrastructure.*    # JPA, Kafka, Inventory warehouse integration
+
+Manufacturing Shared:
+- com.chiroerp.manufacturing.shared.*                 # ManufacturingId, ProductionOrderId, WorkOrderId, BomId, common events
+
+Manufacturing MRP (Port 9351):
+- com.chiroerp.manufacturing.mrp.domain.*             # MRPRun, PlannedOrder, DemandElement, SupplyElement, NetRequirement
+- com.chiroerp.manufacturing.mrp.application.*        # Commands, queries, services
+- com.chiroerp.manufacturing.mrp.infrastructure.*     # JPA, Kafka, REST, Inventory/Sales integration
+
+Manufacturing Production (Port 9352):
+- com.chiroerp.manufacturing.production.domain.*      # ProductionOrder, ProductionOperation, Confirmation, GoodsIssue, GoodsReceipt
+- com.chiroerp.manufacturing.production.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.production.infrastructure.* # JPA, Kafka, REST, Inventory/Costing integration
+
+Manufacturing Shop Floor (Port 9353):
+- com.chiroerp.manufacturing.shopfloor.domain.*       # WorkCenter, DispatchList, TimeTicket, LaborConfirmation, DowntimeRecord
+- com.chiroerp.manufacturing.shopfloor.application.*  # Commands, queries, services
+- com.chiroerp.manufacturing.shopfloor.infrastructure.* # JPA, Kafka, REST, MES integration
+
+Manufacturing BOM (Port 9354):
+- com.chiroerp.manufacturing.bom.domain.*             # BillOfMaterial, BOMItem, Routing, RoutingOperation, Effectivity
+- com.chiroerp.manufacturing.bom.application.*        # Commands, queries, services
+- com.chiroerp.manufacturing.bom.infrastructure.*     # JPA, Kafka, REST, MDM integration
+
+Manufacturing Costing (Port 9355):
+- com.chiroerp.manufacturing.costing.domain.*         # CostEstimate, CostComponent, WIPValuation, ProductionVariance
+- com.chiroerp.manufacturing.costing.application.*    # Commands, queries, services
+- com.chiroerp.manufacturing.costing.infrastructure.* # JPA, Kafka, REST, Finance CO integration
+
+Manufacturing Capacity (Port 9356):
+- com.chiroerp.manufacturing.capacity.domain.*        # CapacityPlan, WorkCenterCapacity, CapacityLoad, CapacityConstraint
+- com.chiroerp.manufacturing.capacity.application.*   # Commands, queries, services
+- com.chiroerp.manufacturing.capacity.infrastructure.* # JPA, Kafka, REST, Scheduling integration
+
+Manufacturing Subcontracting (Port 9357):
+- com.chiroerp.manufacturing.subcontracting.domain.*  # SubcontractOrder, ExternalOperation, ComponentProvision, SubcontractReceipt
+- com.chiroerp.manufacturing.subcontracting.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.subcontracting.infrastructure.* # JPA, Kafka, REST, Procurement integration
+
+Manufacturing Analytics (Port 9358):
+- com.chiroerp.manufacturing.analytics.domain.*       # ManufacturingKPI, OEE, Throughput, CycleTime, YieldAnalysis
+- com.chiroerp.manufacturing.analytics.application.*  # Commands, queries, services
+- com.chiroerp.manufacturing.analytics.infrastructure.* # JPA, Kafka, REST, Analytics warehouse integration
+
+Quality Inspection Planning (Port 9501 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.inspectionplanning.domain.* # InspectionPlan, InspectionCharacteristic, SamplingProcedure
+- com.chiroerp.manufacturing.quality.inspectionplanning.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.inspectionplanning.infrastructure.* # JPA, Kafka, REST
+
+Quality Execution (Port 9502 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.execution.domain.* # InspectionLot, InspectionResult, UsageDecision, Defect
+- com.chiroerp.manufacturing.quality.execution.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.execution.infrastructure.* # JPA, Kafka, REST, Inventory integration
+
+Quality Nonconformance (Port 9503 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.nonconformance.domain.* # Nonconformance, Disposition, QualityCost, CostRecovery
+- com.chiroerp.manufacturing.quality.nonconformance.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.nonconformance.infrastructure.* # JPA, Kafka, REST, Finance CO integration
+
+Quality CAPA (Port 9504 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.capa.domain.*    # CAPA, RootCauseAnalysis, CorrectiveAction, PreventiveAction
+- com.chiroerp.manufacturing.quality.capa.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.capa.infrastructure.* # JPA, Kafka, REST, Workflow integration
+
+Quality Supplier (Port 9505 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.supplier.domain.* # SupplierQualityProfile, VendorScorecard, ApprovedSupplierList, PPMTracking
+- com.chiroerp.manufacturing.quality.supplier.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.supplier.infrastructure.* # JPA, Kafka, REST, Procurement integration
+
+Quality Certificates (Port 9506 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.certificates.domain.* # CertificateOfAnalysis, CertificateOfConformance, BatchRelease
+- com.chiroerp.manufacturing.quality.certificates.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.certificates.infrastructure.* # JPA, Kafka, REST, PDF generation
+
+Quality Analytics (Port 9507 - within Manufacturing):
+- com.chiroerp.manufacturing.quality.analytics.domain.* # QualityKPI, SPCChart, ProcessCapability, CostOfQuality
+- com.chiroerp.manufacturing.quality.analytics.application.* # Commands, queries, services
+- com.chiroerp.manufacturing.quality.analytics.infrastructure.* # JPA, Kafka, REST, Analytics warehouse
+
+CRM Shared:
+- com.chiroerp.crm.shared.*                   # CustomerId, ContactId, OpportunityId, ContractId, ActivityId
+
+CRM Customer 360 (Port 9451):
+- com.chiroerp.crm.customer360.api.*          # REST resources, DTOs, OpenAPI
+- com.chiroerp.crm.customer360.domain.*       # Customer, Contact, CustomerSegment, CustomerClassification
+- com.chiroerp.crm.customer360.application.*  # Commands, queries, handlers
+- com.chiroerp.crm.customer360.infrastructure.* # JPA, Elasticsearch, Kafka
+
+CRM Pipeline (Port 9452):
+- com.chiroerp.crm.pipeline.api.*             # REST resources, DTOs, OpenAPI
+- com.chiroerp.crm.pipeline.domain.*          # Opportunity, OpportunityStage, Forecast, WinProbability
+- com.chiroerp.crm.pipeline.application.*     # Commands, queries, handlers
+- com.chiroerp.crm.pipeline.infrastructure.*  # JPA, Kafka, REST
+
+CRM Contracts (Port 9453):
+- com.chiroerp.crm.contracts.api.*            # REST resources, DTOs, OpenAPI
+- com.chiroerp.crm.contracts.domain.*         # ServiceContract, Entitlement, CoveredAsset, RenewalTerms
+- com.chiroerp.crm.contracts.application.*    # Commands, queries, handlers
+- com.chiroerp.crm.contracts.infrastructure.* # JPA, Kafka, REST
+
+CRM Activity (Port 9454):
+- com.chiroerp.crm.activity.domain.*          # Activity, Call, Email, Meeting, Task, TouchPoint
+- com.chiroerp.crm.activity.application.*     # Commands, queries, handlers
+- com.chiroerp.crm.activity.infrastructure.*  # JPA, Kafka, REST
+
+CRM Account Health (Port 9455):
+- com.chiroerp.crm.accounthealth.domain.*     # AccountHealth, HealthScore, RiskSignal, ChurnPrediction
+- com.chiroerp.crm.accounthealth.application.* # Commands, queries, handlers
+- com.chiroerp.crm.accounthealth.infrastructure.* # JPA, Kafka, REST
+
+
+DATABASE STRUCTURE
+==================
+
+Tenancy Database: tenancy_identity
+- Schema: tenancy
+- Tables: tenant, tenant_settings, tenant_subscription, tenant_quota, data_residency, event_outbox
+- User: tenancy_app (read/write), tenancy_readonly (read-only)
+
+Identity Database: tenancy_identity (same database, separate schema)
+- Schema: identity
+- Tables: user, user_profile, user_credentials, user_role, role, permission, role_permission, external_identity, mfa_config, event_outbox
+- User: identity_app (read/write), identity_readonly (read-only)
+- Note: Sessions stored in Redis (identity_sessions)
+
+GL Database: finance_gl
+- Schema: finance_gl
+- Tables: gl_account, journal_entry, journal_entry_line, fiscal_period, balance, exchange_rate, event_outbox
+- User: finance_gl_app (read/write), finance_gl_readonly (read-only)
+
+AR Database: finance_ar
+- Schema: finance_ar
+- Tables: customer_account, invoice, invoice_line, payment, payment_allocation, aging_snapshot
+- User: finance_ar_app, finance_ar_readonly
+
+AP Database: finance_ap
+- Schema: finance_ap
+- Tables: vendor_account, bill, bill_line, vendor_payment, payment_run, payment_run_line, event_outbox
+- User: finance_ap_app, finance_ap_readonly
+
+Assets Database: finance_assets
+- Schema: finance_assets
+- Tables: fixed_asset, depreciation_schedule, depreciation_entry, asset_disposal, asset_transfer, maintenance_record, event_outbox
+- User: finance_assets_app, finance_assets_readonly
+
+Tax Database: finance_tax
+- Schema: finance_tax
+- Tables: tax_code, tax_rate, tax_calculation, tax_return, tax_return_line, withholding_tax, withholding_certificate, event_outbox
+- User: finance_tax_app, finance_tax_readonly
+
+MDM Hub Database: mdm_hub
+- Schema: mdm_hub
+- Tables: master_record, master_record_version, data_domain, attribute_definition, change_request, change_request_approval, approval_workflow, workflow_step, event_outbox
+- User: mdm_hub_app, mdm_hub_readonly
+
+MDM Data Quality Database: mdm_data_quality
+- Schema: mdm_data_quality
+- Tables: quality_rule, rule_condition, validation_result, validation_error, data_profile, profile_column, profile_statistic, event_outbox
+- User: mdm_dq_app, mdm_dq_readonly
+
+MDM Stewardship Database: mdm_stewardship
+- Schema: mdm_stewardship
+- Tables: steward_assignment, data_domain_steward, data_issue, issue_resolution, work_item, work_item_comment, event_outbox
+- User: mdm_steward_app, mdm_steward_readonly
+
+MDM Match-Merge Database: mdm_match_merge
+- Schema: mdm_match_merge
+- Tables: match_rule, match_criterion, match_group, match_candidate, merge_record, merge_decision, survivor_record, event_outbox
+- User: mdm_mm_app, mdm_mm_readonly
+
+MDM Analytics Database: mdm_analytics
+- Schema: mdm_analytics
+- Tables: quality_score, score_history, quality_dashboard, dashboard_widget, kpi_definition, kpi_measurement, event_outbox
+- User: mdm_analytics_app, mdm_analytics_readonly
+
+Inventory Core Database: inventory_core
+- Schema: inventory_core
+- Tables: item, item_variant, location, bin, stock_ledger, stock_movement, stock_lot, stock_serial, reservation, cost_layer, cycle_count, cycle_count_line, event_outbox
+- User: inventory_core_app, inventory_core_readonly
+- Note: Includes counting, traceability, POS as inline modules sharing this database
+
+Inventory Warehouse Database: inventory_warehouse
+- Schema: inventory_warehouse
+- Tables: warehouse_zone, bin, pick_wave, wave_line, task, task_assignment, putaway_rule, replenishment_rule, labor_standard, event_outbox
+- User: inventory_wms_app, inventory_wms_readonly
+
+Inventory Valuation Database: inventory_valuation
+- Schema: inventory_valuation
+- Tables: cost_layer, cost_layer_entry, valuation_run, valuation_result, landed_cost, landed_cost_line, fx_revaluation, fx_gain_loss, event_outbox
+- User: inventory_valuation_app, inventory_valuation_readonly
+
+Inventory ATP Database: inventory_atp
+- Schema: inventory_atp
+- Tables: allocation_pool, allocation_line, channel_allocation, channel_quota, safety_stock, reservation_rule, priority_matrix, event_outbox
+- User: inventory_atp_app, inventory_atp_readonly
+- Note: ATP cache in Redis (inventory_atp_cache)
+
+Inventory Traceability Database: inventory_core (shared)
+- Schema: inventory_trace
+- Tables: lot, serial, trace_chain, movement_history, recall_case, event_outbox
+- User: inventory_core_app (shared)
+
+Inventory Advanced Ops Database: inventory_advanced_ops
+- Schema: inventory_advanced_ops
+- Tables: packaging_level, tihi_config, kit, kit_component, kit_bom, kit_assembly, assembly_variance, repack_order, repack_line, catch_weight_item, event_outbox
+- User: inventory_advops_app, inventory_advops_readonly
+
+Inventory Forecasting Database: inventory_forecasting
+- Schema: inventory_forecasting
+- Tables: demand_forecast, forecast_period, forecast_accuracy, forecast_model, model_version, model_parameters, model_performance, reorder_point, safety_stock, service_level_config, allocation_plan, dc_allocation, store_allocation, replenishment_recommendation, seasonality_pattern, seasonal_decomposition, holiday_effect, weekly_cycle, promotion_impact, uplift_calculation, cannibalization, halo_effect, weather_signal, event_signal, competitor_signal, economic_indicator, event_outbox
+- User: inventory_forecasting_app, inventory_forecasting_readonly
+- Note: MLflow integration for model versioning, Redis for forecast caching
+
+Analytics Warehouse Database: chiroerp_analytics_warehouse
+- Schema: analytics_warehouse
+- Tables: warehouse_load, load_batch, dimension_model, dimension_version, dim_customer, dim_product, dim_date, dim_time, dim_company, dim_cost_center, fact_table, fact_definition, fact_partition, fact_invoice, fact_payment, fact_journal_entry, fact_sales_order, fact_inventory_movement, staging_table, data_lineage, event_outbox
+- User: analytics_warehouse_app, analytics_warehouse_readonly
+- Note: Staging tables for CDC and ETL loading
+
+Analytics OLAP Database: chiroerp_analytics_olap
+- Schema: analytics_olap
+- Tables: cube_definition, cube_measure, cube_dimension_ref, cube_refresh, refresh_window, aggregate_snapshot, aggregate_key, aggregate_value, dashboard, dashboard_widget, widget_layout, dashboard_share, embedded_widget, insight_cache, event_outbox
+- User: analytics_olap_app, analytics_olap_readonly
+- Note: Dashboard and Embedded modules share this database
+
+Analytics KPI Database: chiroerp_analytics_kpi
+- Schema: analytics_kpi
+- Tables: kpi_definition, kpi_formula, kpi_threshold, kpi_result, result_period, kpi_alert, alert_recipient, alert_history, report_schedule, schedule_delivery_target, retention_policy, delivery_log, event_outbox
+- User: analytics_kpi_app, analytics_kpi_readonly
+- Note: Scheduler module shares this database
+
+Commerce E-Commerce Database: commerce_ecommerce
+- Schema: commerce_ecommerce
+- Tables: online_store, store_settings, store_theme, shopping_cart, cart_item, cart_abandonment, checkout_session, checkout_step, online_order, order_line, order_fulfillment, promotion, promotion_rule, promotion_usage, product_review, review_vote, review_moderation, wishlist, wishlist_item, online_customer, customer_preference, guest_session, event_outbox
+- User: commerce_ecommerce_app, commerce_ecommerce_readonly
+- Note: Redis for cart session caching, Elasticsearch for product search
+
+Commerce POS Database: commerce_pos
+- Schema: commerce_pos
+- Tables: store_location, terminal, terminal_session, cash_register, register_assignment, cash_drawer, drawer_count, pos_transaction, transaction_line, transaction_payment, transaction_tender, receipt, receipt_template, shift, shift_summary, shift_variance, barcode_mapping, price_override, discount_applied, loyalty_scan, event_outbox
+- User: commerce_pos_app, commerce_pos_readonly
+- Note: Offline-first architecture with local SQLite sync
+
+Commerce B2B Database: commerce_b2b
+- Schema: commerce_b2b
+- Tables: business_account, account_hierarchy, buyer, buyer_role, contract, contract_line, contract_term, credit_limit, credit_history, quote, quote_line, quote_approval, approval_workflow, approval_step, approval_decision, b2b_order, b2b_order_line, b2b_catalog, catalog_visibility, price_agreement, blanket_order, blanket_release, event_outbox
+- User: commerce_b2b_app, commerce_b2b_readonly
+- Note: Integration with external credit check services
+
+Commerce Marketplace Database: commerce_marketplace
+- Schema: commerce_marketplace
+- Tables: seller, seller_profile, seller_verification, seller_rating, product_listing, listing_variant, listing_media, listing_approval, commission_structure, commission_tier, commission_calculation, seller_payout, payout_line, payout_schedule, marketplace_order, marketplace_order_line, fulfillment_option, fulfillment_provider, dispute, dispute_resolution, event_outbox
+- User: commerce_marketplace_app, commerce_marketplace_readonly
+- Note: Escrow handling for seller payouts
+
+Commerce Pricing Database: commerce_pricing
+- Schema: commerce_pricing
+- Tables: price_elasticity, elasticity_curve, cross_elasticity, demand_function, price_optimization, optimization_constraint, price_floor, price_ceiling, competitor_price_constraint, markdown_plan, markdown_schedule, markdown_execution, clearance_target, season_end_date, competitor_price, price_position, price_index, market_price_range, pricing_scenario, what_if_analysis, revenue_projection, margin_impact, event_outbox
+- User: commerce_pricing_app, commerce_pricing_readonly
+- Note: Optimization solver integration, competitor price scraping
+
+HR Travel & Expense Database: hr_travel_expense
+- Schema: hr_travel_expense
+- Tables: travel_request, trip_segment, travel_approval, trip_booking, booking_confirmation, hotel_booking, car_rental, travel_policy, policy_rule, policy_violation, policy_exception, expense_report, expense_line, expense_category, receipt_attachment, expense_approval, mileage_log, mileage_rate, per_diem, per_diem_rate, per_diem_location, advance_request, advance_settlement, event_outbox
+- User: hr_travel_expense_app, hr_travel_expense_readonly
+- Note: GDS/TMC integration for bookings, credit card feed processing
+
+HR Expense Receipts Database: hr_travel_expense (same database, separate schema)
+- Schema: hr_expense_receipts
+- Tables: receipt, receipt_image, image_storage, ocr_result, ocr_field, ocr_confidence, receipt_match, match_candidate, match_confirmation, receipt_validation, validation_rule, validation_result, duplicate_check, event_outbox
+- User: hr_receipts_app, hr_receipts_readonly
+- Note: OCR engine integration, blob storage for images
+
+HR Card Reconciliation Database: hr_travel_expense (same database, separate schema)
+- Schema: hr_card_recon
+- Tables: card_transaction, transaction_detail, merchant_info, card_feed, feed_file, feed_processing, transaction_match, match_rule, auto_match, manual_match, card_statement, statement_line, statement_period, reconciliation_batch, batch_item, batch_status, unmatched_transaction, event_outbox
+- User: hr_card_recon_app, hr_card_recon_readonly
+- Note: Visa/Mastercard/Amex commercial card feeds
+
+HR Contingent Workforce Database: hr_contingent
+- Schema: hr_contingent
+- Tables: requisition, requisition_approval, requisition_position, contractor, contractor_profile, contractor_assignment, contractor_rate, sow, sow_milestone, sow_deliverable, sow_approval, sow_amendment, rate_card, rate_category, rate_tier, supplier, supplier_tier, supplier_rating, supplier_contract, timesheet, timesheet_entry, timesheet_approval, ats_candidate, candidate_profile, candidate_skill, candidate_match, match_score, ai_recommendation, event_outbox
+- User: hr_contingent_app, hr_contingent_readonly
+- Note: ATS integration, vendor portal, AI matching engine
+
+HR Workforce Scheduling Database: hr_scheduling
+- Schema: hr_scheduling
+- Tables: shift, shift_assignment, shift_requirement, shift_skill, schedule, schedule_period, schedule_version, schedule_publication, shift_template, template_pattern, template_rotation, schedule_optimization, optimization_constraint, optimization_result, cost_optimization, time_attendance, clock_event, attendance_exception, overtime_calculation, shift_swap_request, swap_approval, swap_notification, labor_forecast, forecast_model, forecast_input, demand_driver, compliance_rule, compliance_check, compliance_violation, event_outbox
+- User: hr_scheduling_app, hr_scheduling_readonly
+- Note: Optimization solver, time clock integration, mobile app
+
+HR Analytics Database: hr_analytics
+- Schema: hr_analytics
+- Tables: workforce_kpi, kpi_definition, kpi_target, kpi_actual, kpi_trend, spend_analytic, spend_category, spend_trend, vendor_spend, cost_center_spend, compliance_metric, compliance_score, compliance_trend, audit_finding, labor_cost_analysis, cost_driver, cost_allocation, cost_variance, headcount_analytic, turnover_metric, productivity_metric, event_outbox
+- User: hr_analytics_app, hr_analytics_readonly
+- Note: Dashboard rendering, report scheduling, data warehouse sync
+
+Procurement Core Database: procurement_core
+- Schema: procurement_core
+- Tables: requisition, requisition_line, requisition_approval, requisition_history, purchase_order, purchase_order_line, po_schedule_line, po_approval, po_approval_step, approval_workflow, approval_rule, approval_delegation, po_change, change_line, change_reason, change_approval, po_output, output_history, event_outbox
+- User: procurement_core_app, procurement_core_readonly
+- Note: SOX compliance, SoD enforcement, audit trail
+
+Procurement Sourcing Database: procurement_sourcing
+- Schema: procurement_sourcing
+- Tables: rfq, rfq_line, rfq_invitation, rfq_amendment, rfq_deadline, quote, quote_line, quote_validity, quote_attachment, supplier_bid, bid_evaluation, evaluation_criteria, evaluation_scorecard, score_line, award_decision, award_approval, award_notification, award_contract_link, event_outbox
+- User: procurement_sourcing_app, procurement_sourcing_readonly
+- Note: Fair sourcing compliance, bid evaluation audit trail
+
+Procurement Suppliers Database: procurement_core (shared schema)
+- Schema: procurement_suppliers
+- Tables: supplier, supplier_profile, supplier_contact, supplier_address, supplier_classification, supplier_bank_info, supplier_compliance, compliance_document, document_type, document_expiry, certification_record, supplier_scorecard, performance_metric, metric_history, supplier_risk, risk_category, risk_assessment, supplier_block, block_reason, event_outbox
+- User: procurement_suppliers_app, procurement_suppliers_readonly
+- Note: KYC/AML integration, document management, GDPR compliance
+
+Procurement Receiving Database: procurement_core (shared schema)
+- Schema: procurement_receiving
+- Tables: goods_receipt, receipt_line, receipt_quantity, receipt_batch, receipt_serial, service_entry, service_entry_line, service_acceptance, inspection_result, inspection_criteria, inspection_lot, quality_checkpoint, checkpoint_result, vendor_return, return_line, return_reason, return_delivery, event_outbox
+- User: procurement_receiving_app, procurement_receiving_readonly
+- Note: Quality inspection integration, barcode scanning
+
+Procurement Invoice Match Database: procurement_core (shared schema)
+- Schema: procurement_invoice_match
+- Tables: invoice_match, match_line, match_result, match_variance, two_way_match, three_way_match, match_exception, exception_type, exception_resolution, exception_approval, tolerance_rule, tolerance_type, tolerance_threshold, grir_account, grir_clearing, reconciliation_entry, reconciliation_batch, event_outbox
+- User: procurement_invoice_match_app, procurement_invoice_match_readonly
+- Note: SOX variance controls, AP integration
+
+Maintenance Equipment Database: maintenance_equipment
+- Schema: maintenance_equipment
+- Tables: equipment, equipment_class, equipment_category, equipment_type, functional_location, location_hierarchy, technical_attribute, attribute_type, attribute_value, equipment_attribute, equipment_document, document_type, installation_history, installation_record, warranty, warranty_coverage, warranty_claim, serial_number_tracking, equipment_status, equipment_hierarchy, manufacturer, model, event_outbox
+- User: maintenance_equipment_app, maintenance_equipment_readonly
+- Note: Hierarchical equipment registry, ADR-040 foundation
+
+Maintenance Work Orders Database: maintenance_work_orders
+- Schema: maintenance_work_orders
+- Tables: work_order, work_order_type, work_order_operation, operation_type, maintenance_task, task_template, task_checklist, confirmation, confirmation_line, time_confirmation, material_confirmation, cost_settlement, settlement_rule, settlement_receiver, safety_checklist, checklist_item, loto_record, loto_point, loto_procedure, permit_to_work, permit_type, event_outbox
+- User: maintenance_work_orders_app, maintenance_work_orders_readonly
+- Note: LOTO compliance, Finance CO cost posting integration
+
+Maintenance Breakdown Database: maintenance_work_orders (shared schema)
+- Schema: maintenance_breakdown
+- Tables: breakdown_notification, notification_type, notification_priority, downtime_record, downtime_category, planned_vs_unplanned, corrective_action, action_type, root_cause, root_cause_category, five_why_analysis, ishikawa_category, emergency_part, emergency_request, breakdown_cost, external_failure_cost, event_outbox
+- User: maintenance_breakdown_app, maintenance_breakdown_readonly
+- Note: Manufacturing downtime integration, RCA tracking
+
+Maintenance Scheduling Database: maintenance_work_orders (shared schema)
+- Schema: maintenance_scheduling
+- Tables: maintenance_calendar, calendar_type, factory_calendar, shift_pattern, schedule_window, window_type, resource_allocation, resource_type, technician_skill, skill_matrix, shutdown_plan, shutdown_phase, blackout_period, blackout_reason, capacity_planning, crew_assignment, event_outbox
+- User: maintenance_scheduling_app, maintenance_scheduling_readonly
+- Note: HR calendar integration, crew scheduling
+
+Maintenance Spare Parts Database: maintenance_work_orders (shared schema)
+- Schema: maintenance_spare_parts
+- Tables: spare_part, part_category, part_classification, equipment_bom, bom_item, bom_level, part_reservation, reservation_status, reservation_release, critical_spare, criticality_analysis, min_max_setting, preferred_supplier, supplier_part_number, reorder_point, lead_time, consignment_stock, event_outbox
+- User: maintenance_spare_parts_app, maintenance_spare_parts_readonly
+- Note: Inventory integration, MRP linkage
+
+Maintenance Preventive Database: maintenance_preventive
+- Schema: maintenance_preventive
+- Tables: maintenance_plan, plan_category, plan_type, maintenance_schedule, schedule_item, schedule_call, counter, counter_type, counter_reading, counter_history, trigger_rule, trigger_type, time_trigger, counter_trigger, condition_trigger, call_horizon, horizon_window, compliance_record, compliance_status, compliance_audit, regulatory_requirement, event_outbox
+- User: maintenance_preventive_app, maintenance_preventive_readonly
+- Note: Time/counter-based scheduling, regulatory compliance
+
+Maintenance Analytics Database: maintenance_preventive (shared schema)
+- Schema: maintenance_analytics
+- Tables: maintenance_kpi, kpi_definition, kpi_calculation, kpi_target, availability_metric, availability_calculation, mtbf_record, mttr_record, cost_variance, variance_analysis, variance_category, reliability_report, report_type, oee_metric, oee_component, performance_efficiency, quality_rate, wrench_time_analysis, event_outbox
+- User: maintenance_analytics_app, maintenance_analytics_readonly
+- Note: Analytics warehouse integration, KPI dashboards
+
+Maintenance Lifecycle Database: maintenance_lifecycle (Physical ALM - ADR-040)
+- Schema: maintenance_commissioning
+- Tables: commissioning_project, project_phase, project_milestone, pre_commissioning_checklist, checklist_template, checklist_status, testing_protocol, test_type, test_result, test_certification, acceptance_certificate, certificate_type, certificate_signoff, go_live_authorization, authorization_workflow, punch_list, punch_item, event_outbox
+- User: maintenance_commissioning_app, maintenance_commissioning_readonly
+- Note: Finance Assets capitalization (ADR-021)
+
+Maintenance Lifecycle Database: maintenance_lifecycle (shared schema)
+- Schema: maintenance_decommissioning
+- Tables: decommissioning_request, request_type, request_approval, impact_assessment, impact_category, downstream_impact, disposal_plan, disposal_method, disposal_vendor, environmental_compliance, compliance_requirement, hazmat_classification, asset_retirement, retirement_type, retirement_value, salvage_value, disposal_cost, event_outbox
+- User: maintenance_decommissioning_app, maintenance_decommissioning_readonly
+- Note: Finance Assets disposal, environmental regulations
+
+Maintenance Lifecycle Database: maintenance_lifecycle (shared schema)
+- Schema: maintenance_health_scoring
+- Tables: health_score, score_component, score_weight, condition_assessment, assessment_type, assessment_schedule, inspection_record, inspection_type, visual_inspection, thermal_inspection, vibration_inspection, oil_analysis, ultrasonic_inspection, alert_threshold, threshold_type, threshold_trigger, alert_history, condition_trend, event_outbox
+- User: maintenance_health_scoring_app, maintenance_health_scoring_readonly
+- Note: 5-dimension health model, IoT sensor integration
+
+Maintenance Lifecycle Database: maintenance_lifecycle (shared schema)
+- Schema: maintenance_eol_planning
+- Tables: eol_indicator, indicator_type, indicator_calculation, replacement_forecast, forecast_method, forecast_horizon, tco_analysis, tco_component, lifecycle_cost, capital_budget_request, budget_category, budget_justification, prioritization_matrix, priority_score, priority_factor, replacement_schedule, replacement_project, event_outbox
+- User: maintenance_eol_planning_app, maintenance_eol_planning_readonly
+- Note: Budgeting CAPEX integration (ADR-032)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT DATABASES (ADR-042)
+# ═══════════════════════════════════════════════════════════════════════════
+
+Field Service Orders Database: fieldservice_service_orders
+- Schema: fieldservice_service_orders
+- Tables: service_order, service_order_type, service_order_status, service_order_line, service_request, customer_asset, service_contract, billing_details, time_and_materials, fixed_price_billing, sla_policy, sla_tracking, sla_breach, event_outbox
+- User: fieldservice_service_orders_app, fieldservice_service_orders_readonly
+- Note: Customer-facing service work orders, billing (Port 9601)
+
+Field Service Dispatch Database: fieldservice_dispatch
+- Schema: fieldservice_dispatch
+- Tables: dispatch, field_technician, technician_skills, skill_matrix, technician_availability, service_territory, territory_boundary, route_optimization, schedule_slot, travel_time, dispatch_assignment, assignment_status, emergency_dispatch, event_outbox
+- User: fieldservice_dispatch_app, fieldservice_dispatch_readonly
+- Note: Technician scheduling, route optimization, GPS tracking (Port 9602)
+
+Field Service Parts Database: fieldservice_parts
+- Schema: fieldservice_parts
+- Tables: parts_consumption, field_inventory, truck_stock, stock_level, part_usage, replenishment_request, request_status, warranty_part, warranty_claim, event_outbox
+- User: fieldservice_parts_app, fieldservice_parts_readonly
+- Note: Truck inventory, parts consumption, warranty claims (Port 9603)
+
+Manufacturing MRP Database: manufacturing_mrp
+- Schema: manufacturing_mrp
+- Tables: mrp_run, mrp_run_result, mrp_area, planning_parameter, demand_element, demand_type, independent_demand, dependent_demand, supply_element, supply_type, planned_order, planned_order_type, order_status, net_requirement, requirement_calculation, pegging_relationship, pegging_type, planning_horizon, frozen_zone, lot_sizing_rule, lot_size_type, safety_stock, safety_stock_method, exception_message, exception_type, event_outbox
+- User: manufacturing_mrp_app, manufacturing_mrp_readonly
+- Note: MRP netting, lot sizing, demand/supply pegging
+
+Manufacturing Production Database: manufacturing_production
+- Schema: manufacturing_production
+- Tables: production_order, production_order_type, production_order_status, production_operation, operation_sequence, material_component, component_reservation, reservation_status, production_confirmation, confirmation_type, time_confirmation, quantity_confirmation, goods_issue, issue_type, goods_receipt, receipt_type, wip_tracking, wip_value, scrap_record, scrap_reason, rework_record, event_outbox
+- User: manufacturing_production_app, manufacturing_production_readonly
+- Note: WIP tracking, goods movements, cost integration
+
+Manufacturing Shop Floor Database: manufacturing_shopfloor
+- Schema: manufacturing_shopfloor
+- Tables: work_center, work_center_group, work_center_type, machine, machine_status, operator, operator_skill, skill_level, dispatch_list, dispatch_priority, operation_execution, execution_status, time_ticket, ticket_type, labor_confirmation, machine_confirmation, quantity_confirmation, downtime_record, downtime_category, downtime_reason, shift_schedule, shift_pattern, event_outbox
+- User: manufacturing_shopfloor_app, manufacturing_shopfloor_readonly
+- Note: MES integration, real-time shop floor control
+
+Manufacturing BOM Database: manufacturing_bom
+- Schema: manufacturing_bom
+- Tables: bill_of_material, bom_header, bom_item, item_category, bom_category, bom_status, alternate_bom, alternate_item, component_alternate, effectivity, effectivity_type, date_effectivity, serial_effectivity, routing, routing_header, routing_operation, operation_type, operation_resource, setup_time, run_time, phantom_bom, engineering_change, ecn_status, event_outbox
+- User: manufacturing_bom_app, manufacturing_bom_readonly
+- Note: Multi-level BOM explosion, ECN tracking
+
+Manufacturing Costing Database: manufacturing_costing
+- Schema: manufacturing_costing
+- Tables: costing_run, cost_estimate, estimate_type, estimate_status, cost_component, component_type, cost_element, element_mapping, activity_type, activity_rate, rate_version, overhead_rate, overhead_type, cost_rollup, rollup_level, wip_valuation, wip_method, production_variance, variance_category, variance_type, settlement_rule, settlement_receiver, event_outbox
+- User: manufacturing_costing_app, manufacturing_costing_readonly
+- Note: Standard costing, WIP valuation, variance analysis
+
+Manufacturing Capacity Database: manufacturing_production (shared schema)
+- Schema: manufacturing_capacity
+- Tables: capacity_plan, plan_type, capacity_bucket, work_center_capacity, available_capacity, capacity_load, load_calculation, capacity_constraint, constraint_type, bottleneck, finite_scheduling, scheduling_rule, infinite_scheduling, capacity_leveling, leveling_result, overload_exception, exception_type, capacity_calendar, calendar_type, event_outbox
+- User: manufacturing_capacity_app, manufacturing_capacity_readonly
+- Note: Finite/infinite scheduling, capacity leveling
+
+Manufacturing Subcontracting Database: manufacturing_production (shared schema)
+- Schema: manufacturing_subcontracting
+- Tables: subcontract_order, order_type, order_status, external_operation, operation_vendor, component_provision, provision_status, shipment_record, subcontract_receipt, receipt_status, subcontractor_stock, stock_location, service_entry, entry_type, subcontract_cost, cost_element, event_outbox
+- User: manufacturing_subcontracting_app, manufacturing_subcontracting_readonly
+- Note: Component provisioning, external operations
+
+Manufacturing Analytics Database: manufacturing_production (shared schema)
+- Schema: manufacturing_analytics
+- Tables: manufacturing_kpi, kpi_definition, kpi_target, oee_metric, oee_component, availability, performance, quality_rate, throughput, throughput_calculation, cycle_time, cycle_analysis, yield_analysis, yield_type, first_pass_yield, scrap_analysis, scrap_category, wip_variance, variance_tracking, production_report, report_type, event_outbox
+- User: manufacturing_analytics_app, manufacturing_analytics_readonly
+- Note: OEE calculation, yield analytics
+
+Quality Inspection Planning Database: quality_inspection
+- Schema: quality_inspection_planning
+- Tables: inspection_plan, plan_type, plan_status, inspection_characteristic, characteristic_type, quantitative_char, qualitative_char, sampling_procedure, sampling_type, sample_size, sample_calculation, inspection_trigger, trigger_type, trigger_condition, inspection_point, point_location, control_limit, upper_limit, lower_limit, master_inspection_char, inspection_method, method_type, inspection_equipment, equipment_calibration, event_outbox
+- User: quality_inspection_planning_app, quality_inspection_planning_readonly
+- Note: Inspection plan master data, sampling procedures
+
+Quality Execution Database: quality_execution
+- Schema: quality_execution
+- Tables: inspection_lot, lot_origin, lot_status, inspection_result, result_type, result_value, result_valuation, valuation_code, usage_decision, decision_type, decision_code, stock_posting, posting_type, defect, defect_type, defect_code, defect_location, sample_record, sample_status, inspection_history, event_outbox
+- User: quality_execution_app, quality_execution_readonly
+- Note: Inspection lot processing, usage decisions
+
+Quality Nonconformance Database: quality_nonconformance
+- Schema: quality_nonconformance
+- Tables: nonconformance, ncr_type, ncr_status, ncr_priority, defect_record, defect_detail, disposition, disposition_type, disposition_code, disposition_approval, mrb_record, quality_cost, cost_type, internal_failure_cost, external_failure_cost, appraisal_cost, prevention_cost, cost_recovery, recovery_type, containment_action, action_status, event_outbox
+- User: quality_nonconformance_app, quality_nonconformance_readonly
+- Note: Cost of quality tracking, MRB workflow
+
+Quality CAPA Database: quality_capa
+- Schema: quality_capa
+- Tables: capa, capa_type, capa_status, capa_priority, root_cause_analysis, rca_method, five_why_analysis, why_step, ishikawa_diagram, ishikawa_category, ishikawa_cause, fault_tree_analysis, fta_node, corrective_action, action_type, action_status, preventive_action, action_assignment, assignee, due_date, effectiveness_review, review_type, review_result, capa_closure, closure_type, event_outbox
+- User: quality_capa_app, quality_capa_readonly
+- Note: RCA methodologies, action tracking
+
+Quality Supplier Database: quality_execution (shared schema)
+- Schema: quality_supplier
+- Tables: supplier_quality_profile, profile_status, vendor_scorecard, scorecard_period, quality_score, score_component, score_weight, ppm_tracking, ppm_period, ppm_calculation, approved_supplier_list, asl_status, asl_category, supplier_audit, audit_type, audit_status, audit_finding, finding_severity, supplier_development, development_program, quality_agreement, agreement_type, supplier_certification, certification_type, event_outbox
+- User: quality_supplier_app, quality_supplier_readonly
+- Note: Vendor scorecards, ASL management, PPM tracking
+
+Quality Certificates Database: quality_execution (shared schema)
+- Schema: quality_certificates
+- Tables: certificate_of_analysis, coa_type, coa_status, certificate_of_conformance, coc_type, coc_status, certificate_template, template_type, template_content, certificate_content, content_section, test_result, result_type, specification, spec_limit, regulatory_submission, submission_type, submission_status, batch_release, release_type, release_status, digital_signature, signature_type, audit_trail, trail_entry, event_outbox
+- User: quality_certificates_app, quality_certificates_readonly
+- Note: 21 CFR Part 11 compliance, CoA/CoC generation
+
+Quality Analytics Database: quality_execution (shared schema)
+- Schema: quality_analytics
+- Tables: quality_kpi, kpi_type, kpi_calculation, spc_chart, chart_type, control_chart, xbar_chart, r_chart, p_chart, c_chart, process_capability, cpk_calculation, ppk_calculation, first_pass_yield, fpy_calculation, rolled_throughput_yield, rty_calculation, defect_rate, dpmo_calculation, dpu_calculation, cost_of_quality, coq_category, coq_trend, trend_analysis, trend_type, pareto_analysis, pareto_category, event_outbox
+- User: quality_analytics_app, quality_analytics_readonly
+- Note: SPC control charts, process capability, COQ reporting
+
+CRM Customer 360 Database: crm_customer360
+- Schema: crm_customer360
+- Tables: customer, customer_profile, contact, contact_role, address, communication_preference, customer_segment, segment_assignment, customer_classification, classification_history, customer_hierarchy, hierarchy_relationship, social_profile, customer_merge_history, event_outbox
+- User: crm_customer360_app, crm_customer360_readonly
+- Note: Customer master data, 360-degree view, Elasticsearch for search
+
+CRM Pipeline Database: crm_pipeline
+- Schema: crm_pipeline
+- Tables: opportunity, opportunity_stage, stage_definition, stage_transition, opportunity_line_item, competitor, competitor_analysis, win_probability, probability_model, forecast, forecast_period, forecast_category, forecast_snapshot, quota, quota_attainment, loss_reason, loss_analysis, event_outbox
+- User: crm_pipeline_app, crm_pipeline_readonly
+- Note: Sales pipeline, forecasting, quota management
+
+CRM Contracts Database: crm_contracts
+- Schema: crm_contracts
+- Tables: service_contract, contract_type, contract_status, contract_line, covered_item, entitlement, entitlement_type, entitlement_consumption, covered_asset, asset_coverage, sla_level, sla_agreement, billing_schedule, billing_period, renewal_terms, renewal_notice, termination_clause, termination_request, event_outbox
+- User: crm_contracts_app, crm_contracts_readonly
+- Note: Service contracts, entitlements, renewals
+
+CRM Activity Database: crm_activity
+- Schema: crm_activity
+- Tables: activity, activity_type, call, call_outcome, email, email_tracking, meeting, meeting_attendee, task, task_status, note, note_category, interaction_history, touch_point, event_outbox
+- User: crm_activity_app, crm_activity_readonly
+- Note: Interaction logging, activity history (Port 9404)
+
+CRM Account Health Database: crm_account_health
+- Schema: crm_account_health
+- Tables: account_health, health_score, score_calculation, health_dimension, dimension_weight, risk_signal, signal_type, churn_prediction, prediction_model, engagement_metric, metric_calculation, nps_score, nps_survey, health_trend, trend_period, event_outbox
+- User: crm_account_health_app, crm_account_health_readonly
+- Note: Customer health scoring, churn prediction (Port 9405)
+
+
+ARCHITECTURE PATTERNS
+======================
+
+1. Hexagonal Architecture (Ports & Adapters)
+   - Domain layer: Pure business logic, no dependencies
+   - Application layer: Use cases, commands, queries, ports
+   - Infrastructure layer: Adapters (REST, JPA, Kafka, etc.)
+
+2. CQRS Pattern
+   - Commands: Write operations (Create, Update, Delete)
+   - Queries: Read operations (Get, List, Report)
+   - Separate handlers for each
+
+3. Event-Driven Architecture
+   - Transactional Outbox Pattern for reliable event publishing
+   - Domain events published after aggregate changes
+   - Event consumers for inter-subdomain integration
+
+4. Database-per-Bounded-Context
+   - Each subdomain has its own database
+   - Integration via events, not direct DB access
+   - Schema isolation and independent scaling
+
+5. Multi-Tenancy
+   - Tenant isolation via tenant_id in all tables
+   - Row-level security policies
+   - Tenant context propagated through all layers
+
+
+INTEGRATION PATTERNS
+====================
+
+Sub-Ledger to GL Integration:
+- AR → GL: Invoice posting creates journal entries for receivables and revenue
+- AP → GL: Bill posting creates journal entries for payables and expenses
+- Assets → GL: Depreciation posting creates journal entries for accumulated depreciation
+- Tax → GL: Tax calculations create journal entries for tax liabilities
+
+Cross-Module Events:
+- finance.ar.InvoicePostedEvent → finance.gl.JournalEntryCommand
+- finance.ap.BillPostedEvent → finance.gl.JournalEntryCommand
+- finance.assets.DepreciationPostedEvent → finance.gl.JournalEntryCommand
+- finance.ar.InvoicePostedEvent → finance.tax.TaxCalculationCommand
+- finance.ap.BillPostedEvent → finance.tax.TaxCalculationCommand
+
+MDM Integration Events:
+- mdm.hub.MasterRecordCreatedEvent → Downstream consumers (Finance, CRM, etc.)
+- mdm.hub.MasterRecordUpdatedEvent → Downstream consumers (Finance, CRM, etc.)
+- mdm.hub.ChangeRequestApprovedEvent → mdm.hub.MasterRecordCommand
+- mdm.dataquality.ValidationCompletedEvent → mdm.stewardship.IssueCreationCommand
+- mdm.matchmerge.DuplicatesDetectedEvent → mdm.stewardship.WorkItemCommand
+- mdm.matchmerge.RecordsMergedEvent → mdm.hub.MasterRecordMergeCommand
+- mdm.analytics.QualityScoreCalculatedEvent → mdm.stewardship.AlertCommand
+
+Inventory Integration Events:
+- procurement.GoodsReceivedEvent → inventory.core.ReceiveStockCommand (stock receipt)
+- sales.SalesOrderAllocatedEvent → inventory.core.CreateReservationCommand (reservation)
+- manufacturing.ProductionReceiptEvent → inventory.core.ReceiveStockCommand (FG receipt)
+- finance.FinancialPeriodClosedEvent → inventory.valuation.LockPostingsCommand (period close)
+- inventory.core.StockReceivedEvent → finance.gl.JournalEntryCommand (DR Inventory, CR GR/IR)
+- inventory.core.StockIssuedEvent → finance.gl.JournalEntryCommand (DR COGS, CR Inventory)
+- inventory.core.StockAdjustedEvent → finance.gl.JournalEntryCommand (variance posting)
+- inventory.core.ReservationCreatedEvent → inventory.warehouse.CreateTaskCommand (WMS task)
+- inventory.core.ReservationCreatedEvent → sales.ReservationConfirmedEvent (order confirmation)
+- inventory.valuation.ValuationRunCompletedEvent → finance.gl.JournalEntryCommand (revaluation)
+- inventory.valuation.LandedCostAllocatedEvent → inventory.core.CostLayerUpdateCommand
+- inventory.atp.AvailabilityCalculatedEvent → sales.AtpUpdatedEvent (real-time ATP)
+- inventory.warehouse.TaskCompletedEvent → inventory.core.StockMovementCommand (confirm movement)
+- inventory.warehouse.WaveReleasedEvent → inventory.core.ReservationConfirmedEvent
+- inventory.traceability.LotExpiredEvent → inventory.core.BlockLotCommand (FEFO)
+- inventory.traceability.RecallInitiatedEvent → inventory.core.BlockLotCommand (recall block)
+- inventory.advancedops.KitAssembledEvent → inventory.core.StockReceivedEvent (kit as FG)
+- inventory.advancedops.RepackCompletedEvent → inventory.core.StockAdjustedEvent (repack variance)
+
+Analytics Integration Events:
+- *.DomainEventPublished → analytics.warehouse.IngestEventCommand (CDC/Event ingestion from all domains)
+- analytics.warehouse.WarehouseLoadCompletedEvent → analytics.olap.RefreshCubeCommand (trigger cube refresh)
+- analytics.warehouse.WarehouseLoadCompletedEvent → analytics.scheduler.TriggerReportCommand (scheduled reports)
+- analytics.warehouse.DimensionUpdatedEvent → analytics.olap.InvalidateCacheCommand (cache invalidation)
+- analytics.olap.CubeRefreshedEvent → analytics.kpi.CalculateKpiCommand (KPI calculation)
+- analytics.olap.CubeRefreshedEvent → analytics.dashboard.RefreshWidgetsCommand (dashboard refresh)
+- analytics.olap.CubeRefreshedEvent → analytics.embedded.RefreshCacheCommand (embedded cache)
+- analytics.kpi.KpiCalculatedEvent → analytics.dashboard.UpdateKpiWidgetCommand (dashboard KPI update)
+- analytics.kpi.KpiCalculatedEvent → analytics.embedded.UpdateInsightCommand (embedded insight update)
+- analytics.kpi.KpiThresholdBreachedEvent → notification.AlertCommand (threshold alerts)
+- analytics.dashboard.DashboardPublishedEvent → audit.AuditLogCommand (audit trail)
+- analytics.scheduler.ReportDeliveredEvent → audit.AuditLogCommand (delivery audit)
+
+Commerce Integration Events:
+E-Commerce Events:
+- commerce.ecommerce.CartCreatedEvent → analytics.warehouse.IngestEventCommand (cart tracking)
+- commerce.ecommerce.CartAbandonedEvent → notification.SendAbandonmentEmailCommand (recovery emails)
+- commerce.ecommerce.CartAbandonedEvent → analytics.warehouse.IngestEventCommand (abandonment analytics)
+- commerce.ecommerce.CheckoutCompletedEvent → commerce.ecommerce.CreateOnlineOrderCommand (order creation)
+- commerce.ecommerce.OnlineOrderPlacedEvent → inventory.core.CreateReservationCommand (stock reservation)
+- commerce.ecommerce.OnlineOrderPlacedEvent → finance.ar.CreateInvoiceCommand (billing)
+- commerce.ecommerce.OnlineOrderPlacedEvent → notification.SendOrderConfirmationCommand (customer notification)
+- commerce.ecommerce.OnlineOrderPlacedEvent → analytics.warehouse.IngestEventCommand (sales analytics)
+- commerce.ecommerce.ProductReviewSubmittedEvent → commerce.ecommerce.ModerateReviewCommand (review moderation)
+- commerce.ecommerce.ProductReviewApprovedEvent → analytics.warehouse.IngestEventCommand (review analytics)
+- commerce.ecommerce.PromotionActivatedEvent → commerce.ecommerce.UpdatePricingCacheCommand (price cache refresh)
+
+POS Events:
+- commerce.pos.ShiftOpenedEvent → commerce.pos.ActivateRegisterCommand (register activation)
+- commerce.pos.TransactionCompletedEvent → finance.ar.RecordCashSaleCommand (cash sale recording)
+- commerce.pos.TransactionCompletedEvent → inventory.core.DeductStockCommand (inventory deduction)
+- commerce.pos.TransactionCompletedEvent → analytics.warehouse.IngestEventCommand (POS analytics)
+- commerce.pos.TransactionVoidedEvent → inventory.core.RestoreStockCommand (void reversal)
+- commerce.pos.ShiftClosedEvent → finance.gl.RecordCashReconciliationCommand (end-of-day reconciliation)
+- commerce.pos.ShiftClosedEvent → commerce.pos.CalculateShiftVarianceCommand (variance calculation)
+- commerce.pos.DrawerCountCompletedEvent → audit.AuditLogCommand (drawer audit trail)
+
+B2B Events:
+- commerce.b2b.QuoteRequestedEvent → commerce.b2b.InitiateApprovalWorkflowCommand (quote approval)
+- commerce.b2b.QuoteApprovedEvent → commerce.b2b.NotifyBuyerCommand (buyer notification)
+- commerce.b2b.QuoteApprovedEvent → commerce.b2b.ConvertToOrderCommand (order conversion option)
+- commerce.b2b.B2BOrderPlacedEvent → commerce.b2b.CheckCreditLimitCommand (credit validation)
+- commerce.b2b.B2BOrderPlacedEvent → inventory.core.CreateReservationCommand (stock reservation)
+- commerce.b2b.B2BOrderPlacedEvent → finance.ar.CreateB2BInvoiceCommand (B2B billing with terms)
+- commerce.b2b.B2BOrderPlacedEvent → analytics.warehouse.IngestEventCommand (B2B analytics)
+- commerce.b2b.CreditLimitExceededEvent → commerce.b2b.HoldOrderCommand (order hold)
+- commerce.b2b.CreditLimitExceededEvent → notification.NotifyAccountManagerCommand (credit alert)
+- commerce.b2b.ContractExpiredEvent → notification.SendContractRenewalCommand (renewal reminder)
+- commerce.b2b.BlanketOrderReleasedEvent → commerce.b2b.CreateB2BOrderCommand (release to order)
+
+Marketplace Events:
+- commerce.marketplace.SellerRegisteredEvent → commerce.marketplace.InitiateVerificationCommand (seller KYC)
+- commerce.marketplace.SellerVerifiedEvent → commerce.marketplace.ActivateSellerAccountCommand (account activation)
+- commerce.marketplace.ProductListingSubmittedEvent → commerce.marketplace.ModerateListingCommand (listing review)
+- commerce.marketplace.ProductListingApprovedEvent → commerce.ecommerce.PublishProductCommand (product publish)
+- commerce.marketplace.ProductListingApprovedEvent → analytics.warehouse.IngestEventCommand (listing analytics)
+- commerce.marketplace.MarketplaceOrderPlacedEvent → commerce.marketplace.NotifySellerCommand (seller notification)
+- commerce.marketplace.MarketplaceOrderPlacedEvent → commerce.marketplace.CalculateCommissionCommand (commission calc)
+- commerce.marketplace.MarketplaceOrderPlacedEvent → inventory.core.CreateReservationCommand (seller inventory)
+- commerce.marketplace.OrderFulfilledEvent → commerce.marketplace.ReleaseFundsToEscrowCommand (escrow handling)
+- commerce.marketplace.OrderDeliveredEvent → commerce.marketplace.SchedulePayoutCommand (seller payout)
+- commerce.marketplace.PayoutProcessedEvent → finance.ap.RecordSellerPaymentCommand (seller payment record)
+- commerce.marketplace.DisputeOpenedEvent → notification.NotifyDisputeTeamCommand (dispute handling)
+- commerce.marketplace.DisputeResolvedEvent → commerce.marketplace.AdjustPayoutCommand (payout adjustment)
+
+AI Forecasting Events (Inventory Domain):
+- commerce.ecommerce.OnlineOrderPlacedEvent → inventory.forecasting.UpdateDemandHistoryCommand (sales data ingestion)
+- commerce.pos.TransactionCompletedEvent → inventory.forecasting.UpdateDemandHistoryCommand (POS sales ingestion)
+- commerce.b2b.B2BOrderPlacedEvent → inventory.forecasting.UpdateDemandHistoryCommand (B2B sales ingestion)
+- inventory.forecasting.ForecastGeneratedEvent → inventory.forecasting.UpdateReorderPointCommand (reorder calculation)
+- inventory.forecasting.ForecastGeneratedEvent → inventory.forecasting.CreateAllocationPlanCommand (DC→Store allocation)
+- inventory.forecasting.ForecastGeneratedEvent → analytics.warehouse.IngestEventCommand (forecast analytics)
+- inventory.forecasting.ModelTrainedEvent → inventory.forecasting.ValidateModelAccuracyCommand (accuracy check)
+- inventory.forecasting.ModelAccuracyDegradedEvent → inventory.forecasting.RetrainModelCommand (auto-retrain)
+- inventory.forecasting.ModelAccuracyDegradedEvent → notification.AlertDataScienceTeamCommand (accuracy alert)
+- inventory.forecasting.ReorderPointTriggeredEvent → procurement.CreatePurchaseRequisitionCommand (auto-replenishment)
+- inventory.forecasting.ReorderPointTriggeredEvent → inventory.core.CreateTransferOrderCommand (DC→Store transfer)
+- inventory.forecasting.AllocationPlanCreatedEvent → inventory.core.CreateTransferOrderCommand (allocation execution)
+- inventory.forecasting.ReplenishmentRecommendedEvent → notification.NotifyBuyerCommand (buyer approval queue)
+- commerce.ecommerce.PromotionActivatedEvent → inventory.forecasting.AdjustForecastForPromotionCommand (promotion uplift)
+- external.WeatherDataReceivedEvent → inventory.forecasting.UpdateExternalSignalsCommand (weather impact)
+- external.EventDataReceivedEvent → inventory.forecasting.UpdateExternalSignalsCommand (event impact)
+
+AI Pricing Events (Commerce Domain):
+- commerce.ecommerce.OnlineOrderPlacedEvent → commerce.pricing.UpdateSalesHistoryCommand (price-sales data)
+- commerce.pos.TransactionCompletedEvent → commerce.pricing.UpdateSalesHistoryCommand (POS price-sales data)
+- commerce.pricing.ElasticityCalculatedEvent → commerce.pricing.OptimizePricesCommand (auto price optimization)
+- commerce.pricing.ElasticityCalculatedEvent → analytics.warehouse.IngestEventCommand (elasticity analytics)
+- commerce.pricing.PriceOptimizedEvent → commerce.ecommerce.UpdatePriceCommand (push optimized price)
+- commerce.pricing.PriceOptimizedEvent → commerce.pos.UpdatePriceCommand (POS price sync)
+- commerce.pricing.PriceOptimizedEvent → notification.NotifyPricingManagerCommand (approval queue)
+- commerce.pricing.MarkdownScheduledEvent → commerce.ecommerce.SchedulePriceChangeCommand (markdown execution)
+- commerce.pricing.MarkdownScheduledEvent → commerce.pos.SchedulePriceChangeCommand (POS markdown)
+- commerce.pricing.MarkdownExecutedEvent → analytics.warehouse.IngestEventCommand (markdown analytics)
+- commerce.pricing.CompetitorPriceChangedEvent → commerce.pricing.RecalculatePricePositionCommand (competitive response)
+- commerce.pricing.CompetitorPriceChangedEvent → notification.AlertPricingTeamCommand (competitor alert)
+- inventory.core.StockLevelLowEvent → commerce.pricing.TriggerMarkdownAnalysisCommand (clearance trigger)
+- inventory.forecasting.ForecastGeneratedEvent → commerce.pricing.UpdateDemandForecastCommand (demand-based pricing)
+
+HR Integration Events:
+
+Travel & Expense Events (Advanced Tier - ADR-054):
+- hr.travelexpense.TravelRequestSubmittedEvent → hr.travelexpense.InitiatePolicyCheckCommand (policy compliance)
+- hr.travelexpense.TravelRequestSubmittedEvent → hr.travelexpense.InitiateApprovalWorkflowCommand (manager approval)
+- hr.travelexpense.TravelRequestApprovedEvent → hr.travelexpense.BookTravelCommand (GDS/TMC booking)
+- hr.travelexpense.TripBookedEvent → finance.ap.CreateAdvancePaymentCommand (travel advance)
+- hr.travelexpense.TripBookedEvent → notification.SendItineraryCommand (traveler notification)
+- hr.travelexpense.ExpenseReportSubmittedEvent → hr.receipts.MatchReceiptsCommand (receipt matching)
+- hr.travelexpense.ExpenseReportSubmittedEvent → hr.travelexpense.ValidatePolicyComplianceCommand (policy check)
+- hr.travelexpense.ExpenseReportSubmittedEvent → hr.travelexpense.InitiateExpenseApprovalCommand (approval workflow)
+- hr.travelexpense.ExpenseReportApprovedEvent → finance.ap.CreatePaymentRequestCommand (reimbursement)
+- hr.travelexpense.ExpenseReportApprovedEvent → finance.gl.PostExpenseJournalCommand (expense posting)
+- hr.travelexpense.ExpenseReportApprovedEvent → hr.analytics.UpdateSpendAnalyticsCommand (spend tracking)
+- hr.travelexpense.PolicyViolationDetectedEvent → notification.NotifyComplianceTeamCommand (compliance alert)
+- hr.travelexpense.PolicyViolationDetectedEvent → hr.travelexpense.RequireJustificationCommand (exception handling)
+
+Expense Receipts Events (Advanced Tier):
+- hr.receipts.ReceiptUploadedEvent → hr.receipts.ProcessOcrCommand (OCR extraction)
+- hr.receipts.OcrCompletedEvent → hr.receipts.ValidateReceiptCommand (data validation)
+- hr.receipts.OcrCompletedEvent → hr.receipts.CheckDuplicateCommand (duplicate detection)
+- hr.receipts.ReceiptValidatedEvent → hr.cardrecon.MatchTransactionCommand (card matching)
+- hr.receipts.ReceiptMatchedEvent → hr.travelexpense.AttachReceiptToExpenseCommand (expense attachment)
+- hr.receipts.DuplicateReceiptDetectedEvent → notification.AlertExpenseAuditorCommand (fraud alert)
+
+Card Reconciliation Events (Advanced Tier):
+- hr.cardrecon.CardFeedReceivedEvent → hr.cardrecon.ProcessFeedCommand (feed processing)
+- hr.cardrecon.TransactionImportedEvent → hr.cardrecon.AutoMatchTransactionCommand (auto-matching)
+- hr.cardrecon.TransactionMatchedEvent → hr.travelexpense.CreateExpenseLineCommand (expense creation)
+- hr.cardrecon.TransactionUnmatchedEvent → notification.NotifyCardholderCommand (cardholder action)
+- hr.cardrecon.ReconciliationCompletedEvent → finance.gl.PostCardExpenseJournalCommand (GL posting)
+- hr.cardrecon.ReconciliationCompletedEvent → hr.analytics.UpdateCardSpendCommand (card analytics)
+- hr.cardrecon.SuspiciousTransactionEvent → notification.AlertFraudTeamCommand (fraud detection)
+
+Contingent Workforce Events (Add-on Tier - ADR-052):
+- hr.contingent.RequisitionCreatedEvent → hr.contingent.InitiateApprovalWorkflowCommand (requisition approval)
+- hr.contingent.RequisitionApprovedEvent → hr.contingent.DistributeToSuppliersCommand (vendor distribution)
+- hr.contingent.RequisitionApprovedEvent → hr.contingent.SearchAtsCandidatesCommand (ATS search)
+- hr.contingent.CandidateSubmittedEvent → hr.contingent.RunAiMatchingCommand (AI matching)
+- hr.contingent.CandidateMatchedEvent → notification.NotifyHiringManagerCommand (candidate alert)
+- hr.contingent.ContractorOnboardedEvent → identity.CreateContractorIdentityCommand (identity provisioning)
+- hr.contingent.ContractorOnboardedEvent → hr.contingent.CreateTimesheetScheduleCommand (timesheet setup)
+- hr.contingent.SOWCreatedEvent → hr.contingent.InitiateSOWApprovalCommand (SOW approval)
+- hr.contingent.SOWApprovedEvent → finance.budget.CreateCommitmentCommand (budget commitment)
+- hr.contingent.SOWApprovedEvent → procurement.CreatePurchaseOrderCommand (PO creation)
+- hr.contingent.TimesheetSubmittedEvent → hr.contingent.InitiateTimesheetApprovalCommand (timesheet approval)
+- hr.contingent.TimesheetApprovedEvent → finance.ap.CreateSupplierInvoiceCommand (supplier payment)
+- hr.contingent.TimesheetApprovedEvent → finance.controlling.RecordLaborCostCommand (cost allocation)
+- hr.contingent.TimesheetApprovedEvent → hr.analytics.UpdateContingentSpendCommand (spend analytics)
+- hr.contingent.MilestoneCompletedEvent → hr.contingent.TriggerMilestonePaymentCommand (milestone payment)
+- hr.contingent.ContractorOffboardedEvent → identity.DeactivateContractorIdentityCommand (access revocation)
+
+Workforce Scheduling Events (Add-on Tier - ADR-055):
+- hr.scheduling.ScheduleCreatedEvent → hr.scheduling.RunOptimizationCommand (schedule optimization)
+- hr.scheduling.ScheduleOptimizedEvent → notification.NotifyScheduleManagerCommand (optimization complete)
+- hr.scheduling.SchedulePublishedEvent → notification.NotifyWorkersCommand (schedule notification)
+- hr.scheduling.ShiftAssignedEvent → notification.SendShiftReminderCommand (shift reminder)
+- hr.scheduling.ShiftSwapRequestedEvent → hr.scheduling.InitiateSwapApprovalCommand (swap approval)
+- hr.scheduling.ShiftSwapApprovedEvent → notification.NotifyAffectedWorkersCommand (swap notification)
+- hr.scheduling.ClockInRecordedEvent → hr.scheduling.ValidateScheduleComplianceCommand (compliance check)
+- hr.scheduling.ClockOutRecordedEvent → hr.scheduling.CalculateWorkedHoursCommand (hours calculation)
+- hr.scheduling.TimeAttendanceRecordedEvent → payroll.UpdatePayrollDataCommand (payroll sync)
+- hr.scheduling.TimeAttendanceRecordedEvent → hr.analytics.UpdateLaborMetricsCommand (labor analytics)
+- hr.scheduling.OvertimeDetectedEvent → notification.AlertScheduleManagerCommand (overtime alert)
+- hr.scheduling.OvertimeDetectedEvent → finance.controlling.UpdateLaborForecastCommand (cost forecast)
+- hr.scheduling.ComplianceViolationEvent → notification.NotifyComplianceOfficerCommand (compliance alert)
+- hr.scheduling.LaborForecastUpdatedEvent → hr.scheduling.AdjustScheduleCommand (schedule adjustment)
+- hr.scheduling.LaborForecastUpdatedEvent → finance.controlling.UpdateLaborBudgetCommand (budget sync)
+- hr.scheduling.DemandForecastReceivedEvent → hr.scheduling.GenerateStaffingPlanCommand (staffing plan)
+- inventory.forecasting.ForecastGeneratedEvent → hr.scheduling.UpdateDemandDriversCommand (retail demand sync)
+
+HR Analytics Events (Advanced Tier):
+- hr.analytics.KpiCalculatedEvent → analytics.warehouse.IngestEventCommand (warehouse sync)
+- hr.analytics.SpendThresholdExceededEvent → notification.AlertFinanceTeamCommand (spend alert)
+- hr.analytics.ComplianceScoreDroppedEvent → notification.AlertHrLeadershipCommand (compliance alert)
+- hr.analytics.TurnoverRateIncreasedEvent → notification.AlertHrBusinessPartnerCommand (retention alert)
+- hr.analytics.LaborCostVarianceDetectedEvent → finance.controlling.InvestigateCostVarianceCommand (cost investigation)
+- hr.analytics.DashboardRefreshedEvent → notification.SendScheduledReportCommand (scheduled reports)
+
+Procurement Integration Events:
+
+Procurement Core Events (ADR-023):
+- procurement.core.PurchaseRequisitionSubmittedEvent → procurement.core.InitiateApprovalWorkflowCommand (approval routing)
+- procurement.core.PurchaseRequisitionSubmittedEvent → finance.budget.CheckBudgetAvailabilityCommand (budget check)
+- procurement.core.PurchaseRequisitionApprovedEvent → procurement.core.CreatePurchaseOrderCommand (PO creation)
+- procurement.core.PurchaseRequisitionApprovedEvent → notification.NotifyRequesterCommand (requester notification)
+- procurement.core.PurchaseOrderCreatedEvent → procurement.core.InitiatePOApprovalCommand (PO approval routing)
+- procurement.core.PurchaseOrderCreatedEvent → finance.budget.CreateCommitmentCommand (budget commitment)
+- procurement.core.PurchaseOrderApprovedEvent → procurement.receiving.ExpectGoodsReceiptCommand (GR expectation)
+- procurement.core.PurchaseOrderApprovedEvent → finance.ap.SetupGRIRAccountCommand (GR/IR setup)
+- procurement.core.PurchaseOrderApprovedEvent → procurement.suppliers.NotifySupplierCommand (supplier notification)
+- procurement.core.PurchaseOrderIssuedEvent → notification.SendPOToSupplierCommand (PO transmission)
+- procurement.core.PurchaseOrderIssuedEvent → analytics.warehouse.IngestEventCommand (PO analytics)
+- procurement.core.PurchaseOrderChangedEvent → procurement.core.InitiateChangeApprovalCommand (change approval)
+- procurement.core.PurchaseOrderChangedEvent → finance.budget.AdjustCommitmentCommand (commitment adjustment)
+- procurement.core.PurchaseOrderCancelledEvent → finance.budget.ReleaseCommitmentCommand (commitment release)
+- procurement.core.PurchaseOrderCancelledEvent → procurement.receiving.CancelExpectedReceiptCommand (cancel GR expectation)
+
+Procurement Sourcing Events:
+- procurement.sourcing.RFQIssuedEvent → procurement.suppliers.InviteSuppliersCommand (supplier invitation)
+- procurement.sourcing.RFQIssuedEvent → notification.SendRFQToSuppliersCommand (RFQ distribution)
+- procurement.sourcing.RFQAmendedEvent → notification.NotifyBiddersOfAmendmentCommand (amendment notification)
+- procurement.sourcing.QuoteSubmittedEvent → procurement.sourcing.ValidateQuoteCommand (quote validation)
+- procurement.sourcing.QuoteSubmittedEvent → notification.AcknowledgeQuoteReceiptCommand (receipt acknowledgment)
+- procurement.sourcing.QuoteEvaluatedEvent → procurement.sourcing.UpdateScorecardCommand (scorecard update)
+- procurement.sourcing.AwardGrantedEvent → procurement.core.CreatePurchaseOrderCommand (PO from award)
+- procurement.sourcing.AwardGrantedEvent → procurement.suppliers.UpdateSupplierRelationshipCommand (supplier relationship)
+- procurement.sourcing.AwardGrantedEvent → notification.NotifyAwardedSupplierCommand (award notification)
+- procurement.sourcing.AwardRejectedEvent → notification.NotifyRejectedBiddersCommand (rejection notification)
+- procurement.sourcing.AwardGrantedEvent → analytics.warehouse.IngestEventCommand (sourcing analytics)
+
+Procurement Suppliers Events:
+- procurement.suppliers.VendorCreatedEvent → mdm.vendor.SyncVendorMasterCommand (MDM sync)
+- procurement.suppliers.VendorCreatedEvent → finance.ap.CreateVendorInAPCommand (AP vendor setup)
+- procurement.suppliers.VendorCreatedEvent → identity.CreateSupplierPortalAccessCommand (portal access)
+- procurement.suppliers.VendorUpdatedEvent → mdm.vendor.UpdateVendorMasterCommand (MDM update)
+- procurement.suppliers.VendorUpdatedEvent → finance.ap.UpdateVendorInAPCommand (AP vendor update)
+- procurement.suppliers.SupplierActivatedEvent → procurement.core.EnableSupplierForOrderingCommand (ordering enabled)
+- procurement.suppliers.SupplierBlockedEvent → procurement.core.BlockSupplierOrdersCommand (block orders)
+- procurement.suppliers.SupplierBlockedEvent → notification.AlertProcurementTeamCommand (block notification)
+- procurement.suppliers.ComplianceDocumentExpiredEvent → notification.SendComplianceReminderCommand (compliance reminder)
+- procurement.suppliers.ComplianceDocumentExpiredEvent → procurement.suppliers.InitiateSupplierReviewCommand (review trigger)
+- procurement.suppliers.SupplierScorecardUpdatedEvent → procurement.sourcing.UpdateBidPreferencesCommand (bid preferences)
+- procurement.suppliers.SupplierScorecardUpdatedEvent → analytics.warehouse.IngestEventCommand (supplier analytics)
+- mdm.vendor.VendorMasterUpdatedEvent → procurement.suppliers.SyncFromMDMCommand (MDM → Suppliers sync)
+
+Procurement Receiving Events:
+- procurement.receiving.GoodsReceivedEvent → inventory.core.UpdateStockLedgerCommand (stock update)
+- procurement.receiving.GoodsReceivedEvent → procurement.invoicematch.TriggerThreeWayMatchCommand (3-way match)
+- procurement.receiving.GoodsReceiptPostedEvent → finance.ap.CreateGRIREntryCommand (GR/IR posting)
+- procurement.receiving.GoodsReceiptPostedEvent → finance.gl.PostGoodsReceiptJournalCommand (GL posting)
+- procurement.receiving.GoodsReceiptPostedEvent → analytics.warehouse.IngestEventCommand (receiving analytics)
+- procurement.receiving.ServiceEntryPostedEvent → finance.ap.CreateServiceAccrualCommand (service accrual)
+- procurement.receiving.ServiceEntryPostedEvent → procurement.invoicematch.TriggerServiceMatchCommand (service match)
+- procurement.receiving.InspectionCompletedEvent → quality.RecordInspectionResultCommand (quality record)
+- procurement.receiving.InspectionFailedEvent → procurement.receiving.InitiateReturnCommand (return initiation)
+- procurement.receiving.InspectionFailedEvent → notification.AlertQualityTeamCommand (quality alert)
+- procurement.receiving.VendorReturnCreatedEvent → inventory.core.ReverseStockMovementCommand (stock reversal)
+- procurement.receiving.VendorReturnCreatedEvent → finance.ap.CreateDebitMemoCommand (debit memo)
+- procurement.receiving.VendorReturnCreatedEvent → procurement.suppliers.UpdateScorecardForReturnCommand (scorecard impact)
+- procurement.core.PurchaseOrderApprovedEvent → procurement.receiving.CreateExpectedReceiptCommand (GR expectation)
+
+Procurement Invoice Match Events:
+- finance.ap.VendorInvoicePostedEvent → procurement.invoicematch.InitiateMatchCommand (match initiation)
+- procurement.invoicematch.InvoiceMatchCompletedEvent → finance.ap.ApproveInvoiceForPaymentCommand (payment approval)
+- procurement.invoicematch.InvoiceMatchCompletedEvent → finance.gl.PostMatchedInvoiceJournalCommand (GL posting)
+- procurement.invoicematch.InvoiceMatchCompletedEvent → analytics.warehouse.IngestEventCommand (match analytics)
+- procurement.invoicematch.MatchExceptionCreatedEvent → notification.AlertAPAnalystCommand (exception alert)
+- procurement.invoicematch.MatchExceptionCreatedEvent → procurement.invoicematch.InitiateExceptionWorkflowCommand (exception workflow)
+- procurement.invoicematch.MatchExceptionResolvedEvent → finance.ap.ReleaseInvoiceForPaymentCommand (payment release)
+- procurement.invoicematch.ToleranceExceededEvent → notification.AlertProcurementManagerCommand (tolerance alert)
+- procurement.invoicematch.ToleranceExceededEvent → procurement.invoicematch.RequireApprovalCommand (approval required)
+- procurement.invoicematch.GRIRClearedEvent → finance.gl.PostGRIRClearingJournalCommand (GR/IR clearing)
+- procurement.invoicematch.GRIRClearedEvent → finance.ap.UpdateVendorLiabilityCommand (liability update)
+
+Maintenance Equipment Events (Port 9601 - ADR-040):
+- maintenance.equipment.EquipmentCreatedEvent → finance.assets.CreateFixedAssetLinkageCommand (asset linkage)
+- maintenance.equipment.EquipmentCreatedEvent → mdm.material.CreateEquipmentMaterialLinkCommand (material linkage)
+- maintenance.equipment.EquipmentCreatedEvent → analytics.warehouse.IngestEventCommand (equipment analytics)
+- maintenance.equipment.FunctionalLocationCreatedEvent → maintenance.equipment.AssignToHierarchyCommand (hierarchy assignment)
+- maintenance.equipment.FunctionalLocationCreatedEvent → finance.costcenter.LinkFunctionalLocationCommand (cost center linkage)
+- maintenance.equipment.EquipmentInstalledEvent → maintenance.preventive.ActivateMaintenancePlansCommand (plan activation)
+- maintenance.equipment.EquipmentInstalledEvent → maintenance.workorders.GenerateInitialInspectionCommand (initial inspection)
+- maintenance.equipment.EquipmentRelocatedEvent → maintenance.equipment.UpdateLocationHierarchyCommand (hierarchy update)
+- maintenance.equipment.EquipmentRelocatedEvent → finance.costcenter.ReassignCostCenterCommand (cost center reassign)
+- maintenance.equipment.WarrantyClaimSubmittedEvent → procurement.suppliers.NotifySupplierWarrantyClaimCommand (warranty claim)
+- maintenance.equipment.WarrantyClaimSubmittedEvent → finance.ar.CreateWarrantyReceivableCommand (warranty receivable)
+- maintenance.equipment.EquipmentDeactivatedEvent → maintenance.preventive.SuspendMaintenancePlansCommand (plan suspension)
+- maintenance.equipment.EquipmentDeactivatedEvent → maintenance.spareparts.ReleaseReservationsCommand (release reservations)
+- maintenance.equipment.TechnicalAttributeUpdatedEvent → maintenance.healthscoring.RecalculateHealthScoreCommand (health recalc)
+- maintenance.equipment.TechnicalAttributeUpdatedEvent → maintenance.analytics.UpdateEquipmentMetricsCommand (metrics update)
+
+Maintenance Work Orders Events (Port 9602 - ADR-040):
+- maintenance.workorders.WorkOrderCreatedEvent → maintenance.scheduling.AllocateResourcesCommand (resource allocation)
+- maintenance.workorders.WorkOrderCreatedEvent → maintenance.spareparts.ReservePartsCommand (parts reservation)
+- maintenance.workorders.WorkOrderCreatedEvent → analytics.warehouse.IngestEventCommand (work order analytics)
+- maintenance.workorders.WorkOrderReleasedEvent → notification.NotifyMaintenanceTechnicianCommand (technician notification)
+- maintenance.workorders.WorkOrderReleasedEvent → maintenance.scheduling.ConfirmScheduleWindowCommand (schedule confirmation)
+- maintenance.workorders.WorkOrderOperationStartedEvent → maintenance.scheduling.RecordActualStartCommand (actual start)
+- maintenance.workorders.WorkOrderOperationStartedEvent → manufacturing.shopfloor.NotifyEquipmentDownCommand (MES notification)
+- maintenance.workorders.LotoAppliedEvent → maintenance.workorders.EnableSafeWorkPermitCommand (safety permit)
+- maintenance.workorders.LotoAppliedEvent → manufacturing.shopfloor.LockoutEquipmentCommand (equipment lockout)
+- maintenance.workorders.ConfirmationPostedEvent → maintenance.analytics.UpdateWrenchTimeCommand (wrench time)
+- maintenance.workorders.ConfirmationPostedEvent → finance.co.PostMaintenanceCostCommand (cost posting)
+- maintenance.workorders.MaterialIssuedEvent → inventory.warehouse.ConfirmMaterialConsumptionCommand (consumption)
+- maintenance.workorders.MaterialIssuedEvent → finance.co.PostMaterialCostCommand (material cost)
+- maintenance.workorders.WorkOrderCompletedEvent → maintenance.analytics.UpdateMTTRCommand (MTTR update)
+- maintenance.workorders.WorkOrderCompletedEvent → maintenance.equipment.UpdateEquipmentStatusCommand (status update)
+- maintenance.workorders.WorkOrderCompletedEvent → manufacturing.shopfloor.NotifyEquipmentReadyCommand (MES ready)
+- maintenance.workorders.CostSettlementCompletedEvent → finance.co.SettleToReceiverCommand (cost settlement)
+- maintenance.workorders.CostSettlementCompletedEvent → finance.assets.UpdateAssetMaintenanceCostCommand (asset cost)
+- maintenance.workorders.SafetyChecklistCompletedEvent → maintenance.workorders.AuthorizeWorkStartCommand (work authorization)
+- maintenance.workorders.SafetyChecklistCompletedEvent → quality.compliance.RecordSafetyComplianceCommand (safety compliance)
+
+Maintenance Preventive Events (Port 9603 - ADR-040):
+- maintenance.preventive.MaintenancePlanCreatedEvent → maintenance.scheduling.ScheduleMaintenanceWindowsCommand (window scheduling)
+- maintenance.preventive.MaintenancePlanCreatedEvent → analytics.warehouse.IngestEventCommand (plan analytics)
+- maintenance.preventive.MaintenancePlanActivatedEvent → maintenance.preventive.GenerateScheduleCallsCommand (call generation)
+- maintenance.preventive.MaintenancePlanActivatedEvent → maintenance.equipment.LinkPlanToEquipmentCommand (equipment linkage)
+- maintenance.preventive.ScheduleCallGeneratedEvent → maintenance.workorders.CreatePreventiveWorkOrderCommand (PM work order)
+- maintenance.preventive.ScheduleCallGeneratedEvent → maintenance.spareparts.CheckPartAvailabilityCommand (parts check)
+- maintenance.preventive.ScheduleCallGeneratedEvent → notification.NotifyMaintenancePlannerCommand (planner notification)
+- maintenance.preventive.CounterReadingRecordedEvent → maintenance.preventive.EvaluateCounterTriggersCommand (trigger evaluation)
+- maintenance.preventive.CounterReadingRecordedEvent → maintenance.analytics.UpdateEquipmentUsageCommand (usage update)
+- maintenance.preventive.TriggerFiredEvent → maintenance.workorders.CreateTriggeredWorkOrderCommand (triggered WO)
+- maintenance.preventive.TriggerFiredEvent → maintenance.scheduling.CheckResourceAvailabilityCommand (resource check)
+- maintenance.preventive.ComplianceRecordCreatedEvent → quality.compliance.RecordRegulatoryComplianceCommand (regulatory)
+- maintenance.preventive.ComplianceRecordCreatedEvent → analytics.warehouse.IngestEventCommand (compliance analytics)
+- maintenance.preventive.CallHorizonReachedEvent → maintenance.preventive.PlanMaintenanceCallsCommand (call planning)
+- maintenance.preventive.CallHorizonReachedEvent → procurement.purchasing.CreatePlannedRequisitionsCommand (planned purchases)
+
+Maintenance Breakdown Events (Port 9604 - ADR-040):
+- maintenance.breakdown.BreakdownNotificationCreatedEvent → maintenance.workorders.CreateEmergencyWorkOrderCommand (emergency WO)
+- maintenance.breakdown.BreakdownNotificationCreatedEvent → maintenance.scheduling.PrioritizeBreakdownCommand (priority scheduling)
+- maintenance.breakdown.BreakdownNotificationCreatedEvent → manufacturing.shopfloor.NotifyProductionHaltCommand (production halt)
+- maintenance.breakdown.BreakdownNotificationCreatedEvent → notification.NotifyMaintenanceSupervisorCommand (supervisor alert)
+- maintenance.breakdown.DowntimeRecordedEvent → maintenance.analytics.UpdateMTBFCommand (MTBF update)
+- maintenance.breakdown.DowntimeRecordedEvent → maintenance.analytics.RecordUnplannedDowntimeCommand (downtime metric)
+- maintenance.breakdown.DowntimeRecordedEvent → manufacturing.scheduling.RecalculateProductionScheduleCommand (reschedule)
+- maintenance.breakdown.CorrectiveActionCompletedEvent → maintenance.breakdown.CloseBreakdownNotificationCommand (close notification)
+- maintenance.breakdown.CorrectiveActionCompletedEvent → maintenance.equipment.UpdateEquipmentReliabilityCommand (reliability update)
+- maintenance.breakdown.RootCauseIdentifiedEvent → maintenance.breakdown.RecordFiveWhyAnalysisCommand (5-why analysis)
+- maintenance.breakdown.RootCauseIdentifiedEvent → quality.nonconformance.LinkToQualityNCRCommand (NCR linkage)
+- maintenance.breakdown.RootCauseIdentifiedEvent → maintenance.preventive.RecommendPreventiveActionCommand (PM recommendation)
+- maintenance.breakdown.EmergencyPartRequestedEvent → inventory.warehouse.CheckEmergencyStockCommand (emergency stock)
+- maintenance.breakdown.EmergencyPartRequestedEvent → procurement.purchasing.CreateUrgentRequisitionCommand (urgent purchase)
+- maintenance.breakdown.ExternalFailureCostRecordedEvent → finance.co.PostExternalFailureCostCommand (failure cost)
+- maintenance.breakdown.ExternalFailureCostRecordedEvent → analytics.warehouse.IngestEventCommand (cost analytics)
+
+Maintenance Scheduling Events (Port 9605 - ADR-040):
+- maintenance.scheduling.MaintenanceCalendarCreatedEvent → hr.workforce.SyncWithHRCalendarCommand (HR calendar sync)
+- maintenance.scheduling.MaintenanceCalendarCreatedEvent → manufacturing.scheduling.NotifyMaintenanceWindowsCommand (MES notification)
+- maintenance.scheduling.ScheduleWindowAllocatedEvent → maintenance.workorders.AssignScheduleWindowCommand (WO assignment)
+- maintenance.scheduling.ScheduleWindowAllocatedEvent → notification.NotifyScheduledMaintenanceCommand (schedule notification)
+- maintenance.scheduling.ResourceAllocatedEvent → hr.workforce.ReserveMaintenanceCrewCommand (crew reservation)
+- maintenance.scheduling.ResourceAllocatedEvent → maintenance.workorders.AssignTechnicianCommand (technician assignment)
+- maintenance.scheduling.ShutdownPlanApprovedEvent → manufacturing.scheduling.SchedulePlannedShutdownCommand (shutdown scheduling)
+- maintenance.scheduling.ShutdownPlanApprovedEvent → maintenance.workorders.GenerateShutdownWorkOrdersCommand (shutdown WOs)
+- maintenance.scheduling.ShutdownPlanApprovedEvent → notification.NotifyAllStakeholdersCommand (stakeholder notification)
+- maintenance.scheduling.BlackoutPeriodDefinedEvent → maintenance.scheduling.RescheduleConflictingWorkCommand (conflict resolution)
+- maintenance.scheduling.BlackoutPeriodDefinedEvent → manufacturing.scheduling.ProtectProductionWindowCommand (production protection)
+- maintenance.scheduling.CapacityExceededEvent → maintenance.scheduling.ProposeRescheduleCommand (reschedule proposal)
+- maintenance.scheduling.CapacityExceededEvent → notification.AlertMaintenancePlannerCommand (capacity alert)
+
+Maintenance Spare Parts Events (Port 9606 - ADR-040):
+- maintenance.spareparts.SparePartCreatedEvent → inventory.material.LinkMaterialMasterCommand (material master link)
+- maintenance.spareparts.SparePartCreatedEvent → mdm.material.CreateMaintenanceMaterialCommand (MDM registration)
+- maintenance.spareparts.EquipmentBOMCreatedEvent → maintenance.equipment.LinkBOMToEquipmentCommand (BOM linkage)
+- maintenance.spareparts.EquipmentBOMCreatedEvent → inventory.planning.InitializeMRPParametersCommand (MRP setup)
+- maintenance.spareparts.PartReservationCreatedEvent → inventory.warehouse.ReserveStockCommand (stock reservation)
+- maintenance.spareparts.PartReservationCreatedEvent → procurement.purchasing.CheckReorderPointCommand (reorder check)
+- maintenance.spareparts.PartReservationReleasedEvent → inventory.warehouse.ReleaseReservationCommand (release stock)
+- maintenance.spareparts.PartIssuedEvent → inventory.warehouse.PostGoodsIssueCommand (goods issue)
+- maintenance.spareparts.PartIssuedEvent → finance.co.PostMaterialConsumptionCommand (material cost)
+- maintenance.spareparts.CriticalSpareIdentifiedEvent → inventory.planning.SetSafetyStockCommand (safety stock)
+- maintenance.spareparts.CriticalSpareIdentifiedEvent → procurement.purchasing.EstablishBlanketOrderCommand (blanket order)
+- maintenance.spareparts.ReorderPointReachedEvent → procurement.purchasing.CreateAutomaticRequisitionCommand (auto requisition)
+- maintenance.spareparts.ReorderPointReachedEvent → notification.AlertInventoryPlannerCommand (reorder alert)
+- maintenance.spareparts.PartShortageDetectedEvent → maintenance.workorders.NotifyPartShortageCommand (shortage notification)
+- maintenance.spareparts.PartShortageDetectedEvent → procurement.purchasing.ExpediteOrderCommand (order expedite)
+
+Maintenance Analytics Events (Port 9607 - ADR-040):
+- maintenance.analytics.MaintenanceKPICalculatedEvent → analytics.warehouse.IngestKPIDataCommand (KPI warehouse)
+- maintenance.analytics.MaintenanceKPICalculatedEvent → analytics.reporting.UpdateMaintenanceDashboardCommand (dashboard update)
+- maintenance.analytics.AvailabilityMetricUpdatedEvent → manufacturing.oee.UpdateOEEAvailabilityCommand (OEE update)
+- maintenance.analytics.AvailabilityMetricUpdatedEvent → analytics.alerting.CheckAvailabilityThresholdCommand (threshold check)
+- maintenance.analytics.MTBFBelowThresholdEvent → maintenance.preventive.RecommendPlanAdjustmentCommand (PM adjustment)
+- maintenance.analytics.MTBFBelowThresholdEvent → maintenance.healthscoring.TriggerConditionAssessmentCommand (health assessment)
+- maintenance.analytics.MTBFBelowThresholdEvent → notification.AlertReliabilityEngineerCommand (reliability alert)
+- maintenance.analytics.MTTRAboveThresholdEvent → maintenance.scheduling.AnalyzeRepairDelaysCommand (delay analysis)
+- maintenance.analytics.MTTRAboveThresholdEvent → hr.training.RecommendTechnicianTrainingCommand (training recommendation)
+- maintenance.analytics.CostVarianceDetectedEvent → finance.co.InvestigateCostVarianceCommand (variance investigation)
+- maintenance.analytics.CostVarianceDetectedEvent → notification.AlertMaintenanceManagerCommand (cost alert)
+- maintenance.analytics.ReliabilityReportGeneratedEvent → analytics.warehouse.StoreReliabilityReportCommand (report storage)
+- maintenance.analytics.ReliabilityReportGeneratedEvent → maintenance.eolplanning.UpdateReplacementInputsCommand (EOL inputs)
+- maintenance.analytics.OEECalculatedEvent → manufacturing.oee.PublishOEEMetricCommand (OEE publishing)
+- maintenance.analytics.OEECalculatedEvent → analytics.reporting.UpdateOEEDashboardCommand (OEE dashboard)
+
+Maintenance Commissioning Events (Port 9608 - Physical ALM - ADR-040):
+- maintenance.commissioning.CommissioningProjectCreatedEvent → project.management.CreateProjectTasksCommand (project tasks)
+- maintenance.commissioning.CommissioningProjectCreatedEvent → analytics.warehouse.IngestEventCommand (commissioning analytics)
+- maintenance.commissioning.PreCommissioningChecklistCompletedEvent → maintenance.commissioning.AuthorizeTestingCommand (testing authorization)
+- maintenance.commissioning.PreCommissioningChecklistCompletedEvent → quality.inspection.RecordPreCommissioningResultsCommand (QA results)
+- maintenance.commissioning.TestingProtocolPassedEvent → maintenance.commissioning.AdvanceToAcceptanceCommand (acceptance phase)
+- maintenance.commissioning.TestingProtocolPassedEvent → quality.compliance.RecordTestCertificationCommand (test certification)
+- maintenance.commissioning.TestingProtocolFailedEvent → maintenance.commissioning.InitiateRemediationCommand (remediation)
+- maintenance.commissioning.TestingProtocolFailedEvent → notification.AlertProjectManagerCommand (test failure alert)
+- maintenance.commissioning.AcceptanceCertificateSignedEvent → maintenance.commissioning.AuthorizeGoLiveCommand (go-live authorization)
+- maintenance.commissioning.AcceptanceCertificateSignedEvent → finance.assets.PrepareCapitalizationCommand (capitalization prep)
+- maintenance.commissioning.GoLiveAuthorizedEvent → finance.assets.CapitalizeAssetCommand (asset capitalization - ADR-021)
+- maintenance.commissioning.GoLiveAuthorizedEvent → maintenance.equipment.ActivateEquipmentCommand (equipment activation)
+- maintenance.commissioning.GoLiveAuthorizedEvent → maintenance.preventive.ActivateMaintenancePlansCommand (PM activation)
+- maintenance.commissioning.AssetCommissionedEvent → finance.gl.PostCapitalizationJournalCommand (GL capitalization)
+- maintenance.commissioning.AssetCommissionedEvent → maintenance.healthscoring.InitializeHealthScoreCommand (initial health)
+- maintenance.commissioning.PunchListItemCreatedEvent → maintenance.workorders.CreatePunchListWorkOrderCommand (punch WO)
+- maintenance.commissioning.PunchListItemCreatedEvent → notification.NotifyResponsiblePartyCommand (punch notification)
+
+Maintenance Decommissioning Events (Port 9609 - Physical ALM - ADR-040):
+- maintenance.decommissioning.DecommissioningRequestCreatedEvent → workflow.approval.InitiateDecommissioningApprovalCommand (approval workflow)
+- maintenance.decommissioning.DecommissioningRequestCreatedEvent → analytics.warehouse.IngestEventCommand (decommissioning analytics)
+- maintenance.decommissioning.ImpactAssessmentCompletedEvent → maintenance.decommissioning.AuthorizeDecommissioningCommand (authorization)
+- maintenance.decommissioning.ImpactAssessmentCompletedEvent → manufacturing.scheduling.NotifyCapacityImpactCommand (capacity impact)
+- maintenance.decommissioning.DisposalPlanApprovedEvent → maintenance.equipment.ScheduleEquipmentRemovalCommand (removal scheduling)
+- maintenance.decommissioning.DisposalPlanApprovedEvent → procurement.suppliers.EngageDisposalVendorCommand (vendor engagement)
+- maintenance.decommissioning.EnvironmentalComplianceVerifiedEvent → maintenance.decommissioning.AuthorizeDisposalCommand (disposal authorization)
+- maintenance.decommissioning.EnvironmentalComplianceVerifiedEvent → quality.compliance.RecordEnvironmentalComplianceCommand (compliance record)
+- maintenance.decommissioning.AssetRetiredEvent → finance.assets.RetireFixedAssetCommand (asset retirement)
+- maintenance.decommissioning.AssetRetiredEvent → finance.gl.PostDisposalJournalCommand (GL disposal)
+- maintenance.decommissioning.AssetRetiredEvent → maintenance.equipment.DeactivateEquipmentCommand (equipment deactivation)
+- maintenance.decommissioning.SalvageValueRecoveredEvent → finance.ar.CreateSalvageReceivableCommand (salvage receivable)
+- maintenance.decommissioning.SalvageValueRecoveredEvent → finance.gl.PostSalvageRecoveryJournalCommand (GL salvage)
+- maintenance.decommissioning.DisposalCostIncurredEvent → finance.ap.CreateDisposalPayableCommand (disposal payable)
+- maintenance.decommissioning.DisposalCostIncurredEvent → finance.co.PostDisposalCostCommand (disposal cost)
+
+Maintenance Health Scoring Events (Port 9610 - Physical ALM - ADR-040):
+- maintenance.healthscoring.HealthScoreCalculatedEvent → analytics.warehouse.IngestEventCommand (health analytics)
+- maintenance.healthscoring.HealthScoreCalculatedEvent → maintenance.equipment.UpdateEquipmentHealthCommand (equipment health)
+- maintenance.healthscoring.ConditionAssessmentCompletedEvent → maintenance.healthscoring.RecalculateHealthScoreCommand (score recalculation)
+- maintenance.healthscoring.ConditionAssessmentCompletedEvent → quality.inspection.RecordConditionInspectionCommand (QA inspection)
+- maintenance.healthscoring.InspectionRecordCreatedEvent → maintenance.analytics.UpdateConditionTrendCommand (trend update)
+- maintenance.healthscoring.InspectionRecordCreatedEvent → analytics.warehouse.IngestEventCommand (inspection analytics)
+- maintenance.healthscoring.CriticalHealthAlertRaisedEvent → maintenance.breakdown.CreatePreventiveNotificationCommand (preventive notification)
+- maintenance.healthscoring.CriticalHealthAlertRaisedEvent → maintenance.eolplanning.TriggerEOLReviewCommand (EOL review)
+- maintenance.healthscoring.CriticalHealthAlertRaisedEvent → notification.AlertMaintenanceManagerCommand (critical alert)
+- maintenance.healthscoring.HealthThresholdBreachedEvent → maintenance.workorders.CreateConditionBasedWorkOrderCommand (CBM work order)
+- maintenance.healthscoring.HealthThresholdBreachedEvent → maintenance.preventive.AdjustMaintenanceFrequencyCommand (PM adjustment)
+- maintenance.healthscoring.ThermalAnomalyDetectedEvent → maintenance.breakdown.InvestigateThermalIssueCommand (thermal investigation)
+- maintenance.healthscoring.VibrationAnomalyDetectedEvent → maintenance.breakdown.InvestigateVibrationIssueCommand (vibration investigation)
+- maintenance.healthscoring.OilAnalysisAbnormalEvent → maintenance.breakdown.InvestigateOilIssueCommand (oil investigation)
+- maintenance.healthscoring.PredictiveFailureIdentifiedEvent → maintenance.eolplanning.UpdateFailurePredictionCommand (failure prediction)
+
+Maintenance EOL Planning Events (Port 9611 - Physical ALM - ADR-040):
+- maintenance.eolplanning.EOLIndicatorTriggeredEvent → maintenance.eolplanning.InitiateReplacementPlanningCommand (replacement planning)
+- maintenance.eolplanning.EOLIndicatorTriggeredEvent → notification.AlertAssetManagerCommand (EOL alert)
+- maintenance.eolplanning.EOLIndicatorTriggeredEvent → analytics.warehouse.IngestEventCommand (EOL analytics)
+- maintenance.eolplanning.ReplacementForecastCreatedEvent → finance.budgeting.CreateCAPEXRequestCommand (CAPEX request - ADR-032)
+- maintenance.eolplanning.ReplacementForecastCreatedEvent → procurement.purchasing.CreateLongLeadItemRequisitionCommand (long lead items)
+- maintenance.eolplanning.TCOAnalysisCompletedEvent → finance.budgeting.UpdateCAPEXJustificationCommand (CAPEX justification)
+- maintenance.eolplanning.TCOAnalysisCompletedEvent → maintenance.eolplanning.UpdatePrioritizationMatrixCommand (priority update)
+- maintenance.eolplanning.CapitalBudgetRequestApprovedEvent → procurement.purchasing.InitiateProcurementCommand (procurement initiation)
+- maintenance.eolplanning.CapitalBudgetRequestApprovedEvent → project.management.CreateReplacementProjectCommand (replacement project)
+- maintenance.eolplanning.CapitalBudgetRequestApprovedEvent → maintenance.commissioning.PlanCommissioningCommand (commissioning planning)
+- maintenance.eolplanning.PrioritizationMatrixUpdatedEvent → finance.budgeting.UpdateCAPEXPrioritiesCommand (budget priorities)
+- maintenance.eolplanning.PrioritizationMatrixUpdatedEvent → analytics.reporting.UpdateAssetPortfolioReportCommand (portfolio report)
+- maintenance.eolplanning.ReplacementScheduledEvent → maintenance.decommissioning.PlanAssetRetirementCommand (retirement planning)
+- maintenance.eolplanning.ReplacementScheduledEvent → maintenance.equipment.ScheduleEquipmentReplacementCommand (replacement scheduling)
+- maintenance.eolplanning.ExtendLifeDecisionMadeEvent → maintenance.preventive.AdjustMaintenanceStrategyCommand (strategy adjustment)
+- maintenance.eolplanning.ExtendLifeDecisionMadeEvent → finance.budgeting.DeferCAPEXCommand (CAPEX deferral)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT EVENTS (ADR-042)
+# ═══════════════════════════════════════════════════════════════════════════
+
+Field Service Orders Events (Port 9601 - ADR-042):
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → fieldservice.dispatch.FindAvailableTechnicianCommand (technician search)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → crm.contracts.ConsumeEntitlementCommand (entitlement consumption)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → analytics.warehouse.IngestEventCommand (service analytics)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → notification.NotifyCustomerCommand (customer notification)
+- fieldservice.serviceorders.ServiceOrderAssignedEvent → fieldservice.dispatch.CreateAssignmentCommand (dispatch assignment)
+- fieldservice.serviceorders.ServiceOrderAssignedEvent → notification.NotifyTechnicianCommand (technician notification)
+- fieldservice.serviceorders.ServiceOrderStartedEvent → fieldservice.dispatch.UpdateTechnicianStatusCommand (status update)
+- fieldservice.serviceorders.ServiceOrderStartedEvent → crm.contracts.StartServiceTrackingCommand (SLA tracking start)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → fieldservice.dispatch.CompleteTechnicianAssignmentCommand (assignment completion)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → crm.contracts.RecordServiceDeliveryCommand (service delivery)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → crm.accounthealth.RecordServiceInteractionCommand (health update)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → analytics.warehouse.IngestEventCommand (completion analytics)
+- fieldservice.serviceorders.ServiceOrderBilledEvent → finance.ar.CreateServiceInvoiceCommand (AR invoice)
+- fieldservice.serviceorders.ServiceOrderBilledEvent → finance.revenue.RecognizeServiceRevenueCommand (revenue recognition)
+- fieldservice.serviceorders.SlaBreachedEvent → crm.accounthealth.RecordSlaBreachCommand (health impact)
+- fieldservice.serviceorders.SlaBreachedEvent → notification.AlertServiceManagerCommand (SLA alert)
+- fieldservice.serviceorders.SlaBreachedEvent → crm.contracts.RecordSlaViolationCommand (contract violation)
+- fieldservice.serviceorders.PartsConsumedEvent → inventory.management.PostPartsIssueCommand (inventory reduction)
+- fieldservice.serviceorders.PartsConsumedEvent → fieldservice.parts.RecordConsumptionCommand (consumption record)
+
+Field Service Dispatch Events (Port 9602 - ADR-042):
+- fieldservice.dispatch.TechnicianDispatchedEvent → fieldservice.serviceorders.UpdateOrderStatusCommand (order status)
+- fieldservice.dispatch.TechnicianDispatchedEvent → notification.NotifyCustomerETACommand (ETA notification)
+- fieldservice.dispatch.TechnicianDispatchedEvent → analytics.warehouse.IngestEventCommand (dispatch analytics)
+- fieldservice.dispatch.TechnicianEnRouteEvent → fieldservice.serviceorders.UpdateTechnicianLocationCommand (location update)
+- fieldservice.dispatch.TechnicianEnRouteEvent → notification.UpdateCustomerETACommand (ETA update)
+- fieldservice.dispatch.TechnicianArrivedEvent → fieldservice.serviceorders.StartServiceCommand (service start)
+- fieldservice.dispatch.TechnicianArrivedEvent → crm.contracts.StartSlaClockCommand (SLA clock)
+- fieldservice.dispatch.TechnicianDepartedEvent → fieldservice.serviceorders.RecordServiceDurationCommand (duration record)
+- fieldservice.dispatch.TechnicianDepartedEvent → fieldservice.dispatch.AdvanceRouteCommand (route advancement)
+- fieldservice.dispatch.RouteOptimizedEvent → fieldservice.dispatch.UpdateTechnicianScheduleCommand (schedule update)
+- fieldservice.dispatch.RouteOptimizedEvent → notification.NotifyAffectedCustomersCommand (customer notifications)
+- fieldservice.dispatch.ScheduleConflictEvent → fieldservice.dispatch.InitiateReschedulingCommand (rescheduling)
+- fieldservice.dispatch.ScheduleConflictEvent → notification.AlertDispatcherCommand (dispatcher alert)
+- fieldservice.dispatch.EmergencyDispatchedEvent → fieldservice.serviceorders.EscalateOrderPriorityCommand (priority escalation)
+- fieldservice.dispatch.EmergencyDispatchedEvent → notification.AlertOnCallTechnicianCommand (on-call alert)
+
+Field Service Parts Consumption Events (Port 9603 - ADR-042):
+- fieldservice.parts.PartsConsumedEvent → inventory.management.PostGoodsIssueCommand (inventory issue)
+- fieldservice.parts.PartsConsumedEvent → fieldservice.serviceorders.UpdatePartsCostCommand (service order cost)
+- fieldservice.parts.PartsConsumedEvent → analytics.warehouse.IngestEventCommand (consumption analytics)
+- fieldservice.parts.PartsReturnedEvent → inventory.management.PostGoodsReceiptCommand (inventory return)
+- fieldservice.parts.PartsReturnedEvent → fieldservice.serviceorders.CreditPartsCommand (parts credit)
+- fieldservice.parts.PartRequestCreatedEvent → inventory.management.CheckStockAvailabilityCommand (stock check)
+- fieldservice.parts.PartRequestCreatedEvent → procurement.purchasing.CreateUrgentRequisitionCommand (urgent PR)
+- fieldservice.parts.TruckStockReplenishedEvent → inventory.management.TransferStockCommand (stock transfer)
+- fieldservice.parts.TruckStockReplenishedEvent → fieldservice.dispatch.UpdateTechnicianInventoryCommand (tech inventory)
+- fieldservice.parts.WarrantyPartUsedEvent → crm.contracts.RecordWarrantyClaimCommand (warranty claim)
+- fieldservice.parts.WarrantyPartUsedEvent → procurement.vendor.CreateWarrantyClaimCommand (vendor claim)
+
+Manufacturing MRP Events (Port 9351 - ADR-037):
+- manufacturing.mrp.MRPRunCompletedEvent → manufacturing.production.CreatePlannedOrdersCommand (production orders)
+- manufacturing.mrp.MRPRunCompletedEvent → procurement.purchasing.CreatePurchaseRequisitionsCommand (PR generation)
+- manufacturing.mrp.MRPRunCompletedEvent → analytics.warehouse.IngestEventCommand (MRP analytics)
+- manufacturing.mrp.PlannedOrderCreatedEvent → manufacturing.capacity.UpdateCapacityLoadCommand (capacity update)
+- manufacturing.mrp.PlannedOrderCreatedEvent → manufacturing.mrp.PegRequirementsCommand (demand pegging)
+- manufacturing.mrp.PlannedOrderConvertedEvent → manufacturing.production.InitializeProductionOrderCommand (order initialization)
+- manufacturing.mrp.PlannedOrderConvertedEvent → manufacturing.costing.CreateCostEstimateCommand (cost estimate)
+- manufacturing.mrp.NetRequirementCalculatedEvent → manufacturing.mrp.ApplyLotSizingCommand (lot sizing)
+- manufacturing.mrp.NetRequirementCalculatedEvent → inventory.management.CheckSafetyStockCommand (safety stock)
+- manufacturing.mrp.ExceptionMessageGeneratedEvent → notification.AlertProductionPlannerCommand (planner alert)
+- manufacturing.mrp.ExceptionMessageGeneratedEvent → manufacturing.mrp.EvaluateRescheduleCommand (reschedule evaluation)
+- manufacturing.mrp.DemandPeggedEvent → manufacturing.mrp.TraceRequirementSourceCommand (requirement tracing)
+
+Manufacturing Production Events (Port 9352 - ADR-037):
+- manufacturing.production.ProductionOrderCreatedEvent → manufacturing.capacity.AllocateCapacityCommand (capacity allocation)
+- manufacturing.production.ProductionOrderCreatedEvent → manufacturing.bom.ExplodeBOMCommand (BOM explosion)
+- manufacturing.production.ProductionOrderCreatedEvent → manufacturing.costing.EstimateProductionCostCommand (cost estimation)
+- manufacturing.production.ProductionOrderCreatedEvent → quality.inspection.CreateInspectionPlanCommand (inspection plan)
+- manufacturing.production.ProductionOrderReleasedEvent → manufacturing.shopfloor.AddToDispatchListCommand (dispatch list)
+- manufacturing.production.ProductionOrderReleasedEvent → inventory.management.ReserveMaterialsCommand (material reservation)
+- manufacturing.production.ProductionOrderReleasedEvent → manufacturing.subcontracting.TriggerSubcontractOperationsCommand (subcontract trigger)
+- manufacturing.production.MaterialsIssuedEvent → inventory.management.PostGoodsIssueCommand (inventory reduction)
+- manufacturing.production.MaterialsIssuedEvent → finance.co.PostMaterialConsumptionCommand (cost posting)
+- manufacturing.production.MaterialsIssuedEvent → manufacturing.costing.UpdateWIPValueCommand (WIP update)
+- manufacturing.production.ProductionConfirmedEvent → manufacturing.shopfloor.UpdateOperationStatusCommand (operation status)
+- manufacturing.production.ProductionConfirmedEvent → manufacturing.costing.PostActualCostCommand (actual cost)
+- manufacturing.production.ProductionConfirmedEvent → quality.execution.TriggerInspectionCommand (QA inspection)
+- manufacturing.production.GoodsReceiptPostedEvent → inventory.management.PostGoodsReceiptCommand (inventory increase)
+- manufacturing.production.GoodsReceiptPostedEvent → finance.co.SettleProductionCostsCommand (cost settlement)
+- manufacturing.production.GoodsReceiptPostedEvent → analytics.warehouse.IngestEventCommand (production analytics)
+- manufacturing.production.ScrapPostedEvent → manufacturing.costing.PostScrapCostCommand (scrap cost)
+- manufacturing.production.ScrapPostedEvent → quality.nonconformance.CreateNCRForScrapCommand (scrap NCR)
+- manufacturing.production.ScrapPostedEvent → inventory.management.PostScrapMovementCommand (scrap inventory)
+- manufacturing.production.ReworkCreatedEvent → manufacturing.production.CreateReworkOrderCommand (rework order)
+- manufacturing.production.ReworkCreatedEvent → manufacturing.costing.EstimateReworkCostCommand (rework cost)
+- manufacturing.production.WIPTransferredEvent → finance.co.PostWIPTransferCommand (WIP transfer posting)
+
+Manufacturing Shop Floor Events (Port 9353 - ADR-037):
+- manufacturing.shopfloor.OperationStartedEvent → manufacturing.production.UpdateProductionProgressCommand (progress update)
+- manufacturing.shopfloor.OperationStartedEvent → manufacturing.capacity.ConsumeCapacityCommand (capacity consumption)
+- manufacturing.shopfloor.OperationStartedEvent → analytics.warehouse.IngestEventCommand (shop floor analytics)
+- manufacturing.shopfloor.OperationCompletedEvent → manufacturing.production.ConfirmOperationCommand (operation confirmation)
+- manufacturing.shopfloor.OperationCompletedEvent → manufacturing.shopfloor.AdvanceDispatchListCommand (dispatch advance)
+- manufacturing.shopfloor.OperationCompletedEvent → quality.execution.CreateInspectionLotCommand (inspection lot)
+- manufacturing.shopfloor.TimeTicketPostedEvent → hr.timemanagement.RecordLaborTimeCommand (labor time)
+- manufacturing.shopfloor.TimeTicketPostedEvent → finance.co.PostLaborCostCommand (labor cost)
+- manufacturing.shopfloor.TimeTicketPostedEvent → manufacturing.analytics.UpdateEfficiencyMetricsCommand (efficiency metrics)
+- manufacturing.shopfloor.MachineDowntimeRecordedEvent → maintenance.breakdown.CreateBreakdownNotificationCommand (breakdown notification)
+- manufacturing.shopfloor.MachineDowntimeRecordedEvent → manufacturing.analytics.UpdateOEECommand (OEE update)
+- manufacturing.shopfloor.MachineDowntimeRecordedEvent → manufacturing.capacity.AdjustAvailableCapacityCommand (capacity adjustment)
+- manufacturing.shopfloor.DispatchListUpdatedEvent → manufacturing.shopfloor.NotifyOperatorsCommand (operator notification)
+- manufacturing.shopfloor.DispatchListUpdatedEvent → manufacturing.production.UpdateOperationPriorityCommand (priority update)
+- manufacturing.shopfloor.WorkCenterStatusChangedEvent → manufacturing.capacity.RecalculateCapacityCommand (capacity recalc)
+- manufacturing.shopfloor.WorkCenterStatusChangedEvent → manufacturing.analytics.UpdateWorkCenterMetricsCommand (WC metrics)
+
+Manufacturing BOM Events (Port 9354 - ADR-037):
+- manufacturing.bom.BOMCreatedEvent → manufacturing.costing.CalculateMaterialCostCommand (material costing)
+- manufacturing.bom.BOMCreatedEvent → analytics.warehouse.IngestEventCommand (BOM analytics)
+- manufacturing.bom.BOMChangedEvent → manufacturing.costing.RecalculateCostEstimateCommand (cost recalc)
+- manufacturing.bom.BOMChangedEvent → manufacturing.production.UpdateOpenOrdersCommand (order update)
+- manufacturing.bom.BOMChangedEvent → manufacturing.mrp.RegeneratePlannedOrdersCommand (order regeneration)
+- manufacturing.bom.RoutingCreatedEvent → manufacturing.costing.CalculateActivityCostCommand (activity costing)
+- manufacturing.bom.RoutingCreatedEvent → manufacturing.capacity.UpdateCapacityRequirementsCommand (capacity requirements)
+- manufacturing.bom.RoutingChangedEvent → manufacturing.costing.RecalculateRoutingCostCommand (routing cost recalc)
+- manufacturing.bom.RoutingChangedEvent → manufacturing.shopfloor.UpdateOperationSequenceCommand (sequence update)
+- manufacturing.bom.EngineeringChangeCreatedEvent → manufacturing.bom.InitiateECNWorkflowCommand (ECN workflow)
+- manufacturing.bom.EngineeringChangeCreatedEvent → notification.AlertEngineeringTeamCommand (engineering alert)
+- manufacturing.bom.EngineeringChangeApprovedEvent → manufacturing.bom.ActivateBOMVersionCommand (BOM activation)
+- manufacturing.bom.EngineeringChangeApprovedEvent → manufacturing.production.UpdateAffectedOrdersCommand (order update)
+- manufacturing.bom.EngineeringChangeApprovedEvent → procurement.purchasing.UpdatePurchaseSpecsCommand (spec update)
+- manufacturing.bom.EffectivityChangedEvent → manufacturing.mrp.AdjustPlannedOrdersCommand (order adjustment)
+- manufacturing.bom.PhantomBOMExplodedEvent → manufacturing.production.AddPhantomComponentsCommand (phantom components)
+
+Manufacturing Costing Events (Port 9355 - ADR-037):
+- manufacturing.costing.CostEstimateCreatedEvent → finance.co.UpdateStandardCostCommand (standard cost)
+- manufacturing.costing.CostEstimateCreatedEvent → analytics.warehouse.IngestEventCommand (costing analytics)
+- manufacturing.costing.CostEstimateReleasedEvent → inventory.management.RevaluateInventoryCommand (inventory revaluation)
+- manufacturing.costing.CostEstimateReleasedEvent → finance.co.PostCostRollupCommand (cost rollup)
+- manufacturing.costing.CostRollupCompletedEvent → manufacturing.costing.UpdateMaterialCostCommand (material cost update)
+- manufacturing.costing.CostRollupCompletedEvent → manufacturing.costing.UpdateActivityCostCommand (activity cost update)
+- manufacturing.costing.WIPValuationCompletedEvent → finance.gl.PostWIPJournalCommand (WIP journal)
+- manufacturing.costing.WIPValuationCompletedEvent → finance.co.UpdateCostCenterCommand (cost center)
+- manufacturing.costing.ProductionVarianceCalculatedEvent → finance.co.PostVarianceCommand (variance posting)
+- manufacturing.costing.ProductionVarianceCalculatedEvent → analytics.warehouse.IngestEventCommand (variance analytics)
+- manufacturing.costing.ProductionVarianceCalculatedEvent → manufacturing.analytics.UpdateVarianceKPICommand (variance KPI)
+- manufacturing.costing.OverheadAppliedEvent → finance.co.PostOverheadCommand (overhead posting)
+- manufacturing.costing.SettlementCompletedEvent → finance.co.PostSettlementCommand (settlement posting)
+- manufacturing.costing.SettlementCompletedEvent → inventory.management.UpdateInventoryCostCommand (inventory cost)
+- manufacturing.costing.ActivityRateChangedEvent → manufacturing.costing.RecalculateOpenOrdersCommand (order recalc)
+
+Manufacturing Capacity Events (Port 9356 - ADR-037):
+- manufacturing.capacity.CapacityPlanCreatedEvent → manufacturing.mrp.ConstrainPlannedOrdersCommand (order constraining)
+- manufacturing.capacity.CapacityPlanCreatedEvent → analytics.warehouse.IngestEventCommand (capacity analytics)
+- manufacturing.capacity.CapacityOverloadDetectedEvent → manufacturing.capacity.InitiateLevelingCommand (capacity leveling)
+- manufacturing.capacity.CapacityOverloadDetectedEvent → notification.AlertProductionPlannerCommand (overload alert)
+- manufacturing.capacity.CapacityOverloadDetectedEvent → manufacturing.subcontracting.EvaluateSubcontractCommand (subcontract evaluation)
+- manufacturing.capacity.BottleneckIdentifiedEvent → manufacturing.capacity.CreateCapacityExceptionCommand (bottleneck exception)
+- manufacturing.capacity.BottleneckIdentifiedEvent → manufacturing.analytics.UpdateBottleneckMetricsCommand (bottleneck metrics)
+- manufacturing.capacity.CapacityLevelingCompletedEvent → manufacturing.production.RescheduleOrdersCommand (order rescheduling)
+- manufacturing.capacity.CapacityLevelingCompletedEvent → manufacturing.shopfloor.UpdateDispatchListCommand (dispatch update)
+- manufacturing.capacity.FiniteScheduleCreatedEvent → manufacturing.production.UpdateOperationScheduleCommand (schedule update)
+- manufacturing.capacity.FiniteScheduleCreatedEvent → manufacturing.mrp.UpdatePlannedDateCommand (date update)
+- manufacturing.capacity.WorkCenterCapacityChangedEvent → manufacturing.capacity.RecalculatePlanCommand (plan recalc)
+- manufacturing.capacity.CalendarUpdatedEvent → manufacturing.capacity.AdjustAvailableCapacityCommand (capacity adjustment)
+
+Manufacturing Subcontracting Events (Port 9357 - ADR-037):
+- manufacturing.subcontracting.SubcontractOrderCreatedEvent → procurement.purchasing.CreateSubcontractPOCommand (subcontract PO)
+- manufacturing.subcontracting.SubcontractOrderCreatedEvent → analytics.warehouse.IngestEventCommand (subcontract analytics)
+- manufacturing.subcontracting.SubcontractOrderReleasedEvent → inventory.management.ReserveComponentsCommand (component reservation)
+- manufacturing.subcontracting.SubcontractOrderReleasedEvent → logistics.shipping.CreateShipmentCommand (shipment creation)
+- manufacturing.subcontracting.ComponentsProvisionedEvent → inventory.management.PostGoodsIssueCommand (component issue)
+- manufacturing.subcontracting.ComponentsProvisionedEvent → logistics.shipping.TriggerShipmentCommand (shipment trigger)
+- manufacturing.subcontracting.ComponentsShippedEvent → manufacturing.subcontracting.UpdateSubcontractorStockCommand (stock update)
+- manufacturing.subcontracting.ComponentsShippedEvent → finance.co.PostComponentTransferCommand (transfer posting)
+- manufacturing.subcontracting.SubcontractReceiptPostedEvent → inventory.management.PostGoodsReceiptCommand (receipt posting)
+- manufacturing.subcontracting.SubcontractReceiptPostedEvent → quality.execution.CreateInspectionLotCommand (receipt inspection)
+- manufacturing.subcontracting.SubcontractReceiptPostedEvent → manufacturing.production.ConfirmExternalOperationCommand (operation confirmation)
+- manufacturing.subcontracting.ServiceEntryCreatedEvent → finance.ap.CreateSubcontractPayableCommand (subcontract payable)
+- manufacturing.subcontracting.ServiceEntryCreatedEvent → manufacturing.costing.PostSubcontractCostCommand (subcontract cost)
+
+Manufacturing Analytics Events (Port 9358 - ADR-037):
+- manufacturing.analytics.OEECalculatedEvent → analytics.warehouse.IngestEventCommand (OEE warehouse)
+- manufacturing.analytics.OEECalculatedEvent → notification.AlertIfBelowTargetCommand (OEE alert)
+- manufacturing.analytics.OEECalculatedEvent → manufacturing.analytics.UpdateDashboardCommand (dashboard update)
+- manufacturing.analytics.YieldAnalysisCompletedEvent → quality.analytics.UpdateYieldKPICommand (yield KPI)
+- manufacturing.analytics.YieldAnalysisCompletedEvent → manufacturing.analytics.IdentifyImprovementOpportunitiesCommand (improvement opportunities)
+- manufacturing.analytics.ThroughputCalculatedEvent → manufacturing.capacity.AdjustCapacityPlanCommand (capacity adjustment)
+- manufacturing.analytics.CycleTimeAnalyzedEvent → manufacturing.bom.UpdateStandardTimesCommand (standard times)
+- manufacturing.analytics.CycleTimeAnalyzedEvent → manufacturing.costing.UpdateActivityRatesCommand (activity rates)
+- manufacturing.analytics.ProductionKPIPublishedEvent → analytics.reporting.UpdateManufacturingReportCommand (manufacturing report)
+- manufacturing.analytics.WIPVarianceAnalyzedEvent → finance.co.InvestigateVarianceCommand (variance investigation)
+- manufacturing.analytics.ScrapAnalysisCompletedEvent → quality.nonconformance.CreateScrapInvestigationCommand (scrap investigation)
+- manufacturing.analytics.EfficiencyReportGeneratedEvent → hr.performance.UpdateOperatorMetricsCommand (operator metrics)
+
+Quality Inspection Planning Events (Port 9501 - ADR-039):
+- quality.inspectionplanning.InspectionPlanCreatedEvent → quality.execution.RegisterPlanCommand (plan registration)
+- quality.inspectionplanning.InspectionPlanCreatedEvent → analytics.warehouse.IngestEventCommand (planning analytics)
+- quality.inspectionplanning.InspectionPlanActivatedEvent → manufacturing.production.LinkInspectionPlanCommand (production link)
+- quality.inspectionplanning.InspectionPlanActivatedEvent → procurement.purchasing.LinkInspectionPlanCommand (procurement link)
+- quality.inspectionplanning.CharacteristicDefinedEvent → quality.inspectionplanning.UpdateSamplingProcedureCommand (sampling update)
+- quality.inspectionplanning.CharacteristicDefinedEvent → quality.analytics.RegisterCharacteristicCommand (SPC registration)
+- quality.inspectionplanning.SamplingProcedureCreatedEvent → quality.execution.ConfigureSamplingCommand (sampling config)
+- quality.inspectionplanning.ControlLimitsSetEvent → quality.analytics.InitializeSPCChartCommand (SPC initialization)
+- quality.inspectionplanning.InspectionTriggerConfiguredEvent → quality.execution.EnableAutoInspectionCommand (auto inspection)
+- quality.inspectionplanning.MasterCharacteristicCreatedEvent → quality.inspectionplanning.PropagateToPlansCommand (plan propagation)
+- quality.inspectionplanning.InspectionMethodUpdatedEvent → quality.execution.UpdateInspectionInstructionsCommand (instruction update)
+- quality.inspectionplanning.EquipmentCalibrationDueEvent → maintenance.preventive.CreateCalibrationOrderCommand (calibration order)
+
+Quality Execution Events (Port 9502 - ADR-039):
+- quality.execution.InspectionLotCreatedEvent → quality.execution.InitializeSamplingCommand (sampling initialization)
+- quality.execution.InspectionLotCreatedEvent → analytics.warehouse.IngestEventCommand (inspection analytics)
+- quality.execution.InspectionLotCreatedEvent → notification.AlertQualityInspectorCommand (inspector notification)
+- quality.execution.InspectionResultRecordedEvent → quality.analytics.UpdateSPCChartCommand (SPC update)
+- quality.execution.InspectionResultRecordedEvent → quality.execution.EvaluateResultCommand (result evaluation)
+- quality.execution.InspectionResultRecordedEvent → quality.inspectionplanning.UpdateStatisticsCommand (statistics update)
+- quality.execution.DefectRecordedEvent → quality.nonconformance.CreateNCRCommand (NCR creation)
+- quality.execution.DefectRecordedEvent → quality.analytics.IncrementDefectCountCommand (defect count)
+- quality.execution.DefectRecordedEvent → manufacturing.production.FlagDefectiveUnitCommand (unit flagging)
+- quality.execution.UsageDecisionMadeEvent → inventory.management.UpdateStockStatusCommand (stock status)
+- quality.execution.UsageDecisionMadeEvent → quality.certificates.InitiateCertificateCommand (certificate initiation)
+- quality.execution.UsageDecisionMadeEvent → manufacturing.production.UpdateOrderQualityStatusCommand (order quality)
+- quality.execution.StockReleasedEvent → inventory.management.ReleaseBlockedStockCommand (stock release)
+- quality.execution.StockReleasedEvent → sales.shipping.EnableShipmentCommand (shipment enablement)
+- quality.execution.StockBlockedEvent → inventory.management.BlockStockCommand (stock blocking)
+- quality.execution.StockBlockedEvent → quality.nonconformance.InitiateMRBCommand (MRB initiation)
+- quality.execution.InspectionLotClosedEvent → quality.analytics.CalculateLotMetricsCommand (lot metrics)
+- quality.execution.InspectionLotClosedEvent → manufacturing.production.UpdateProductionQualityCommand (production quality)
+
+Quality Nonconformance Events (Port 9503 - ADR-039):
+- quality.nonconformance.NCRCreatedEvent → quality.capa.EvaluateCAPANeedCommand (CAPA evaluation)
+- quality.nonconformance.NCRCreatedEvent → analytics.warehouse.IngestEventCommand (NCR analytics)
+- quality.nonconformance.NCRCreatedEvent → notification.AlertQualityEngineerCommand (engineer alert)
+- quality.nonconformance.NCRCreatedEvent → quality.analytics.IncrementNCRCountCommand (NCR count)
+- quality.nonconformance.DispositionDecidedEvent → inventory.management.ExecuteDispositionCommand (inventory disposition)
+- quality.nonconformance.DispositionDecidedEvent → manufacturing.production.CreateReworkOrderCommand (rework order)
+- quality.nonconformance.DispositionDecidedEvent → finance.co.PostDispositionCostCommand (disposition cost)
+- quality.nonconformance.MRBReviewCompletedEvent → quality.nonconformance.FinalizeDispositionCommand (disposition finalization)
+- quality.nonconformance.MRBReviewCompletedEvent → notification.AlertStakeholdersCommand (stakeholder notification)
+- quality.nonconformance.QualityCostCalculatedEvent → finance.co.PostQualityCostCommand (quality cost posting)
+- quality.nonconformance.QualityCostCalculatedEvent → quality.analytics.UpdateCOQCommand (COQ update)
+- quality.nonconformance.QualityCostCalculatedEvent → analytics.warehouse.IngestEventCommand (cost analytics)
+- quality.nonconformance.CostRecoveryInitiatedEvent → finance.ar.CreateChargebackCommand (supplier chargeback)
+- quality.nonconformance.CostRecoveryInitiatedEvent → quality.supplier.RecordSupplierDefectCostCommand (supplier cost)
+- quality.nonconformance.ContainmentActionCompletedEvent → quality.nonconformance.ProceedToDispositionCommand (disposition proceed)
+- quality.nonconformance.NCRClosedEvent → quality.analytics.UpdateNCRMetricsCommand (NCR metrics)
+- quality.nonconformance.NCRClosedEvent → quality.supplier.UpdateSupplierScoreCommand (supplier score update)
+
+Quality CAPA Events (Port 9504 - ADR-039):
+- quality.capa.CAPACreatedEvent → quality.capa.AssignInvestigatorCommand (investigator assignment)
+- quality.capa.CAPACreatedEvent → analytics.warehouse.IngestEventCommand (CAPA analytics)
+- quality.capa.CAPACreatedEvent → notification.AlertQualityManagerCommand (manager alert)
+- quality.capa.RootCauseIdentifiedEvent → quality.capa.DefineCorrectiveActionsCommand (action definition)
+- quality.capa.RootCauseIdentifiedEvent → quality.analytics.UpdateRCAMetricsCommand (RCA metrics)
+- quality.capa.RootCauseIdentifiedEvent → manufacturing.production.UpdateProcessControlsCommand (process controls)
+- quality.capa.CorrectiveActionAssignedEvent → notification.AlertActionOwnerCommand (owner notification)
+- quality.capa.CorrectiveActionAssignedEvent → workflow.CreateActionTaskCommand (action task)
+- quality.capa.CorrectiveActionCompletedEvent → quality.capa.ScheduleEffectivenessReviewCommand (review scheduling)
+- quality.capa.CorrectiveActionCompletedEvent → quality.analytics.UpdateActionMetricsCommand (action metrics)
+- quality.capa.PreventiveActionDefinedEvent → quality.inspectionplanning.UpdateInspectionPlanCommand (plan update)
+- quality.capa.PreventiveActionDefinedEvent → manufacturing.bom.UpdateProcessSpecsCommand (spec update)
+- quality.capa.EffectivenessReviewCompletedEvent → quality.capa.EvaluateCAPAClosureCommand (closure evaluation)
+- quality.capa.EffectivenessReviewCompletedEvent → quality.analytics.UpdateEffectivenessMetricsCommand (effectiveness metrics)
+- quality.capa.CAPAClosedEvent → quality.analytics.UpdateCAPAKPICommand (CAPA KPI)
+- quality.capa.CAPAClosedEvent → analytics.warehouse.IngestEventCommand (CAPA closure analytics)
+- quality.capa.CAPAEscalatedEvent → notification.AlertSeniorManagementCommand (escalation alert)
+
+Quality Supplier Events (Port 9505 - ADR-039):
+- quality.supplier.SupplierQualityProfileCreatedEvent → procurement.vendor.LinkQualityProfileCommand (profile linking)
+- quality.supplier.SupplierQualityProfileCreatedEvent → analytics.warehouse.IngestEventCommand (supplier analytics)
+- quality.supplier.VendorScorecardUpdatedEvent → procurement.vendor.UpdateVendorRatingCommand (vendor rating)
+- quality.supplier.VendorScorecardUpdatedEvent → procurement.sourcing.AdjustSupplierRankCommand (supplier rank)
+- quality.supplier.VendorScorecardUpdatedEvent → analytics.warehouse.IngestEventCommand (scorecard analytics)
+- quality.supplier.PPMThresholdExceededEvent → quality.supplier.InitiateSupplierActionCommand (supplier action)
+- quality.supplier.PPMThresholdExceededEvent → procurement.vendor.FlagSupplierIssueCommand (supplier flag)
+- quality.supplier.PPMThresholdExceededEvent → notification.AlertProcurementCommand (procurement alert)
+- quality.supplier.SupplierAddedToASLEvent → procurement.vendor.ActivateSupplierCommand (supplier activation)
+- quality.supplier.SupplierAddedToASLEvent → quality.supplier.AssignQualityRequirementsCommand (requirements assignment)
+- quality.supplier.SupplierRemovedFromASLEvent → procurement.vendor.DeactivateSupplierCommand (supplier deactivation)
+- quality.supplier.SupplierRemovedFromASLEvent → procurement.purchasing.BlockSupplierOrdersCommand (order blocking)
+- quality.supplier.SupplierAuditCompletedEvent → quality.supplier.UpdateAuditScoreCommand (audit score)
+- quality.supplier.SupplierAuditCompletedEvent → quality.capa.CreateAuditCAPACommand (audit CAPA)
+- quality.supplier.SupplierDevelopmentInitiatedEvent → quality.supplier.TrackDevelopmentProgressCommand (progress tracking)
+- quality.supplier.SupplierCertificationAchievedEvent → quality.supplier.UpdateCertificationStatusCommand (certification status)
+- quality.supplier.QualityAgreementSignedEvent → procurement.contract.LinkQualityAgreementCommand (agreement linking)
+
+Quality Certificates Events (Port 9506 - ADR-039):
+- quality.certificates.COAGeneratedEvent → sales.shipping.AttachCOACommand (COA attachment)
+- quality.certificates.COAGeneratedEvent → analytics.warehouse.IngestEventCommand (certificate analytics)
+- quality.certificates.COAGeneratedEvent → notification.NotifyCustomerCommand (customer notification)
+- quality.certificates.COCGeneratedEvent → sales.shipping.AttachCOCCommand (COC attachment)
+- quality.certificates.COCGeneratedEvent → compliance.regulatory.RecordCOCCommand (regulatory record)
+- quality.certificates.BatchReleaseApprovedEvent → inventory.management.ReleaseBatchCommand (batch release)
+- quality.certificates.BatchReleaseApprovedEvent → manufacturing.production.CompleteBatchCommand (batch completion)
+- quality.certificates.BatchReleaseApprovedEvent → quality.certificates.GenerateCertificatesCommand (certificate generation)
+- quality.certificates.BatchReleaseRejectedEvent → inventory.management.QuarantineBatchCommand (batch quarantine)
+- quality.certificates.BatchReleaseRejectedEvent → quality.nonconformance.CreateBatchNCRCommand (batch NCR)
+- quality.certificates.DigitalSignatureAppliedEvent → quality.certificates.FinalizeDocumentCommand (document finalization)
+- quality.certificates.DigitalSignatureAppliedEvent → compliance.regulatory.RecordSignatureCommand (signature record)
+- quality.certificates.RegulatorySubmissionCompletedEvent → compliance.regulatory.UpdateSubmissionStatusCommand (submission status)
+- quality.certificates.RegulatorySubmissionCompletedEvent → notification.AlertRegulatoryTeamCommand (regulatory alert)
+- quality.certificates.AuditTrailRecordedEvent → compliance.regulatory.RecordAuditEventCommand (audit event - 21 CFR Part 11)
+
+Quality Analytics Events (Port 9507 - ADR-039):
+- quality.analytics.SPCChartUpdatedEvent → quality.analytics.EvaluateControlRulesCommand (control rule evaluation)
+- quality.analytics.SPCChartUpdatedEvent → analytics.warehouse.IngestEventCommand (SPC warehouse)
+- quality.analytics.ControlLimitViolationDetectedEvent → quality.nonconformance.CreateSPCNCRCommand (SPC NCR)
+- quality.analytics.ControlLimitViolationDetectedEvent → notification.AlertProcessEngineerCommand (engineer alert)
+- quality.analytics.ControlLimitViolationDetectedEvent → manufacturing.shopfloor.StopProcessCommand (process stop)
+- quality.analytics.ProcessCapabilityCalculatedEvent → quality.analytics.UpdateCapabilityTrendCommand (capability trend)
+- quality.analytics.ProcessCapabilityCalculatedEvent → quality.inspectionplanning.AdjustSamplingCommand (sampling adjustment)
+- quality.analytics.ProcessCapabilityCalculatedEvent → analytics.reporting.UpdateCapabilityReportCommand (capability report)
+- quality.analytics.FirstPassYieldCalculatedEvent → manufacturing.analytics.UpdateYieldMetricsCommand (yield metrics)
+- quality.analytics.FirstPassYieldCalculatedEvent → analytics.warehouse.IngestEventCommand (yield warehouse)
+- quality.analytics.CostOfQualityCalculatedEvent → finance.co.PostCOQCommand (COQ posting)
+- quality.analytics.CostOfQualityCalculatedEvent → analytics.reporting.UpdateCOQReportCommand (COQ report)
+- quality.analytics.CostOfQualityCalculatedEvent → notification.AlertIfCOQExceedsTargetCommand (COQ alert)
+- quality.analytics.TrendAnalysisCompletedEvent → quality.capa.EvaluateTrendCAPACommand (trend CAPA evaluation)
+- quality.analytics.TrendAnalysisCompletedEvent → quality.inspectionplanning.RecommendPlanChangesCommand (plan recommendations)
+- quality.analytics.ParetoAnalysisCompletedEvent → quality.capa.PrioritizeCAPACommand (CAPA prioritization)
+- quality.analytics.ParetoAnalysisCompletedEvent → quality.nonconformance.FocusImprovementCommand (improvement focus)
+- quality.analytics.QualityKPIPublishedEvent → analytics.reporting.UpdateQualityDashboardCommand (quality dashboard)
+
+CRM Customer 360 Events (Port 9451 - ADR-043):
+- crm.customer360.CustomerCreatedEvent → analytics.warehouse.IngestEventCommand (customer analytics)
+- crm.customer360.CustomerCreatedEvent → crm.accounthealth.InitializeHealthScoreCommand (health initialization)
+- crm.customer360.CustomerCreatedEvent → finance.ar.CreateCustomerAccountCommand (AR account)
+- crm.customer360.CustomerUpdatedEvent → crm.pipeline.UpdateOpportunityCustomerCommand (pipeline update)
+- crm.customer360.CustomerUpdatedEvent → crm.contracts.UpdateContractCustomerCommand (contract update)
+- crm.customer360.ContactAddedEvent → crm.activity.CreateContactWelcomeTaskCommand (welcome task)
+- crm.customer360.ContactAddedEvent → notification.NotifyAccountOwnerCommand (contact notification)
+- crm.customer360.ContactRemovedEvent → crm.activity.ArchiveContactActivitiesCommand (activity archive)
+- crm.customer360.CustomerClassificationChangedEvent → crm.contracts.AdjustServiceLevelCommand (SLA adjustment)
+- crm.customer360.CustomerClassificationChangedEvent → sales.pricing.UpdateCustomerPricingCommand (pricing update)
+- crm.customer360.CustomerMergedEvent → crm.pipeline.MergeOpportunitiesCommand (opportunity merge)
+- crm.customer360.CustomerMergedEvent → crm.contracts.MergeContractsCommand (contract merge)
+- crm.customer360.CustomerMergedEvent → finance.ar.MergeCustomerAccountsCommand (AR merge)
+
+CRM Pipeline Events (Port 9452 - ADR-043):
+- crm.pipeline.OpportunityCreatedEvent → analytics.warehouse.IngestEventCommand (pipeline analytics)
+- crm.pipeline.OpportunityCreatedEvent → crm.activity.CreateFollowUpTaskCommand (follow-up task)
+- crm.pipeline.OpportunityCreatedEvent → notification.NotifySalesRepCommand (sales notification)
+- crm.pipeline.OpportunityStageChangedEvent → crm.pipeline.UpdateForecastCommand (forecast update)
+- crm.pipeline.OpportunityStageChangedEvent → crm.accounthealth.UpdateEngagementCommand (engagement update)
+- crm.pipeline.OpportunityStageChangedEvent → analytics.warehouse.IngestEventCommand (stage analytics)
+- crm.pipeline.OpportunityClosedWonEvent → sales.orders.CreateSalesOrderCommand (order creation)
+- crm.pipeline.OpportunityClosedWonEvent → crm.contracts.InitiateContractCommand (contract initiation)
+- crm.pipeline.OpportunityClosedWonEvent → fieldservice.serviceorders.ScheduleInstallationCommand (installation scheduling)
+- crm.pipeline.OpportunityClosedWonEvent → crm.accounthealth.RecordWinCommand (health boost)
+- crm.pipeline.OpportunityClosedLostEvent → crm.activity.CreateLossReviewTaskCommand (loss review)
+- crm.pipeline.OpportunityClosedLostEvent → crm.accounthealth.RecordLossCommand (health impact)
+- crm.pipeline.OpportunityClosedLostEvent → analytics.warehouse.IngestEventCommand (loss analytics)
+- crm.pipeline.ForecastUpdatedEvent → analytics.reporting.UpdateForecastReportCommand (forecast report)
+- crm.pipeline.ForecastUpdatedEvent → notification.NotifySalesManagerCommand (forecast notification)
+- crm.pipeline.QuotaAchievedEvent → hr.performance.RecordQuotaAchievementCommand (performance record)
+- crm.pipeline.QuotaAchievedEvent → notification.CongratulateRepCommand (congratulations)
+
+CRM Contracts Events (Port 9453 - ADR-043):
+- crm.contracts.ContractCreatedEvent → analytics.warehouse.IngestEventCommand (contract analytics)
+- crm.contracts.ContractCreatedEvent → crm.accounthealth.UpdateContractStatusCommand (health update)
+- crm.contracts.ContractCreatedEvent → notification.NotifyAccountManagerCommand (contract notification)
+- crm.contracts.ContractActivatedEvent → fieldservice.serviceorders.EnableServiceEligibilityCommand (service eligibility)
+- crm.contracts.ContractActivatedEvent → finance.ar.CreateContractBillingScheduleCommand (billing schedule)
+- crm.contracts.ContractActivatedEvent → crm.accounthealth.BoostHealthScoreCommand (health boost)
+- crm.contracts.ContractRenewedEvent → finance.ar.CreateRenewalInvoiceCommand (renewal invoice)
+- crm.contracts.ContractRenewedEvent → crm.accounthealth.RecordRenewalCommand (renewal health boost)
+- crm.contracts.ContractRenewedEvent → analytics.warehouse.IngestEventCommand (renewal analytics)
+- crm.contracts.ContractExpiredEvent → fieldservice.serviceorders.DisableServiceEligibilityCommand (eligibility removal)
+- crm.contracts.ContractExpiredEvent → crm.pipeline.CreateRenewalOpportunityCommand (renewal opportunity)
+- crm.contracts.ContractExpiredEvent → crm.accounthealth.RecordExpirationCommand (health impact)
+- crm.contracts.ContractTerminatedEvent → fieldservice.serviceorders.CancelPendingOrdersCommand (order cancellation)
+- crm.contracts.ContractTerminatedEvent → finance.ar.CancelFutureBillingsCommand (billing cancellation)
+- crm.contracts.ContractTerminatedEvent → crm.accounthealth.RecordChurnCommand (churn record)
+- crm.contracts.EntitlementConsumedEvent → crm.contracts.UpdateEntitlementBalanceCommand (balance update)
+- crm.contracts.EntitlementConsumedEvent → analytics.warehouse.IngestEventCommand (entitlement analytics)
+- crm.contracts.EntitlementExhaustedEvent → crm.pipeline.CreateUpsellOpportunityCommand (upsell opportunity)
+- crm.contracts.EntitlementExhaustedEvent → notification.AlertCustomerCommand (customer alert)
+
+CRM Activity Events (Port 9454 - ADR-043):
+- crm.activity.ActivityCreatedEvent → crm.accounthealth.UpdateEngagementMetricCommand (engagement update)
+- crm.activity.ActivityCreatedEvent → analytics.warehouse.IngestEventCommand (activity analytics)
+- crm.activity.ActivityCompletedEvent → crm.accounthealth.RecordTouchPointCommand (touchpoint record)
+- crm.activity.ActivityCompletedEvent → crm.pipeline.UpdateLastActivityCommand (pipeline update)
+- crm.activity.CallLoggedEvent → analytics.warehouse.IngestEventCommand (call analytics)
+- crm.activity.CallLoggedEvent → crm.accounthealth.UpdateCallEngagementCommand (call engagement)
+- crm.activity.EmailTrackedEvent → crm.accounthealth.UpdateEmailEngagementCommand (email engagement)
+- crm.activity.EmailTrackedEvent → analytics.warehouse.IngestEventCommand (email analytics)
+- crm.activity.MeetingScheduledEvent → crm.pipeline.UpdateOpportunityActivityCommand (opportunity update)
+- crm.activity.MeetingScheduledEvent → notification.SendMeetingInviteCommand (meeting invite)
+
+CRM Account Health Events (Port 9455 - ADR-043):
+- crm.accounthealth.HealthScoreUpdatedEvent → analytics.warehouse.IngestEventCommand (health analytics)
+- crm.accounthealth.HealthScoreUpdatedEvent → crm.customer360.UpdateCustomerHealthCommand (customer update)
+- crm.accounthealth.HealthScoreUpdatedEvent → analytics.reporting.UpdateHealthDashboardCommand (dashboard update)
+- crm.accounthealth.RiskSignalDetectedEvent → crm.activity.CreateRiskMitigationTaskCommand (risk task)
+- crm.accounthealth.RiskSignalDetectedEvent → notification.AlertAccountManagerCommand (risk alert)
+- crm.accounthealth.ChurnRiskAlertEvent → crm.pipeline.CreateRetentionOpportunityCommand (retention opportunity)
+- crm.accounthealth.ChurnRiskAlertEvent → notification.AlertSalesLeaderCommand (churn alert)
+- crm.accounthealth.ChurnRiskAlertEvent → crm.activity.CreateRetentionCampaignCommand (retention campaign)
+- crm.accounthealth.NpsSurveyCompletedEvent → crm.accounthealth.UpdateNpsScoreCommand (NPS update)
+- crm.accounthealth.NpsSurveyCompletedEvent → analytics.warehouse.IngestEventCommand (NPS analytics)
+- crm.accounthealth.NpsSurveyCompletedEvent → crm.activity.CreateNpsFollowUpTaskCommand (NPS follow-up)
+
+
+NEXT STEPS
+==========
+
+Phase 1 - Core Infrastructure:
+1. Create placeholder files for common-security module
+2. Create placeholder files for common-observability module
+3. Expand config-model, org-model, workflow-model modules
+
+Phase 2 - Finance AR/AP:
+4. Create placeholder files for finance-ar module (domain, application, infrastructure)
+5. Create placeholder files for finance-ap module (domain, application, infrastructure)
+6. Wire AR/AP to GL via event-driven integration
+
+Phase 3 - Finance Assets/Tax:
+7. Create placeholder files for finance-assets module
+8. Create placeholder files for finance-tax module
+9. Implement depreciation calculation and GL integration
+10. Implement tax calculation service with external provider integration
+
+Phase 4 - Testing & Validation:
+11. Run full test suite to verify all tests pass
+12. Implement integration tests for cross-module communication
+13. Validate event publishing via Transactional Outbox
 ```
-
----
-
-## Bounded Contexts & Microservices
-
-> **Note**: This section shows target microservices structure. For **current module counts** (92 modules across 12 domains with actual port assignments), see [Architecture README](./README.md).
-
-### 1. Finance Domain (ADR-009, 021, 022, 026, 029, 033)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **finance-gl** | 8081 | `finance_gl_db` | General Ledger, chart of accounts, journal entries |
-| **finance-ap** | 8082 | `finance_ap_db` | Accounts Payable, vendor invoices, payments |
-| **finance-ar** | 8083 | `finance_ar_db` | Accounts Receivable, customer invoices, collections |
-| **finance-assets** | 8084 | `finance_fa_db` | Fixed asset accounting, depreciation (ADR-021) |
-| **finance-treasury** | 8085 | `finance_treasury_db` | Cash management, bank accounts, FX (ADR-026) |
-| **finance-intercompany** | 8086 | `finance_ic_db` | Intercompany transactions, netting (ADR-029) |
-| **finance-lease-accounting** | 8087 | `finance_lease_db` | IFRS 16 lease accounting (ADR-033) |
-
-**Integration**:
-- **Publishes**: `JournalEntryPostedEvent`, `InvoiceCreatedEvent`, `PaymentReceivedEvent`
-- **Consumes**: Events from Sales, Procurement, Inventory (for GL posting)
-
----
-
-### 2. Controlling Domain (ADR-028, 032)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **controlling-cost-center** | 8091 | `controlling_cc_db` | Cost center accounting, variance analysis |
-| **controlling-profitability** | 8092 | `controlling_pa_db` | Profitability analysis, contribution margins |
-| **controlling-product-costing** | 8093 | `controlling_costing_db` | Standard/actual costing, variance |
-| **controlling-budgeting** | 8094 | `controlling_budget_db` | Budget planning, rolling forecasts (ADR-032) |
-
-**Integration**:
-- **Consumes**: Cost events from Finance, Manufacturing
-- **Publishes**: `VarianceDetectedEvent`, `BudgetExceededEvent`
-
----
-
-### 3. Inventory Domain (ADR-024, 038)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **inventory-core** | 8101 | `inventory_core_db` | Stock management, storage locations, movements |
-| **inventory-atp** | 8102 | `inventory_atp_db` | Available-to-Promise, allocations |
-| **inventory-valuation** | 8103 | `inventory_val_db` | Inventory valuation (FIFO/LIFO/WAC) |
-| **inventory-warehouse** | 8104 | `inventory_wms_db` | Warehouse Management System (ADR-038) |
-
-**Integration**:
-- **Publishes**: `StockMovementRecordedEvent`, `ReorderPointTriggeredEvent`, `GoodsReceivedEvent`
-- **Consumes**: Events from Procurement, Sales, Manufacturing
-
----
-
-### 4. Sales Domain (ADR-025)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **sales-core** | 8111 | `sales_core_db` | Sales orders, quotations, order management |
-| **sales-pricing** | 8112 | `sales_pricing_db` | Price lists, promotions, discounts |
-| **sales-credit** | 8113 | `sales_credits_db` | Credit memos, returns authorization |
-| **sales-shipping** | 8114 | `sales_shipping_db` | Delivery documents, carrier integration |
-
-**Integration**:
-- **Publishes**: `SalesOrderCreatedEvent`, `OrderFulfilledEvent`, `InvoiceGeneratedEvent`
-- **Consumes**: ATP events from Inventory, pricing events
-
----
-
-### 5. Procurement Domain (ADR-023)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **procurement-core** | 8121 | `procurement_core_db` | Purchase requisitions, POs, goods receipts |
-| **procurement-sourcing** | 8122 | `procurement_sourcing_db` | RFQs, quotations, contract agreements |
-
-**Integration**:
-- **Publishes**: `PurchaseOrderCreatedEvent`, `GoodsReceivedEvent`
-- **Consumes**: Reorder events from Inventory, MRP events from Manufacturing
-
----
-
-### 6. Manufacturing Domain (ADR-037)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **manufacturing-bom** | 8131 | `manufacturing_bom_db` | BOM management, routings, operations |
-| **manufacturing-mrp** | 8132 | `manufacturing_mrp_db` | Material Requirements Planning |
-| **manufacturing-shop-floor** | 8133 | `manufacturing_sfe_db` | Production orders, confirmations, capacity |
-| **manufacturing-costing** | 8134 | `manufacturing_costing_db` | Production costing, variances |
-
-**Integration**:
-- **Publishes**: `ProductionOrderCreatedEvent`, `MaterialConsumedEvent`, `OperationCompletedEvent`
-- **Consumes**: BOM events, inventory events
-
----
-
-### 7. Quality Domain (ADR-039)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **quality-inspection-planning** | 8141 | `quality_planning_db` | Inspection plans, characteristics, sampling |
-| **quality-execution** | 8142 | `quality_execution_db` | Inspection lots, results, usage decisions |
-| **quality-capa** | 8143 | `quality_capa_db` | CAPA (Corrective & Preventive Actions) |
-
-**Integration**:
-- **Publishes**: `InspectionLotCreatedEvent`, `QualityDefectDetectedEvent`, `StockBlockedEvent`
-- **Consumes**: Goods receipt events, production events
-
----
-
-### 8. Maintenance Domain (ADR-040)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **maintenance-equipment** | 8151 | `maintenance_equipment_db` | Equipment master, technical objects |
-| **maintenance-work-orders** | 8152 | `maintenance_wo_db` | Work orders, operations, notifications |
-| **maintenance-preventive** | 8153 | `maintenance_pm_db` | Preventive maintenance plans, scheduling |
-
-**Integration**:
-- **Publishes**: `WorkOrderCreatedEvent`, `EquipmentDowntimeEvent`
-- **Consumes**: Equipment events, spare parts events
-
----
-
-### 9. CRM Domain (ADR-042, 043)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **crm-customer360** | 8161 | `crm_customer360_db` | Customer 360° view, accounts, contacts |
-| **crm-contracts** | 8162 | `crm_contracts_db` | Service contracts, SLAs, entitlements |
-| **crm-dispatch** | 8163 | `crm_dispatch_db` | Field service, technician dispatch (ADR-042) |
-
-**Integration**:
-- **Publishes**: `CustomerCreatedEvent`, `ServiceTicketClosedEvent`, `ContractRenewedEvent`
-- **Consumes**: Sales events, maintenance work order events
-
----
-
-### 10. Master Data Management (ADR-027)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **mdm-hub** | 8171 | `mdm_hub_db` | Master data hub (pub/sub for MDM changes) |
-| **mdm-data-quality** | 8172 | `mdm_quality_db` | Data quality rules, validation, scoring |
-
-**Integration**:
-- **Publishes**: `MasterDataChangedEvent`, `DataQualityIssueDetectedEvent`
-- **Consumed by**: All services requiring master data
-
----
-
-### 11. Analytics Domain (ADR-016)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **analytics-warehouse** | 8181 | `analytics_dw_db` | Data warehouse (star schema, ETL/ELT) |
-| **analytics-olap** | 8182 | `analytics_olap_db` | OLAP cube engine, MDX queries |
-| **analytics-kpi** | 8183 | `analytics_kpi_db` | KPI engine, threshold alerts |
-
-**Integration**:
-- **Consumes**: All domain events for analytics pipeline
-- **Publishes**: `KPIThresholdExceededEvent`
-
----
-
-### 12. Human Capital Management (HCM) Domain (ADR-034, 052, 054, 055)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **hr-travel-expense** | 9901 | `hr_travelexpense_db` | Travel & Expense Management (ADR-054) |
-| **hr-contingent-workforce** | 9902 | `hr_contingent_db` | Vendor Management System / Contingent Workforce (ADR-052) |
-| **hr-workforce-scheduling** | 9903 | `hr_scheduling_db` | Workforce Scheduling & Time Management (ADR-055) |
-
-**Integration**:
-- **Publishes**: `ExpenseReportSubmittedEvent`, `ContingentWorkerOnboardedEvent`, `ShiftAssignedEvent`
-- **Consumes**: Finance events (for payroll integration - ADR-034)
-
----
-
-### 13. Fleet Management Domain (ADR-053)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **fleet-vehicle-lifecycle** | 10001 | `fleet_vehicle_db` | Vehicle master data, lifecycle management |
-| **fleet-telematics** | 10002 | `fleet_telematics_db` | Telematics data, GPS tracking, diagnostics |
-| **fleet-driver-management** | 10003 | `fleet_driver_db` | Driver profiles, licensing, compliance |
-| **fleet-fuel-management** | 10004 | `fleet_fuel_db` | Fuel transactions, efficiency tracking |
-| **fleet-compliance** | 10005 | `fleet_compliance_db` | Regulatory compliance, inspections |
-
-**Integration**:
-- **Publishes**: `VehicleAcquiredEvent`, `MaintenanceScheduledEvent`, `FuelTransactionRecordedEvent`
-- **Consumes**: Maintenance events (for vehicle maintenance), Finance events (for asset accounting)
-
----
-
-### 14. Platform Services (ADR-004, 044, 045, 046, 030, 031)
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **api-gateway** | 8000 | N/A | API Gateway (routing, auth, rate limiting) - ADR-004 |
-| **configuration-engine** | 8201 | `config_db` | Configuration management (ADR-044) |
-| **org-model-service** | 8202 | `org_model_db` | Organizational model (ADR-045) |
-| **workflow-engine** | 8203 | `workflow_db` | Workflow & approval engine (ADR-046) |
-| **tax-engine** | 8204 | `tax_db` | Tax calculation engine (ADR-030) |
-| **period-close-orchestrator** | 8205 | `period_close_db` | Period close orchestration (ADR-031) |
-| **document-management** | 8206 | `document_db` | Document attachments, versioning |
-| **notification-service** | 8207 | `notification_db` | Email, SMS, push notifications |
-| **audit-log-service** | 8208 | `audit_db` | Audit trail, change history (ADR-015) |
-
-**Integration**:
-- **api-gateway**: Entry point for all external requests
-- **configuration-engine**: Provides tenant/user configs to all services
-- **org-model-service**: Provides organizational hierarchy to all services
-- **workflow-engine**: Orchestrates approvals across domains
-- **tax-engine**: Calculates taxes for Sales, Procurement, Finance
-- **period-close-orchestrator**: Coordinates period close across Finance modules
-
----
-
-### 15. Industry Extensions
-
-| Service | Port | Database | Purpose |
-|---------|------|----------|---------|
-| **banking-loan-management** | 8301 | `banking_loans_db` | Loan origination, servicing, collections |
-| **process-mfg-batch** | 8311 | `process_batch_db` | Batch management, genealogy |
-| **utilities-meter-data** | 8321 | `utilities_meter_db` | Meter data management, billing |
-| **public-sector-grants** | 8331 | `public_grants_db` | Grant management (ADR-050) |
-| **insurance-claims** | 8341 | `insurance_claims_db` | Claims processing, adjudication |
-| **real-estate-lease** | 8351 | `realestate_lease_db` | Lease management, rent billing |
-| **advanced-inventory-batch** | 8361 | `advinv_batch_db` | Batch tracking, serial numbers |
-
----
-
-### 16. Retail AI Enhancement (ADR-056, 057)
-
-| Service | Port | Database | Technology | Purpose |
-|---------|------|----------|------------|---------|
-| **demand-forecasting-service** | 8401 | `retail_forecast_db` | **Python + FastAPI** | AI Demand Forecasting (ADR-056) |
-| **pricing-optimization-service** | 8402 | `retail_pricing_db` | **Python + FastAPI** | Dynamic Pricing (ADR-057) |
-
-**Integration**:
-- **Consumes**: Sales history, inventory levels, promotion events, competitor prices
-- **Publishes**: `DemandForecastGeneratedEvent`, `ReorderPointAdjustedEvent`, `PriceRecommendationEvent`, `MarkdownOptimizationEvent`
-- **ML Models**: ARIMA, Prophet, XGBoost, LSTM, Transformers (demand forecasting); Log-log regression, XGBoost, hierarchical models (price elasticity)
-
----
-
-## Shared Libraries
-
-All shared libraries reside in `platform-shared/` and follow **strict governance rules** (ADR-006):
-
-1. **common-types**: Type-safe primitives (`TenantId`, `Money`, `Quantity`, `Currency`, `UnitOfMeasure`)
-2. **common-api**: REST API standards (`ErrorResponse`, `PageRequest`, `PageResponse`, `RateLimiting`)
-3. **common-security**: AuthN/AuthZ (`JwtTokenValidator`, `OAuth2Config`, `TenantContextHolder`, `PermissionChecker`, `SeparationOfDuties`)
-4. **common-observability**: Monitoring (`CorrelationId`, `TraceContext`, `MetricsCollector`, `StructuredLogging`, `PerformanceMonitor`)
-5. **common-events**: Event contracts (`DomainEvent`, `EventMetadata`, `EventEnvelope`, `EventPublisher`, `EventConsumer`)
-6. **common-cqrs**: CQRS primitives (`Command`, `Query`, `CommandHandler`, `QueryHandler`, `CommandBus`, `QueryBus`)
-7. **common-saga**: Saga orchestration (`SagaDefinition`, `SagaStep`, `CompensatingAction`, `SagaOrchestrator`, `SagaState`)
-8. **common-testing**: Testing standards (`IntegrationTest`, `E2ETest`, `ContractTest`, `TestContainers`, `TestDataBuilder`)
-9. **common-resilience**: Network resilience (`CircuitBreaker`, `RetryPolicy`, `Bulkhead`, `RateLimiter`, `Timeout`)
-
-**Forbidden in platform-shared** (ADR-006):
-- ❌ Domain models
-- ❌ Business logic
-- ❌ Shared DTOs
-- ❌ Utility classes
-
----
-
-## Infrastructure & Platform
-
-### 1. Event Streaming (ADR-003)
-
-**Kafka Topics** (one per domain):
-- `finance.events` → Journal entries, invoices, payments
-- `inventory.events` → Stock movements, goods receipts, reorder points
-- `sales.events` → Sales orders, fulfillment, invoices
-- `manufacturing.events` → Production orders, operations, material consumption
-- `quality.events` → Inspection lots, defects, stock blocks
-- `maintenance.events` → Work orders, equipment downtime
-- `crm.events` → Customer events, service tickets, contracts
-- `mdm.events` → Master data changes, data quality issues
-- `retail-ai.events` → Forecasts, reorder point adjustments, pricing recommendations
-
-**Schema Registry**: Avro schemas stored in `platform-events/` and mirrored to Kafka Schema Registry.
-
----
-
-### 2. Database Architecture (ADR-002)
-
-**Database-per-Context Pattern**:
-- Each microservice owns its database schema
-- No cross-service database queries
-- All communication via events or REST APIs
-- PostgreSQL for OLTP workloads
-- TimescaleDB for time-series data (retail AI forecasting)
-
-**Example Databases**:
-```
-finance_gl_db       → finance-gl service
-finance_ap_db       → finance-ap service
-inventory_core_db   → inventory-core service
-sales_core_db       → sales-core service
-```
-
----
-
-### 3. Deployment Modes
-
-#### A. SMB Mode (Docker Compose)
-
-**Characteristics**:
-- Single host deployment
-- All services in one `docker-compose.yml`
-- Bundled databases (single PostgreSQL instance with multiple databases)
-- Suitable for: 1-50 users, single tenant
-
-**File**: `infrastructure/docker-compose/docker-compose.yml`
-
-```yaml
-services:
-  postgres:
-    image: postgres:16
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-
-  kafka:
-    image: confluentinc/cp-kafka:7.5.0
-
-  api-gateway:
-    build: ./bounded-contexts/platform-services/api-gateway
-    ports:
-      - "8000:8000"
-
-  finance-gl:
-    build: ./bounded-contexts/finance/finance-gl
-    environment:
-      - DATABASE_URL=jdbc:postgresql://postgres:5432/finance_gl_db
-
-  # ... all other services
-```
-
----
-
-#### B. Enterprise Mode (Kubernetes)
-
-**Characteristics**:
-- Multi-node cluster (AKS/EKS/GKE)
-- Separate database instances per service (RDS/Cloud SQL)
-- Managed Kafka (MSK/Event Hubs)
-- Auto-scaling, high availability
-- Suitable for: 100+ users, multi-tenant
-
-**File**: `infrastructure/kubernetes/services/finance/finance-gl-deployment.yaml`
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: finance-gl
-  namespace: production
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: finance-gl
-  template:
-    metadata:
-      labels:
-        app: finance-gl
-    spec:
-      containers:
-      - name: finance-gl
-        image: chiroerp/finance-gl:1.0.0
-        ports:
-        - containerPort: 8081
-        env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: finance-gl-db-secret
-              key: url
-```
-
----
-
-### 4. Monitoring & Observability (ADR-017)
-
-**Stack**:
-- **Prometheus**: Metrics collection (CPU, memory, request latency, throughput)
-- **Grafana**: Dashboards (service health, business metrics, SLA tracking)
-- **Loki**: Log aggregation
-- **Jaeger**: Distributed tracing
-- **AlertManager**: Alerting (PagerDuty, Slack integration)
-
-**SLA Targets** (ADR-017):
-- P95 latency: < 500ms (API calls)
-- Availability: 99.9% uptime
-- Error rate: < 0.1%
-
-**Dashboards**:
-- `service-health-dashboard.json`: Service uptime, request rates, error rates
-- `business-metrics-dashboard.json`: Sales orders, invoice processing, stock movements
-- `sla-tracking-dashboard.json`: P95/P99 latency, availability, error budgets
-
----
-
-## Frontend Applications (ADR-048)
-
-### 1. Web Application (React)
-
-**Technology Stack**:
-- **React 18** with TypeScript
-- **Vite** for build tooling
-- **Redux Toolkit** for state management
-- **React Router 6** for routing
-- **Axios** for API calls
-- **Material-UI (MUI)** or **Ant Design** for UI components
-- **React Query** for server state management
-
-**Structure**:
-- **Modular by domain**: Each ERP module (Finance, Inventory, Sales) has its own folder
-- **Shared components**: Layout, forms, tables, modals
-- **Custom hooks**: `useAuth`, `useTenant`, `useApi`
-- **API clients**: One per microservice (`glApiClient.ts`, `inventoryApiClient.ts`)
-
----
-
-### 2. Mobile Application (React Native - Optional)
-
-**Use Cases**:
-- Warehouse management (mobile barcode scanning)
-- Field service (technician dispatch)
-- Approvals (mobile approval workflows)
-
-**Technology Stack**:
-- **React Native** with TypeScript
-- **Expo** for managed workflow (optional)
-
----
-
-### 3. Admin Portal
-
-**Purpose**:
-- Tenant management (create/update/delete tenants)
-- User administration (IAM)
-- System configuration (feature flags, localization)
-- Monitoring dashboards (tenant usage, resource consumption)
-
----
-
-## Industry Extensions
-
-All industry extensions follow the same microservices pattern but are **optional modules** loaded only when required:
-
-1. **Banking**: Loan management, deposit accounts, regulatory reporting (Basel III, IFRS 9)
-2. **Process Manufacturing**: Batch management, formula management, process execution
-3. **Utilities**: Meter data management, outage management, asset management
-4. **Public Sector (ADR-050)**: Grant management, fund accounting, procurement compliance
-5. **Insurance**: Policy administration, claims management, underwriting
-6. **Real Estate**: Lease management, property maintenance, vacancy management
-7. **Advanced Inventory**: Batch tracking, serial number management, kitting
-8. **Retail AI (ADR-056, 057)**: Demand forecasting, dynamic pricing, markdown optimization
-
----
-
-## Technology Stack
-
-### Backend
-
-| Layer | Technology |
-|-------|------------|
-| **Language** | Kotlin (JVM 21) |
-| **Framework** | Spring Boot 3.2 |
-| **Architecture** | Microservices, CQRS, Event Sourcing |
-| **Event Streaming** | Kafka (Confluent Platform) |
-| **Database** | PostgreSQL 16 (OLTP), TimescaleDB (time-series) |
-| **API Gateway** | Spring Cloud Gateway |
-| **Service Discovery** | Kubernetes (native), Consul (optional) |
-| **Configuration** | Spring Cloud Config, Kubernetes ConfigMaps |
-| **Security** | OAuth 2.0, JWT, Spring Security |
-| **Testing** | JUnit 5, Testcontainers, Pact (contract testing) |
-| **Build** | Gradle (Kotlin DSL) |
-| **Containerization** | Docker, Kubernetes |
-
-### Frontend
-
-| Layer | Technology |
-|-------|------------|
-| **Language** | TypeScript |
-| **Framework** | React 18 |
-| **State Management** | Redux Toolkit, React Query |
-| **Routing** | React Router 6 |
-| **UI Library** | Material-UI (MUI) or Ant Design |
-| **Build** | Vite |
-| **Testing** | Jest, React Testing Library, Playwright (E2E) |
-
-### Retail AI (ADR-056, 057)
-
-| Layer | Technology |
-|-------|------------|
-| **Language** | Python 3.11+ |
-| **Framework** | FastAPI |
-| **ML Libraries** | scikit-learn, XGBoost, Prophet, LSTM (TensorFlow/PyTorch), Transformers |
-| **Data Processing** | Pandas, NumPy |
-| **Database** | PostgreSQL, TimescaleDB (time-series) |
-| **Job Scheduler** | Celery, Airflow (optional) |
-
-### Infrastructure
-
-| Layer | Technology |
-|-------|------------|
-| **Container Orchestration** | Kubernetes (AKS/EKS/GKE) |
-| **Service Mesh** | Istio (optional) |
-| **CI/CD** | GitHub Actions, ArgoCD (GitOps) |
-| **IaC** | Terraform, Helm |
-| **Monitoring** | Prometheus, Grafana, Loki, Jaeger |
-| **Security Scanning** | Trivy, OWASP ZAP, Snyk |
-
----
-
-## Deployment Configurations
-
-### 1. Local Development
-
-**Command**:
-```bash
-docker-compose up -d
-```
-
-**Services Started**:
-- PostgreSQL (all databases)
-- Kafka (all topics)
-- All microservices
-- API Gateway
-- Grafana/Prometheus
-
-**Access**:
-- API Gateway: `http://localhost:8000`
-- Grafana: `http://localhost:3000`
-- Kafka UI: `http://localhost:8080`
-
----
-
-### 2. Development Environment (Cloud)
-
-**Deployment**: Kubernetes (single node)
-**CI/CD**: GitHub Actions → Deploy on push to `develop` branch
-**Database**: Managed PostgreSQL (single instance)
-**Kafka**: Managed Kafka (3 brokers)
-
----
-
-### 3. Staging Environment
-
-**Deployment**: Kubernetes (3 nodes)
-**CI/CD**: GitHub Actions → Deploy on push to `staging` branch
-**Database**: Managed PostgreSQL (separate instances per service)
-**Kafka**: Managed Kafka (5 brokers)
-**Purpose**: Pre-production testing, UAT (ADR-019)
-
----
-
-### 4. Production Environment
-
-**Deployment**: Kubernetes (10+ nodes, auto-scaling)
-**CI/CD**: GitHub Actions → Manual approval → ArgoCD GitOps
-**Database**: Managed PostgreSQL (HA, read replicas)
-**Kafka**: Managed Kafka (7+ brokers, multi-AZ)
-**Monitoring**: 24/7 on-call rotation
-**Disaster Recovery**: Daily backups, cross-region replication (ADR-018)
-
----
-
-## Next Steps
-
-### Phase 1: Project Scaffolding (Week 1-2)
-
-1. **Create root project structure**:
-   ```bash
-   mkdir chiroerp
-   cd chiroerp
-   # Create all top-level directories
-   mkdir -p platform-shared platform-events bounded-contexts frontend infrastructure tests migrations
-   ```
-
-2. **Initialize Gradle multi-module project**:
-   - Create `settings.gradle.kts` with all modules
-   - Create root `build.gradle.kts` with shared dependencies
-
-3. **Setup shared libraries** (`platform-shared/`):
-   - Create all 9 common modules (types, api, security, observability, events, cqrs, saga, testing, resilience)
-   - Implement base interfaces and abstract classes
-
-4. **Setup event definitions** (`platform-events/`):
-   - Create Avro schemas for all domain events
-   - Configure Avro code generation in Gradle
-
----
-
-### Phase 2: Core Microservices (Week 3-8)
-
-**Priority Order** (based on 18-month roadmap):
-
-1. **Phase 1 Services** (Months 1-6):
-   - `finance-gl` (General Ledger)
-   - `finance-ap` (Accounts Payable)
-   - `finance-ar` (Accounts Receivable)
-   - `inventory-core` (Core Inventory)
-   - `sales-core` (Sales Orders)
-   - `procurement-core` (Purchase Orders)
-
-2. **Platform Services**:
-   - `api-gateway` (ADR-004)
-   - `configuration-engine` (ADR-044)
-   - `org-model-service` (ADR-045)
-   - `workflow-engine` (ADR-046)
-
----
-
-### Phase 3: Advanced Modules (Week 9-16)
-
-3. **Phase 2 Services** (Months 7-12):
-   - `manufacturing-bom`, `manufacturing-mrp`, `manufacturing-shop-floor`
-   - `quality-inspection-planning`, `quality-execution`
-   - `maintenance-equipment`, `maintenance-work-orders`
-   - `inventory-warehouse` (WMS - ADR-038)
-   - `crm-customer360`, `crm-contracts`
-
----
-
-### Phase 4: Industry Extensions (Week 17-20)
-
-4. **Industry Extensions**:
-   - Banking (loan management)
-   - Process Manufacturing (batch management)
-   - Utilities (meter data)
-   - Public Sector (grants, fund accounting)
-   - Insurance, Real Estate, Advanced Inventory
-
----
-
-### Phase 5: Retail AI Enhancement (Week 21-24) - ADR-056, 057
-
-5. **Retail AI Services** (Phase 3.5 - optional):
-   - `demand-forecasting-service` (ADR-056)
-   - `pricing-optimization-service` (ADR-057)
-   - Python-based microservices with FastAPI
-   - ML models (ARIMA, Prophet, XGBoost, LSTM, Transformers)
-   - TimescaleDB for time-series storage
-
----
-
-### Phase 6: Frontend Development (Week 25-32)
-
-6. **Frontend Applications**:
-   - React web application (all modules)
-   - Admin portal (tenant management)
-   - Mobile application (optional)
-
----
-
-### Phase 7: Infrastructure & DevOps (Ongoing)
-
-7. **Infrastructure**:
-   - Kubernetes manifests (all services)
-   - Helm charts (optional)
-   - Terraform IaC (AWS/Azure/GCP)
-   - CI/CD pipelines (GitHub Actions)
-   - Monitoring (Prometheus, Grafana, Loki)
-
----
-
-### Phase 8: Testing & Quality (Ongoing)
-
-8. **Testing**:
-   - Unit tests (JUnit 5)
-   - Integration tests (Testcontainers)
-   - Contract tests (Pact)
-   - E2E tests (Playwright)
-   - Performance tests (JMeter/Gatling) - ADR-017
-   - Security tests (OWASP ZAP) - ADR-008
-
----
-
-## Implementation Checklist
-
-### ✅ Completed
-
-- [x] 56+ ADRs covering all domains
-- [x] Architecture documentation (retail AI, gap-to-SAP roadmap)
-- [x] Workspace structure design (**THIS FILE**)
-
-### 🔄 In Progress
-
-- [ ] Project scaffolding (directories, Gradle setup)
-- [ ] Shared libraries implementation
-- [ ] Event schema definitions
-
-### ⏳ Pending
-
-- [ ] Core microservices implementation (Finance, Inventory, Sales)
-- [ ] Platform services (API Gateway, Configuration Engine, Org Model, Workflow)
-- [ ] Advanced modules (Manufacturing, Quality, Maintenance, CRM, MDG, Analytics)
-- [ ] Industry extensions (Banking, Process Mfg, Utilities, Public Sector, etc.)
-- [ ] Retail AI services (Demand Forecasting, Dynamic Pricing)
-- [ ] Frontend applications (React web app, admin portal)
-- [ ] Infrastructure (Kubernetes, Terraform, CI/CD)
-- [ ] Testing (unit, integration, contract, E2E, performance, security)
-- [ ] Documentation (API docs, runbooks, user guides)
-
----
-
-## Additional Resources
-
-- **Main Roadmap**: [`docs/architecture/gap-to-sap-grade-roadmap.md`](./gap-to-sap-grade-roadmap.md)
-- **Retail AI Architecture**: [`docs/architecture/retail/retail-ai-architecture.md`](./retail/retail-ai-architecture.md)
-- **ADRs**: [`docs/adr/`](../adr/)
-
----
-
-## Revision History
-
-| Version | Date | Author | Changes |
-|---------|------|--------|---------|
-| 1.0 | 2025-01-XX | AI Agent | Initial comprehensive workspace structure based on 56+ ADRs |
-
----
-
-**END OF DOCUMENT**

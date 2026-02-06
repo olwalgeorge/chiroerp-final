@@ -1,7 +1,8 @@
 # ADR-043: CRM & Customer Management (Add-on)
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (Planned - Blueprint Defined)
 **Date**: 2026-02-01
+**Updated**: 2026-02-06 - Resolved boundary overlap between crm-activity and crm-interactions
 **Deciders**: Architecture Team, Product Team
 **Priority**: Medium
 **Tier**: Add-on
@@ -13,16 +14,41 @@ The draft architecture includes a CRM bounded context, but the ADR suite does no
 ## Decision
 Adopt a **CRM & Customer Management** domain as an add-on that provides customer profiles, interaction history, and pipeline management, integrating with SD and Finance for customer lifecycle and revenue visibility.
 
+### Bounded Context Architecture
+
+```
+crm/                                # CRM Bounded Context (ADR-043)
+├── crm-shared/                     # Shared identifiers (ADR-006 compliant)
+├── crm-customer360/                # Customer 360 Subdomain (Port 9451)
+├── crm-pipeline/                   # Sales Pipeline Subdomain (Port 9452)
+├── crm-contracts/                  # Service Contracts Subdomain (Port 9453)
+├── crm-activity/                   # Activity & Interaction Tracking (Port 9454)
+└── crm-account-health/             # Account Health Subdomain (Port 9455)
+```
+
+**Package Structure**: `com.chiroerp.crm.*`
+**Port Range**: 9451-9459 (avoids conflict with Maintenance 9401-9411)
+
+**Note**: Ports 9456-9459 are reserved for future expansion (Marketing Campaigns, Customer Service subdomains).
+
 ### Scope
 - Customer 360 profile, contacts, and interaction history.
 - Opportunity and pipeline management.
+- Service contracts and entitlement tracking.
+- Activity tracking (calls, emails, meetings, tasks) with interaction history.
 - Account health scoring and retention workflows.
 - Marketing consent and communication preferences.
+
+**Architectural Decision**: `crm-activity` consolidates both activity tracking and interaction history capabilities to avoid subdomain fragmentation. The subdomain handles:
+- **Activity Management**: Tasks, appointments, calls, meetings (planned/scheduled)
+- **Interaction History**: Email threads, call logs, meeting notes (completed/historical)
+- **Engagement Timeline**: Unified customer interaction timeline across channels
 
 ### Key Capabilities
 - **Customer Master (CRM view)**: enriched profile tied to MDG records.
 - **Pipeline Management**: stages, probability, forecast rollups.
-- **Activity Tracking**: calls, emails, meetings, tasks.
+- **Activity & Interaction Tracking**: calls, emails, meetings, tasks with full history.
+- **Service Contracts**: contract lifecycle, entitlements, renewals.
 - **Account Health**: churn risk signals, renewal alerts.
 
 ### Integration Points

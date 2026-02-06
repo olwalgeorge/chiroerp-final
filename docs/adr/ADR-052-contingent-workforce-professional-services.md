@@ -5,13 +5,46 @@
 **Deciders**: Architecture Team, Procurement Team, HR Team
 **Priority**: P2 (Medium-High)
 **Tier**: Add-on
+**Parent Module**: HR Bounded Context
 **Tags**: contingent-workforce, consultants, professional-services, vms, sow, staffing
 
 ## Context
 While ADR-023 (Procurement) supports basic services procurement and ADR-036 (Project Accounting) tracks project labor, the current architecture lacks specialized capabilities for managing contingent workers, consultants, and professional services firms. Enterprise organizations require Vendor Management System (VMS) capabilities including SOW management, skills-based sourcing, consultant lifecycle tracking, rate card negotiations, compliance management (certifications, background checks, right-to-work), and staffing supplier performance management. This gap creates inefficiencies in sourcing specialized talent, compliance risks, and missed cost optimization opportunities.
 
 ## Decision
-Implement a **Contingent Workforce & Professional Services Management** add-on module that provides Statement of Work (SOW) management, consultant/contractor lifecycle, skills-based sourcing, rate card management, compliance tracking, and staffing supplier governance integrated with Procurement, Project Accounting, HR, and Finance.
+Implement **two distinct subdomains** under the HR bounded context to address different engagement models:
+
+1. **Contingent Workforce** (Port 9904) - T&M contractors via staffing agencies
+2. **Professional Services** (Port 9907) - SOW-based consulting engagements
+
+### Subdomain Architecture
+
+```
+hr/
+├── hr-shared/                           # ADR-006 COMPLIANT: Identifiers and enums
+├── hr-contingent-workforce/             # Port 9904 - T&M Contractors
+│   ├── contingent-domain/
+│   ├── contingent-application/
+│   └── contingent-infrastructure/
+└── hr-professional-services/            # Port 9907 - SOW Management
+    ├── professional-services-domain/
+    ├── professional-services-application/
+    └── professional-services-infrastructure/
+```
+
+**Package Structure**: `com.chiroerp.hr.contingent.*` and `com.chiroerp.hr.professionalservices.*`
+
+### Key Distinction Between Subdomains
+
+| Aspect | Contingent Workforce (9904) | Professional Services (9907) |
+|--------|----------------------------|------------------------------|
+| **Engagement Type** | Time & Materials (T&M) | Fixed Price / Milestone / Retainer |
+| **Billing** | Hourly/daily rates | Deliverable-based |
+| **Supplier** | Staffing agencies | Consulting firms |
+| **Worker** | Individual contractor | Engagement team |
+| **Approval** | Requisition → Fill | SOW → Deliverable acceptance |
+| **Tracking** | Timesheets | Milestones/deliverables |
+| **Compliance** | Co-employment, I-9, certs | SLA, IP rights, confidentiality |
 
 ### Scope
 - Statement of Work (SOW) and Master Service Agreement (MSA) management.
@@ -28,24 +61,23 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
 - Payroll processing (integrate with ADR-034).
 - Advanced workforce planning (separate WFM module).
 
+---
+
+## Contingent Workforce Subdomain (Port 9904)
+
+**Focus**: Time & Materials (T&M) contractors, staffing agencies, VMS workflows.
+
 ### Core Capabilities
+- **Contractor lifecycle**: Requisition → sourcing → onboarding → assignment → time tracking → offboarding.
+- **VMS (Vendor Management System)**: Centralized contractor sourcing and management.
+- **Rate card management**: Standard, negotiated, geographic, peak rates.
+- **Staffing supplier management**: Agencies, MSPs, freelance platforms.
+- **Time & expense tracking**: Weekly timesheets, expense reports, approval workflows.
+- **Compliance tracking**: Background checks, certifications, work authorization.
+- **Contractor performance**: Periodic reviews, talent pool management, re-engagement.
+- **Co-employment risk controls**: Classification, duration limits, supervision guidelines.
 
-#### Statement of Work (SOW) Management
-- **SOW lifecycle**: Draft → Approval → Active → Amendment → Closed.
-- **MSA tracking**: Framework agreements with rate schedules.
-- **SOW components**:
-  - Scope of work and deliverables.
-  - Duration, start/end dates, extension options.
-  - Resource requirements (roles, skills, quantities).
-  - Rate cards and fee structures.
-  - Payment terms (milestone, T&M, fixed fee, retainer).
-  - Service level agreements (SLAs) and KPIs.
-  - IP rights, confidentiality, non-compete clauses.
-- **Change management**: SOW amendments with approval workflow.
-- **Milestone tracking**: Deliverable acceptance and invoicing.
-- **Multi-tier SOWs**: Prime contractor with sub-tier assignments.
-
-#### Consultant/Contractor Requisition
+#### Contractor Requisition
 - **Requisition workflow**: Business unit request → approval → sourcing.
 - **Role definition**:
   - Job title and role description.
@@ -283,9 +315,9 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
   - **Utilization reports**: Consultant utilization rates (billable hours / available hours).
   - **Pipeline visibility**: Forecasted demand (upcoming requisitions, renewal opportunities).
 
-### Data Model (Conceptual)
-- `SOW`, `MSA`, `SOWMilestone`, `SOWAmendment`, `RateCard`, `RateLine`.
-- `ConsultantRequisition`, `ConsultantAssignment`, `ConsultantProfile`.
+### Contingent Workforce Data Model
+- `ContractorRequisition`, `ContractorAssignment`, `ContractorProfile`.
+- `RateCard`, `RateLine`, `RateCardVersion`.
 - `Skill`, `SkillCategory`, `Certification`, `CompetencyProfile`.
 - `Timesheet`, `TimesheetEntry`, `ExpenseReport`, `ExpenseItem`.
 - `StaffingSupplier`, `SupplierScorecard`, `SupplierContract`.
@@ -295,16 +327,115 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
 - **AI/ML Entities**: `SkillMatchScore`, `CandidateRecommendation`, `PredictionModel`, `ModelTrainingRun`, `BiasAuditLog`.
 - **Portal Entities**: `SupplierPortalUser`, `SupplierSession`, `CandidateSubmission`, `PortalNotification`, `SupplierMessage`.
 
+---
+
+## Professional Services Subdomain (Port 9907)
+
+**Focus**: Statement of Work (SOW) based consulting, deliverable-based billing, milestone tracking.
+
+### Core Capabilities
+- **SOW lifecycle**: Draft → Approval → Active → Amendment → Closed.
+- **MSA tracking**: Master Service Agreements with rate schedules and terms.
+- **Deliverable management**: Scope definition, acceptance criteria, sign-off workflows.
+- **Milestone billing**: Fixed-fee, milestone-based, and retainer payment models.
+- **Multi-tier engagements**: Prime contractor with sub-tier consulting partners.
+- **SLA/KPI tracking**: Service level agreements and performance metrics.
+- **IP/Confidentiality**: Rights management, NDA tracking, non-compete provisions.
+
+#### SOW Management
+- **SOW components**:
+  - Scope of work and deliverables definition.
+  - Duration, start/end dates, extension options.
+  - Resource requirements (roles, skills, quantities).
+  - Rate cards and fee structures.
+  - Payment terms (milestone, fixed fee, retainer).
+  - Service level agreements (SLAs) and KPIs.
+  - IP rights, confidentiality, non-compete clauses.
+- **Change management**: SOW amendments with approval workflow.
+- **Version control**: SOW revision history and audit trail.
+
+#### Master Service Agreement (MSA) Management
+- **MSA lifecycle**: Negotiation → Execution → Active → Renewal/Termination.
+- **Terms management**:
+  - Standard terms and conditions.
+  - Rate schedules and annual escalations.
+  - Liability caps and indemnification.
+  - Termination clauses and notice periods.
+- **MSA-SOW hierarchy**: Multiple SOWs under a single MSA.
+- **Renewal tracking**: Expiration alerts and renewal workflows.
+
+#### Deliverable & Milestone Tracking
+- **Deliverable definition**:
+  - Deliverable name and description.
+  - Acceptance criteria and quality standards.
+  - Due date and dependencies.
+  - Assigned consulting team.
+- **Milestone states**: Not Started → In Progress → Submitted → Under Review → Accepted → Invoiced.
+- **Acceptance workflow**: Client review → feedback → rework (if needed) → sign-off.
+- **Milestone billing triggers**: Acceptance triggers invoice generation.
+
+#### Consulting Firm Management
+- **Partner types**:
+  - Strategy consulting (McKinsey, BCG, Bain).
+  - Technology consulting (Accenture, Deloitte, Capgemini).
+  - Specialized boutique firms.
+  - Independent consultants/advisors.
+- **Partner onboarding**:
+  - Business registration and tax ID.
+  - Insurance certificates (E&O, liability).
+  - Service specializations and case studies.
+  - Geographic coverage and delivery centers.
+- **Partner performance scorecards**:
+  - Deliverable quality ratings.
+  - On-time delivery percentage.
+  - Client satisfaction scores.
+  - Budget adherence.
+
+#### Billing & Payment Models
+| Model | Description | Use Case |
+|-------|-------------|----------|
+| **Fixed Fee** | Lump sum for defined scope | Well-defined projects |
+| **Milestone** | Payment upon deliverable acceptance | Phased engagements |
+| **Retainer** | Monthly/quarterly fixed fee | Ongoing advisory |
+| **Capped T&M** | Hourly rates with ceiling | Discovery/scoping phases |
+| **Gain Share** | % of savings/revenue generated | Transformation projects |
+| **Risk/Reward** | Base + performance bonus | Outcome-based deals |
+
+#### Project Governance
+- **Steering committee tracking**: Meeting schedules, decisions, action items.
+- **RAID log integration**: Risks, Assumptions, Issues, Dependencies.
+- **Status reporting**: Weekly/monthly progress reports.
+- **Escalation management**: Issue escalation paths and resolution tracking.
+- **Change request management**: Scope changes with cost/schedule impact.
+
+### Professional Services Data Model
+- `MasterServiceAgreement`, `MSATerms`, `MSARenewal`.
+- `StatementOfWork`, `SOWVersion`, `SOWAmendment`.
+- `Deliverable`, `AcceptanceCriteria`, `DeliverableReview`.
+- `Milestone`, `MilestoneInvoice`, `MilestonePayment`.
+- `ConsultingFirm`, `ConsultingPartner`, `PartnerScorecard`.
+- `ProjectGovernance`, `SteeringCommittee`, `ChangeRequest`.
+- `SLA`, `KPI`, `PerformanceMetric`.
+
 ### Key Workflows
-- **SOW Lifecycle**: Draft SOW → approval → supplier assignment → execution → milestone tracking → invoicing → close.
-- **Requisition to Assignment (Contingent)**: Create requisition → approval → supplier selection → candidate submission → interview → offer → onboarding.
-- **Requisition to Hire (Permanent)**: Post job → source candidates → screen/assess → interview → offer → background check → onboard → HR system handoff.
-- **AI Talent Matching**: Requisition created → AI model scores candidates → top recommendations surfaced → hiring manager reviews → feedback loop to retrain model.
-- **Supplier Portal Workflow**: Supplier logs in → views open requisitions → submits candidates → tracks status → submits timesheets → generates invoices → views payments.
-- **Time & Expense**: Consultant enters time/expenses → manager approval → project owner approval → invoice matching → payment.
-- **Compliance**: Document collection → verification → expiration monitoring → renewal alerts → re-verification.
-- **Extension/Conversion**: Extension request → budget check → approval → SOW amendment OR conversion to FTE → ATS handoff → HR onboarding.
-- **Offboarding**: End date trigger → access revocation → equipment return → final timesheet → knowledge transfer → exit survey.
+- **SOW Lifecycle**: Draft SOW → approval → consulting firm assignment → execution → milestone tracking → deliverable acceptance → invoicing → close.
+- **Deliverable Acceptance**: Submit deliverable → client review → feedback/rework → acceptance sign-off → invoice trigger.
+- **MSA Renewal**: Expiration alert → terms review → negotiation → renewal approval → updated MSA.
+
+---
+
+## Cross-Subdomain Workflows
+
+The following workflows span both subdomains or integrate with other HR/Finance modules:
+
+- **Requisition to Assignment (Contingent - Port 9904)**: Create requisition → approval → supplier selection → candidate submission → interview → offer → onboarding.
+- **Requisition to Hire (Permanent - Port 9904)**: Post job → source candidates → screen/assess → interview → offer → background check → onboard → HR system handoff.
+- **AI Talent Matching (Port 9904)**: Requisition created → AI model scores candidates → top recommendations surfaced → hiring manager reviews → feedback loop to retrain model.
+- **Supplier Portal Workflow (Port 9904)**: Supplier logs in → views open requisitions → submits candidates → tracks status → submits timesheets → generates invoices → views payments.
+- **Time & Expense (Port 9904)**: Contractor enters time/expenses → manager approval → project owner approval → invoice matching → payment.
+- **Compliance (Port 9904)**: Document collection → verification → expiration monitoring → renewal alerts → re-verification.
+- **Extension/Conversion (Both)**: Extension request → budget check → approval → SOW amendment (9907) OR contractor extension (9904) → conversion to FTE if applicable.
+- **Offboarding (Port 9904)**: End date trigger → access revocation → equipment return → final timesheet → knowledge transfer → exit survey.
 
 ### Integration Points
 - **Procurement (ADR-023)**: SOW-based PO generation, supplier master integration, invoice matching.
@@ -439,18 +570,31 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
 - **Billable hour tracking**: Detailed time entry by matter code.
 
 ## Add-on Activation
-- **Tenant feature flag**: `contingent_workforce_enabled`.
-- **Licensing**: Optional module, priced per active contractor or % of contingent spend.
+- **Tenant feature flags**: 
+  - `contingent_workforce_enabled` (Port 9904)
+  - `professional_services_enabled` (Port 9907)
+- **Licensing**: Optional modules, priced per active contractor/SOW or % of spend.
 - **Activation prerequisites**: Procurement (ADR-023) and Project Accounting (ADR-036) must be active.
 
 ## Implementation Plan
-- **Phase 1**: SOW management, requisition workflow, basic rate cards (4 months).
-- **Phase 2**: Skills taxonomy, consultant onboarding, compliance tracking (4 months).
-- **Phase 3**: Time & expense approval, staffing supplier scorecards (3 months).
-- **Phase 4**: Performance reviews, talent pool, advanced analytics (3 months).
-- **Phase 5**: Industry-specific extensions (legal, healthcare, engineering) (2 months per vertical).
 
-**Total Timeline**: 14-18 months for full capability.
+### Contingent Workforce (Port 9904)
+- **Phase 1**: Requisition workflow, basic rate cards, supplier onboarding (3 months).
+- **Phase 2**: Skills taxonomy, contractor onboarding, compliance tracking (3 months).
+- **Phase 3**: Time & expense approval, staffing supplier scorecards (2 months).
+- **Phase 4**: AI talent matching, ATS integration, vendor portal (3 months).
+- **Phase 5**: Performance reviews, talent pool, advanced analytics (2 months).
+
+### Professional Services (Port 9907)
+- **Phase 1**: MSA management, SOW lifecycle, basic deliverable tracking (3 months).
+- **Phase 2**: Milestone billing, acceptance workflows, change management (2 months).
+- **Phase 3**: Consulting firm scorecards, project governance, SLA/KPI tracking (2 months).
+- **Phase 4**: Industry-specific extensions (legal, healthcare, engineering) (2 months per vertical).
+
+**Total Timeline**: 
+- Contingent Workforce: 13 months
+- Professional Services: 9-11 months
+- Parallel development possible with shared team.
 
 ## References
 ### Related ADRs
@@ -473,6 +617,8 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
 - California AB5 Worker Classification Law
 
 ## Success Metrics (12 Months Post-Launch)
+
+### Contingent Workforce (Port 9904)
 - **Adoption**: >= 80% of contractor spend managed through system.
 - **Cost Savings**: 10-15% reduction in contingent workforce spend through rate optimization.
 - **Compliance**: 100% compliant onboarding documentation.
@@ -480,13 +626,30 @@ Implement a **Contingent Workforce & Professional Services Management** add-on m
 - **Supplier Consolidation**: 30% reduction in staffing supplier count.
 - **User Satisfaction**: >= 4.0/5.0 NPS from hiring managers.
 
+### Professional Services (Port 9907)
+- **SOW Coverage**: >= 90% of consulting engagements managed through system.
+- **Deliverable On-Time Rate**: >= 85% of milestones delivered on schedule.
+- **Invoice Accuracy**: >= 99% milestone-to-invoice accuracy.
+- **Partner Scorecard Adoption**: 100% of consulting firms with active scorecards.
+- **User Satisfaction**: >= 4.0/5.0 NPS from project sponsors.
+
 ---
 
 **Notes for Implementers**:
-1. Start with high-volume use cases (IT contractors, project consultants).
+
+### Contingent Workforce (Port 9904)
+1. Start with high-volume use cases (IT contractors, temp staffing).
 2. Integrate tightly with Procurement for PO/invoice flows.
 3. Ensure HR partnership for co-employment risk mitigation.
 4. Build strong supplier onboarding and scorecard capabilities early.
 5. Prioritize compliance automation (expiration alerts, classification rules).
 6. Design for multi-tenancy: different industries have different requirements.
 7. Consider white-label freelance platform integration (Upwork, Fiverr).
+
+### Professional Services (Port 9907)
+1. Start with high-value consulting engagements (strategy, technology).
+2. Integrate with Project Accounting (ADR-036) for WBS and cost tracking.
+3. Build MSA repository before SOW management (MSA is foundation).
+4. Implement deliverable acceptance workflows with clear SLAs.
+5. Enable consulting firm self-service for status updates and document uploads.
+6. Connect milestone acceptance to AP invoice generation.

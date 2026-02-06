@@ -52,27 +52,60 @@ interface AuthenticationPrincipal
 sealed class SecurityContext
 ```
 
-### 5. Platform Abstraction Interfaces (Phase 0 Addition)
+### 5. Platform Configuration Metadata (Phase 0 Addition) - SAP IMG Pattern
+
+**Category A: Configuration Engine Abstractions (ADR-044)**
 ```kotlin
-// ✅ Configuration engine abstractions (ADR-044)
+// ✅ Rule engines for configurable business logic
 interface PricingRulesEngine
 interface PostingRulesEngine
 interface TaxRulesEngine
+```
 
-// ✅ Organizational model abstractions (ADR-045)
-interface OrgHierarchyService
+**Category B: Organizational Model Metadata (ADR-045) - SAP Enterprise Structure Equivalent**
+```kotlin
+// ✅ Organizational structure metadata (like SAP IMG Enterprise Structure)
+data class CompanyCode(val code: String, val name: String, val currency: String)
+data class Plant(val code: String, val companyCode: String, val address: Address)
+data class CostCenter(val code: String, val name: String, val companyCode: String)
 data class OrgUnit(val id: UUID, val code: String, val type: OrgUnitType)
 
-// ✅ Workflow engine abstractions (ADR-046)
-interface WorkflowEngine
+// ✅ Organizational hierarchy services
+interface OrgHierarchyService
+interface OrgAuthorizationService
+```
+
+**Category C: Workflow Infrastructure (ADR-046) - SAP Business Workflow Equivalent**
+```kotlin
+// ✅ Workflow process primitives (like SAP Workflow Templates)
+data class WorkflowDefinition(val steps: List<ApprovalStep>)
+data class ApprovalStep(val approvers: List<ApprovalRule>)
 data class ApprovalContext(val documentType: String, val amount: BigDecimal)
 
-// ✅ Event messaging abstractions (ADR-003)
+// ✅ Workflow engine interfaces
+interface WorkflowEngine
+interface ApprovalRoutingService
+```
+
+**Category D: Event Messaging Abstractions (ADR-003)**
+```kotlin
+// ✅ Event infrastructure
 interface DomainEventPublisher
 interface DomainEvent
 ```
 
-**Rationale:** These are **pure technical contracts** that enable the configurability strategy. Domains depend on interfaces, implementations are swapped without code changes. This is different from shared domain models (which are forbidden).
+**Rationale:** These are **configuration metadata** and **process infrastructure** that enable the SAP-grade configurability strategy:
+1. **Configuration Metadata** (CompanyCode, Plant, WorkflowDefinition) - Defines **structure** without **business semantics**
+   - Domains **interpret differently**: Finance (CompanyCode = P&L entity), Inventory (Plant = valuation area), Procurement (Plant = receiving location)
+   - Like **SAP IMG Enterprise Structure** - metadata consumed by modules, not shared domain models
+2. **Process Infrastructure** (WorkflowEngine, OrgHierarchyService) - Provides **technical primitives** for domain orchestration
+   - Domains **configure with business rules**: P2P (3-level approval >$10K), O2C (credit check before shipment)
+   - Like **SAP Business Workflow** - infrastructure configured by business rules, not business logic itself
+3. **Key Distinction**: Configuration metadata has NO BUSINESS SEMANTICS - domains provide the semantics when consuming
+
+**What Makes This Different From Forbidden Domain Models:**
+- ❌ Domain Model: `CustomerAddress` - Single semantic meaning (shipping/billing/contact), belongs in one context
+- ✅ Configuration Metadata: `CompanyCode` - Multiple interpretations (Finance: P&L; Procurement: contracting party; Tax: jurisdiction)
 
 ### Forbidden in platform-shared
 

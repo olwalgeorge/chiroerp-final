@@ -1,7 +1,16 @@
-ChiroERP - Complete Platform-Shared and Finance Structure
+ChiroERP - Complete Platform-Shared, Finance, and Inventory Structure
 ===============================================================
 Based on ADRs and improved.txt specifications
 Generated: February 5, 2026
+Updated: February 6, 2026 - ADR-006 Governance Compliance
+
+GOVERNANCE NOTES (ADR-006)
+==========================
+1. platform-shared contains ONLY technical primitives and abstractions
+2. Business value objects (Money, Address, PhoneNumber, Email) are DUPLICATED
+   in each bounded context's *-shared module with context-specific semantics
+3. Maximum 7 modules in platform-shared (adding 8th requires ADR amendment)
+4. No domain models, business logic, or shared DTOs in platform-shared
 
 ROOT STRUCTURE
 ==============
@@ -19,15 +28,13 @@ chiroerp/
 │   │       │   │       └── chiroerp/
 │   │       │   │           └── shared/
 │   │       │   │               └── types/
-│   │       │   │                   ├── valueobjects/
-│   │       │   │                   │   ├── Money.kt
-│   │       │   │                   │   ├── Currency.kt
-│   │       │   │                   │   ├── Quantity.kt
-│   │       │   │                   │   ├── Address.kt
-│   │       │   │                   │   ├── PhoneNumber.kt
-│   │       │   │                   │   ├── Email.kt
-│   │       │   │                   │   ├── TaxId.kt
-│   │       │   │                   │   └── AuditInfo.kt
+│   │       │   │                   ├── primitives/                   # ADR-006: ONLY technical primitives
+│   │       │   │                   │   ├── Identifier.kt             # Generic ID wrapper
+│   │       │   │                   │   ├── AuditInfo.kt              # Technical audit trail (ALLOWED per ADR-006)
+│   │       │   │                   │   └── CorrelationId.kt          # Request correlation
+│   │       │   │                   │   # NOTE: Money, Address, PhoneNumber, Email, TaxId
+│   │       │   │                   │   # are FORBIDDEN here per ADR-006 - must be duplicated
+│   │       │   │                   │   # in each bounded context with context-specific semantics
 │   │       │   │                   ├── events/
 │   │       │   │                   │   ├── DomainEvent.kt
 │   │       │   │                   │   ├── EventMetadata.kt
@@ -53,7 +60,8 @@ chiroerp/
 │   │           │       └── chiroerp/
 │   │           │           └── shared/
 │   │           │               └── types/
-│   │           │                   ├── MoneyTest.kt
+│   │           │                   ├── IdentifierTest.kt
+│   │           │                   ├── AuditInfoTest.kt
 │   │           │                   ├── ResultTest.kt
 │   │           │                   └── AggregateRootTest.kt
 │   │           └── resources/
@@ -387,6 +395,10 @@ chiroerp/
 │   │       │   │       └── chiroerp/
 │   │       │   │           └── tenancy/
 │   │       │   │               └── shared/
+│   │       │   │                   ├── valueobjects/                # ADR-006: Context-specific value objects
+│   │       │   │                   │   ├── Email.kt                 # Identity email validation rules
+│   │       │   │                   │   ├── PhoneNumber.kt           # Identity phone validation
+│   │       │   │                   │   └── Address.kt               # Tenant address (billing/legal)
 │   │       │   │                   ├── TenantId.kt
 │   │       │   │                   ├── TenantContext.kt
 │   │       │   │                   ├── TenantStatus.kt              # ACTIVE, SUSPENDED, PROVISIONING, TERMINATED
@@ -685,7 +697,7 @@ chiroerp/
 │
 └── finance/                                     # Finance Domain (ADR-009)
     │
-    ├── finance-shared/
+    ├── finance-shared/                              # ADR-006 COMPLIANT: Identifiers and value objects only
     │   ├── build.gradle.kts
     │   └── src/
     │       ├── main/
@@ -694,8 +706,22 @@ chiroerp/
     │       │   │       └── chiroerp/
     │       │   │           └── finance/
     │       │   │               └── shared/
+    │       │   │                   ├── identifiers/                  # ADR-006: Shared identifiers across finance subdomains
+    │       │   │                   │   ├── JournalEntryId.kt         # GL journal entries
+    │       │   │                   │   ├── AccountId.kt              # Chart of accounts
+    │       │   │                   │   ├── LedgerId.kt               # General ledger
+    │       │   │                   │   ├── InvoiceId.kt              # AR/AP invoices
+    │       │   │                   │   ├── PaymentId.kt              # Payment transactions
+    │       │   │                   │   ├── AssetId.kt                # Fixed assets
+    │       │   │                   │   ├── TaxRuleId.kt              # Tax configuration
+    │       │   │                   │   ├── BudgetId.kt               # Budgeting
+    │       │   │                   │   └── CostCenterId.kt           # Cost allocation
+    │       │   │                   ├── valueobjects/                 # ADR-006: Context-specific value objects
+    │       │   │                   │   ├── Money.kt                  # Finance-specific precision & rounding
+    │       │   │                   │   ├── Currency.kt               # ISO 4217 with finance formatting
+    │       │   │                   │   ├── TaxId.kt                  # Finance tax identification
+    │       │   │                   │   └── AccountNumber.kt          # Bank account number
     │       │   │                   ├── FiscalPeriod.kt
-    │       │   │                   ├── Currency.kt
     │       │   │                   ├── AccountingPeriodStatus.kt
     │       │   │                   ├── AccountType.kt
     │       │   │                   ├── JournalEntryType.kt
@@ -726,23 +752,22 @@ chiroerp/
     │   │       │   │                       ├── model/
     │   │       │   │                       │   ├── ledger/
     │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root
-    │   │       │   │                       │   │   ├── LedgerId.kt
+    │   │       │   │                       │   ├── ledger/
+    │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root (uses shared LedgerId)
     │   │       │   │                       │   │   ├── LedgerType.kt             # Primary, Secondary, Statistical
     │   │       │   │                       │   │   ├── LedgerStatus.kt
     │   │       │   │                       │   │   └── LedgerPeriod.kt
     │   │       │   │                       │   ├── chartofaccounts/
     │   │       │   │                       │   │   ├── ChartOfAccounts.kt        # Aggregate Root
     │   │       │   │                       │   │   ├── ChartId.kt
-    │   │       │   │                       │   │   ├── Account.kt                # Entity
-    │   │       │   │                       │   │   ├── AccountId.kt
+    │   │       │   │                       │   │   ├── Account.kt                # Entity (uses shared AccountId)
     │   │       │   │                       │   │   ├── AccountType.kt            # Asset, Liability, Equity, Revenue, Expense
     │   │       │   │                       │   │   ├── AccountGroup.kt
     │   │       │   │                       │   │   ├── AccountHierarchy.kt
     │   │       │   │                       │   │   ├── NaturalAccount.kt
     │   │       │   │                       │   │   └── AccountSegment.kt         # Company, CostCenter, Department, Project
     │   │       │   │                       │   ├── journal/
-    │   │       │   │                       │   │   ├── JournalEntry.kt           # Aggregate Root
-    │   │       │   │                       │   │   ├── JournalEntryId.kt
+    │   │       │   │                       │   │   ├── JournalEntry.kt           # Aggregate Root (uses shared JournalEntryId)
     │   │       │   │                       │   │   ├── JournalLine.kt            # Entity
     │   │       │   │                       │   │   ├── JournalLineId.kt
     │   │       │   │                       │   │   ├── JournalType.kt            # Manual, Automated, Recurring, Reversing, Adjustment
@@ -780,8 +805,7 @@ chiroerp/
     │   │       │   │                       │       ├── LegalEntity.kt            # Aggregate Root
     │   │       │   │                       │       ├── LegalEntityId.kt
     │   │       │   │                       │       ├── CompanyCode.kt
-    │   │       │   │                       │       ├── CostCenter.kt             # Entity
-    │   │       │   │                       │       ├── CostCenterId.kt
+    │   │       │   │                       │       ├── CostCenter.kt             # Entity (uses shared CostCenterId)
     │   │       │   │                       │       └── SegmentDimension.kt       # Value Object
     │   │       │   │                       ├── events/
     │   │       │   │                       │   ├── JournalEntryPostedEvent.kt
@@ -2464,6 +2488,10 @@ chiroerp/
 │   │                   └── chiroerp/
 │   │                       └── inventory/
 │   │                           └── shared/
+│   │                               ├── valueobjects/                # ADR-006: Context-specific value objects
+│   │                               │   ├── Quantity.kt              # Inventory-specific quantity handling
+│   │                               │   ├── Money.kt                 # Inventory valuation money (may differ from finance)
+│   │                               │   └── Weight.kt                # Physical weight measurements
 │   │                               ├── ItemId.kt
 │   │                               ├── LocationId.kt
 │   │                               ├── LotNumber.kt
@@ -2486,8 +2514,7 @@ chiroerp/
 │   │   │       │   │                   └── domain/
 │   │   │       │   │                       ├── model/
 │   │   │       │   │                       │   ├── item/
-│   │   │       │   │                       │   │   ├── Item.kt                      # Aggregate Root
-│   │   │       │   │                       │   │   ├── ItemId.kt
+│   │   │       │   │                       │   │   ├── Item.kt                      # Aggregate Root (uses shared ItemId)
 │   │   │       │   │                       │   │   ├── ItemType.kt                  # STOCKED, NON_STOCK, SERVICE
 │   │   │       │   │                       │   │   ├── ItemStatus.kt                # ACTIVE, BLOCKED, DISCONTINUED
 │   │   │       │   │                       │   │   ├── ItemVariant.kt               # Entity
@@ -2497,18 +2524,15 @@ chiroerp/
 │   │   │       │   │                       │   │   ├── UoMConversion.kt
 │   │   │       │   │                       │   │   └── ItemAttribute.kt             # Size, color, style
 │   │   │       │   │                       │   ├── location/
-│   │   │       │   │                       │   │   ├── Location.kt                  # Aggregate Root
-│   │   │       │   │                       │   │   ├── LocationId.kt
+│   │   │       │   │                       │   │   ├── Location.kt                  # Aggregate Root (uses shared LocationId)
 │   │   │       │   │                       │   │   ├── LocationType.kt              # STORE, WAREHOUSE, VENDOR, IN_TRANSIT
 │   │   │       │   │                       │   │   ├── Bin.kt                       # Entity
 │   │   │       │   │                       │   │   ├── BinId.kt
 │   │   │       │   │                       │   │   ├── Capacity.kt
 │   │   │       │   │                       │   │   └── TemperatureZone.kt
 │   │   │       │   │                       │   ├── stock/
-│   │   │       │   │                       │   │   ├── StockLedger.kt               # Aggregate Root
+│   │   │       │   │                       │   │   ├── StockLedger.kt               # Aggregate Root (uses shared MovementType, StockStatus)
 │   │   │       │   │                       │   │   ├── StockMovement.kt             # Entity
-│   │   │       │   │                       │   │   ├── MovementType.kt              # RECEIPT, ISSUE, TRANSFER, ADJUSTMENT
-│   │   │       │   │                       │   │   ├── StockStatus.kt               # AVAILABLE, RESERVED, DAMAGED, IN_TRANSIT
 │   │   │       │   │                       │   │   ├── StockLot.kt                  # Entity
 │   │   │       │   │                       │   │   ├── StockSerial.kt               # Entity
 │   │   │       │   │                       │   │   └── ExpiryDate.kt
@@ -3777,8 +3801,8 @@ chiroerp/
 │
 ├── commerce/                                    # COMMERCE BOUNDED CONTEXT (ADR-025) - Omnichannel
 │   │
-│   ├── commerce-shared/                         # Shared types across commerce subdomains
-│   │   ├── build.gradle.kts
+│   ├── commerce-shared/                         # ADR-006 COMPLIANT: Identifiers, VOs, Enums ONLY
+│   │   ├── build.gradle.kts                     # NO domain models, NO business logic
 │   │   └── src/
 │   │       └── main/
 │   │           └── kotlin/
@@ -3786,23 +3810,23 @@ chiroerp/
 │   │                   └── chiroerp/
 │   │                       └── commerce/
 │   │                           └── shared/
-│   │                               ├── catalog/
-│   │                               │   ├── Product.kt
+│   │                               ├── identifiers/            # Typed IDs only
 │   │                               │   ├── ProductId.kt
+│   │                               │   ├── CategoryId.kt
+│   │                               │   ├── OrderId.kt
+│   │                               │   └── CustomerId.kt
+│   │                               ├── valueobjects/           # Context-specific VOs (duplicated per ADR-006)
+│   │                               │   ├── Money.kt            # Commerce-specific Money VO
 │   │                               │   ├── SKU.kt
 │   │                               │   ├── Price.kt
-│   │                               │   ├── Category.kt
-│   │                               │   └── ProductAttribute.kt
-│   │                               ├── pricing/
-│   │                               │   ├── PricingEngine.kt
 │   │                               │   ├── Discount.kt
 │   │                               │   ├── Tax.kt
-│   │                               │   └── PriceCalculation.kt
-│   │                               └── order/
-│   │                                   ├── OrderBase.kt
-│   │                                   ├── OrderId.kt
+│   │                               │   └── Address.kt          # Commerce-specific Address VO
+│   │                               └── enums/                  # Enumerations only
 │   │                                   ├── OrderStatus.kt
-│   │                                   └── FulfillmentStatus.kt
+│   │                                   ├── PaymentStatus.kt
+│   │                                   ├── FulfillmentStatus.kt
+│   │                                   └── ProductStatus.kt
 │   │
 │   ├── commerce-ecommerce/                      # Port 9301 - E-Commerce (B2C/D2C Online)
 │   │   ├── ecommerce-domain/
@@ -4538,27 +4562,39 @@ chiroerp/
 
 ├── hr/                                          # HUMAN CAPITAL MANAGEMENT (HCM) BOUNDED CONTEXT
 │   │
-│   ├── hr-shared/                               # Shared types across HR subdomains
+│   ├── hr-shared/                               # ADR-006 COMPLIANT: Identifiers and value objects only
 │   │   ├── build.gradle.kts
-│   │   └── src/
-│   │       └── main/
-│   │           └── kotlin/
-│   │               └── com/
-│   │                   └── chiroerp/
-│   │                       └── hr/
-│   │                           └── shared/
-│   │                               ├── EmployeeId.kt
-│   │                               ├── DepartmentId.kt
-│   │                               ├── PositionId.kt
-│   │                               ├── ContractorId.kt
-│   │                               ├── SupplierId.kt
-│   │                               ├── ShiftId.kt
-│   │                               ├── ExpenseReportId.kt
-│   │                               ├── TravelRequestId.kt
-│   │                               ├── TimesheetId.kt
-│   │                               ├── RequisitionId.kt
-│   │                               ├── ApprovalStatus.kt
-│   │                               └── EmploymentType.kt           # FULL_TIME, PART_TIME, CONTRACTOR, TEMP
+│   │   └── src/main/kotlin/com/chiroerp/hr/shared/
+│   │       ├── identifiers/
+│   │       │   ├── EmployeeId.kt
+│   │       │   ├── DepartmentId.kt
+│   │       │   ├── PositionId.kt
+│   │       │   ├── ShiftId.kt
+│   │       │   ├── ExpenseReportId.kt
+│   │       │   ├── TravelRequestId.kt
+│   │       │   ├── TimesheetId.kt
+│   │       │   ├── ContractorId.kt               # Contingent Workforce
+│   │       │   ├── RequisitionId.kt              # Contingent Workforce
+│   │       │   ├── StaffingSupplierId.kt         # Contingent Workforce
+│   │       │   ├── RateCardId.kt                 # Contingent Workforce
+│   │       │   ├── SOWId.kt                      # Professional Services
+│   │       │   ├── MSAId.kt                      # Professional Services
+│   │       │   ├── DeliverableId.kt              # Professional Services
+│   │       │   ├── MilestoneId.kt                # Professional Services
+│   │       │   ├── ConsultingFirmId.kt           # Professional Services
+│   │       │   └── EngagementId.kt               # Professional Services
+│   │       ├── valueobjects/
+│   │       │   ├── RateRange.kt                  # Min/max rate for requisition
+│   │       │   ├── SkillRequirementVO.kt         # Skill + proficiency level
+│   │       │   ├── ComplianceStatusVO.kt         # Compliance check result
+│   │       │   └── BudgetAmountVO.kt             # SOW/engagement budget
+│   │       └── enums/
+│   │           ├── ApprovalStatus.kt             # PENDING, APPROVED, REJECTED
+│   │           ├── EmploymentType.kt             # FULL_TIME, PART_TIME, CONTRACTOR, TEMP
+│   │           ├── ContractorStatus.kt           # CANDIDATE, ONBOARDING, ACTIVE, OFFBOARDED
+│   │           ├── SOWStatus.kt                  # DRAFT, NEGOTIATION, APPROVED, ACTIVE, AMENDED, CLOSED
+│   │           ├── SOWType.kt                    # FIXED_PRICE, TIME_AND_MATERIALS, RETAINER, MILESTONE
+│   │           └── DeliverableStatus.kt          # NOT_STARTED, IN_PROGRESS, SUBMITTED, ACCEPTED, REJECTED
 │   │
 │   ├── hr-core/                                 # Port 9101 - Core HR (Employee, Organization, Payroll Integration)
 │   │   ├── core-domain/
@@ -4573,8 +4609,7 @@ chiroerp/
 │   │   │                               └── domain/
 │   │   │                                   ├── model/
 │   │   │                                   │   ├── employee/
-│   │   │                                   │   │   ├── Employee.kt              # Aggregate Root
-│   │   │                                   │   │   ├── EmployeeId.kt
+│   │   │                                   │   │   ├── Employee.kt              # Aggregate Root (uses shared EmployeeId)
 │   │   │                                   │   │   ├── EmployeeProfile.kt
 │   │   │                                   │   │   ├── EmploymentStatus.kt      # ACTIVE, ON_LEAVE, TERMINATED
 │   │   │                                   │   │   ├── EmploymentType.kt
@@ -4816,152 +4851,282 @@ chiroerp/
 │   ├── hr-contingent-workforce/                 # Port 9904 - Contingent Workforce / VMS (ADR-052)
 │   │   ├── contingent-domain/
 │   │   │   ├── build.gradle.kts
-│   │   │   └── src/
-│   │   │       └── main/
-│   │   │           └── kotlin/
-│   │   │               └── com/
-│   │   │                   └── chiroerp/
-│   │   │                       └── hr/
-│   │   │                           └── contingent/
-│   │   │                               └── domain/
-│   │   │                                   ├── model/
-│   │   │                                   │   ├── requisition/
-│   │   │                                   │   │   ├── Requisition.kt           # Aggregate Root
-│   │   │                                   │   │   ├── RequisitionId.kt
-│   │   │                                   │   │   ├── RequisitionStatus.kt     # DRAFT, SUBMITTED, APPROVED, FILLED, CLOSED
-│   │   │                                   │   │   ├── JobRequirements.kt
-│   │   │                                   │   │   ├── SkillRequirement.kt
-│   │   │                                   │   │   └── RateRange.kt
-│   │   │                                   │   ├── contractor/
-│   │   │                                   │   │   ├── Contractor.kt            # Aggregate Root
-│   │   │                                   │   │   ├── ContractorId.kt
-│   │   │                                   │   │   ├── ContractorProfile.kt
-│   │   │                                   │   │   ├── ContractorStatus.kt      # CANDIDATE, ONBOARDING, ACTIVE, OFFBOARDED
-│   │   │                                   │   │   ├── SkillSet.kt
-│   │   │                                   │   │   └── Certification.kt
-│   │   │                                   │   ├── sow/
-│   │   │                                   │   │   ├── StatementOfWork.kt       # Aggregate Root
-│   │   │                                   │   │   ├── SOWId.kt
-│   │   │                                   │   │   ├── SOWStatus.kt
-│   │   │                                   │   │   ├── Deliverable.kt
-│   │   │                                   │   │   ├── Milestone.kt
-│   │   │                                   │   │   └── SOWBudget.kt
-│   │   │                                   │   ├── supplier/
-│   │   │                                   │   │   ├── Supplier.kt              # Aggregate Root (Staffing Agency)
-│   │   │                                   │   │   ├── SupplierId.kt
-│   │   │                                   │   │   ├── RateCard.kt
-│   │   │                                   │   │   ├── MSA.kt                   # Master Service Agreement
-│   │   │                                   │   │   └── SupplierScorecard.kt
-│   │   │                                   │   ├── timesheet/
-│   │   │                                   │   │   ├── ContractorTimesheet.kt   # Aggregate Root
-│   │   │                                   │   │   ├── TimesheetId.kt
-│   │   │                                   │   │   ├── TimeEntry.kt
-│   │   │                                   │   │   └── TimesheetApproval.kt
-│   │   │                                   │   └── matching/
-│   │   │                                   │       ├── CandidateMatch.kt
-│   │   │                                   │       ├── SkillMatchScore.kt
-│   │   │                                   │       └── AIRecommendation.kt
-│   │   │                                   ├── event/
-│   │   │                                   │   ├── RequisitionCreatedEvent.kt
-│   │   │                                   │   ├── RequisitionApprovedEvent.kt
-│   │   │                                   │   ├── CandidateSubmittedEvent.kt
-│   │   │                                   │   ├── ContractorOnboardedEvent.kt
-│   │   │                                   │   ├── ContractorOffboardedEvent.kt
-│   │   │                                   │   ├── SOWCreatedEvent.kt
-│   │   │                                   │   ├── SOWApprovedEvent.kt
-│   │   │                                   │   ├── TimesheetSubmittedEvent.kt
-│   │   │                                   │   └── TimesheetApprovedEvent.kt
-│   │   │                                   ├── exception/
-│   │   │                                   │   ├── RequisitionNotApprovedException.kt
-│   │   │                                   │   ├── RateCardExceededException.kt
-│   │   │                                   │   └── ContractorNotComplianceException.kt
-│   │   │                                   └── service/
-│   │   │                                       ├── SkillMatchingService.kt
-│   │   │                                       ├── AIMatchingService.kt
-│   │   │                                       ├── RateCardValidationService.kt
-│   │   │                                       └── SupplierScorecardService.kt
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/contingent/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── requisition/
+│   │   │       │   │   ├── ContractorRequisition.kt      # Aggregate Root - T&M contractor request
+│   │   │       │   │   ├── RequisitionId.kt
+│   │   │       │   │   ├── RequisitionStatus.kt          # DRAFT, SUBMITTED, APPROVED, FILLED, CLOSED
+│   │   │       │   │   ├── JobRequirements.kt
+│   │   │       │   │   ├── SkillRequirement.kt
+│   │   │       │   │   └── RateRange.kt
+│   │   │       │   ├── contractor/
+│   │   │       │   │   ├── Contractor.kt                 # Aggregate Root - Individual contractor
+│   │   │       │   │   ├── ContractorId.kt
+│   │   │       │   │   ├── ContractorProfile.kt
+│   │   │       │   │   ├── ContractorStatus.kt           # CANDIDATE, ONBOARDING, ACTIVE, OFFBOARDED
+│   │   │       │   │   ├── SkillSet.kt
+│   │   │       │   │   ├── Certification.kt
+│   │   │       │   │   ├── ComplianceRecord.kt           # Background check, I-9, certifications
+│   │   │       │   │   └── CoEmploymentRisk.kt           # Classification assessment
+│   │   │       │   ├── supplier/
+│   │   │       │   │   ├── StaffingSupplier.kt           # Aggregate Root - Staffing agency
+│   │   │       │   │   ├── SupplierId.kt
+│   │   │       │   │   ├── RateCard.kt                   # Rate by role/skill/geography
+│   │   │       │   │   ├── RateCardVersion.kt            # Versioned rate cards
+│   │   │       │   │   ├── SupplierScorecard.kt          # Quality, fill rate, compliance
+│   │   │       │   │   └── PreferredSupplierTier.kt      # Tier 1, 2, 3
+│   │   │       │   ├── timesheet/
+│   │   │       │   │   ├── ContractorTimesheet.kt        # Aggregate Root
+│   │   │       │   │   ├── TimesheetId.kt
+│   │   │       │   │   ├── TimeEntry.kt
+│   │   │       │   │   ├── TimesheetStatus.kt            # DRAFT, SUBMITTED, APPROVED, REJECTED
+│   │   │       │   │   ├── TimesheetApproval.kt
+│   │   │       │   │   └── OvertimeCalculation.kt
+│   │   │       │   ├── expense/
+│   │   │       │   │   ├── ContractorExpense.kt          # Aggregate Root
+│   │   │       │   │   ├── ExpenseId.kt
+│   │   │       │   │   ├── ExpenseLineItem.kt
+│   │   │       │   │   └── ExpenseApproval.kt
+│   │   │       │   └── matching/
+│   │   │       │       ├── CandidateMatch.kt
+│   │   │       │       ├── SkillMatchScore.kt
+│   │   │       │       └── AIRecommendation.kt
+│   │   │       ├── event/
+│   │   │       │   ├── RequisitionCreatedEvent.kt
+│   │   │       │   ├── RequisitionApprovedEvent.kt
+│   │   │       │   ├── CandidateSubmittedEvent.kt
+│   │   │       │   ├── ContractorOnboardedEvent.kt
+│   │   │       │   ├── ContractorOffboardedEvent.kt
+│   │   │       │   ├── ComplianceExpiredEvent.kt
+│   │   │       │   ├── TimesheetSubmittedEvent.kt
+│   │   │       │   ├── TimesheetApprovedEvent.kt
+│   │   │       │   └── RateCardUpdatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RequisitionNotApprovedException.kt
+│   │   │       │   ├── RateCardExceededException.kt
+│   │   │       │   ├── ContractorNotComplianceException.kt
+│   │   │       │   └── CoEmploymentRiskException.kt
+│   │   │       └── service/
+│   │   │           ├── SkillMatchingService.kt
+│   │   │           ├── AIMatchingService.kt
+│   │   │           ├── RateCardValidationService.kt
+│   │   │           ├── ComplianceCheckService.kt
+│   │   │           └── SupplierScorecardService.kt
 │   │   ├── contingent-application/
 │   │   │   ├── build.gradle.kts
-│   │   │   └── src/
-│   │   │       └── main/
-│   │   │           └── kotlin/
-│   │   │               └── com/
-│   │   │                   └── chiroerp/
-│   │   │                       └── hr/
-│   │   │                           └── contingent/
-│   │   │                               └── application/
-│   │   │                                   ├── port/
-│   │   │                                   │   ├── input/
-│   │   │                                   │   │   ├── CreateRequisitionUseCase.kt
-│   │   │                                   │   │   ├── SubmitCandidateUseCase.kt
-│   │   │                                   │   │   ├── OnboardContractorUseCase.kt
-│   │   │                                   │   │   ├── CreateSOWUseCase.kt
-│   │   │                                   │   │   └── ApproveTimesheetUseCase.kt
-│   │   │                                   │   └── output/
-│   │   │                                   │       ├── RequisitionRepository.kt
-│   │   │                                   │       ├── ContractorRepository.kt
-│   │   │                                   │       ├── SOWRepository.kt
-│   │   │                                   │       ├── SupplierRepository.kt
-│   │   │                                   │       ├── TimesheetRepository.kt
-│   │   │                                   │       ├── ResumeParsingPort.kt
-│   │   │                                   │       ├── BackgroundCheckPort.kt
-│   │   │                                   │       └── EventPublisherPort.kt
-│   │   │                                   ├── command/
-│   │   │                                   │   ├── CreateRequisitionCommand.kt
-│   │   │                                   │   ├── ApproveRequisitionCommand.kt
-│   │   │                                   │   ├── SubmitCandidateCommand.kt
-│   │   │                                   │   ├── OnboardContractorCommand.kt
-│   │   │                                   │   ├── OffboardContractorCommand.kt
-│   │   │                                   │   ├── CreateSOWCommand.kt
-│   │   │                                   │   ├── ApproveSOWCommand.kt
-│   │   │                                   │   ├── SubmitTimesheetCommand.kt
-│   │   │                                   │   └── ApproveTimesheetCommand.kt
-│   │   │                                   ├── query/
-│   │   │                                   │   ├── GetRequisitionQuery.kt
-│   │   │                                   │   ├── GetCandidateMatchesQuery.kt
-│   │   │                                   │   ├── GetContractorQuery.kt
-│   │   │                                   │   ├── GetSOWQuery.kt
-│   │   │                                   │   ├── GetSupplierScorecardQuery.kt
-│   │   │                                   │   └── GetContingentSpendQuery.kt
-│   │   │                                   └── service/
-│   │   │                                       ├── RequisitionCommandHandler.kt
-│   │   │                                       ├── ContractorCommandHandler.kt
-│   │   │                                       ├── SOWCommandHandler.kt
-│   │   │                                       └── TimesheetCommandHandler.kt
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/contingent/application/
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateRequisitionUseCase.kt
+│   │   │       │   │   ├── SubmitCandidateUseCase.kt
+│   │   │       │   │   ├── OnboardContractorUseCase.kt
+│   │   │       │   │   ├── OffboardContractorUseCase.kt
+│   │   │       │   │   ├── ApproveTimesheetUseCase.kt
+│   │   │       │   │   └── ManageRateCardUseCase.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── RequisitionRepository.kt
+│   │   │       │       ├── ContractorRepository.kt
+│   │   │       │       ├── StaffingSupplierRepository.kt
+│   │   │       │       ├── TimesheetRepository.kt
+│   │   │       │       ├── ResumeParsingPort.kt
+│   │   │       │       ├── BackgroundCheckPort.kt
+│   │   │       │       ├── ProjectAccountingPort.kt        # Integration with ADR-036
+│   │   │       │       └── EventPublisherPort.kt
+│   │   │       ├── command/
+│   │   │       │   ├── CreateRequisitionCommand.kt
+│   │   │       │   ├── ApproveRequisitionCommand.kt
+│   │   │       │   ├── SubmitCandidateCommand.kt
+│   │   │       │   ├── OnboardContractorCommand.kt
+│   │   │       │   ├── OffboardContractorCommand.kt
+│   │   │       │   ├── UpdateComplianceCommand.kt
+│   │   │       │   ├── SubmitTimesheetCommand.kt
+│   │   │       │   ├── ApproveTimesheetCommand.kt
+│   │   │       │   └── UpdateRateCardCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRequisitionQuery.kt
+│   │   │       │   ├── GetCandidateMatchesQuery.kt
+│   │   │       │   ├── GetContractorQuery.kt
+│   │   │       │   ├── GetContractorComplianceQuery.kt
+│   │   │       │   ├── GetSupplierScorecardQuery.kt
+│   │   │       │   ├── GetRateCardQuery.kt
+│   │   │       │   └── GetContingentSpendQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── RequisitionCommandHandler.kt
+│   │   │           ├── ContractorCommandHandler.kt
+│   │   │           ├── TimesheetCommandHandler.kt
+│   │   │           └── ContingentQueryHandler.kt
 │   │   └── contingent-infrastructure/
 │   │       ├── build.gradle.kts
-│   │       └── src/
-│   │           └── main/
-│   │               ├── kotlin/
-│   │               │   └── com/
-│   │               │       └── chiroerp/
-│   │               │           └── hr/
-│   │               │               └── contingent/
-│   │               │                   └── infrastructure/
-│   │               │                       ├── adapter/
-│   │               │                       │   ├── input/
-│   │               │                       │   │   └── rest/
-│   │               │                       │   │       ├── RequisitionResource.kt
-│   │               │                       │   │       ├── ContractorResource.kt
-│   │               │                       │   │       ├── SOWResource.kt
-│   │               │                       │   │       ├── SupplierPortalResource.kt
-│   │               │                       │   │       └── TimesheetResource.kt
-│   │               │                       │   └── output/
-│   │               │                       │       ├── persistence/
-│   │               │                       │       │   ├── RequisitionJpaRepository.kt
-│   │               │                       │       │   ├── ContractorJpaRepository.kt
-│   │               │                       │       │   └── SOWJpaRepository.kt
-│   │               │                       │       ├── ml/
-│   │               │                       │       │   ├── SkillMatchingMLAdapter.kt
-│   │               │                       │       │   └── ResumeParsingMLAdapter.kt
-│   │               │                       │       ├── external/
-│   │               │                       │       │   ├── BackgroundCheckAdapter.kt
-│   │               │                       │       │   └── I9VerificationAdapter.kt
-│   │               │                       │       └── messaging/
-│   │               │                       │           └── KafkaEventPublisher.kt
-│   │               │                       └── HRContingentWorkforceApplication.kt
-│   │               └── resources/
-│   │                   └── application.yml
+│   │       └── src/main/kotlin/com/chiroerp/hr/contingent/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── RequisitionResource.kt           # REST API (Port 9904)
+│   │           │   │       ├── ContractorResource.kt
+│   │           │   │       ├── StaffingSupplierResource.kt
+│   │           │   │       ├── RateCardResource.kt
+│   │           │   │       ├── TimesheetResource.kt
+│   │           │   │       └── SupplierPortalResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RequisitionJpaRepository.kt
+│   │           │       │   ├── ContractorJpaRepository.kt
+│   │           │       │   ├── StaffingSupplierJpaRepository.kt
+│   │           │       │   └── TimesheetJpaRepository.kt
+│   │           │       ├── ml/
+│   │           │       │   ├── SkillMatchingMLAdapter.kt
+│   │           │       │   └── ResumeParsingMLAdapter.kt
+│   │           │       ├── external/
+│   │           │       │   ├── BackgroundCheckAdapter.kt
+│   │           │       │   └── I9VerificationAdapter.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── HRContingentWorkforceApplication.kt
+│   │
+│   ├── hr-professional-services/                # Port 9907 - Professional Services / SOW Management (ADR-052)
+│   │   ├── professional-services-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/professionalservices/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── sow/
+│   │   │       │   │   ├── StatementOfWork.kt            # Aggregate Root - SOW lifecycle
+│   │   │       │   │   ├── SOWId.kt
+│   │   │       │   │   ├── SOWStatus.kt                  # DRAFT, NEGOTIATION, APPROVED, ACTIVE, AMENDED, CLOSED
+│   │   │       │   │   ├── SOWType.kt                    # FIXED_PRICE, TIME_AND_MATERIALS, RETAINER, MILESTONE
+│   │   │       │   │   ├── SOWScope.kt                   # Scope of work definition
+│   │   │       │   │   ├── SOWBudget.kt                  # Budget and fee structure
+│   │   │       │   │   ├── SOWAmendment.kt               # Change orders
+│   │   │       │   │   └── SOWExtension.kt               # Extension options
+│   │   │       │   ├── deliverable/
+│   │   │       │   │   ├── Deliverable.kt                # Aggregate Root - Deliverable tracking
+│   │   │       │   │   ├── DeliverableId.kt
+│   │   │       │   │   ├── DeliverableStatus.kt          # NOT_STARTED, IN_PROGRESS, SUBMITTED, ACCEPTED, REJECTED
+│   │   │       │   │   ├── AcceptanceCriteria.kt
+│   │   │       │   │   ├── DeliverableApproval.kt
+│   │   │       │   │   └── DeliverablePayment.kt         # Payment tied to acceptance
+│   │   │       │   ├── milestone/
+│   │   │       │   │   ├── Milestone.kt                  # Aggregate Root
+│   │   │       │   │   ├── MilestoneId.kt
+│   │   │       │   │   ├── MilestoneStatus.kt
+│   │   │       │   │   ├── MilestonePayment.kt
+│   │   │       │   │   └── MilestoneSchedule.kt
+│   │   │       │   ├── msa/
+│   │   │       │   │   ├── MasterServiceAgreement.kt     # Aggregate Root - Framework agreement
+│   │   │       │   │   ├── MSAId.kt
+│   │   │       │   │   ├── MSATerms.kt                   # Legal terms, liability, IP
+│   │   │       │   │   ├── MSARateSchedule.kt            # Agreed rate schedules
+│   │   │       │   │   └── MSARenewal.kt
+│   │   │       │   ├── consultant/
+│   │   │       │   │   ├── ConsultingFirm.kt             # Aggregate Root - Consulting company
+│   │   │       │   │   ├── ConsultingFirmId.kt
+│   │   │       │   │   ├── FirmCapabilities.kt           # Areas of expertise
+│   │   │       │   │   ├── FirmScorecard.kt              # Quality, delivery, cost
+│   │   │       │   │   └── PreferredVendorStatus.kt
+│   │   │       │   └── engagement/
+│   │   │       │       ├── ServiceEngagement.kt          # Aggregate Root - Active engagement
+│   │   │       │       ├── EngagementId.kt
+│   │   │       │       ├── EngagementTeam.kt             # Named resources assigned
+│   │   │       │       ├── EngagementStatus.kt
+│   │   │       │       └── EngagementRisk.kt             # Delivery risk assessment
+│   │   │       ├── event/
+│   │   │       │   ├── SOWCreatedEvent.kt
+│   │   │       │   ├── SOWApprovedEvent.kt
+│   │   │       │   ├── SOWAmendedEvent.kt
+│   │   │       │   ├── DeliverableSubmittedEvent.kt
+│   │   │       │   ├── DeliverableAcceptedEvent.kt
+│   │   │       │   ├── DeliverableRejectedEvent.kt
+│   │   │       │   ├── MilestoneCompletedEvent.kt
+│   │   │       │   ├── MilestonePaymentTriggeredEvent.kt
+│   │   │       │   ├── MSACreatedEvent.kt
+│   │   │       │   ├── MSARenewedEvent.kt
+│   │   │       │   └── EngagementCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── SOWNotFoundException.kt
+│   │   │       │   ├── SOWBudgetExceededException.kt
+│   │   │       │   ├── DeliverableNotAcceptedException.kt
+│   │   │       │   ├── MSAExpiredException.kt
+│   │   │       │   └── MilestoneOverdueException.kt
+│   │   │       └── service/
+│   │   │           ├── SOWLifecycleService.kt
+│   │   │           ├── DeliverableTrackingService.kt
+│   │   │           ├── MilestonePaymentService.kt
+│   │   │           ├── MSAManagementService.kt
+│   │   │           └── FirmScorecardService.kt
+│   │   ├── professional-services-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/hr/professionalservices/application/
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateSOWUseCase.kt
+│   │   │       │   │   ├── ApproveSOWUseCase.kt
+│   │   │       │   │   ├── AmendSOWUseCase.kt
+│   │   │       │   │   ├── TrackDeliverableUseCase.kt
+│   │   │       │   │   ├── AcceptDeliverableUseCase.kt
+│   │   │       │   │   ├── ManageMSAUseCase.kt
+│   │   │       │   │   └── ManageEngagementUseCase.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── SOWRepository.kt
+│   │   │       │       ├── DeliverableRepository.kt
+│   │   │       │       ├── MilestoneRepository.kt
+│   │   │       │       ├── MSARepository.kt
+│   │   │       │       ├── ConsultingFirmRepository.kt
+│   │   │       │       ├── EngagementRepository.kt
+│   │   │       │       ├── FinanceAPPort.kt              # Invoice triggering
+│   │   │       │       ├── ProjectAccountingPort.kt      # Cost allocation
+│   │   │       │       └── EventPublisherPort.kt
+│   │   │       ├── command/
+│   │   │       │   ├── CreateSOWCommand.kt
+│   │   │       │   ├── SubmitSOWForApprovalCommand.kt
+│   │   │       │   ├── ApproveSOWCommand.kt
+│   │   │       │   ├── AmendSOWCommand.kt
+│   │   │       │   ├── ExtendSOWCommand.kt
+│   │   │       │   ├── CloseSOWCommand.kt
+│   │   │       │   ├── SubmitDeliverableCommand.kt
+│   │   │       │   ├── AcceptDeliverableCommand.kt
+│   │   │       │   ├── RejectDeliverableCommand.kt
+│   │   │       │   ├── CompleteMilestoneCommand.kt
+│   │   │       │   ├── CreateMSACommand.kt
+│   │   │       │   └── RenewMSACommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetSOWQuery.kt
+│   │   │       │   ├── GetSOWsByStatusQuery.kt
+│   │   │       │   ├── GetDeliverableStatusQuery.kt
+│   │   │       │   ├── GetMilestoneScheduleQuery.kt
+│   │   │       │   ├── GetMSAQuery.kt
+│   │   │       │   ├── GetConsultingFirmScorecardQuery.kt
+│   │   │       │   ├── GetEngagementQuery.kt
+│   │   │       │   └── GetProfessionalServicesSpendQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── SOWCommandHandler.kt
+│   │   │           ├── DeliverableCommandHandler.kt
+│   │   │           ├── MSACommandHandler.kt
+│   │   │           └── ProfessionalServicesQueryHandler.kt
+│   │   └── professional-services-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/hr/professionalservices/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── SOWResource.kt                # REST API (Port 9907)
+│   │           │   │       ├── DeliverableResource.kt
+│   │           │   │       ├── MilestoneResource.kt
+│   │           │   │       ├── MSAResource.kt
+│   │           │   │       ├── ConsultingFirmResource.kt
+│   │           │   │       └── EngagementResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── SOWJpaRepository.kt
+│   │           │       │   ├── DeliverableJpaRepository.kt
+│   │           │       │   ├── MilestoneJpaRepository.kt
+│   │           │       │   ├── MSAJpaRepository.kt
+│   │           │       │   └── ConsultingFirmJpaRepository.kt
+│   │           │       ├── integration/
+│   │           │       │   ├── FinanceAPAdapter.kt           # Trigger invoices
+│   │           │       │   └── ProjectAccountingAdapter.kt   # Cost allocation
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── HRProfessionalServicesApplication.kt
 │   │
 │   ├── hr-workforce-scheduling/                 # Port 9905 - Workforce Scheduling / WFM (ADR-055)
 │   │   ├── scheduling-domain/
@@ -5206,7 +5371,7 @@ chiroerp/
 │   │       ├── ApprovalLevel.kt
 │   │       └── MatchType.kt
 │   │
-│   ├── procurement-core/                              # Port 9101 - Requisitions, PO lifecycle, approvals
+│   ├── procurement-core/                              # Port 9201 - Requisitions, PO lifecycle, approvals
 │   │   ├── core-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/procurement/core/domain/
@@ -5293,7 +5458,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ProcurementCoreApplication.kt
 │   │
-│   ├── procurement-sourcing/                          # Port 9102 - RFQ/RFP, quotes, awards
+│   ├── procurement-sourcing/                          # Port 9202 - RFQ/RFP, quotes, awards
 │   │   ├── sourcing-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/procurement/sourcing/domain/
@@ -5373,7 +5538,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ProcurementSourcingApplication.kt
 │   │
-│   ├── procurement-suppliers/                         # Port 9103 - Vendor onboarding, compliance, lifecycle
+│   ├── procurement-suppliers/                         # Port 9203 - Vendor onboarding, compliance, lifecycle
 │   │   ├── suppliers-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/procurement/suppliers/domain/
@@ -5448,7 +5613,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ProcurementSuppliersApplication.kt
 │   │
-│   ├── procurement-receiving/                         # Port 9104 - Goods receipt, service entry, inspection
+│   ├── procurement-receiving/                         # Port 9204 - Goods receipt, service entry, inspection
 │   │   ├── receiving-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/procurement/receiving/domain/
@@ -5528,7 +5693,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ProcurementReceivingApplication.kt
 │   │
-│   └── procurement-invoice-match/                     # Port 9105 - 2/3-way match, GR/IR reconciliation
+│   └── procurement-invoice-match/                     # Port 9205 - 2/3-way match, GR/IR reconciliation
 │       ├── invoice-match-domain/
 │       │   ├── build.gradle.kts
 │       │   └── src/main/kotlin/com/chiroerp/procurement/invoicematch/domain/
@@ -5618,7 +5783,7 @@ chiroerp/
 │   │       ├── Priority.kt
 │   │       └── CriticalityLevel.kt
 │   │
-│   ├── maintenance-equipment/                         # Port 9601 - Equipment hierarchy, attributes, classifications
+│   ├── maintenance-equipment/                         # Port 9401 - Equipment hierarchy, attributes, classifications
 │   │   ├── equipment-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/equipment/domain/
@@ -5691,7 +5856,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceEquipmentApplication.kt
 │   │
-│   ├── maintenance-work-orders/                       # Port 9602 - Work order planning, execution, settlement
+│   ├── maintenance-work-orders/                       # Port 9402 - Work order planning, execution, settlement
 │   │   ├── work-orders-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/workorders/domain/
@@ -5769,7 +5934,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceWorkOrdersApplication.kt
 │   │
-│   ├── maintenance-preventive/                        # Port 9603 - Maintenance plans, schedules, triggers
+│   ├── maintenance-preventive/                        # Port 9403 - Maintenance plans, schedules, triggers
 │   │   ├── preventive-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/preventive/domain/
@@ -5844,7 +6009,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenancePreventiveApplication.kt
 │   │
-│   ├── maintenance-breakdown/                         # Port 9604 - Failure notifications, corrective actions
+│   ├── maintenance-breakdown/                         # Port 9404 - Failure notifications, corrective actions
 │   │   ├── breakdown-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/breakdown/domain/
@@ -5912,7 +6077,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceBreakdownApplication.kt
 │   │
-│   ├── maintenance-scheduling/                        # Port 9605 - Calendars, resource allocation
+│   ├── maintenance-scheduling/                        # Port 9405 - Calendars, resource allocation
 │   │   ├── scheduling-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/scheduling/domain/
@@ -5983,7 +6148,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceSchedulingApplication.kt
 │   │
-│   ├── maintenance-spare-parts/                       # Port 9606 - Parts catalog, reservations
+│   ├── maintenance-spare-parts/                       # Port 9406 - Parts catalog, reservations
 │   │   ├── spare-parts-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/spareparts/domain/
@@ -6057,7 +6222,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceSparePartsApplication.kt
 │   │
-│   ├── maintenance-analytics/                         # Port 9607 - MTBF, MTTR, availability KPIs
+│   ├── maintenance-analytics/                         # Port 9407 - MTBF, MTTR, availability KPIs
 │   │   ├── analytics-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/analytics/domain/
@@ -6127,7 +6292,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceAnalyticsApplication.kt
 │   │
-│   ├── maintenance-commissioning/                     # Port 9608 - Asset commissioning (Advanced ALM)
+│   ├── maintenance-commissioning/                     # Port 9408 - Asset commissioning (Advanced ALM)
 │   │   ├── commissioning-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/commissioning/domain/
@@ -6194,7 +6359,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceCommissioningApplication.kt
 │   │
-│   ├── maintenance-decommissioning/                   # Port 9609 - Asset decommissioning (Advanced ALM)
+│   ├── maintenance-decommissioning/                   # Port 9409 - Asset decommissioning (Advanced ALM)
 │   │   ├── decommissioning-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/decommissioning/domain/
@@ -6260,7 +6425,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceDecommissioningApplication.kt
 │   │
-│   ├── maintenance-health-scoring/                    # Port 9610 - Asset health scoring (Advanced ALM)
+│   ├── maintenance-health-scoring/                    # Port 9410 - Asset health scoring (Advanced ALM)
 │   │   ├── health-scoring-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/maintenance/healthscoring/domain/
@@ -6332,7 +6497,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── MaintenanceHealthScoringApplication.kt
 │   │
-│   └── maintenance-eol-planning/                      # Port 9611 - End-of-life planning (Advanced ALM)
+│   └── maintenance-eol-planning/                      # Port 9411 - End-of-life planning (Advanced ALM)
 │       ├── eol-planning-domain/
 │       │   ├── build.gradle.kts
 │       │   └── src/main/kotlin/com/chiroerp/maintenance/eolplanning/domain/
@@ -6407,255 +6572,395 @@ chiroerp/
 │               │           └── KafkaEventPublisher.kt
 │               └── MaintenanceEOLPlanningApplication.kt
 │
-│   └── maintenance-fsm/                              # Field Service Management (FSM) - Operational Field Service
-│       ├── fsm-shared/                               # Shared FSM types
-│       │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/shared/
-│       │       ├── ServiceOrderId.kt
-│       │       ├── TechnicianId.kt
-│       │       ├── DispatchId.kt
-│       │       ├── RouteId.kt
-│       │       ├── PartsConsumptionId.kt
-│       │       └── events/
-│       │           ├── ServiceOrderCreatedEvent.kt
-│       │           ├── ServiceOrderCompletedEvent.kt
-│       │           ├── TechnicianDispatchedEvent.kt
-│       │           └── PartsConsumedEvent.kt
-│       │
-│       ├── fsm-service-orders/                       # Service Orders Subdomain (Port 9601)
-│       │   ├── service-orders-api/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/serviceorders/api/
-│       │   │       ├── ServiceOrderResource.kt
-│       │   │       ├── ServiceOrderDTO.kt
-│       │   │       └── ServiceOrderOpenApi.kt
-│       │   ├── service-orders-domain/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/serviceorders/domain/
-│       │   │       ├── model/
-│       │   │       │   ├── ServiceOrder.kt               # Service order aggregate root
-│       │   │       │   ├── ServiceOrderType.kt           # Installation, repair, maintenance
-│       │   │       │   ├── ServiceOrderStatus.kt         # Open, in progress, completed
-│       │   │       │   ├── ServiceLine.kt                # Line items
-│       │   │       │   ├── LaborCharge.kt                # Labor billing
-│       │   │       │   ├── PartsUsed.kt                  # Parts consumption
-│       │   │       │   ├── SlaPolicy.kt                  # SLA definition
-│       │   │       │   ├── SlaTracking.kt                # SLA compliance tracking
-│       │   │       │   ├── ServicePriority.kt            # P1/P2/P3/P4 priority
-│       │   │       │   ├── ServiceResolution.kt          # Resolution details
-│       │   │       │   └── CustomerSignature.kt          # Sign-off capture
-│       │   │       ├── event/
-│       │   │       │   ├── ServiceOrderCreatedEvent.kt
-│       │   │       │   ├── ServiceOrderAssignedEvent.kt
-│       │   │       │   ├── ServiceOrderStartedEvent.kt
-│       │   │       │   ├── ServiceOrderCompletedEvent.kt
-│       │   │       │   ├── ServiceOrderBilledEvent.kt
-│       │   │       │   ├── SlaBreachedEvent.kt
-│       │   │       │   └── PartsConsumedEvent.kt
-│       │   │       ├── port/
-│       │   │       │   ├── input/
-│       │   │       │   │   ├── CreateServiceOrderUseCase.kt
-│       │   │       │   │   ├── AssignTechnicianUseCase.kt
-│       │   │       │   │   ├── StartServiceUseCase.kt
-│       │   │       │   │   ├── CompleteServiceUseCase.kt
-│       │   │       │   │   ├── RecordPartsUsageUseCase.kt
-│       │   │       │   │   ├── BillServiceOrderUseCase.kt
-│       │   │       │   │   └── ServiceOrderQueryPort.kt
-│       │   │       │   └── output/
-│       │   │       │       ├── ServiceOrderRepository.kt
-│       │   │       │       ├── SlaPolicyRepository.kt
-│       │   │       │       ├── InventoryPort.kt
-│       │   │       │       ├── BillingPort.kt
-│       │   │       │       └── ServiceOrderEventPublisher.kt
-│       │   │       └── service/
-│       │   │           ├── ServiceOrderDomainService.kt
-│       │   │           ├── SlaCalculationService.kt
-│       │   │           └── ServiceBillingService.kt
-│       │   ├── service-orders-application/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/serviceorders/application/
-│       │   │       ├── command/
-│       │   │       │   ├── CreateServiceOrderCommand.kt
-│       │   │       │   ├── AssignTechnicianCommand.kt
-│       │   │       │   ├── StartServiceCommand.kt
-│       │   │       │   ├── CompleteServiceCommand.kt
-│       │   │       │   ├── RecordLaborCommand.kt
-│       │   │       │   ├── RecordPartsCommand.kt
-│       │   │       │   └── BillServiceOrderCommand.kt
-│       │   │       ├── query/
-│       │   │       │   ├── GetServiceOrderQuery.kt
-│       │   │       │   ├── GetServiceHistoryQuery.kt
-│       │   │       │   ├── GetSlaComplianceQuery.kt
-│       │   │       │   └── GetOpenServiceOrdersQuery.kt
-│       │   │       └── handler/
-│       │   │           ├── ServiceOrderCommandHandler.kt
-│       │   │           ├── ServiceOrderQueryHandler.kt
-│       │   │           └── ServiceOrderEventHandler.kt
-│       │   └── service-orders-infrastructure/
-│       │       └── src/main/kotlin/com/chiroerp/maintenance/fsm/serviceorders/infrastructure/
-│       │           ├── adapter/
-│       │           │   ├── input/
-│       │           │   │   └── rest/
-│       │           │   │       ├── ServiceOrderController.kt
-│       │           │   │       ├── ServiceOrderMobileController.kt
-│       │           │   │       └── SlaReportController.kt
-│       │           │   └── output/
-│       │           │       ├── persistence/
-│       │           │       │   ├── ServiceOrderJpaRepository.kt
-│       │           │       │   ├── ServiceOrderEntity.kt
-│       │           │       │   └── SlaPolicyEntity.kt
-│       │           │       ├── inventory/
-│       │           │       │   └── InventoryServiceAdapter.kt
-│       │           │       └── messaging/
-│       │           │           └── KafkaEventPublisher.kt
-│       │           └── ServiceOrdersApplication.kt
-│       │
-│       ├── fsm-dispatch/                             # Technician Dispatch Subdomain (Port 9602)
-│       │   ├── dispatch-api/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/dispatch/api/
-│       │   │       ├── DispatchResource.kt
-│       │   │       ├── ScheduleResource.kt
-│       │   │       ├── DispatchDTO.kt
-│       │   │       └── DispatchOpenApi.kt
-│       │   ├── dispatch-domain/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/dispatch/domain/
-│       │   │       ├── model/
-│       │   │       │   ├── Technician.kt                 # Technician aggregate root
-│       │   │       │   ├── TechnicianSkill.kt            # Skills and certifications
-│       │   │       │   ├── TechnicianAvailability.kt     # Schedule availability
-│       │   │       │   ├── DispatchAssignment.kt         # Assignment aggregate
-│       │   │       │   ├── AssignmentStatus.kt           # Dispatched, en route, on site
-│       │   │       │   ├── Route.kt                      # Daily route plan
-│       │   │       │   ├── RouteStop.kt                  # Individual stops
-│       │   │       │   ├── TravelTime.kt                 # Travel time estimation
-│       │   │       │   ├── ServiceTerritory.kt           # Geographic territory
-│       │   │       │   ├── ScheduleSlot.kt               # Time slot booking
-│       │   │       │   └── EmergencyDispatch.kt          # Priority dispatch
-│       │   │       ├── event/
-│       │   │       │   ├── TechnicianDispatchedEvent.kt
-│       │   │       │   ├── TechnicianEnRouteEvent.kt
-│       │   │       │   ├── TechnicianArrivedEvent.kt
-│       │   │       │   ├── TechnicianDepartedEvent.kt
-│       │   │       │   ├── RouteOptimizedEvent.kt
-│       │   │       │   ├── ScheduleConflictEvent.kt
-│       │   │       │   └── EmergencyDispatchedEvent.kt
-│       │   │       ├── port/
-│       │   │       │   ├── input/
-│       │   │       │   │   ├── DispatchTechnicianUseCase.kt
-│       │   │       │   │   ├── OptimizeRouteUseCase.kt
-│       │   │       │   │   ├── UpdateTechnicianStatusUseCase.kt
-│       │   │       │   │   ├── ScheduleAppointmentUseCase.kt
-│       │   │       │   │   └── DispatchQueryPort.kt
-│       │   │       │   └── output/
-│       │   │       │       ├── TechnicianRepository.kt
-│       │   │       │       ├── DispatchRepository.kt
-│       │   │       │       ├── RouteOptimizationPort.kt
-│       │   │       │       ├── GeocodingPort.kt
-│       │   │       │       └── DispatchEventPublisher.kt
-│       │   │       └── service/
-│       │   │           ├── DispatchDomainService.kt
-│       │   │           ├── RouteOptimizationService.kt
-│       │   │           ├── SkillMatchingService.kt
-│       │   │           └── TravelTimeEstimationService.kt
-│       │   ├── dispatch-application/
-│       │   │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/dispatch/application/
-│       │   │       ├── command/
-│       │   │       │   ├── DispatchTechnicianCommand.kt
-│       │   │       │   ├── UpdateTechnicianStatusCommand.kt
-│       │   │       │   ├── OptimizeRouteCommand.kt
-│       │   │       │   ├── ScheduleAppointmentCommand.kt
-│       │   │       │   ├── RescheduleAppointmentCommand.kt
-│       │   │       │   └── EmergencyDispatchCommand.kt
-│       │   │       ├── query/
-│       │   │       │   ├── GetTechnicianScheduleQuery.kt
-│       │   │       │   ├── GetAvailableTechniciansQuery.kt
-│       │   │       │   ├── GetOptimalRouteQuery.kt
-│       │   │       │   ├── GetTechnicianLocationQuery.kt
-│       │   │       │   └── GetDispatchBoardQuery.kt
-│       │   │       └── handler/
-│       │   │           ├── DispatchCommandHandler.kt
-│       │   │           ├── DispatchQueryHandler.kt
-│       │   │           └── DispatchEventHandler.kt
-│       │   └── dispatch-infrastructure/
-│       │       └── src/main/kotlin/com/chiroerp/maintenance/fsm/dispatch/infrastructure/
-│       │           ├── adapter/
-│       │           │   ├── input/
-│       │           │   │   └── rest/
-│       │           │   │       ├── DispatchController.kt
-│       │           │   │       ├── ScheduleController.kt
-│       │           │   │       └── TechnicianMobileController.kt
-│       │           │   └── output/
-│       │           │       ├── persistence/
-│       │           │       │   ├── TechnicianJpaRepository.kt
-│       │           │       │   ├── DispatchJpaRepository.kt
-│       │           │       │   ├── TechnicianEntity.kt
-│       │           │       │   └── DispatchEntity.kt
-│       │           │       ├── routing/
-│       │           │       │   └── GoogleMapsRoutingAdapter.kt
-│       │           │       ├── geocoding/
-│       │           │       │   └── GeocodingServiceAdapter.kt
-│       │           │       └── messaging/
-│       │           │           └── KafkaEventPublisher.kt
-│       │           └── DispatchApplication.kt
-│       │
-│       └── fsm-parts-consumption/                    # Parts Consumption Subdomain (Port 9603)
-│           ├── parts-consumption-domain/
-│           │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/partsconsumption/domain/
-│           │       ├── model/
-│           │       │   ├── PartsConsumption.kt           # Consumption aggregate
-│           │       │   ├── PartUsage.kt                  # Individual part usage
-│           │       │   ├── TechnicianInventory.kt        # Van stock
-│           │       │   ├── PartReturn.kt                 # Unused part return
-│           │       │   ├── PartRequest.kt                # Part request
-│           │       │   ├── BillablePart.kt               # Customer billable
-│           │       │   └── WarrantyPart.kt               # Warranty replacement
-│           │       ├── event/
-│           │       │   ├── PartsConsumedEvent.kt
-│           │       │   ├── PartsReturnedEvent.kt
-│           │       │   ├── PartRequestCreatedEvent.kt
-│           │       │   ├── VanStockReplenishedEvent.kt
-│           │       │   └── WarrantyPartUsedEvent.kt
-│           │       ├── port/
-│           │       │   ├── input/
-│           │       │   │   ├── ConsumePartsUseCase.kt
-│           │       │   │   ├── ReturnPartsUseCase.kt
-│           │       │   │   ├── RequestPartsUseCase.kt
-│           │       │   │   └── PartsConsumptionQueryPort.kt
-│           │       │   └── output/
-│           │       │       ├── PartsConsumptionRepository.kt
-│           │       │       ├── InventoryPort.kt
-│           │       │       └── PartsEventPublisher.kt
-│           │       └── service/
-│           │           ├── PartsConsumptionDomainService.kt
-│           │           └── VanStockManagementService.kt
-│           ├── parts-consumption-application/
-│           │   └── src/main/kotlin/com/chiroerp/maintenance/fsm/partsconsumption/application/
-│           │       ├── command/
-│           │       │   ├── ConsumePartsCommand.kt
-│           │       │   ├── ReturnPartsCommand.kt
-│           │       │   ├── RequestPartsCommand.kt
-│           │       │   └── ReplenishVanStockCommand.kt
-│           │       ├── query/
-│           │       │   ├── GetPartsUsageQuery.kt
-│           │       │   ├── GetVanStockQuery.kt
-│           │       │   └── GetPartsCostQuery.kt
-│           │       └── handler/
-│           │           ├── PartsConsumptionCommandHandler.kt
-│           │           └── PartsConsumptionQueryHandler.kt
-│           └── parts-consumption-infrastructure/
-│               └── src/main/kotlin/com/chiroerp/maintenance/fsm/partsconsumption/infrastructure/
-│                   ├── adapter/
-│                   │   ├── input/
-│                   │   │   └── rest/
-│                   │   │       └── PartsConsumptionController.kt
-│                   │   └── output/
-│                   │       ├── persistence/
-│                   │       │   ├── PartsConsumptionJpaRepository.kt
-│                   │       │   └── PartsConsumptionEntity.kt
-│                   │       ├── inventory/
-│                   │       │   └── InventoryServiceAdapter.kt
-│                   │       └── messaging/
-│                   │           └── KafkaEventPublisher.kt
-│                   └── PartsConsumptionApplication.kt
+├── field-service/                                    # Field Service Operations Bounded Context (ADR-042)
+│   ├── fsm-shared/                                   # ADR-006 COMPLIANT: Identifiers and value objects only
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/fieldservice/shared/
+│   │       ├── identifiers/
+│   │       │   ├── ServiceOrderId.kt                 # Unique ID for service order
+│   │       │   ├── FieldTechnicianId.kt              # Field technician identifier
+│   │       │   ├── ServiceRequestId.kt               # Customer service request ID
+│   │       │   ├── DispatchId.kt                     # Dispatch assignment ID
+│   │       │   ├── TimeEntryId.kt                    # Time tracking entry ID
+│   │       │   ├── PartsConsumptionId.kt             # Parts consumption record ID
+│   │       │   ├── RmaRequestId.kt                   # Return Merchandise Authorization ID
+│   │       │   ├── RepairOrderId.kt                  # Customer repair order ID
+│   │       │   ├── RepairQuoteId.kt                  # Repair quote identifier
+│   │       │   ├── CustomerEquipmentId.kt            # Customer-owned equipment ID
+│   │       │   ├── DiagnosisResultId.kt              # Diagnosis result identifier
+│   │       │   └── DepotTechnicianId.kt              # Depot repair technician ID
+│   │       ├── valueobjects/
+│   │       │   ├── ServicePriority.kt                # Priority (emergency, high, normal, low)
+│   │       │   ├── ServiceLocation.kt                # Customer site location VO
+│   │       │   ├── ServiceWindowVO.kt                # Preferred time window
+│   │       │   ├── TechnicianSkillVO.kt              # Skill requirement matching
+│   │       │   ├── RepairPricingVO.kt                # Labor rates, parts markup
+│   │       │   ├── WarrantyTermsVO.kt                # Warranty coverage terms
+│   │       │   └── ShippingAddressVO.kt              # Customer return shipping address
+│   │       └── enums/
+│   │           ├── ServiceOrderStatus.kt             # Status enumeration
+│   │           ├── DispatchStatus.kt                 # Dispatch state enum
+│   │           ├── RmaStatus.kt                      # RMA workflow states
+│   │           ├── RepairOrderStatus.kt              # Repair order workflow states
+│   │           ├── RepairDecisionType.kt             # Repair, scrap, return-as-is
+│   │           └── WarrantyType.kt                   # In-warranty, out-of-warranty, extended
+│   │
+│   ├── fsm-service-orders/                           # Service Order Management (Port 9601)
+│   │   ├── service-orders-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ServiceOrder.kt               # Service order aggregate root
+│   │   │       │   ├── ServiceOrderLine.kt           # Service activities/tasks
+│   │   │       │   ├── ServiceRequest.kt             # Incoming customer request
+│   │   │       │   ├── CustomerAsset.kt              # Customer equipment being serviced
+│   │   │       │   ├── ServiceContract.kt            # SLA/warranty reference
+│   │   │       │   ├── BillingDetails.kt             # Billable hours, materials, travel
+│   │   │       │   ├── TimeAndMaterials.kt           # T&M billing model
+│   │   │       │   └── FixedPriceBilling.kt          # Fixed price contracts
+│   │   │       ├── event/
+│   │   │       │   ├── ServiceOrderCreatedEvent.kt
+│   │   │       │   ├── ServiceOrderScheduledEvent.kt
+│   │   │       │   ├── ServiceOrderCompletedEvent.kt
+│   │   │       │   ├── ServiceOrderBilledEvent.kt
+│   │   │       │   └── ServiceOrderCancelledEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── ServiceOrderNotFoundException.kt
+│   │   │       │   ├── InvalidServiceOrderStateException.kt
+│   │   │       │   └── ContractValidationException.kt
+│   │   │       └── service/
+│   │   │           ├── ServiceOrderCreationService.kt
+│   │   │           ├── ContractValidationService.kt
+│   │   │           ├── BillingCalculationService.kt
+│   │   │           └── SLAComplianceService.kt
+│   │   ├── service-orders-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateServiceOrderCommand.kt
+│   │   │       │   ├── UpdateServiceOrderCommand.kt
+│   │   │       │   ├── ScheduleServiceOrderCommand.kt
+│   │   │       │   ├── CompleteServiceOrderCommand.kt
+│   │   │       │   ├── GenerateInvoiceCommand.kt
+│   │   │       │   └── CancelServiceOrderCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetServiceOrderQuery.kt
+│   │   │       │   ├── ListServiceOrdersQuery.kt
+│   │   │       │   ├── GetPendingOrdersQuery.kt
+│   │   │       │   └── GetBillableOrdersQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateServiceOrderHandler.kt
+│   │   │       │   ├── UpdateServiceOrderHandler.kt
+│   │   │       │   ├── CompleteServiceOrderHandler.kt
+│   │   │       │   └── ServiceOrderQueryHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── ServiceOrderUseCase.kt
+│   │   │           │   └── BillingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ServiceOrderRepositoryPort.kt
+│   │   │               ├── ContractRepositoryPort.kt
+│   │   │               ├── BillingPort.kt
+│   │   │               └── ServiceOrderEventPublisherPort.kt
+│   │   └── service-orders-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fieldservice/serviceorders/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── ServiceOrderResource.kt          # REST API (Port 9601)
+│   │           │   │   │   └── ServiceOrderDto.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaServiceOrderConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ServiceOrderJpaRepository.kt
+│   │           │       │   ├── ServiceOrderJpaEntity.kt
+│   │           │       │   └── ContractJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── integration/
+│   │           │           └── FinanceARAdapter.kt              # Invoice generation
+│   │           └── FieldServiceOrdersApplication.kt
+│   │
+│   ├── fsm-dispatch/                                 # Dispatch & Scheduling (Port 9602)
+│   │   ├── dispatch-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Dispatch.kt                   # Dispatch aggregate root
+│   │   │       │   ├── FieldTechnician.kt            # Technician with skills & availability
+│   │   │       │   ├── TechnicianSkills.kt           # Skill matrix for matching
+│   │   │       │   ├── TechnicianAvailability.kt     # Calendar/schedule
+│   │   │       │   ├── ServiceTerritory.kt           # Geographic territory
+│   │   │       │   ├── RouteOptimization.kt          # Optimal routing
+│   │   │       │   ├── ScheduleSlot.kt               # Available time slots
+│   │   │       │   └── TravelTime.kt                 # Estimated travel between sites
+│   │   │       ├── event/
+│   │   │       │   ├── TechnicianDispatchedEvent.kt
+│   │   │       │   ├── DispatchRescheduledEvent.kt
+│   │   │       │   ├── TechnicianEnRouteEvent.kt
+│   │   │       │   ├── TechnicianArrivedEvent.kt
+│   │   │       │   └── DispatchCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── NoAvailableTechnicianException.kt
+│   │   │       │   ├── SkillMismatchException.kt
+│   │   │       │   └── SchedulingConflictException.kt
+│   │   │       └── service/
+│   │   │           ├── DispatchAssignmentService.kt
+│   │   │           ├── SkillMatchingService.kt
+│   │   │           ├── RouteOptimizationService.kt
+│   │   │           └── TerritoryManagementService.kt
+│   │   ├── dispatch-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/application/
+│   │   │       ├── command/
+│   │   │       │   ├── AssignTechnicianCommand.kt
+│   │   │       │   ├── RescheduleDispatchCommand.kt
+│   │   │       │   ├── UpdateTechnicianStatusCommand.kt
+│   │   │       │   ├── OptimizeRouteCommand.kt
+│   │   │       │   └── UpdateAvailabilityCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetAvailableTechniciansQuery.kt
+│   │   │       │   ├── GetTechnicianScheduleQuery.kt
+│   │   │       │   ├── GetOptimalRouteQuery.kt
+│   │   │       │   └── GetTerritoryWorkloadQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── AssignTechnicianHandler.kt
+│   │   │       │   ├── RescheduleDispatchHandler.kt
+│   │   │       │   └── DispatchQueryHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── DispatchUseCase.kt
+│   │   │           │   └── SchedulingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── DispatchRepositoryPort.kt
+│   │   │               ├── TechnicianRepositoryPort.kt
+│   │   │               ├── RouteOptimizationPort.kt
+│   │   │               └── DispatchEventPublisherPort.kt
+│   │   └── dispatch-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/fieldservice/dispatch/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── DispatchResource.kt              # REST API (Port 9602)
+│   │           │   │   │   ├── TechnicianResource.kt
+│   │           │   │   │   └── ScheduleResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaDispatchConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── DispatchJpaRepository.kt
+│   │           │       │   ├── TechnicianJpaRepository.kt
+│   │           │       │   └── TerritoryJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── external/
+│   │           │           └── GoogleMapsRouteAdapter.kt        # Route optimization
+│   │           └── FieldServiceDispatchApplication.kt
+│   │
+│   └── fsm-parts-consumption/                        # Parts & Material Consumption (Port 9603)
+│       ├── parts-consumption-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/parts/domain/
+│       │       ├── model/
+│       │       │   ├── PartsConsumption.kt           # Parts consumption aggregate
+│       │       │   ├── FieldInventory.kt             # Technician truck/van inventory
+│       │       │   ├── PartUsage.kt                  # Part consumed on service order
+│       │       │   ├── ReplenishmentRequest.kt       # Request for restocking
+│       │       │   ├── TruckStock.kt                 # Mobile stock levels
+│       │       │   └── WarrantyPart.kt               # Parts under warranty claim
+│       │       ├── event/
+│       │       │   ├── PartConsumedEvent.kt
+│       │       │   ├── InventoryDepletedEvent.kt
+│       │       │   ├── ReplenishmentRequestedEvent.kt
+│       │       │   ├── TruckRestockedEvent.kt
+│       │       │   └── WarrantyClaimCreatedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── InsufficientPartsException.kt
+│       │       │   ├── PartNotFoundException.kt
+│       │       │   └── WarrantyValidationException.kt
+│       │       └── service/
+│       │           ├── PartsConsumptionService.kt
+│       │           ├── TruckInventoryService.kt
+│       │           └── WarrantyClaimService.kt
+│       ├── parts-consumption-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/parts/application/
+│       │       ├── command/
+│       │       │   ├── ConsumePartCommand.kt
+│       │       │   ├── RequestReplenishmentCommand.kt
+│       │       │   ├── RestockTruckCommand.kt
+│       │       │   ├── CreateWarrantyClaimCommand.kt
+│       │       │   └── AdjustTruckInventoryCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetTruckInventoryQuery.kt
+│       │       │   ├── GetConsumptionHistoryQuery.kt
+│       │       │   ├── GetPendingReplenishmentsQuery.kt
+│       │       │   └── GetWarrantyClaimsQuery.kt
+│       │       ├── handler/
+│       │       │   ├── ConsumePartHandler.kt
+│       │       │   ├── RequestReplenishmentHandler.kt
+│       │       │   └── PartsQueryHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── PartsConsumptionUseCase.kt
+│       │           │   └── TruckInventoryUseCase.kt
+│       │           └── output/
+│       │               ├── PartsConsumptionRepositoryPort.kt
+│       │               ├── TruckInventoryRepositoryPort.kt
+│       │               ├── WarehouseIntegrationPort.kt
+│       │               └── PartsEventPublisherPort.kt
+│       └── parts-consumption-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/fieldservice/parts/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── PartsConsumptionResource.kt      # REST API (Port 9603)
+│               │   │   │   ├── TruckInventoryResource.kt
+│               │   │   │   └── WarrantyClaimResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaPartsConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── PartsConsumptionJpaRepository.kt
+│               │       │   ├── TruckInventoryJpaRepository.kt
+│               │       │   └── WarrantyClaimJpaRepository.kt
+│               │       ├── messaging/
+│               │       │   └── KafkaEventPublisher.kt
+│               │       └── integration/
+│               │           └── InventoryWarehouseAdapter.kt     # Inventory integration
+│               └── FieldServicePartsApplication.kt
 │
+│   └── fsm-repair-depot/                             # Customer Repair/RMA Services (Port 9604)
+│       ├── repair-depot-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/domain/
+│       │       ├── model/
+│       │       │   ├── RepairOrder.kt                # Aggregate root - customer repair order
+│       │       │   ├── RepairOrderLine.kt            # Line items (labor, parts, services)
+│       │       │   ├── RepairOrderStatus.kt          # Received, diagnosing, quoted, approved, repairing, testing, complete, shipped
+│       │       │   ├── RmaRequest.kt                 # Return Merchandise Authorization
+│       │       │   ├── RmaStatus.kt                  # Requested, approved, received, processed
+│       │       │   ├── CustomerEquipment.kt          # Customer-owned equipment received
+│       │       │   ├── EquipmentCondition.kt         # Condition assessment on receipt
+│       │       │   ├── DiagnosisResult.kt            # Fault found, root cause, recommendations
+│       │       │   ├── RepairQuote.kt                # Quote for customer approval
+│       │       │   ├── QuoteLineItem.kt              # Labor, parts, shipping costs
+│       │       │   ├── RepairDecision.kt             # Repair, scrap, return as-is
+│       │       │   ├── RepairTechnician.kt           # Depot repair technician
+│       │       │   ├── TechnicianSkillLevel.kt       # Skill certifications for repair
+│       │       │   ├── WarrantyEvaluation.kt         # Check if warranty applies
+│       │       │   ├── OutOfWarrantyRepair.kt        # Paid repair services
+│       │       │   ├── TestResult.kt                 # Post-repair testing
+│       │       │   ├── QualityCertification.kt       # QA sign-off
+│       │       │   └── ShipmentTracking.kt           # Return shipping to customer
+│       │       ├── event/
+│       │       │   ├── RmaRequestedEvent.kt
+│       │       │   ├── RmaApprovedEvent.kt
+│       │       │   ├── EquipmentReceivedEvent.kt
+│       │       │   ├── DiagnosisCompletedEvent.kt
+│       │       │   ├── QuoteSentEvent.kt
+│       │       │   ├── QuoteApprovedEvent.kt
+│       │       │   ├── QuoteRejectedEvent.kt
+│       │       │   ├── RepairStartedEvent.kt
+│       │       │   ├── RepairCompletedEvent.kt
+│       │       │   ├── TestPassedEvent.kt
+│       │       │   ├── TestFailedEvent.kt
+│       │       │   ├── EquipmentShippedEvent.kt
+│       │       │   └── RepairBilledEvent.kt
+│       │       ├── exception/
+│       │       │   ├── RmaNotFoundException.kt
+│       │       │   ├── RepairOrderNotFoundException.kt
+│       │       │   ├── QuoteExpiredException.kt
+│       │       │   ├── WarrantyExpiredException.kt
+│       │       │   └── DiagnosisRequiredException.kt
+│       │       └── service/
+│       │           ├── RmaCreationService.kt          # RMA request & approval workflow
+│       │           ├── RepairIntakeService.kt         # Equipment receipt & inspection
+│       │           ├── DiagnosisService.kt            # Fault finding & root cause
+│       │           ├── QuotingService.kt              # Quote generation & pricing
+│       │           ├── WarrantyValidationService.kt   # Warranty check & claim
+│       │           ├── RepairExecutionService.kt      # Repair work coordination
+│       │           ├── QualityTestingService.kt       # Post-repair testing & QA
+│       │           └── ReturnShippingService.kt       # Ship repaired equipment
+│       ├── repair-depot-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/application/
+│       │       ├── command/
+│       │       │   ├── CreateRmaRequestCommand.kt
+│       │       │   ├── ApproveRmaCommand.kt
+│       │       │   ├── ReceiveEquipmentCommand.kt
+│       │       │   ├── RecordDiagnosisCommand.kt
+│       │       │   ├── CreateRepairQuoteCommand.kt
+│       │       │   ├── ApproveQuoteCommand.kt
+│       │       │   ├── RejectQuoteCommand.kt
+│       │       │   ├── StartRepairCommand.kt
+│       │       │   ├── CompleteRepairCommand.kt
+│       │       │   ├── RecordTestResultCommand.kt
+│       │       │   ├── ShipEquipmentCommand.kt
+│       │       │   └── BillRepairCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetRmaStatusQuery.kt
+│       │       │   ├── GetRepairOrderQuery.kt
+│       │       │   ├── GetRepairQueueQuery.kt
+│       │       │   ├── GetPendingQuotesQuery.kt
+│       │       │   ├── GetRepairHistoryQuery.kt
+│       │       │   └── GetRepairMetricsQuery.kt
+│       │       ├── handler/
+│       │       │   ├── RmaCommandHandler.kt
+│       │       │   ├── RepairOrderCommandHandler.kt
+│       │       │   ├── RepairQueryHandler.kt
+│       │       │   └── RepairDepotEventHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── RmaUseCase.kt
+│       │           │   ├── RepairIntakeUseCase.kt
+│       │           │   ├── DiagnosisUseCase.kt
+│       │           │   ├── QuotingUseCase.kt
+│       │           │   ├── RepairExecutionUseCase.kt
+│       │           │   └── ReturnShippingUseCase.kt
+│       │           └── output/
+│       │               ├── RepairOrderRepositoryPort.kt
+│       │               ├── RmaRepositoryPort.kt
+│       │               ├── CustomerEquipmentRepositoryPort.kt
+│       │               ├── InventoryPartsPort.kt           # Parts consumption from inventory
+│       │               ├── WarrantyCheckPort.kt            # CRM contract/warranty lookup
+│       │               ├── BillingPort.kt                  # Finance AR integration
+│       │               ├── ShippingIntegrationPort.kt      # Carrier integration
+│       │               └── RepairDepotEventPublisherPort.kt
+│       └── repair-depot-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/fieldservice/repairdepot/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── RmaResource.kt               # REST API (Port 9604)
+│               │   │   │   ├── RepairOrderResource.kt
+│               │   │   │   ├── DiagnosisResource.kt
+│               │   │   │   ├── QuoteResource.kt
+│               │   │   │   └── RepairMetricsResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaRepairConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── RepairOrderJpaRepository.kt
+│               │       │   ├── RmaJpaRepository.kt
+│               │       │   ├── CustomerEquipmentJpaRepository.kt
+│               │       │   └── DiagnosisResultJpaRepository.kt
+│               │       ├── messaging/
+│               │       │   └── KafkaEventPublisher.kt
+│               │       └── integration/
+│               │           ├── InventoryPartsAdapter.kt     # Inventory for repair parts
+│               │           ├── CrmWarrantyAdapter.kt        # CRM contract lookup
+│               │           ├── FinanceARAdapter.kt          # Invoice generation
+│               │           └── ShippingCarrierAdapter.kt    # FedEx/UPS/DHL integration
+│               └── FieldServiceRepairDepotApplication.kt
+
 ├── fleet/                                            # Fleet Management Bounded Context (ADR-053)
-│   ├── fleet-shared/                                 # Shared fleet types
+│   ├── fleet-shared/                                 # ADR-006 COMPLIANT: Identifiers only
 │   │   ├── build.gradle.kts
 │   │   └── src/main/kotlin/com/chiroerp/fleet/shared/
 │   │       ├── VehicleId.kt
@@ -6664,15 +6969,9 @@ chiroerp/
 │   │       ├── FuelTransactionId.kt
 │   │       ├── TelematicsEventId.kt
 │   │       ├── MaintenanceRecordId.kt
-│   │       ├── IncidentId.kt
-│   │       └── events/
-│   │           ├── VehicleAcquiredEvent.kt
-│   │           ├── VehicleAssignedEvent.kt
-│   │           ├── FuelTransactionRecordedEvent.kt
-│   │           ├── TelematicsEventReceivedEvent.kt
-│   │           └── VehicleMaintenanceCompletedEvent.kt
+│   │       └── IncidentId.kt
 │   │
-│   ├── fleet-vehicle-master/                         # Vehicle Master Data (Port 9701)
+│   ├── fleet-vehicle-master/                         # Vehicle Master Data (Port 9761)
 │   │   ├── vehicle-master-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/vehiclemaster/domain/
@@ -6752,7 +7051,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetVehicleMasterApplication.kt
 │   │
-│   ├── fleet-driver-management/                      # Driver Management (Port 9702)
+│   ├── fleet-driver-management/                      # Driver Management (Port 9762)
 │   │   ├── driver-management-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/drivermanagement/domain/
@@ -6837,7 +7136,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetDriverManagementApplication.kt
 │   │
-│   ├── fleet-telematics/                             # Telematics Integration (Port 9703)
+│   ├── fleet-telematics/                             # Telematics Integration (Port 9763)
 │   │   ├── telematics-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/telematics/domain/
@@ -6930,7 +7229,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetTelematicsApplication.kt
 │   │
-│   ├── fleet-fuel-management/                        # Fuel Card Management (Port 9704)
+│   ├── fleet-fuel-management/                        # Fuel Card Management (Port 9764)
 │   │   ├── fuel-management-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/fuelmanagement/domain/
@@ -7018,7 +7317,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetFuelManagementApplication.kt
 │   │
-│   ├── fleet-maintenance/                            # Fleet Maintenance (Port 9705)
+│   ├── fleet-maintenance/                            # Fleet Maintenance (Port 9765)
 │   │   ├── maintenance-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/maintenance/domain/
@@ -7108,7 +7407,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetMaintenanceApplication.kt
 │   │
-│   ├── fleet-compliance/                             # Compliance Management (Port 9706)
+│   ├── fleet-compliance/                             # Compliance Management (Port 9766)
 │   │   ├── compliance-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/compliance/domain/
@@ -7204,7 +7503,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetComplianceApplication.kt
 │   │
-│   ├── fleet-utilization/                            # Utilization & TCO (Port 9707)
+│   ├── fleet-utilization/                            # Utilization & TCO (Port 9767)
 │   │   ├── utilization-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/utilization/domain/
@@ -7287,7 +7586,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── FleetUtilizationApplication.kt
 │   │
-│   └── fleet-lifecycle/                              # Vehicle Lifecycle (Port 9708)
+│   └── fleet-lifecycle/                              # Vehicle Lifecycle (Port 9768)
 │       ├── lifecycle-domain/
 │       │   ├── build.gradle.kts
 │       │   └── src/main/kotlin/com/chiroerp/fleet/lifecycle/domain/
@@ -7386,7 +7685,7 @@ chiroerp/
 │               └── FleetLifecycleApplication.kt
 │
 ├── manufacturing/                                    # Manufacturing bounded context (ADR-037, ADR-039)
-│   ├── manufacturing-shared/                         # Shared manufacturing types
+│   ├── manufacturing-shared/                         # ADR-006 COMPLIANT: Identifiers only
 │   │   └── src/main/kotlin/com/chiroerp/manufacturing/shared/
 │   │       ├── ManufacturingId.kt
 │   │       ├── ProductionOrderId.kt
@@ -7394,16 +7693,15 @@ chiroerp/
 │   │       ├── BomId.kt
 │   │       ├── RoutingId.kt
 │   │       ├── WorkCenterId.kt
-│   │       ├── InspectionLotId.kt
-│   │       ├── NonconformanceId.kt
-│   │       └── events/
-│   │           ├── ProductionOrderCreatedEvent.kt
-│   │           ├── ProductionOrderReleasedEvent.kt
-│   │           ├── ProductionConfirmedEvent.kt
-│   │           ├── InspectionLotCreatedEvent.kt
-│   │           └── NonconformanceCreatedEvent.kt
+│   │       ├── InspectionPlanId.kt                   # QM: Inspection plan identifier
+│   │       ├── InspectionLotId.kt                    # QM: Inspection lot identifier
+│   │       ├── InspectionCharacteristicId.kt         # QM: Quality characteristic ID
+│   │       ├── NonconformanceId.kt                   # QM: NCR identifier
+│   │       ├── CAPAId.kt                             # QM: CAPA identifier
+│   │       ├── CertificateId.kt                      # QM: CoA/CoC identifier
+│   │       └── QualityScoreId.kt                     # QM: Supplier quality score ID
 │   │
-│   ├── manufacturing-mrp/                            # MRP Planning (Port 9301)
+│   ├── manufacturing-mrp/                            # MRP Planning (Port 9351)
 │   │   ├── mrp-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/mrp/domain/
 │   │   │       ├── model/
@@ -7471,7 +7769,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingMRPApplication.kt
 │   │
-│   ├── manufacturing-production/                     # Production Orders (Port 9302)
+│   ├── manufacturing-production/                     # Production Orders (Port 9352)
 │   │   ├── production-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/production/domain/
 │   │   │       ├── model/
@@ -7548,7 +7846,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingProductionApplication.kt
 │   │
-│   ├── manufacturing-shopfloor/                      # Shop Floor Execution (Port 9303)
+│   ├── manufacturing-shopfloor/                      # Shop Floor Execution (Port 9353)
 │   │   ├── shopfloor-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/shopfloor/domain/
 │   │   │       ├── model/
@@ -7620,7 +7918,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingShopFloorApplication.kt
 │   │
-│   ├── manufacturing-bom/                            # BOM Management (Port 9304)
+│   ├── manufacturing-bom/                            # BOM Management (Port 9354)
 │   │   ├── bom-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/bom/domain/
 │   │   │       ├── model/
@@ -7695,7 +7993,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingBOMApplication.kt
 │   │
-│   ├── manufacturing-costing/                        # Product Costing (Port 9305)
+│   ├── manufacturing-costing/                        # Product Costing (Port 9355)
 │   │   ├── costing-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/costing/domain/
 │   │   │       ├── model/
@@ -7768,7 +8066,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingCostingApplication.kt
 │   │
-│   ├── manufacturing-capacity/                       # Capacity Planning (Port 9306)
+│   ├── manufacturing-capacity/                       # Capacity Planning (Port 9356)
 │   │   ├── capacity-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/capacity/domain/
 │   │   │       ├── model/
@@ -7828,7 +8126,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingCapacityApplication.kt
 │   │
-│   ├── manufacturing-subcontracting/                 # Subcontracting (Port 9307)
+│   ├── manufacturing-subcontracting/                 # Subcontracting (Port 9357)
 │   │   ├── subcontracting-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/subcontracting/domain/
 │   │   │       ├── model/
@@ -7887,7 +8185,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingSubcontractingApplication.kt
 │   │
-│   ├── manufacturing-analytics/                      # Manufacturing Analytics (Port 9308)
+│   ├── manufacturing-analytics/                      # Manufacturing Analytics (Port 9358)
 │   │   ├── analytics-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/analytics/domain/
 │   │   │       ├── model/
@@ -7949,6 +8247,184 @@ chiroerp/
 │   │           │       └── messaging/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ManufacturingAnalyticsApplication.kt
+│   │
+│   ├── manufacturing-process/                        # Process Manufacturing Extension (Port 9359)
+│   │   ├── process-domain/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/process/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── recipe/
+│   │   │       │   │   ├── MasterRecipe.kt           # Aggregate Root
+│   │   │       │   │   ├── RecipeId.kt
+│   │   │       │   │   ├── RecipeVersion.kt
+│   │   │       │   │   ├── FormulaComposition.kt     # Ingredients, quantities
+│   │   │       │   │   ├── Ingredient.kt             # Entity
+│   │   │       │   │   ├── IngredientTolerance.kt    # +/- tolerance
+│   │   │       │   │   ├── ProcessPhase.kt           # Entity (mixing, heating, etc.)
+│   │   │       │   │   ├── PhaseSequence.kt
+│   │   │       │   │   ├── PhaseParameter.kt         # Temperature, pressure, duration
+│   │   │       │   │   ├── ScalingFactor.kt          # Batch size scaling
+│   │   │       │   │   └── RecipeApprovalStatus.kt   # Draft, Approved, Obsolete
+│   │   │       │   ├── processorder/
+│   │   │       │   │   ├── ProcessOrder.kt           # Aggregate Root
+│   │   │       │   │   ├── ProcessOrderId.kt
+│   │   │       │   │   ├── ProcessOrderStatus.kt     # Created, Released, In-Process, Completed
+│   │   │       │   │   ├── BatchSize.kt
+│   │   │       │   │   ├── PhaseExecution.kt         # Entity
+│   │   │       │   │   ├── PhaseStatus.kt            # Not Started, In Progress, Completed, Skipped, Hold
+│   │   │       │   │   ├── InProcessCheck.kt         # Entity (quality checks during production)
+│   │   │       │   │   ├── YieldCalculation.kt       # Actual vs theoretical yield
+│   │   │       │   │   └── MaterialConsumption.kt    # Actual ingredient usage
+│   │   │       │   ├── genealogy/
+│   │   │       │   │   ├── BatchGenealogy.kt         # Aggregate Root
+│   │   │       │   │   ├── GenealogyId.kt
+│   │   │       │   │   ├── LotTraceability.kt        # Forward/backward tracing
+│   │   │       │   │   ├── InputLot.kt               # Entity (source materials)
+│   │   │       │   │   ├── OutputLot.kt              # Entity (finished products)
+│   │   │       │   │   ├── TraceChain.kt             # Multi-level trace
+│   │   │       │   │   ├── GenealogyTree.kt          # Hierarchical trace structure
+│   │   │       │   │   └── RecallImpactAnalysis.kt   # Which lots affected by recall
+│   │   │       │   ├── coproduct/
+│   │   │       │   │   ├── JointProduction.kt        # Aggregate Root
+│   │   │       │   │   ├── CoProduct.kt              # Entity (main co-product)
+│   │   │       │   │   ├── ByProduct.kt              # Entity (secondary output)
+│   │   │       │   │   ├── CostAllocationMethod.kt   # Sales Value, Physical Units, NRV
+│   │   │       │   │   ├── AllocationRule.kt
+│   │   │       │   │   ├── CoProductYield.kt         # Expected vs actual
+│   │   │       │   │   ├── ByProductRevenue.kt       # Revenue from by-product sales
+│   │   │       │   │   └── ByProductDisposalCost.kt  # Disposal if not sold
+│   │   │       │   ├── campaign/
+│   │   │       │   │   ├── ProductionCampaign.kt     # Aggregate Root
+│   │   │       │   │   ├── CampaignId.kt
+│   │   │       │   │   ├── CampaignType.kt           # Multi-batch run, Product family
+│   │   │       │   │   ├── CampaignSchedule.kt
+│   │   │       │   │   ├── BatchSequence.kt          # Entity (ordered batches)
+│   │   │       │   │   ├── CleaningValidation.kt     # Between campaigns
+│   │   │       │   │   ├── CampaignCosting.kt        # Aggregated campaign costs
+│   │   │       │   │   ├── SetupOptimization.kt      # Minimize changeovers
+│   │   │       │   │   └── CampaignEfficiency.kt     # Campaign-level KPIs
+│   │   │       │   └── continuous/
+│   │   │       │       ├── ContinuousProduction.kt   # Aggregate Root
+│   │   │       │       ├── ProductionRun.kt
+│   │   │       │       ├── FlowRate.kt               # Continuous flow metrics
+│   │   │       │       ├── EquipmentLoad.kt          # Real-time equipment state
+│   │   │       │       ├── ProcessVariable.kt        # Entity (temp, pressure monitoring)
+│   │   │       │       ├── VariableControlLimit.kt   # Upper/lower control limits
+│   │   │       │       ├── ProcessDeviation.kt       # Out-of-spec alerts
+│   │   │       │       └── ContinuousYield.kt        # Real-time yield tracking
+│   │   │       ├── event/
+│   │   │       │   ├── RecipeCreatedEvent.kt
+│   │   │       │   ├── RecipeApprovedEvent.kt
+│   │   │       │   ├── ProcessOrderCreatedEvent.kt
+│   │   │       │   ├── ProcessOrderReleasedEvent.kt
+│   │   │       │   ├── PhaseStartedEvent.kt
+│   │   │       │   ├── PhaseCompletedEvent.kt
+│   │   │       │   ├── InProcessCheckFailedEvent.kt
+│   │   │       │   ├── YieldDeviationDetectedEvent.kt
+│   │   │       │   ├── BatchGenealogyRecordedEvent.kt
+│   │   │       │   ├── CoProductProducedEvent.kt
+│   │   │       │   ├── ByProductDisposedEvent.kt
+│   │   │       │   ├── CampaignStartedEvent.kt
+│   │   │       │   ├── CampaignCompletedEvent.kt
+│   │   │       │   ├── CleaningValidationCompletedEvent.kt
+│   │   │       │   ├── ProcessDeviationDetectedEvent.kt
+│   │   │       │   └── ProcessOrderCompletedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RecipeNotFoundException.kt
+│   │   │       │   ├── InvalidRecipeVersionException.kt
+│   │   │       │   ├── PhaseExecutionException.kt
+│   │   │       │   ├── YieldToleranceExceededException.kt
+│   │   │       │   ├── GenealogyTraceException.kt
+│   │   │       │   ├── InvalidAllocationMethodException.kt
+│   │   │       │   ├── CampaignScheduleConflictException.kt
+│   │   │       │   └── ProcessVariableOutOfRangeException.kt
+│   │   │       ├── port/
+│   │   │       │   ├── input/
+│   │   │       │   │   ├── CreateRecipeUseCase.kt
+│   │   │       │   │   ├── ApproveRecipeUseCase.kt
+│   │   │       │   │   ├── CreateProcessOrderUseCase.kt
+│   │   │       │   │   ├── ExecutePhaseUseCase.kt
+│   │   │       │   │   ├── RecordBatchGenealogyUseCase.kt
+│   │   │       │   │   ├── AllocateCoProductCostsUseCase.kt
+│   │   │       │   │   ├── ManageCampaignUseCase.kt
+│   │   │       │   │   ├── MonitorContinuousProductionUseCase.kt
+│   │   │       │   │   └── ProcessQueryPort.kt
+│   │   │       │   └── output/
+│   │   │       │       ├── RecipeRepository.kt
+│   │   │       │       ├── ProcessOrderRepository.kt
+│   │   │       │       ├── GenealogyRepository.kt
+│   │   │       │       ├── JointProductionRepository.kt
+│   │   │       │       ├── CampaignRepository.kt
+│   │   │       │       ├── InventoryPort.kt
+│   │   │       │       ├── CostingPort.kt
+│   │   │       │       └── ProcessEventPublisherPort.kt
+│   │   │       └── service/
+│   │   │           ├── RecipeManagementService.kt
+│   │   │           ├── RecipeScalingService.kt
+│   │   │           ├── ProcessOrderExecutionService.kt
+│   │   │           ├── YieldCalculationService.kt
+│   │   │           ├── GenealogyTrackingService.kt
+│   │   │           ├── CoProductAllocationService.kt
+│   │   │           ├── CampaignPlanningService.kt
+│   │   │           └── ProcessVariableMonitoringService.kt
+│   │   ├── process-application/
+│   │   │   └── src/main/kotlin/com/chiroerp/manufacturing/process/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateRecipeCommand.kt
+│   │   │       │   ├── UpdateRecipeCommand.kt
+│   │   │       │   ├── ApproveRecipeCommand.kt
+│   │   │       │   ├── CreateProcessOrderCommand.kt
+│   │   │       │   ├── ReleaseProcessOrderCommand.kt
+│   │   │       │   ├── StartPhaseCommand.kt
+│   │   │       │   ├── CompletePhaseCommand.kt
+│   │   │       │   ├── RecordInProcessCheckCommand.kt
+│   │   │       │   ├── CompleteProcessOrderCommand.kt
+│   │   │       │   ├── RecordBatchGenealogyCommand.kt
+│   │   │       │   ├── AllocateCoProductCostsCommand.kt
+│   │   │       │   ├── CreateCampaignCommand.kt
+│   │   │       │   ├── StartCampaignCommand.kt
+│   │   │       │   ├── CompleteCampaignCommand.kt
+│   │   │       │   └── RecordProcessDeviationCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetRecipeQuery.kt
+│   │   │       │   ├── GetRecipeVersionHistoryQuery.kt
+│   │   │       │   ├── GetProcessOrderQuery.kt
+│   │   │       │   ├── GetPhaseExecutionStatusQuery.kt
+│   │   │       │   ├── GetBatchGenealogyQuery.kt
+│   │   │       │   ├── GetForwardTraceQuery.kt
+│   │   │       │   ├── GetBackwardTraceQuery.kt
+│   │   │       │   ├── GetCoProductAllocationQuery.kt
+│   │   │       │   ├── GetCampaignQuery.kt
+│   │   │       │   ├── GetCampaignEfficiencyQuery.kt
+│   │   │       │   └── GetProcessYieldQuery.kt
+│   │   │       └── handler/
+│   │   │           ├── ProcessCommandHandler.kt
+│   │   │           ├── ProcessQueryHandler.kt
+│   │   │           └── ProcessEventHandler.kt
+│   │   └── process-infrastructure/
+│   │       └── src/main/kotlin/com/chiroerp/manufacturing/process/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       ├── RecipeResource.kt
+│   │           │   │       ├── ProcessOrderResource.kt
+│   │           │   │       ├── GenealogyResource.kt
+│   │           │   │       ├── CoProductResource.kt
+│   │           │   │       ├── CampaignResource.kt
+│   │           │   │       └── ContinuousProductionResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── RecipeJpaRepository.kt
+│   │           │       │   ├── ProcessOrderJpaRepository.kt
+│   │           │       │   ├── GenealogyJpaRepository.kt
+│   │           │       │   ├── JointProductionJpaRepository.kt
+│   │           │       │   └── CampaignJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── scada/
+│   │           │           ├── ScadaIntegrationAdapter.kt     # SCADA/DCS integration
+│   │           │           ├── ProcessVariableCollector.kt    # Real-time data collection
+│   │           │           └── OpcUaAdapter.kt                # OPC UA protocol
+│   │           └── ManufacturingProcessApplication.kt
 │   │
 │   ├── manufacturing-quality/                        # Quality Management - Incorporated (ADR-039)
 │   │   │
@@ -8445,7 +8921,7 @@ chiroerp/
 │   │       ├── ActivityId.kt
 │   │       └── HealthScore.kt
 │   │
-│   ├── crm-customer360/                              # Customer 360 Subdomain (Port 9401)
+│   ├── crm-customer360/                              # Customer 360 Subdomain (Port 9451)
 │   │   ├── customer360-api/
 │   │   │   └── src/main/kotlin/com/chiroerp/crm/customer360/api/
 │   │   │       ├── CustomerResource.kt               # REST endpoints
@@ -8529,7 +9005,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── Customer360Application.kt
 │   │
-│   ├── crm-pipeline/                                 # Sales Pipeline Subdomain (Port 9402)
+│   ├── crm-pipeline/                                 # Sales Pipeline Subdomain (Port 9452)
 │   │   ├── pipeline-api/
 │   │   │   └── src/main/kotlin/com/chiroerp/crm/pipeline/api/
 │   │   │       ├── OpportunityResource.kt
@@ -8611,7 +9087,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── PipelineApplication.kt
 │   │
-│   ├── crm-contracts/                                # Service Contracts Subdomain (Port 9404)
+│   ├── crm-contracts/                                # Service Contracts Subdomain (Port 9453)
 │   │   ├── contracts-api/
 │   │   │   └── src/main/kotlin/com/chiroerp/crm/contracts/api/
 │   │   │       ├── ContractResource.kt
@@ -8695,7 +9171,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ContractsApplication.kt
 │   │
-│   ├── crm-activity/                                 # Activity Tracking Subdomain (Port 9406)
+│   ├── crm-activity/                                 # Activity Tracking Subdomain (Port 9454)
 │   │   ├── activity-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/crm/activity/domain/
 │   │   │       ├── model/
@@ -8753,7 +9229,7 @@ chiroerp/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── ActivityApplication.kt
 │   │
-│   ├── crm-account-health/                           # Account Health Subdomain (Port 9407)
+│   ├── crm-account-health/                           # Account Health Subdomain (Port 9455)
 │   │   ├── account-health-domain/
 │   │   │   └── src/main/kotlin/com/chiroerp/crm/accounthealth/domain/
 │   │   │       ├── model/
@@ -8918,9 +9394,12 @@ settings.gradle.kts includes:
 - include("hr:hr-card-reconciliation:card-reconciliation-domain")
 - include("hr:hr-card-reconciliation:card-reconciliation-application")
 - include("hr:hr-card-reconciliation:card-reconciliation-infrastructure")
-- include("hr:hr-contingent-workforce:contingent-workforce-domain")
-- include("hr:hr-contingent-workforce:contingent-workforce-application")
-- include("hr:hr-contingent-workforce:contingent-workforce-infrastructure")
+- include("hr:hr-contingent-workforce:contingent-domain")
+- include("hr:hr-contingent-workforce:contingent-application")
+- include("hr:hr-contingent-workforce:contingent-infrastructure")
+- include("hr:hr-professional-services:professional-services-domain")
+- include("hr:hr-professional-services:professional-services-application")
+- include("hr:hr-professional-services:professional-services-infrastructure")
 - include("hr:hr-workforce-scheduling:workforce-scheduling-domain")
 - include("hr:hr-workforce-scheduling:workforce-scheduling-application")
 - include("hr:hr-workforce-scheduling:workforce-scheduling-infrastructure")
@@ -8928,7 +9407,7 @@ settings.gradle.kts includes:
 - include("hr:hr-analytics:hr-analytics-application")
 - include("hr:hr-analytics:hr-analytics-infrastructure")
 
-# Procurement Bounded Context (ports 9101-9105)
+# Procurement Bounded Context (ports 9201-9205)
 - include("procurement:procurement-shared")
 - include("procurement:procurement-core:core-domain")
 - include("procurement:procurement-core:core-application")
@@ -8981,19 +9460,20 @@ settings.gradle.kts includes:
 - include("maintenance:maintenance-eol-planning:eol-planning-domain")
 - include("maintenance:maintenance-eol-planning:eol-planning-application")
 - include("maintenance:maintenance-eol-planning:eol-planning-infrastructure")
-# FSM - Field Service Management (operational field service moved from CRM)
-- include("maintenance:maintenance-fsm:fsm-shared")
-- include("maintenance:maintenance-fsm:fsm-service-orders:service-orders-api")
-- include("maintenance:maintenance-fsm:fsm-service-orders:service-orders-domain")
-- include("maintenance:maintenance-fsm:fsm-service-orders:service-orders-application")
-- include("maintenance:maintenance-fsm:fsm-service-orders:service-orders-infrastructure")
-- include("maintenance:maintenance-fsm:fsm-dispatch:dispatch-api")
-- include("maintenance:maintenance-fsm:fsm-dispatch:dispatch-domain")
-- include("maintenance:maintenance-fsm:fsm-dispatch:dispatch-application")
-- include("maintenance:maintenance-fsm:fsm-dispatch:dispatch-infrastructure")
-- include("maintenance:maintenance-fsm:fsm-parts-consumption:parts-consumption-domain")
-- include("maintenance:maintenance-fsm:fsm-parts-consumption:parts-consumption-application")
-- include("maintenance:maintenance-fsm:fsm-parts-consumption:parts-consumption-infrastructure")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Field Service bounded context (ADR-042) - Customer-facing service operations
+# ═══════════════════════════════════════════════════════════════════════════
+- include("field-service:fsm-shared")
+- include("field-service:fsm-service-orders:service-orders-domain")
+- include("field-service:fsm-service-orders:service-orders-application")
+- include("field-service:fsm-service-orders:service-orders-infrastructure")
+- include("field-service:fsm-dispatch:dispatch-domain")
+- include("field-service:fsm-dispatch:dispatch-application")
+- include("field-service:fsm-dispatch:dispatch-infrastructure")
+- include("field-service:fsm-parts-consumption:parts-consumption-domain")
+- include("field-service:fsm-parts-consumption:parts-consumption-application")
+- include("field-service:fsm-parts-consumption:parts-consumption-infrastructure")
 
 # Manufacturing bounded context (ADR-037 - Manufacturing, ADR-039 - Quality incorporated)
 - include("manufacturing:manufacturing-shared")
@@ -9021,6 +9501,10 @@ settings.gradle.kts includes:
 - include("manufacturing:manufacturing-analytics:analytics-domain")
 - include("manufacturing:manufacturing-analytics:analytics-application")
 - include("manufacturing:manufacturing-analytics:analytics-infrastructure")
+# Process Manufacturing Extension (ADR-037 - Port 9359)
+- include("manufacturing:manufacturing-process:process-domain")
+- include("manufacturing:manufacturing-process:process-application")
+- include("manufacturing:manufacturing-process:process-infrastructure")
 # Quality Management (incorporated into Manufacturing - ADR-039)
 - include("manufacturing:manufacturing-quality:quality-inspection-planning:inspection-planning-domain")
 - include("manufacturing:manufacturing-quality:quality-inspection-planning:inspection-planning-application")
@@ -9044,7 +9528,7 @@ settings.gradle.kts includes:
 - include("manufacturing:manufacturing-quality:quality-analytics:analytics-application")
 - include("manufacturing:manufacturing-quality:quality-analytics:analytics-infrastructure")
 
-# CRM Bounded Context (ADR-042, ADR-043 - ports 9401-9407)
+# CRM Bounded Context (ADR-042, ADR-043 - ports 9451-9455)
 - include("crm:crm-shared")
 - include("crm:crm-customer360:customer360-api")
 - include("crm:crm-customer360:customer360-domain")
@@ -9212,9 +9696,14 @@ HR Card Reconciliation (Port 9903 - Advanced Tier):
 - com.chiroerp.hr.cardrecon.infrastructure.*         # JPA, Kafka, Visa/Mastercard/Amex feeds, Bank integrations
 
 HR Contingent Workforce (Port 9904 - Add-on Tier):
-- com.chiroerp.hr.contingent.domain.*                # Requisition, Contractor, SOW, SOWMilestone, RateCard, Supplier, Timesheet, AtsCandidate, CandidateMatch
+- com.chiroerp.hr.contingent.domain.*                # ContractorRequisition, Contractor, StaffingSupplier, RateCard, Timesheet, SkillMatching, ComplianceRecord
 - com.chiroerp.hr.contingent.application.*           # Commands, queries, services
 - com.chiroerp.hr.contingent.infrastructure.*        # JPA, Kafka, ATS integration, Vendor portal, AI matching ML models
+
+HR Professional Services (Port 9907 - Add-on Tier):
+- com.chiroerp.hr.professionalservices.domain.*      # StatementOfWork, Deliverable, Milestone, MSA, ConsultingFirm, ServiceEngagement
+- com.chiroerp.hr.professionalservices.application.* # Commands, queries, services
+- com.chiroerp.hr.professionalservices.infrastructure.* # JPA, Kafka, Finance AP integration, Project Accounting integration
 
 HR Workforce Scheduling (Port 9905 - Add-on Tier):
 - com.chiroerp.hr.scheduling.domain.*                # Shift, Schedule, ShiftTemplate, ScheduleOptimization, TimeAttendance, ShiftSwapRequest, LaborForecast, ComplianceRule
@@ -9229,27 +9718,27 @@ HR Analytics (Port 9906 - Advanced Tier):
 Procurement Domain (Core Tier - ADR-023):
 - com.chiroerp.procurement.shared.*                  # Shared types (PurchaseOrderId, RequisitionId, VendorId, MatchType)
 
-Procurement Core (Port 9101):
+Procurement Core (Port 9201):
 - com.chiroerp.procurement.core.domain.*             # Requisition, PurchaseOrder, ApprovalWorkflow, POChange
 - com.chiroerp.procurement.core.application.*        # Commands, queries, services
 - com.chiroerp.procurement.core.infrastructure.*     # JPA, Kafka, REST, Approval workflow engine
 
-Procurement Sourcing (Port 9102):
+Procurement Sourcing (Port 9202):
 - com.chiroerp.procurement.sourcing.domain.*         # RFQ, Quote, SupplierBid, AwardDecision, EvaluationScorecard
 - com.chiroerp.procurement.sourcing.application.*    # Commands, queries, services
 - com.chiroerp.procurement.sourcing.infrastructure.* # JPA, Kafka, REST, Supplier portal
 
-Procurement Suppliers (Port 9103):
+Procurement Suppliers (Port 9203):
 - com.chiroerp.procurement.suppliers.domain.*        # Supplier, SupplierCompliance, SupplierScorecard, SupplierRisk
 - com.chiroerp.procurement.suppliers.application.*   # Commands, queries, services
 - com.chiroerp.procurement.suppliers.infrastructure.* # JPA, Kafka, REST, KYC integration, Document storage
 
-Procurement Receiving (Port 9104):
+Procurement Receiving (Port 9204):
 - com.chiroerp.procurement.receiving.domain.*        # GoodsReceipt, ServiceEntry, InspectionResult, VendorReturn
 - com.chiroerp.procurement.receiving.application.*   # Commands, queries, services
 - com.chiroerp.procurement.receiving.infrastructure.* # JPA, Kafka, REST, Barcode scanning, Quality inspection
 
-Procurement Invoice Match (Port 9105):
+Procurement Invoice Match (Port 9205):
 - com.chiroerp.procurement.invoicematch.domain.*     # InvoiceMatch, MatchException, ToleranceRule, GRIRAccount
 - com.chiroerp.procurement.invoicematch.application.* # Commands, queries, services
 - com.chiroerp.procurement.invoicematch.infrastructure.* # JPA, Kafka, REST, AP integration
@@ -9257,121 +9746,122 @@ Procurement Invoice Match (Port 9105):
 Maintenance Shared:
 - com.chiroerp.maintenance.shared.*                   # MaintenanceId, EquipmentId, WorkOrderId, common events
 
-Maintenance Equipment (Port 9601):
+Maintenance Equipment (Port 9401):
 - com.chiroerp.maintenance.equipment.domain.*         # Equipment, FunctionalLocation, EquipmentClass, TechnicalAttribute
 - com.chiroerp.maintenance.equipment.application.*    # Commands, queries, services
 - com.chiroerp.maintenance.equipment.infrastructure.* # JPA, Kafka, REST, Asset integration
 
-Maintenance Work Orders (Port 9602):
+Maintenance Work Orders (Port 9402):
 - com.chiroerp.maintenance.workorders.domain.*        # WorkOrder, WorkOrderOperation, MaintenanceTask, Confirmation, CostSettlement
 - com.chiroerp.maintenance.workorders.application.*   # Commands, queries, services
 - com.chiroerp.maintenance.workorders.infrastructure.* # JPA, Kafka, REST, Finance CO integration
 
-Maintenance Preventive (Port 9603):
+Maintenance Preventive (Port 9403):
 - com.chiroerp.maintenance.preventive.domain.*        # MaintenancePlan, MaintenanceSchedule, Counter, TriggerRule, CallHorizon
 - com.chiroerp.maintenance.preventive.application.*   # Commands, queries, services
 - com.chiroerp.maintenance.preventive.infrastructure.* # JPA, Kafka, REST, scheduling triggers
 
-Maintenance Breakdown (Port 9604):
+Maintenance Breakdown (Port 9404):
 - com.chiroerp.maintenance.breakdown.domain.*         # BreakdownNotification, DowntimeRecord, CorrectiveAction, RootCause
 - com.chiroerp.maintenance.breakdown.application.*    # Commands, queries, services
 - com.chiroerp.maintenance.breakdown.infrastructure.* # JPA, Kafka, REST, Manufacturing downtime integration
 
-Maintenance Scheduling (Port 9605):
+Maintenance Scheduling (Port 9405):
 - com.chiroerp.maintenance.scheduling.domain.*        # MaintenanceCalendar, ScheduleWindow, ResourceAllocation, ShutdownPlan
 - com.chiroerp.maintenance.scheduling.application.*   # Commands, queries, services
 - com.chiroerp.maintenance.scheduling.infrastructure.* # JPA, Kafka, REST, HR calendar integration
 
-Maintenance Spare Parts (Port 9606):
+Maintenance Spare Parts (Port 9406):
 - com.chiroerp.maintenance.spareparts.domain.*        # SparePart, EquipmentBOM, PartReservation, CriticalSpare
 - com.chiroerp.maintenance.spareparts.application.*   # Commands, queries, services
 - com.chiroerp.maintenance.spareparts.infrastructure.* # JPA, Kafka, REST, Inventory integration
 
-Maintenance Analytics (Port 9607):
+Maintenance Analytics (Port 9407):
 - com.chiroerp.maintenance.analytics.domain.*         # MaintenanceKPI, AvailabilityMetric, CostVariance, ReliabilityReport, OEEMetric
 - com.chiroerp.maintenance.analytics.application.*    # Commands, queries, calculation services
 - com.chiroerp.maintenance.analytics.infrastructure.* # JPA, Kafka, Analytics warehouse integration
 
-Maintenance Commissioning (Port 9608 - Physical ALM):
+Maintenance Commissioning (Port 9408 - Physical ALM):
 - com.chiroerp.maintenance.commissioning.domain.*     # CommissioningProject, PreCommissioningChecklist, TestingProtocol, AcceptanceCertificate
 - com.chiroerp.maintenance.commissioning.application.* # Commands, queries, workflow services
 - com.chiroerp.maintenance.commissioning.infrastructure.* # JPA, Kafka, REST, Finance Assets capitalization (ADR-021)
 
-Maintenance Decommissioning (Port 9609 - Physical ALM):
+Maintenance Decommissioning (Port 9409 - Physical ALM):
 - com.chiroerp.maintenance.decommissioning.domain.*   # DecommissioningRequest, ImpactAssessment, DisposalPlan, EnvironmentalCompliance
 - com.chiroerp.maintenance.decommissioning.application.* # Commands, queries, approval workflow
 - com.chiroerp.maintenance.decommissioning.infrastructure.* # JPA, Kafka, REST, Finance Assets disposal
 
-Maintenance Health Scoring (Port 9610 - Physical ALM):
+Maintenance Health Scoring (Port 9410 - Physical ALM):
 - com.chiroerp.maintenance.healthscoring.domain.*     # HealthScore, ConditionAssessment, InspectionRecord, AlertThreshold
 - com.chiroerp.maintenance.healthscoring.application.* # Commands, queries, scoring engine
 - com.chiroerp.maintenance.healthscoring.infrastructure.* # JPA, Kafka, REST, IoT sensor integration
 
-Maintenance EOL Planning (Port 9611 - Physical ALM):
+Maintenance EOL Planning (Port 9411 - Physical ALM):
 - com.chiroerp.maintenance.eolplanning.domain.*       # EOLIndicator, ReplacementForecast, TCOAnalysis, CapitalBudgetRequest
 - com.chiroerp.maintenance.eolplanning.application.*  # Commands, queries, forecasting services
 - com.chiroerp.maintenance.eolplanning.infrastructure.* # JPA, Kafka, REST, Budgeting CAPEX integration (ADR-032)
 
-# FSM - Field Service Management (operational field service)
-Maintenance FSM Shared:
-- com.chiroerp.maintenance.fsm.shared.*               # ServiceOrderId, TechnicianId, DispatchId, RouteId, common events
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT (ADR-042) - Customer-facing field service operations
+# ═══════════════════════════════════════════════════════════════════════════
 
-Maintenance FSM Service Orders (Port 9612):
-- com.chiroerp.maintenance.fsm.serviceorders.api.*    # REST resources, DTOs, OpenAPI
-- com.chiroerp.maintenance.fsm.serviceorders.domain.* # ServiceOrder, ServiceLine, SlaPolicy, SlaTracking
-- com.chiroerp.maintenance.fsm.serviceorders.application.* # Commands, queries, handlers
-- com.chiroerp.maintenance.fsm.serviceorders.infrastructure.* # JPA, Kafka, Inventory adapter
+Field Service Shared:
+- com.chiroerp.fieldservice.shared.*                  # ServiceOrderId, FieldTechnicianId, DispatchId, PartsConsumptionId, value objects
 
-Maintenance FSM Dispatch (Port 9613):
-- com.chiroerp.maintenance.fsm.dispatch.api.*         # REST resources, DTOs, OpenAPI
-- com.chiroerp.maintenance.fsm.dispatch.domain.*      # Technician, DispatchAssignment, Route, ServiceTerritory
-- com.chiroerp.maintenance.fsm.dispatch.application.* # Commands, queries, handlers
-- com.chiroerp.maintenance.fsm.dispatch.infrastructure.* # JPA, Kafka, Google Maps, Geocoding
+Field Service Orders (Port 9601):
+- com.chiroerp.fieldservice.serviceorders.domain.*    # ServiceOrder, ServiceOrderLine, CustomerAsset, ServiceContract, BillingDetails
+- com.chiroerp.fieldservice.serviceorders.application.* # Commands, queries, handlers
+- com.chiroerp.fieldservice.serviceorders.infrastructure.* # JPA, Kafka, Finance AR integration
 
-Maintenance FSM Parts Consumption (Port 9614):
-- com.chiroerp.maintenance.fsm.partsconsumption.domain.* # PartsConsumption, PartUsage, TechnicianInventory, VanStock
-- com.chiroerp.maintenance.fsm.partsconsumption.application.* # Commands, queries, handlers
-- com.chiroerp.maintenance.fsm.partsconsumption.infrastructure.* # JPA, Kafka, Inventory adapter
+Field Service Dispatch (Port 9602):
+- com.chiroerp.fieldservice.dispatch.domain.*         # Dispatch, FieldTechnician, TechnicianSkills, ServiceTerritory, RouteOptimization
+- com.chiroerp.fieldservice.dispatch.application.*    # Commands, queries, handlers
+- com.chiroerp.fieldservice.dispatch.infrastructure.* # JPA, Kafka, Google Maps, Geocoding
+
+Field Service Parts Consumption (Port 9603):
+- com.chiroerp.fieldservice.parts.domain.*            # PartsConsumption, FieldInventory, TruckStock, ReplenishmentRequest, WarrantyPart
+- com.chiroerp.fieldservice.parts.application.*       # Commands, queries, handlers
+- com.chiroerp.fieldservice.parts.infrastructure.*    # JPA, Kafka, Inventory warehouse integration
 
 Manufacturing Shared:
 - com.chiroerp.manufacturing.shared.*                 # ManufacturingId, ProductionOrderId, WorkOrderId, BomId, common events
 
-Manufacturing MRP (Port 9301):
+Manufacturing MRP (Port 9351):
 - com.chiroerp.manufacturing.mrp.domain.*             # MRPRun, PlannedOrder, DemandElement, SupplyElement, NetRequirement
 - com.chiroerp.manufacturing.mrp.application.*        # Commands, queries, services
 - com.chiroerp.manufacturing.mrp.infrastructure.*     # JPA, Kafka, REST, Inventory/Sales integration
 
-Manufacturing Production (Port 9302):
+Manufacturing Production (Port 9352):
 - com.chiroerp.manufacturing.production.domain.*      # ProductionOrder, ProductionOperation, Confirmation, GoodsIssue, GoodsReceipt
 - com.chiroerp.manufacturing.production.application.* # Commands, queries, services
 - com.chiroerp.manufacturing.production.infrastructure.* # JPA, Kafka, REST, Inventory/Costing integration
 
-Manufacturing Shop Floor (Port 9303):
+Manufacturing Shop Floor (Port 9353):
 - com.chiroerp.manufacturing.shopfloor.domain.*       # WorkCenter, DispatchList, TimeTicket, LaborConfirmation, DowntimeRecord
 - com.chiroerp.manufacturing.shopfloor.application.*  # Commands, queries, services
 - com.chiroerp.manufacturing.shopfloor.infrastructure.* # JPA, Kafka, REST, MES integration
 
-Manufacturing BOM (Port 9304):
+Manufacturing BOM (Port 9354):
 - com.chiroerp.manufacturing.bom.domain.*             # BillOfMaterial, BOMItem, Routing, RoutingOperation, Effectivity
 - com.chiroerp.manufacturing.bom.application.*        # Commands, queries, services
 - com.chiroerp.manufacturing.bom.infrastructure.*     # JPA, Kafka, REST, MDM integration
 
-Manufacturing Costing (Port 9305):
+Manufacturing Costing (Port 9355):
 - com.chiroerp.manufacturing.costing.domain.*         # CostEstimate, CostComponent, WIPValuation, ProductionVariance
 - com.chiroerp.manufacturing.costing.application.*    # Commands, queries, services
 - com.chiroerp.manufacturing.costing.infrastructure.* # JPA, Kafka, REST, Finance CO integration
 
-Manufacturing Capacity (Port 9306):
+Manufacturing Capacity (Port 9356):
 - com.chiroerp.manufacturing.capacity.domain.*        # CapacityPlan, WorkCenterCapacity, CapacityLoad, CapacityConstraint
 - com.chiroerp.manufacturing.capacity.application.*   # Commands, queries, services
 - com.chiroerp.manufacturing.capacity.infrastructure.* # JPA, Kafka, REST, Scheduling integration
 
-Manufacturing Subcontracting (Port 9307):
+Manufacturing Subcontracting (Port 9357):
 - com.chiroerp.manufacturing.subcontracting.domain.*  # SubcontractOrder, ExternalOperation, ComponentProvision, SubcontractReceipt
 - com.chiroerp.manufacturing.subcontracting.application.* # Commands, queries, services
 - com.chiroerp.manufacturing.subcontracting.infrastructure.* # JPA, Kafka, REST, Procurement integration
 
-Manufacturing Analytics (Port 9308):
+Manufacturing Analytics (Port 9358):
 - com.chiroerp.manufacturing.analytics.domain.*       # ManufacturingKPI, OEE, Throughput, CycleTime, YieldAnalysis
 - com.chiroerp.manufacturing.analytics.application.*  # Commands, queries, services
 - com.chiroerp.manufacturing.analytics.infrastructure.* # JPA, Kafka, REST, Analytics warehouse integration
@@ -9414,30 +9904,30 @@ Quality Analytics (Port 9507 - within Manufacturing):
 CRM Shared:
 - com.chiroerp.crm.shared.*                   # CustomerId, ContactId, OpportunityId, ContractId, ActivityId
 
-CRM Customer 360 (Port 9401):
+CRM Customer 360 (Port 9451):
 - com.chiroerp.crm.customer360.api.*          # REST resources, DTOs, OpenAPI
 - com.chiroerp.crm.customer360.domain.*       # Customer, Contact, CustomerSegment, CustomerClassification
 - com.chiroerp.crm.customer360.application.*  # Commands, queries, handlers
 - com.chiroerp.crm.customer360.infrastructure.* # JPA, Elasticsearch, Kafka
 
-CRM Pipeline (Port 9402):
+CRM Pipeline (Port 9452):
 - com.chiroerp.crm.pipeline.api.*             # REST resources, DTOs, OpenAPI
 - com.chiroerp.crm.pipeline.domain.*          # Opportunity, OpportunityStage, Forecast, WinProbability
 - com.chiroerp.crm.pipeline.application.*     # Commands, queries, handlers
 - com.chiroerp.crm.pipeline.infrastructure.*  # JPA, Kafka, REST
 
-CRM Contracts (Port 9403):
+CRM Contracts (Port 9453):
 - com.chiroerp.crm.contracts.api.*            # REST resources, DTOs, OpenAPI
 - com.chiroerp.crm.contracts.domain.*         # ServiceContract, Entitlement, CoveredAsset, RenewalTerms
 - com.chiroerp.crm.contracts.application.*    # Commands, queries, handlers
 - com.chiroerp.crm.contracts.infrastructure.* # JPA, Kafka, REST
 
-CRM Activity (Port 9404):
+CRM Activity (Port 9454):
 - com.chiroerp.crm.activity.domain.*          # Activity, Call, Email, Meeting, Task, TouchPoint
 - com.chiroerp.crm.activity.application.*     # Commands, queries, handlers
 - com.chiroerp.crm.activity.infrastructure.*  # JPA, Kafka, REST
 
-CRM Account Health (Port 9405):
+CRM Account Health (Port 9455):
 - com.chiroerp.crm.accounthealth.domain.*     # AccountHealth, HealthScore, RiskSignal, ChurnPrediction
 - com.chiroerp.crm.accounthealth.application.* # Commands, queries, handlers
 - com.chiroerp.crm.accounthealth.infrastructure.* # JPA, Kafka, REST
@@ -9725,23 +10215,27 @@ Maintenance Lifecycle Database: maintenance_lifecycle (shared schema)
 - User: maintenance_eol_planning_app, maintenance_eol_planning_readonly
 - Note: Budgeting CAPEX integration (ADR-032)
 
-Maintenance FSM Service Orders Database: maintenance_fsm_service_orders
-- Schema: maintenance_fsm_service_orders
-- Tables: service_order, service_order_type, service_order_status, service_line, labor_charge, parts_used, sla_policy, sla_level, sla_tracking, sla_breach, service_priority, priority_escalation, service_resolution, resolution_code, customer_signature, signature_capture, event_outbox
-- User: maintenance_fsm_service_orders_app, maintenance_fsm_service_orders_readonly
-- Note: Field service work orders, SLA management (Port 9612)
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT DATABASES (ADR-042)
+# ═══════════════════════════════════════════════════════════════════════════
 
-Maintenance FSM Dispatch Database: maintenance_fsm_dispatch
-- Schema: maintenance_fsm_dispatch
-- Tables: technician, technician_skill, skill_certification, technician_availability, availability_calendar, dispatch_assignment, assignment_status, assignment_history, route, route_stop, stop_sequence, travel_time, travel_estimate, service_territory, territory_boundary, schedule_slot, slot_booking, emergency_dispatch, event_outbox
-- User: maintenance_fsm_dispatch_app, maintenance_fsm_dispatch_readonly
-- Note: Technician scheduling, route optimization, GPS tracking (Port 9613)
+Field Service Orders Database: fieldservice_service_orders
+- Schema: fieldservice_service_orders
+- Tables: service_order, service_order_type, service_order_status, service_order_line, service_request, customer_asset, service_contract, billing_details, time_and_materials, fixed_price_billing, sla_policy, sla_tracking, sla_breach, event_outbox
+- User: fieldservice_service_orders_app, fieldservice_service_orders_readonly
+- Note: Customer-facing service work orders, billing (Port 9601)
 
-Maintenance FSM Parts Consumption Database: maintenance_fsm_parts_consumption
-- Schema: maintenance_fsm_parts_consumption
-- Tables: parts_consumption, consumption_record, part_usage, usage_type, technician_inventory, van_stock, stock_level, part_return, return_reason, part_request, request_status, billable_part, billing_category, warranty_part, warranty_claim, event_outbox
-- User: maintenance_fsm_parts_consumption_app, maintenance_fsm_parts_consumption_readonly
-- Note: Field service parts usage, van stock management (Port 9614)
+Field Service Dispatch Database: fieldservice_dispatch
+- Schema: fieldservice_dispatch
+- Tables: dispatch, field_technician, technician_skills, skill_matrix, technician_availability, service_territory, territory_boundary, route_optimization, schedule_slot, travel_time, dispatch_assignment, assignment_status, emergency_dispatch, event_outbox
+- User: fieldservice_dispatch_app, fieldservice_dispatch_readonly
+- Note: Technician scheduling, route optimization, GPS tracking (Port 9602)
+
+Field Service Parts Database: fieldservice_parts
+- Schema: fieldservice_parts
+- Tables: parts_consumption, field_inventory, truck_stock, stock_level, part_usage, replenishment_request, request_status, warranty_part, warranty_claim, event_outbox
+- User: fieldservice_parts_app, fieldservice_parts_readonly
+- Note: Truck inventory, parts consumption, warranty claims (Port 9603)
 
 Manufacturing MRP Database: manufacturing_mrp
 - Schema: manufacturing_mrp
@@ -10387,59 +10881,62 @@ Maintenance EOL Planning Events (Port 9611 - Physical ALM - ADR-040):
 - maintenance.eolplanning.ExtendLifeDecisionMadeEvent → maintenance.preventive.AdjustMaintenanceStrategyCommand (strategy adjustment)
 - maintenance.eolplanning.ExtendLifeDecisionMadeEvent → finance.budgeting.DeferCAPEXCommand (CAPEX deferral)
 
-# FSM - Field Service Management Events (operational field service under Maintenance)
-Maintenance FSM Service Orders Events (Port 9612 - ADR-042):
-- maintenance.fsm.serviceorders.ServiceOrderCreatedEvent → maintenance.fsm.dispatch.FindAvailableTechnicianCommand (technician search)
-- maintenance.fsm.serviceorders.ServiceOrderCreatedEvent → crm.contracts.ConsumeEntitlementCommand (entitlement consumption)
-- maintenance.fsm.serviceorders.ServiceOrderCreatedEvent → analytics.warehouse.IngestEventCommand (service analytics)
-- maintenance.fsm.serviceorders.ServiceOrderCreatedEvent → notification.NotifyCustomerCommand (customer notification)
-- maintenance.fsm.serviceorders.ServiceOrderAssignedEvent → maintenance.fsm.dispatch.CreateAssignmentCommand (dispatch assignment)
-- maintenance.fsm.serviceorders.ServiceOrderAssignedEvent → notification.NotifyTechnicianCommand (technician notification)
-- maintenance.fsm.serviceorders.ServiceOrderStartedEvent → maintenance.fsm.dispatch.UpdateTechnicianStatusCommand (status update)
-- maintenance.fsm.serviceorders.ServiceOrderStartedEvent → crm.contracts.StartServiceTrackingCommand (SLA tracking start)
-- maintenance.fsm.serviceorders.ServiceOrderCompletedEvent → maintenance.fsm.dispatch.CompleteTechnicianAssignmentCommand (assignment completion)
-- maintenance.fsm.serviceorders.ServiceOrderCompletedEvent → crm.contracts.RecordServiceDeliveryCommand (service delivery)
-- maintenance.fsm.serviceorders.ServiceOrderCompletedEvent → crm.accounthealth.RecordServiceInteractionCommand (health update)
-- maintenance.fsm.serviceorders.ServiceOrderCompletedEvent → analytics.warehouse.IngestEventCommand (completion analytics)
-- maintenance.fsm.serviceorders.ServiceOrderBilledEvent → finance.ar.CreateServiceInvoiceCommand (AR invoice)
-- maintenance.fsm.serviceorders.ServiceOrderBilledEvent → finance.revenue.RecognizeServiceRevenueCommand (revenue recognition)
-- maintenance.fsm.serviceorders.SlaBreachedEvent → crm.accounthealth.RecordSlaBreachCommand (health impact)
-- maintenance.fsm.serviceorders.SlaBreachedEvent → notification.AlertServiceManagerCommand (SLA alert)
-- maintenance.fsm.serviceorders.SlaBreachedEvent → crm.contracts.RecordSlaViolationCommand (contract violation)
-- maintenance.fsm.serviceorders.PartsConsumedEvent → inventory.management.PostPartsIssueCommand (inventory reduction)
-- maintenance.fsm.serviceorders.PartsConsumedEvent → maintenance.fsm.partsconsumption.RecordConsumptionCommand (consumption record)
+# ═══════════════════════════════════════════════════════════════════════════
+# FIELD SERVICE BOUNDED CONTEXT EVENTS (ADR-042)
+# ═══════════════════════════════════════════════════════════════════════════
 
-Maintenance FSM Dispatch Events (Port 9613 - ADR-042):
-- maintenance.fsm.dispatch.TechnicianDispatchedEvent → maintenance.fsm.serviceorders.UpdateOrderStatusCommand (order status)
-- maintenance.fsm.dispatch.TechnicianDispatchedEvent → notification.NotifyCustomerETACommand (ETA notification)
-- maintenance.fsm.dispatch.TechnicianDispatchedEvent → analytics.warehouse.IngestEventCommand (dispatch analytics)
-- maintenance.fsm.dispatch.TechnicianEnRouteEvent → maintenance.fsm.serviceorders.UpdateTechnicianLocationCommand (location update)
-- maintenance.fsm.dispatch.TechnicianEnRouteEvent → notification.UpdateCustomerETACommand (ETA update)
-- maintenance.fsm.dispatch.TechnicianArrivedEvent → maintenance.fsm.serviceorders.StartServiceCommand (service start)
-- maintenance.fsm.dispatch.TechnicianArrivedEvent → crm.contracts.StartSlaClockCommand (SLA clock)
-- maintenance.fsm.dispatch.TechnicianDepartedEvent → maintenance.fsm.serviceorders.RecordServiceDurationCommand (duration record)
-- maintenance.fsm.dispatch.TechnicianDepartedEvent → maintenance.fsm.dispatch.AdvanceRouteCommand (route advancement)
-- maintenance.fsm.dispatch.RouteOptimizedEvent → maintenance.fsm.dispatch.UpdateTechnicianScheduleCommand (schedule update)
-- maintenance.fsm.dispatch.RouteOptimizedEvent → notification.NotifyAffectedCustomersCommand (customer notifications)
-- maintenance.fsm.dispatch.ScheduleConflictEvent → maintenance.fsm.dispatch.InitiateReschedulingCommand (rescheduling)
-- maintenance.fsm.dispatch.ScheduleConflictEvent → notification.AlertDispatcherCommand (dispatcher alert)
-- maintenance.fsm.dispatch.EmergencyDispatchedEvent → maintenance.fsm.serviceorders.EscalateOrderPriorityCommand (priority escalation)
-- maintenance.fsm.dispatch.EmergencyDispatchedEvent → notification.AlertOnCallTechnicianCommand (on-call alert)
+Field Service Orders Events (Port 9601 - ADR-042):
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → fieldservice.dispatch.FindAvailableTechnicianCommand (technician search)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → crm.contracts.ConsumeEntitlementCommand (entitlement consumption)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → analytics.warehouse.IngestEventCommand (service analytics)
+- fieldservice.serviceorders.ServiceOrderCreatedEvent → notification.NotifyCustomerCommand (customer notification)
+- fieldservice.serviceorders.ServiceOrderAssignedEvent → fieldservice.dispatch.CreateAssignmentCommand (dispatch assignment)
+- fieldservice.serviceorders.ServiceOrderAssignedEvent → notification.NotifyTechnicianCommand (technician notification)
+- fieldservice.serviceorders.ServiceOrderStartedEvent → fieldservice.dispatch.UpdateTechnicianStatusCommand (status update)
+- fieldservice.serviceorders.ServiceOrderStartedEvent → crm.contracts.StartServiceTrackingCommand (SLA tracking start)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → fieldservice.dispatch.CompleteTechnicianAssignmentCommand (assignment completion)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → crm.contracts.RecordServiceDeliveryCommand (service delivery)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → crm.accounthealth.RecordServiceInteractionCommand (health update)
+- fieldservice.serviceorders.ServiceOrderCompletedEvent → analytics.warehouse.IngestEventCommand (completion analytics)
+- fieldservice.serviceorders.ServiceOrderBilledEvent → finance.ar.CreateServiceInvoiceCommand (AR invoice)
+- fieldservice.serviceorders.ServiceOrderBilledEvent → finance.revenue.RecognizeServiceRevenueCommand (revenue recognition)
+- fieldservice.serviceorders.SlaBreachedEvent → crm.accounthealth.RecordSlaBreachCommand (health impact)
+- fieldservice.serviceorders.SlaBreachedEvent → notification.AlertServiceManagerCommand (SLA alert)
+- fieldservice.serviceorders.SlaBreachedEvent → crm.contracts.RecordSlaViolationCommand (contract violation)
+- fieldservice.serviceorders.PartsConsumedEvent → inventory.management.PostPartsIssueCommand (inventory reduction)
+- fieldservice.serviceorders.PartsConsumedEvent → fieldservice.parts.RecordConsumptionCommand (consumption record)
 
-Maintenance FSM Parts Consumption Events (Port 9614 - ADR-042):
-- maintenance.fsm.partsconsumption.PartsConsumedEvent → inventory.management.PostGoodsIssueCommand (inventory issue)
-- maintenance.fsm.partsconsumption.PartsConsumedEvent → maintenance.fsm.serviceorders.UpdatePartsCostCommand (service order cost)
-- maintenance.fsm.partsconsumption.PartsConsumedEvent → analytics.warehouse.IngestEventCommand (consumption analytics)
-- maintenance.fsm.partsconsumption.PartsReturnedEvent → inventory.management.PostGoodsReceiptCommand (inventory return)
-- maintenance.fsm.partsconsumption.PartsReturnedEvent → maintenance.fsm.serviceorders.CreditPartsCommand (parts credit)
-- maintenance.fsm.partsconsumption.PartRequestCreatedEvent → inventory.management.CheckStockAvailabilityCommand (stock check)
-- maintenance.fsm.partsconsumption.PartRequestCreatedEvent → procurement.purchasing.CreateUrgentRequisitionCommand (urgent PR)
-- maintenance.fsm.partsconsumption.VanStockReplenishedEvent → inventory.management.TransferStockCommand (stock transfer)
-- maintenance.fsm.partsconsumption.VanStockReplenishedEvent → maintenance.fsm.dispatch.UpdateTechnicianInventoryCommand (tech inventory)
-- maintenance.fsm.partsconsumption.WarrantyPartUsedEvent → crm.contracts.RecordWarrantyClaimCommand (warranty claim)
-- maintenance.fsm.partsconsumption.WarrantyPartUsedEvent → procurement.vendor.CreateWarrantyClaimCommand (vendor claim)
+Field Service Dispatch Events (Port 9602 - ADR-042):
+- fieldservice.dispatch.TechnicianDispatchedEvent → fieldservice.serviceorders.UpdateOrderStatusCommand (order status)
+- fieldservice.dispatch.TechnicianDispatchedEvent → notification.NotifyCustomerETACommand (ETA notification)
+- fieldservice.dispatch.TechnicianDispatchedEvent → analytics.warehouse.IngestEventCommand (dispatch analytics)
+- fieldservice.dispatch.TechnicianEnRouteEvent → fieldservice.serviceorders.UpdateTechnicianLocationCommand (location update)
+- fieldservice.dispatch.TechnicianEnRouteEvent → notification.UpdateCustomerETACommand (ETA update)
+- fieldservice.dispatch.TechnicianArrivedEvent → fieldservice.serviceorders.StartServiceCommand (service start)
+- fieldservice.dispatch.TechnicianArrivedEvent → crm.contracts.StartSlaClockCommand (SLA clock)
+- fieldservice.dispatch.TechnicianDepartedEvent → fieldservice.serviceorders.RecordServiceDurationCommand (duration record)
+- fieldservice.dispatch.TechnicianDepartedEvent → fieldservice.dispatch.AdvanceRouteCommand (route advancement)
+- fieldservice.dispatch.RouteOptimizedEvent → fieldservice.dispatch.UpdateTechnicianScheduleCommand (schedule update)
+- fieldservice.dispatch.RouteOptimizedEvent → notification.NotifyAffectedCustomersCommand (customer notifications)
+- fieldservice.dispatch.ScheduleConflictEvent → fieldservice.dispatch.InitiateReschedulingCommand (rescheduling)
+- fieldservice.dispatch.ScheduleConflictEvent → notification.AlertDispatcherCommand (dispatcher alert)
+- fieldservice.dispatch.EmergencyDispatchedEvent → fieldservice.serviceorders.EscalateOrderPriorityCommand (priority escalation)
+- fieldservice.dispatch.EmergencyDispatchedEvent → notification.AlertOnCallTechnicianCommand (on-call alert)
 
-Manufacturing MRP Events (Port 9301 - ADR-037):
+Field Service Parts Consumption Events (Port 9603 - ADR-042):
+- fieldservice.parts.PartsConsumedEvent → inventory.management.PostGoodsIssueCommand (inventory issue)
+- fieldservice.parts.PartsConsumedEvent → fieldservice.serviceorders.UpdatePartsCostCommand (service order cost)
+- fieldservice.parts.PartsConsumedEvent → analytics.warehouse.IngestEventCommand (consumption analytics)
+- fieldservice.parts.PartsReturnedEvent → inventory.management.PostGoodsReceiptCommand (inventory return)
+- fieldservice.parts.PartsReturnedEvent → fieldservice.serviceorders.CreditPartsCommand (parts credit)
+- fieldservice.parts.PartRequestCreatedEvent → inventory.management.CheckStockAvailabilityCommand (stock check)
+- fieldservice.parts.PartRequestCreatedEvent → procurement.purchasing.CreateUrgentRequisitionCommand (urgent PR)
+- fieldservice.parts.TruckStockReplenishedEvent → inventory.management.TransferStockCommand (stock transfer)
+- fieldservice.parts.TruckStockReplenishedEvent → fieldservice.dispatch.UpdateTechnicianInventoryCommand (tech inventory)
+- fieldservice.parts.WarrantyPartUsedEvent → crm.contracts.RecordWarrantyClaimCommand (warranty claim)
+- fieldservice.parts.WarrantyPartUsedEvent → procurement.vendor.CreateWarrantyClaimCommand (vendor claim)
+
+Manufacturing MRP Events (Port 9351 - ADR-037):
 - manufacturing.mrp.MRPRunCompletedEvent → manufacturing.production.CreatePlannedOrdersCommand (production orders)
 - manufacturing.mrp.MRPRunCompletedEvent → procurement.purchasing.CreatePurchaseRequisitionsCommand (PR generation)
 - manufacturing.mrp.MRPRunCompletedEvent → analytics.warehouse.IngestEventCommand (MRP analytics)
@@ -10453,7 +10950,7 @@ Manufacturing MRP Events (Port 9301 - ADR-037):
 - manufacturing.mrp.ExceptionMessageGeneratedEvent → manufacturing.mrp.EvaluateRescheduleCommand (reschedule evaluation)
 - manufacturing.mrp.DemandPeggedEvent → manufacturing.mrp.TraceRequirementSourceCommand (requirement tracing)
 
-Manufacturing Production Events (Port 9302 - ADR-037):
+Manufacturing Production Events (Port 9352 - ADR-037):
 - manufacturing.production.ProductionOrderCreatedEvent → manufacturing.capacity.AllocateCapacityCommand (capacity allocation)
 - manufacturing.production.ProductionOrderCreatedEvent → manufacturing.bom.ExplodeBOMCommand (BOM explosion)
 - manufacturing.production.ProductionOrderCreatedEvent → manufacturing.costing.EstimateProductionCostCommand (cost estimation)
@@ -10477,7 +10974,7 @@ Manufacturing Production Events (Port 9302 - ADR-037):
 - manufacturing.production.ReworkCreatedEvent → manufacturing.costing.EstimateReworkCostCommand (rework cost)
 - manufacturing.production.WIPTransferredEvent → finance.co.PostWIPTransferCommand (WIP transfer posting)
 
-Manufacturing Shop Floor Events (Port 9303 - ADR-037):
+Manufacturing Shop Floor Events (Port 9353 - ADR-037):
 - manufacturing.shopfloor.OperationStartedEvent → manufacturing.production.UpdateProductionProgressCommand (progress update)
 - manufacturing.shopfloor.OperationStartedEvent → manufacturing.capacity.ConsumeCapacityCommand (capacity consumption)
 - manufacturing.shopfloor.OperationStartedEvent → analytics.warehouse.IngestEventCommand (shop floor analytics)
@@ -10495,7 +10992,7 @@ Manufacturing Shop Floor Events (Port 9303 - ADR-037):
 - manufacturing.shopfloor.WorkCenterStatusChangedEvent → manufacturing.capacity.RecalculateCapacityCommand (capacity recalc)
 - manufacturing.shopfloor.WorkCenterStatusChangedEvent → manufacturing.analytics.UpdateWorkCenterMetricsCommand (WC metrics)
 
-Manufacturing BOM Events (Port 9304 - ADR-037):
+Manufacturing BOM Events (Port 9354 - ADR-037):
 - manufacturing.bom.BOMCreatedEvent → manufacturing.costing.CalculateMaterialCostCommand (material costing)
 - manufacturing.bom.BOMCreatedEvent → analytics.warehouse.IngestEventCommand (BOM analytics)
 - manufacturing.bom.BOMChangedEvent → manufacturing.costing.RecalculateCostEstimateCommand (cost recalc)
@@ -10513,7 +11010,7 @@ Manufacturing BOM Events (Port 9304 - ADR-037):
 - manufacturing.bom.EffectivityChangedEvent → manufacturing.mrp.AdjustPlannedOrdersCommand (order adjustment)
 - manufacturing.bom.PhantomBOMExplodedEvent → manufacturing.production.AddPhantomComponentsCommand (phantom components)
 
-Manufacturing Costing Events (Port 9305 - ADR-037):
+Manufacturing Costing Events (Port 9355 - ADR-037):
 - manufacturing.costing.CostEstimateCreatedEvent → finance.co.UpdateStandardCostCommand (standard cost)
 - manufacturing.costing.CostEstimateCreatedEvent → analytics.warehouse.IngestEventCommand (costing analytics)
 - manufacturing.costing.CostEstimateReleasedEvent → inventory.management.RevaluateInventoryCommand (inventory revaluation)
@@ -10530,7 +11027,7 @@ Manufacturing Costing Events (Port 9305 - ADR-037):
 - manufacturing.costing.SettlementCompletedEvent → inventory.management.UpdateInventoryCostCommand (inventory cost)
 - manufacturing.costing.ActivityRateChangedEvent → manufacturing.costing.RecalculateOpenOrdersCommand (order recalc)
 
-Manufacturing Capacity Events (Port 9306 - ADR-037):
+Manufacturing Capacity Events (Port 9356 - ADR-037):
 - manufacturing.capacity.CapacityPlanCreatedEvent → manufacturing.mrp.ConstrainPlannedOrdersCommand (order constraining)
 - manufacturing.capacity.CapacityPlanCreatedEvent → analytics.warehouse.IngestEventCommand (capacity analytics)
 - manufacturing.capacity.CapacityOverloadDetectedEvent → manufacturing.capacity.InitiateLevelingCommand (capacity leveling)
@@ -10545,7 +11042,7 @@ Manufacturing Capacity Events (Port 9306 - ADR-037):
 - manufacturing.capacity.WorkCenterCapacityChangedEvent → manufacturing.capacity.RecalculatePlanCommand (plan recalc)
 - manufacturing.capacity.CalendarUpdatedEvent → manufacturing.capacity.AdjustAvailableCapacityCommand (capacity adjustment)
 
-Manufacturing Subcontracting Events (Port 9307 - ADR-037):
+Manufacturing Subcontracting Events (Port 9357 - ADR-037):
 - manufacturing.subcontracting.SubcontractOrderCreatedEvent → procurement.purchasing.CreateSubcontractPOCommand (subcontract PO)
 - manufacturing.subcontracting.SubcontractOrderCreatedEvent → analytics.warehouse.IngestEventCommand (subcontract analytics)
 - manufacturing.subcontracting.SubcontractOrderReleasedEvent → inventory.management.ReserveComponentsCommand (component reservation)
@@ -10560,7 +11057,7 @@ Manufacturing Subcontracting Events (Port 9307 - ADR-037):
 - manufacturing.subcontracting.ServiceEntryCreatedEvent → finance.ap.CreateSubcontractPayableCommand (subcontract payable)
 - manufacturing.subcontracting.ServiceEntryCreatedEvent → manufacturing.costing.PostSubcontractCostCommand (subcontract cost)
 
-Manufacturing Analytics Events (Port 9308 - ADR-037):
+Manufacturing Analytics Events (Port 9358 - ADR-037):
 - manufacturing.analytics.OEECalculatedEvent → analytics.warehouse.IngestEventCommand (OEE warehouse)
 - manufacturing.analytics.OEECalculatedEvent → notification.AlertIfBelowTargetCommand (OEE alert)
 - manufacturing.analytics.OEECalculatedEvent → manufacturing.analytics.UpdateDashboardCommand (dashboard update)
@@ -10702,7 +11199,7 @@ Quality Analytics Events (Port 9507 - ADR-039):
 - quality.analytics.ParetoAnalysisCompletedEvent → quality.nonconformance.FocusImprovementCommand (improvement focus)
 - quality.analytics.QualityKPIPublishedEvent → analytics.reporting.UpdateQualityDashboardCommand (quality dashboard)
 
-CRM Customer 360 Events (Port 9401 - ADR-043):
+CRM Customer 360 Events (Port 9451 - ADR-043):
 - crm.customer360.CustomerCreatedEvent → analytics.warehouse.IngestEventCommand (customer analytics)
 - crm.customer360.CustomerCreatedEvent → crm.accounthealth.InitializeHealthScoreCommand (health initialization)
 - crm.customer360.CustomerCreatedEvent → finance.ar.CreateCustomerAccountCommand (AR account)
@@ -10717,7 +11214,7 @@ CRM Customer 360 Events (Port 9401 - ADR-043):
 - crm.customer360.CustomerMergedEvent → crm.contracts.MergeContractsCommand (contract merge)
 - crm.customer360.CustomerMergedEvent → finance.ar.MergeCustomerAccountsCommand (AR merge)
 
-CRM Pipeline Events (Port 9402 - ADR-043):
+CRM Pipeline Events (Port 9452 - ADR-043):
 - crm.pipeline.OpportunityCreatedEvent → analytics.warehouse.IngestEventCommand (pipeline analytics)
 - crm.pipeline.OpportunityCreatedEvent → crm.activity.CreateFollowUpTaskCommand (follow-up task)
 - crm.pipeline.OpportunityCreatedEvent → notification.NotifySalesRepCommand (sales notification)
@@ -10726,7 +11223,7 @@ CRM Pipeline Events (Port 9402 - ADR-043):
 - crm.pipeline.OpportunityStageChangedEvent → analytics.warehouse.IngestEventCommand (stage analytics)
 - crm.pipeline.OpportunityClosedWonEvent → sales.orders.CreateSalesOrderCommand (order creation)
 - crm.pipeline.OpportunityClosedWonEvent → crm.contracts.InitiateContractCommand (contract initiation)
-- crm.pipeline.OpportunityClosedWonEvent → maintenance.fsm.serviceorders.ScheduleInstallationCommand (installation scheduling)
+- crm.pipeline.OpportunityClosedWonEvent → fieldservice.serviceorders.ScheduleInstallationCommand (installation scheduling)
 - crm.pipeline.OpportunityClosedWonEvent → crm.accounthealth.RecordWinCommand (health boost)
 - crm.pipeline.OpportunityClosedLostEvent → crm.activity.CreateLossReviewTaskCommand (loss review)
 - crm.pipeline.OpportunityClosedLostEvent → crm.accounthealth.RecordLossCommand (health impact)
@@ -10736,20 +11233,20 @@ CRM Pipeline Events (Port 9402 - ADR-043):
 - crm.pipeline.QuotaAchievedEvent → hr.performance.RecordQuotaAchievementCommand (performance record)
 - crm.pipeline.QuotaAchievedEvent → notification.CongratulateRepCommand (congratulations)
 
-CRM Contracts Events (Port 9403 - ADR-043):
+CRM Contracts Events (Port 9453 - ADR-043):
 - crm.contracts.ContractCreatedEvent → analytics.warehouse.IngestEventCommand (contract analytics)
 - crm.contracts.ContractCreatedEvent → crm.accounthealth.UpdateContractStatusCommand (health update)
 - crm.contracts.ContractCreatedEvent → notification.NotifyAccountManagerCommand (contract notification)
-- crm.contracts.ContractActivatedEvent → maintenance.fsm.serviceorders.EnableServiceEligibilityCommand (service eligibility)
+- crm.contracts.ContractActivatedEvent → fieldservice.serviceorders.EnableServiceEligibilityCommand (service eligibility)
 - crm.contracts.ContractActivatedEvent → finance.ar.CreateContractBillingScheduleCommand (billing schedule)
 - crm.contracts.ContractActivatedEvent → crm.accounthealth.BoostHealthScoreCommand (health boost)
 - crm.contracts.ContractRenewedEvent → finance.ar.CreateRenewalInvoiceCommand (renewal invoice)
 - crm.contracts.ContractRenewedEvent → crm.accounthealth.RecordRenewalCommand (renewal health boost)
 - crm.contracts.ContractRenewedEvent → analytics.warehouse.IngestEventCommand (renewal analytics)
-- crm.contracts.ContractExpiredEvent → maintenance.fsm.serviceorders.DisableServiceEligibilityCommand (eligibility removal)
+- crm.contracts.ContractExpiredEvent → fieldservice.serviceorders.DisableServiceEligibilityCommand (eligibility removal)
 - crm.contracts.ContractExpiredEvent → crm.pipeline.CreateRenewalOpportunityCommand (renewal opportunity)
 - crm.contracts.ContractExpiredEvent → crm.accounthealth.RecordExpirationCommand (health impact)
-- crm.contracts.ContractTerminatedEvent → maintenance.fsm.serviceorders.CancelPendingOrdersCommand (order cancellation)
+- crm.contracts.ContractTerminatedEvent → fieldservice.serviceorders.CancelPendingOrdersCommand (order cancellation)
 - crm.contracts.ContractTerminatedEvent → finance.ar.CancelFutureBillingsCommand (billing cancellation)
 - crm.contracts.ContractTerminatedEvent → crm.accounthealth.RecordChurnCommand (churn record)
 - crm.contracts.EntitlementConsumedEvent → crm.contracts.UpdateEntitlementBalanceCommand (balance update)
@@ -10757,7 +11254,7 @@ CRM Contracts Events (Port 9403 - ADR-043):
 - crm.contracts.EntitlementExhaustedEvent → crm.pipeline.CreateUpsellOpportunityCommand (upsell opportunity)
 - crm.contracts.EntitlementExhaustedEvent → notification.AlertCustomerCommand (customer alert)
 
-CRM Activity Events (Port 9404 - ADR-043):
+CRM Activity Events (Port 9454 - ADR-043):
 - crm.activity.ActivityCreatedEvent → crm.accounthealth.UpdateEngagementMetricCommand (engagement update)
 - crm.activity.ActivityCreatedEvent → analytics.warehouse.IngestEventCommand (activity analytics)
 - crm.activity.ActivityCompletedEvent → crm.accounthealth.RecordTouchPointCommand (touchpoint record)
@@ -10769,7 +11266,7 @@ CRM Activity Events (Port 9404 - ADR-043):
 - crm.activity.MeetingScheduledEvent → crm.pipeline.UpdateOpportunityActivityCommand (opportunity update)
 - crm.activity.MeetingScheduledEvent → notification.SendMeetingInviteCommand (meeting invite)
 
-CRM Account Health Events (Port 9405 - ADR-043):
+CRM Account Health Events (Port 9455 - ADR-043):
 - crm.accounthealth.HealthScoreUpdatedEvent → analytics.warehouse.IngestEventCommand (health analytics)
 - crm.accounthealth.HealthScoreUpdatedEvent → crm.customer360.UpdateCustomerHealthCommand (customer update)
 - crm.accounthealth.HealthScoreUpdatedEvent → analytics.reporting.UpdateHealthDashboardCommand (dashboard update)

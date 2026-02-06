@@ -2,45 +2,73 @@
 
 **Status**: Draft (Not Implemented)
 **Date**: 2026-02-05
-**Updated**: 2026-02-05 - Added subdomain architecture aligned with COMPLETE_STRUCTURE.txt
+**Updated**: 2026-02-06 - Promoted to independent bounded context (separated from Plant Maintenance)
 **Deciders**: Architecture Team, Operations Team
 **Priority**: Medium
 **Tier**: Add-on
 **Tags**: field-service, dispatch, work-orders, SLA, mobile, hexagonal-architecture
 
 ## Context
-Field Service Operations introduce on-site work orders, technician dispatch, parts usage, and service SLAs that are not covered by core ERP domains. This is common for maintenance, repair, and after-sales service businesses and requires integration with Inventory, Sales, and Finance for parts, billing, and cost tracking.
+Field Service Operations handle **customer-facing** on-site service delivery, including service orders, technician dispatch, parts consumption, and SLA tracking. This is fundamentally different from **Plant Maintenance (ADR-040)**, which focuses on **internal asset maintenance**.
+
+### Key Distinction from Plant Maintenance (ADR-040)
+
+| Aspect | Field Service (ADR-042) | Plant Maintenance (ADR-040) |
+|--------|-------------------------|------------------------------|
+| **Focus** | Customer-facing service delivery | Internal asset upkeep |
+| **Workers** | Field technicians at customer sites | Maintenance technicians on internal assets |
+| **Billing** | Revenue-generating (billable to customer) | Cost center (internal expense) |
+| **SLA** | Customer SLA/contract compliance | Internal availability targets |
+| **Assets** | Customer equipment (external) | Company-owned equipment (internal) |
+| **Triggers** | Customer service requests, contracts | Equipment failures, preventive schedules |
+
+This separation justifies Field Service as an **independent bounded context** rather than a subdomain of Plant Maintenance.
 
 ## Decision
-Adopt a **Field Service Operations** domain as an add-on with service order lifecycle, scheduling/dispatch, and service billing integration to core ERP domains. The FSM domain follows hexagonal architecture with three distinct subdomains.
+Adopt **Field Service Operations** as an **independent top-level bounded context** with its own deployment units, databases, and port range. The FSM domain follows hexagonal architecture with three distinct subdomains.
 
-### Subdomain Architecture
-
-The FSM domain is decomposed into three bounded subdomains, each following hexagonal (ports & adapters) architecture:
+### Bounded Context Architecture
 
 ```
-maintenance-fsm/
-├── fsm-shared/                    # Shared FSM types and events
+field-service/                     # Independent Bounded Context (ADR-042)
+├── fsm-shared/                    # Shared identifiers and value objects (ADR-006 compliant)
 ├── fsm-service-orders/            # Service Orders Subdomain (Port 9601)
 ├── fsm-dispatch/                  # Technician Dispatch Subdomain (Port 9602)
-└── fsm-parts-consumption/         # Parts Consumption Subdomain (Port 9603)
+├── fsm-parts-consumption/         # Parts Consumption Subdomain (Port 9603)
+└── fsm-repair-depot/              # Customer RMA/Repair Services Subdomain (Port 9604)
 ```
 
-#### FSM Shared Module (`fsm-shared/`)
-Shared value objects, IDs, and domain events used across FSM subdomains:
+**Package Structure**: `com.chiroerp.fieldservice.*`
 
-| Component | Purpose |
-|-----------|---------|
-| `ServiceOrderId.kt` | Service order identifier |
-| `TechnicianId.kt` | Technician identifier |
-| `DispatchId.kt` | Dispatch assignment identifier |
-| `RouteId.kt` | Route plan identifier |
-| `PartsConsumptionId.kt` | Parts consumption record identifier |
-| **Events** | |
-| `ServiceOrderCreatedEvent.kt` | Published when service order created |
-| `ServiceOrderCompletedEvent.kt` | Published when service completed |
-| `TechnicianDispatchedEvent.kt` | Published when technician dispatched |
-| `PartsConsumedEvent.kt` | Published when parts consumed in field |
+#### FSM Shared Module (`fsm-shared/`)
+ADR-006 compliant shared module containing only identifiers, value objects, and enums:
+
+| Component | Type | Purpose |
+|-----------|------|---------|
+| `ServiceOrderId.kt` | Identifier | Service order identifier |
+| `FieldTechnicianId.kt` | Identifier | Field technician identifier |
+| `DispatchId.kt` | Identifier | Dispatch assignment identifier |
+| `PartsConsumptionId.kt` | Identifier | Parts consumption record identifier |
+| `RmaRequestId.kt` | Identifier | Return Merchandise Authorization ID |
+| `RepairOrderId.kt` | Identifier | Customer repair order ID |
+| `RepairQuoteId.kt` | Identifier | Repair quote identifier |
+| `CustomerEquipmentId.kt` | Identifier | Customer-owned equipment ID |
+| `DiagnosisResultId.kt` | Identifier | Diagnosis result identifier |
+| `DepotTechnicianId.kt` | Identifier | Depot repair technician ID |
+| `ServicePriority.kt` | Value Object | Priority (emergency, high, normal, low) |
+| `ServiceLocation.kt` | Value Object | Customer site location |
+| `ServiceWindowVO.kt` | Value Object | Preferred time window |
+| `RepairPricingVO.kt` | Value Object | Labor rates, parts markup |
+| `WarrantyTermsVO.kt` | Value Object | Warranty coverage terms |
+| `ShippingAddressVO.kt` | Value Object | Customer return shipping address |
+| `ServiceOrderStatus.kt` | Enum | Status enumeration |
+| `DispatchStatus.kt` | Enum | Dispatch state enum |
+| `RmaStatus.kt` | Enum | RMA workflow states |
+| `RepairOrderStatus.kt` | Enum | Repair order workflow states |
+| `RepairDecisionType.kt` | Enum | Repair, scrap, return-as-is |
+| `WarrantyType.kt` | Enum | In-warranty, out-of-warranty, extended |
+
+> **Note**: Events are NOT in shared module per ADR-006 governance. Events belong in their respective subdomain domain modules.
 
 #### Service Orders Subdomain (`fsm-service-orders/` - Port 9601)
 
@@ -48,78 +76,71 @@ Shared value objects, IDs, and domain events used across FSM subdomains:
 | Entity | Description |
 |--------|-------------|
 | `ServiceOrder.kt` | Aggregate root - service order lifecycle |
-| `ServiceOrderType.kt` | Installation, repair, maintenance types |
-| `ServiceOrderStatus.kt` | Open, in progress, completed states |
-| `ServiceLine.kt` | Line items for services |
-| `LaborCharge.kt` | Labor billing records |
-| `PartsUsed.kt` | Parts consumption tracking |
-| `SlaPolicy.kt` | SLA definition and rules |
-| `SlaTracking.kt` | SLA compliance monitoring |
-| `ServicePriority.kt` | P1/P2/P3/P4 priority levels |
-| `ServiceResolution.kt` | Resolution details and notes |
-| `CustomerSignature.kt` | Sign-off capture |
+| `ServiceOrderLine.kt` | Line items for service activities/tasks |
+| `ServiceRequest.kt` | Incoming customer service request |
+| `CustomerAsset.kt` | Customer equipment being serviced |
+| `ServiceContract.kt` | SLA/warranty reference |
+| `BillingDetails.kt` | Billable hours, materials, travel |
+| `TimeAndMaterials.kt` | T&M billing model |
+| `FixedPriceBilling.kt` | Fixed price contracts |
 
 **Domain Events:**
-- `ServiceOrderCreatedEvent`, `ServiceOrderAssignedEvent`, `ServiceOrderStartedEvent`
-- `ServiceOrderCompletedEvent`, `ServiceOrderBilledEvent`, `SlaBreachedEvent`, `PartsConsumedEvent`
+- `ServiceOrderCreatedEvent`, `ServiceOrderScheduledEvent`, `ServiceOrderCompletedEvent`
+- `ServiceOrderBilledEvent`, `ServiceOrderCancelledEvent`
 
 **Use Cases (Input Ports):**
-- `CreateServiceOrderUseCase`, `AssignTechnicianUseCase`, `StartServiceUseCase`
-- `CompleteServiceUseCase`, `RecordPartsUsageUseCase`, `BillServiceOrderUseCase`
-- `ServiceOrderQueryPort`
+- `CreateServiceOrderUseCase`, `ScheduleServiceOrderUseCase`, `CompleteServiceOrderUseCase`
+- `GenerateInvoiceUseCase`, `ServiceOrderQueryPort`
 
 **Output Ports:**
-- `ServiceOrderRepository`, `SlaPolicyRepository`, `InventoryPort`, `BillingPort`, `ServiceOrderEventPublisher`
+- `ServiceOrderRepositoryPort`, `ContractRepositoryPort`, `BillingPort`, `ServiceOrderEventPublisherPort`
 
 **Domain Services:**
-- `ServiceOrderDomainService` - Core service order business logic
-- `SlaCalculationService` - SLA breach detection and compliance
-- `ServiceBillingService` - Service billing calculations
+- `ServiceOrderCreationService` - Core service order business logic
+- `ContractValidationService` - Contract/warranty validation
+- `BillingCalculationService` - Service billing calculations
+- `SLAComplianceService` - SLA breach detection and compliance
 
 **Infrastructure Adapters:**
-- REST: `ServiceOrderController`, `ServiceOrderMobileController`, `SlaReportController`
-- Persistence: `ServiceOrderJpaRepository`, `ServiceOrderEntity`, `SlaPolicyEntity`
-- Integration: `InventoryServiceAdapter`, `KafkaEventPublisher`
+- REST: `ServiceOrderResource` (Port 9601)
+- Persistence: `ServiceOrderJpaRepository`, `ServiceOrderJpaEntity`, `ContractJpaRepository`
+- Integration: `FinanceARAdapter` (invoice generation), `KafkaEventPublisher`
 
 #### Dispatch Subdomain (`fsm-dispatch/` - Port 9602)
 
 **Domain Model:**
 | Entity | Description |
 |--------|-------------|
-| `Technician.kt` | Aggregate root - technician profile |
-| `TechnicianSkill.kt` | Skills and certifications |
-| `TechnicianAvailability.kt` | Schedule availability |
-| `DispatchAssignment.kt` | Assignment aggregate |
-| `AssignmentStatus.kt` | Dispatched, en route, on site states |
-| `Route.kt` | Daily route plan |
-| `RouteStop.kt` | Individual route stops |
-| `TravelTime.kt` | Travel time estimation |
+| `Dispatch.kt` | Aggregate root - dispatch assignment |
+| `FieldTechnician.kt` | Field technician with skills & availability |
+| `TechnicianSkills.kt` | Skill matrix for matching |
+| `TechnicianAvailability.kt` | Calendar/schedule |
 | `ServiceTerritory.kt` | Geographic territory |
-| `ScheduleSlot.kt` | Time slot booking |
-| `EmergencyDispatch.kt` | Priority dispatch handling |
+| `RouteOptimization.kt` | Optimal routing |
+| `ScheduleSlot.kt` | Available time slots |
+| `TravelTime.kt` | Estimated travel between sites |
 
 **Domain Events:**
-- `TechnicianDispatchedEvent`, `TechnicianEnRouteEvent`, `TechnicianArrivedEvent`
-- `TechnicianDepartedEvent`, `RouteOptimizedEvent`, `ScheduleConflictEvent`, `EmergencyDispatchedEvent`
+- `TechnicianDispatchedEvent`, `DispatchRescheduledEvent`, `TechnicianEnRouteEvent`
+- `TechnicianArrivedEvent`, `DispatchCompletedEvent`
 
 **Use Cases (Input Ports):**
-- `DispatchTechnicianUseCase`, `OptimizeRouteUseCase`, `UpdateTechnicianStatusUseCase`
-- `ScheduleAppointmentUseCase`, `DispatchQueryPort`
+- `AssignTechnicianUseCase`, `RescheduleDispatchUseCase`, `UpdateTechnicianStatusUseCase`
+- `OptimizeRouteUseCase`, `DispatchQueryPort`
 
 **Output Ports:**
-- `TechnicianRepository`, `DispatchRepository`, `RouteOptimizationPort`
-- `GeocodingPort`, `DispatchEventPublisher`
+- `DispatchRepositoryPort`, `TechnicianRepositoryPort`, `RouteOptimizationPort`, `DispatchEventPublisherPort`
 
 **Domain Services:**
-- `DispatchDomainService` - Core dispatch business logic
-- `RouteOptimizationService` - Route optimization algorithms
+- `DispatchAssignmentService` - Core dispatch business logic
 - `SkillMatchingService` - Technician skill matching
-- `TravelTimeEstimationService` - Travel time calculations
+- `RouteOptimizationService` - Route optimization algorithms
+- `TerritoryManagementService` - Territory assignment
 
 **Infrastructure Adapters:**
-- REST: `DispatchController`, `ScheduleController`, `TechnicianMobileController`
-- Persistence: `TechnicianJpaRepository`, `DispatchJpaRepository`, `TechnicianEntity`, `DispatchEntity`
-- External: `GoogleMapsRoutingAdapter`, `GeocodingServiceAdapter`, `KafkaEventPublisher`
+- REST: `DispatchResource`, `TechnicianResource`, `ScheduleResource` (Port 9602)
+- Persistence: `DispatchJpaRepository`, `TechnicianJpaRepository`, `TerritoryJpaRepository`
+- External: `GoogleMapsRouteAdapter` (route optimization), `KafkaEventPublisher`
 
 #### Parts Consumption Subdomain (`fsm-parts-consumption/` - Port 9603)
 
@@ -127,52 +148,137 @@ Shared value objects, IDs, and domain events used across FSM subdomains:
 | Entity | Description |
 |--------|-------------|
 | `PartsConsumption.kt` | Aggregate root - consumption record |
-| `PartUsage.kt` | Individual part usage |
-| `TechnicianInventory.kt` | Van/truck stock |
-| `PartReturn.kt` | Unused part returns |
-| `PartRequest.kt` | Part request from warehouse |
-| `BillablePart.kt` | Customer billable parts |
-| `WarrantyPart.kt` | Warranty replacement parts |
+| `FieldInventory.kt` | Technician truck/van inventory |
+| `PartUsage.kt` | Part consumed on service order |
+| `ReplenishmentRequest.kt` | Request for restocking |
+| `TruckStock.kt` | Mobile stock levels |
+| `WarrantyPart.kt` | Parts under warranty claim |
 
 **Domain Events:**
-- `PartsConsumedEvent`, `PartsReturnedEvent`, `PartRequestCreatedEvent`
-- `VanStockReplenishedEvent`, `WarrantyPartUsedEvent`
+- `PartConsumedEvent`, `InventoryDepletedEvent`, `ReplenishmentRequestedEvent`
+- `TruckRestockedEvent`, `WarrantyClaimCreatedEvent`
 
 **Use Cases (Input Ports):**
-- `ConsumePartsUseCase`, `ReturnPartsUseCase`, `RequestPartsUseCase`
-- `PartsConsumptionQueryPort`
+- `ConsumePartUseCase`, `RequestReplenishmentUseCase`, `RestockTruckUseCase`
+- `CreateWarrantyClaimUseCase`, `PartsConsumptionQueryPort`
 
 **Output Ports:**
-- `PartsConsumptionRepository`, `InventoryPort`, `PartsEventPublisher`
+- `PartsConsumptionRepositoryPort`, `TruckInventoryRepositoryPort`, `WarehouseIntegrationPort`, `PartsEventPublisherPort`
 
 **Domain Services:**
-- `PartsConsumptionDomainService` - Parts consumption business logic
-- `VanStockManagementService` - Van inventory management
+- `PartsConsumptionService` - Parts consumption business logic
+- `TruckInventoryService` - Truck/van inventory management
+- `WarrantyClaimService` - Warranty claim processing
 
 **Infrastructure Adapters:**
-- REST: `PartsConsumptionController`
-- Persistence: `PartsConsumptionJpaRepository`, `PartsConsumptionEntity`
-- Integration: `InventoryServiceAdapter`, `KafkaEventPublisher`
+- REST: `PartsConsumptionResource`, `TruckInventoryResource`, `WarrantyClaimResource` (Port 9603)
+- Persistence: `PartsConsumptionJpaRepository`, `TruckInventoryJpaRepository`, `WarrantyClaimJpaRepository`
+- Integration: `InventoryWarehouseAdapter`, `KafkaEventPublisher`
+
+#### Repair Depot Subdomain (`fsm-repair-depot/` - Port 9604)
+
+This subdomain handles **customer-facing RMA and out-of-warranty repair services**. Unlike Plant Maintenance (ADR-040) which manages internal company assets as a cost center, Repair Depot is a **revenue-generating** service that repairs customer equipment for a fee.
+
+**Key Distinctions from Plant Maintenance (ADR-040):**
+| Aspect | Repair Depot (ADR-042) | Repair Center (ADR-040) |
+|--------|------------------------|------------------------|
+| **Owner** | Customer | Company |
+| **Billing** | Revenue (billable to customer) | Cost (internal expense) |
+| **Equipment** | Customer equipment via RMA | Company-owned assets |
+| **Workflow** | RMA → Quote → Approval → Repair | Work Order → Repair → Close |
+| **Warranty** | Out-of-warranty paid service | N/A (internal assets) |
+
+**Domain Model:**
+| Entity | Description |
+|--------|-------------|
+| `RepairOrder.kt` | Aggregate root - customer repair order lifecycle |
+| `RepairOrderLine.kt` | Line items (labor, parts, services) |
+| `RepairOrderStatus.kt` | Received, diagnosing, quoted, approved, repairing, testing, complete, shipped |
+| `RmaRequest.kt` | Return Merchandise Authorization request |
+| `RmaStatus.kt` | RMA workflow: requested, approved, received, processed |
+| `CustomerEquipment.kt` | Customer-owned equipment received for repair |
+| `EquipmentCondition.kt` | Condition assessment on receipt |
+| `DiagnosisResult.kt` | Fault found, root cause, repair recommendations |
+| `RepairQuote.kt` | Quote for customer approval |
+| `QuoteLineItem.kt` | Labor, parts, shipping costs |
+| `RepairDecision.kt` | Repair, scrap, or return-as-is decision |
+| `RepairTechnician.kt` | Depot repair technician |
+| `WarrantyEvaluation.kt` | Check if warranty applies |
+| `OutOfWarrantyRepair.kt` | Paid repair services |
+| `TestResult.kt` | Post-repair testing and validation |
+| `QualityCertification.kt` | QA sign-off before shipping |
+| `ShipmentTracking.kt` | Return shipping to customer |
+
+**Domain Events:**
+- `RmaRequestedEvent`, `RmaApprovedEvent`, `EquipmentReceivedEvent`
+- `DiagnosisCompletedEvent`, `QuoteSentEvent`, `QuoteApprovedEvent`, `QuoteRejectedEvent`
+- `RepairStartedEvent`, `RepairCompletedEvent`, `TestPassedEvent`, `TestFailedEvent`
+- `EquipmentShippedEvent`, `RepairBilledEvent`
+
+**Use Cases (Input Ports):**
+- `RmaUseCase` - RMA request and approval workflow
+- `RepairIntakeUseCase` - Equipment receipt and inspection
+- `DiagnosisUseCase` - Fault finding and root cause analysis
+- `QuotingUseCase` - Quote generation and customer approval
+- `RepairExecutionUseCase` - Repair work coordination
+- `ReturnShippingUseCase` - Ship repaired equipment back
+
+**Output Ports:**
+- `RepairOrderRepositoryPort`, `RmaRepositoryPort`, `CustomerEquipmentRepositoryPort`
+- `InventoryPartsPort` - Parts consumption from inventory
+- `WarrantyCheckPort` - CRM contract/warranty lookup
+- `BillingPort` - Finance AR integration for invoicing
+- `ShippingIntegrationPort` - Carrier integration (FedEx/UPS/DHL)
+- `RepairDepotEventPublisherPort`
+
+**Domain Services:**
+- `RmaCreationService` - RMA request & approval workflow
+- `RepairIntakeService` - Equipment receipt & inspection
+- `DiagnosisService` - Fault finding & root cause analysis
+- `QuotingService` - Quote generation & pricing
+- `WarrantyValidationService` - Warranty check & claim
+- `RepairExecutionService` - Repair work coordination
+- `QualityTestingService` - Post-repair testing & QA
+- `ReturnShippingService` - Ship repaired equipment
+
+**Infrastructure Adapters:**
+- REST: `RmaResource`, `RepairOrderResource`, `DiagnosisResource`, `QuoteResource`, `RepairMetricsResource` (Port 9604)
+- Persistence: `RepairOrderJpaRepository`, `RmaJpaRepository`, `CustomerEquipmentJpaRepository`, `DiagnosisResultJpaRepository`
+- Integration: `InventoryPartsAdapter`, `CrmWarrantyAdapter`, `FinanceARAdapter`, `ShippingCarrierAdapter`
+
+**Repair Depot Workflow:**
+```
+Customer Request → RMA Created → RMA Approved → Equipment Shipped (by customer)
+    → Equipment Received → Inspection/Diagnosis → Quote Sent
+    → Customer Approves/Rejects Quote
+        → If Approved: Repair Execution → Testing → QA Sign-off → Ship Back → Invoice
+        → If Rejected: Return As-Is → Ship Back (shipping charge only)
+        → If Scrap Decision: Customer consent → Dispose → Credit/Refund handling
+```
 
 ### Scope
 - Service orders with SLA tracking and priority rules.
 - Technician scheduling and dispatch with route optimization hooks.
 - Parts consumption and service inventory usage.
 - Service billing and warranty/contract handling.
+- **Customer RMA and out-of-warranty repair depot services.**
 
 ### Key Capabilities
 - **Service Orders**: intake, triage, assignment, execution, closure.
 - **Dispatch**: schedule boards, technician availability, skills matching.
 - **Parts & Inventory**: reserving and consuming parts in the field.
 - **Service Contracts**: entitlements, warranty coverage, billing rules.
+- **Repair Depot/RMA**: RMA processing, diagnosis, quoting, out-of-warranty repairs, return shipping.
 
 ### Integration Points
-- **Inventory (ADR-024)**: parts reservation, issuance, and stock adjustments via `InventoryPort`.
-- **Sales (ADR-025)**: service billing, quotes, and customer approvals via `BillingPort`.
-- **Finance (ADR-009)**: revenue recognition for service jobs and cost postings.
-- **CRM (ADR-043)**: customer history and service entitlements.
-- **Plant Maintenance (ADR-040)**: optional integration for asset-heavy scenarios.
+- **Inventory (ADR-024)**: parts reservation, issuance, and stock adjustments via `WarehouseIntegrationPort`.
+- **Finance AR (ADR-009)**: service invoicing and revenue recognition via `BillingPort`.
+- **Finance Revenue (ADR-009)**: revenue recognition for service jobs.
+- **CRM Contracts (ADR-043)**: customer entitlements, warranty coverage, SLA definitions.
+- **CRM Account Health (ADR-043)**: service interaction tracking for customer health scoring.
+- **Plant Maintenance (ADR-040)**: **Peer integration** - field service may trigger internal maintenance work orders for complex repairs, but operates as a **separate bounded context** with distinct billing models, workers, and SLAs.
 - **Workforce Scheduling (ADR-055)**: technician shift management and labor costing.
+- **Shipping/Logistics (ADR-027)**: carrier integration for RMA return shipping.
 
 ### Inter-Subdomain Communication
 | Source Subdomain | Target Subdomain | Event/Integration |
@@ -182,12 +288,19 @@ Shared value objects, IDs, and domain events used across FSM subdomains:
 | Service Orders | Parts Consumption | `ServiceOrderStartedEvent` → enables parts consumption |
 | Parts Consumption | Service Orders | `PartsConsumedEvent` → updates service order parts list |
 | Parts Consumption | Inventory | `PartsConsumedEvent` → stock adjustment (ADR-024) |
+| Repair Depot | Inventory | `PartsConsumedEvent` → stock adjustment for repair parts |
+| Repair Depot | Finance AR | `RepairBilledEvent` → invoice generation |
+| Repair Depot | CRM | `RmaRequestedEvent` → customer interaction tracking |
+| Repair Depot | Shipping | `EquipmentShippedEvent` → carrier tracking integration |
+| Service Orders | Repair Depot | `ServiceOrderEscalatedEvent` → if field repair not possible, escalate to depot |
 
 ### Non-Functional Constraints / KPIs
 - **Dispatch assignment latency**: p95 < 2 minutes.
 - **On-time arrival rate**: >= 95%.
 - **First-time-fix rate**: >= 85%.
 - **Parts availability accuracy**: >= 99.0%.
+- **RMA turnaround time**: p95 < 10 business days (depot repair).
+- **Repair quote approval rate**: >= 70%.
 
 ## Alternatives Considered
 - **Embed in PM module**: rejected due to broader customer-facing workflows.

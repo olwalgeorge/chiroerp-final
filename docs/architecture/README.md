@@ -6,26 +6,29 @@ This document provides a master index, integration map, and standards for the Ch
 
 ## Domain Index
 
-| Domain | Modules | Port Range | README | Tier | Status |
-|--------|---------|------------|--------|------|--------|
-| Finance (FI/CO) | 12 | 8081-8093 | [finance/README.md](./finance/README.md) | Core | Complete |
-| Inventory (MM-IM) | 8 | 9001-9008 | [inventory/README.md](./inventory/README.md) | Core | Complete + Advanced Ops |
-| Procurement (MM-PUR) | 5 | 9101-9105 | [procurement/README.md](./procurement/README.md) | Core | Complete |
-| Sales & Distribution (SD) | 7 | 9201-9207 | [sales/README.md](./sales/README.md) | Core | Complete |
-| Manufacturing (PP) | 8 | 9301-9308 | [manufacturing/README.md](./manufacturing/README.md) | Add-on | Complete |
-| CRM & Field Service | 8 | 9401-9408 | [crm/README.md](./crm/README.md) | Add-on | Complete |
-| Quality Management (QM) | 7 | 9501-9507 | [quality/README.md](./quality/README.md) | Add-on | Complete |
-| Plant Maintenance (PM) | 11 | 9601-9611 | [maintenance/README.md](./maintenance/README.md) | Add-on | **Enhanced: Physical ALM** |
-| Master Data Governance (MDG) | 5 | 9701-9705 | [mdm/README.md](./mdm/README.md) | Advanced | Complete |
-| Analytics & Reporting | 6 | 9801-9806 | [analytics/README.md](./analytics/README.md) | Advanced | Complete |
-| **Human Capital Management (HCM)** | **6** | **9901-9906** | **[hr/README.md](./hr/README.md)** | **Advanced** | **New: T&E + Contingent + WFM** |
-| **Fleet Management** | **5** | **10001-10005** | **[fleet/README.md](./fleet/README.md)** | **Add-on** | **New** |
+| Domain | Subdomains | Port Range | Docs | Tier | Status |
+|--------|------------|------------|------|------|--------|
+| Platform Shared | 7 | N/A | [platform-shared/README.md](./platform-shared/README.md) | Core | Complete |
+| Tenancy & Identity | 3 | TBD | [tenancy-identity/README.md](./tenancy-identity/README.md) | Core | Complete |
+| API Gateway | 1 | TBD | [api-gateway/README.md](./api-gateway/README.md) | Core | Complete |
+| Finance (FI) | 6 | TBD (not specified in `COMPLETE_STRUCTURE.txt`) | [finance/README.md](./finance/README.md) | Core | Complete |
+| Master Data Governance (MDG) | 6 | 9701-9705 | [mdm/README.md](./mdm/README.md) | Advanced | Complete |
+| Inventory (MM-IM) | 8 | 9001-9009 | [inventory/README.md](./inventory/README.md) | Core | Complete + Advanced Ops |
+| Analytics & Reporting | 7 | 9801-9806 | [analytics/README.md](./analytics/README.md) | Advanced | Complete |
+| Commerce (SD / Omnichannel) | 6 | 9301-9305 | [commerce/README.md](./commerce/README.md) | Core | Complete |
+| Human Capital Management (HCM) | 7 | 9101, 9901-9907 | [hr/README.md](./hr/README.md) | Advanced | New: T&E + Contingent + WFM |
+| Procurement (MM-PUR) | 6 | 9201-9205 | [procurement/README.md](./procurement/README.md) | Core | Complete |
+| Plant Maintenance (PM) | 12 | 9401-9411 | [maintenance/README.md](./maintenance/README.md) | Add-on | **Enhanced: Physical ALM** |
+| Field Service (FSM) | 5 | 9601-9604 | [field-service/README.md](./field-service/README.md) | Add-on | Complete |
+| Fleet Management | 9 | 9761-9768 | [fleet/README.md](./fleet/README.md) | Add-on | New |
+| Manufacturing (PP) | 11 | 9351-9359 | [manufacturing/README.md](./manufacturing/README.md) | Add-on | Complete (includes Quality 9501-9507) |
+| CRM | 6 | 9451-9455 | [crm/README.md](./crm/README.md) | Add-on | Complete |
 
-**Total: 92 modules across 12 domains**
+**Total: 15 top-level architecture groups (see `COMPLETE_STRUCTURE.txt` for full module list)**
 
 ### New Domains (2026-02-03)
-- **Human Capital Management (HCM)**: Travel & Expense (ADR-054), Contingent Workforce (ADR-052), Workforce Scheduling (ADR-055)
-- **Fleet Management**: Vehicle lifecycle, telematics, driver management, fuel, compliance (ADR-053)
+- **Human Capital Management (HCM)**: Core HR (9101) + Travel & Expense, Contingent Workforce, Workforce Scheduling, Analytics (9901-9907)
+- **Fleet Management**: Vehicle lifecycle, telematics, driver management, fuel, compliance (9761-9768)
 
 ### Enhanced Domains (2026-02-03)
 - **Plant Maintenance (PM)**: Added Physical Asset Lifecycle Management (commissioning, decommissioning, health scoring, EOL planning) - ADR-040 enhanced
@@ -50,10 +53,11 @@ This document provides a master index, integration map, and standards for the Ch
 |   Plant Maintenance ---->| Inventory ---> Finance (Assets/CO)                 |
 |        ^                                                             ^         |
 |        |                                                             |         |
-|   Sales & Distribution  --->  Inventory  --->  Finance (AR/GL)                 |
+|   Commerce (SD)  --->  Inventory  --->  Finance (AR/GL)                        |
 |        ^                                                             ^         |
 |        |                                                             |         |
-|   CRM & Field Service  -----------------------------------------------+         |
+|   CRM  ---------------------------------------------------------------+         |
+|   Field Service  -----------------------------------------------------+         |
 |   Master Data Governance  --->  All Domains (Golden Records)          |
 |   Analytics & Reporting  <---  All Domains (Events/CDC)               |
 |                                                                                |
@@ -69,11 +73,11 @@ These are representative events used across domains. See each domain README for 
 - Procurement -> Finance/AP: `InvoiceMatchCompletedEvent`, `PurchaseOrderApprovedEvent`
 
 ### Order-to-Cash
-- Sales -> Inventory: `SalesOrderAllocatedEvent`, `ShipmentConfirmedEvent`, `ReturnReceivedEvent`
-- Inventory -> Sales: `ReservationCreatedEvent`
-- Sales -> Finance/AR: `SalesOrderFulfilledEvent`, `CreditMemoRequestedEvent`
-- Sales -> Finance/AP: `CommissionPayableCreatedEvent`
-- Sales -> Finance/AR: `RebateIssuedEvent`
+- Commerce -> Inventory: `SalesOrderAllocatedEvent`, `ShipmentConfirmedEvent`, `ReturnReceivedEvent`
+- Inventory -> Commerce: `ReservationCreatedEvent`
+- Commerce -> Finance/AR: `SalesOrderFulfilledEvent`, `CreditMemoRequestedEvent`
+- Commerce -> Finance/AP: `CommissionPayableCreatedEvent`
+- Commerce -> Finance/AR: `RebateIssuedEvent`
 
 ### Plan-to-Produce
 - Manufacturing -> Inventory: `MaterialIssuedEvent`, `ProductionReceiptPostedEvent`
@@ -100,14 +104,14 @@ These are representative events used across domains. See each domain README for 
 - Analytics -> Dashboards: `KpiCalculatedEvent`, `CubeRefreshedEvent`
 
 ### Service-to-Cash
-- CRM Service Orders -> Finance/AR: `ServiceOrderBilledEvent`
-- CRM Parts Consumption -> Inventory: `PartsConsumedEvent`, `PartsReturnedEvent`
-- CRM Pipeline -> Sales: `OpportunityClosedWonEvent`
+- Field Service Orders -> Finance/AR: `ServiceOrderBilledEvent`
+- Field Service Parts Consumption -> Inventory: `PartsConsumedEvent`, `PartsReturnedEvent`
+- CRM Pipeline -> Commerce: `OpportunityClosedWonEvent`
 
 ## Standards and Conventions
 
 ### Ports
-- Domain ranges are reserved by domain (Finance 8081-8093, Inventory 9001-9007, Procurement 9101-9105, Sales 9201-9207, Manufacturing 9301-9308, CRM 9401-9408).
+- Domain ranges are reserved by domain (Inventory 9001-9009, HR Core 9101, Procurement 9201-9205, Commerce 9301-9305, Manufacturing 9351-9359, Maintenance 9401-9411, CRM 9451-9455, Quality 9501-9507, Field Service 9601-9604, MDM 9701-9705, Fleet 9761-9768, Analytics 9801-9806, HR Advanced 9901-9907). Finance ports are TBD in `COMPLETE_STRUCTURE.txt`.
 - Inline modules use logical ports and share the parent service database.
 
 ### Database Naming
@@ -140,7 +144,7 @@ These are representative events used across domains. See each domain README for 
 | Finance (FI/CO) | ADR-009, ADR-021, ADR-022, ADR-026, ADR-028, ADR-029, ADR-031, ADR-032, ADR-033 |
 | Inventory (MM-IM) | ADR-024, ADR-038 |
 | Procurement (MM-PUR) | ADR-023 |
-| Sales & Distribution (SD) | ADR-025, ADR-022 |
+| Commerce (SD) | ADR-025, ADR-022 |
 | Manufacturing (PP) | ADR-037 |
 | Quality Management (QM) | ADR-039 |
 | Plant Maintenance (PM) | ADR-040 |
@@ -164,10 +168,9 @@ These are representative events used across domains. See each domain README for 
 
 ## Documentation Structure
 
-Each domain README provides:
-- Subdomain index with ports
-- Documentation structure (subfolders vs inline)
-- Integration map and key events
-- ADR references and related domains
+Domain documentation is arranged to mirror `COMPLETE_STRUCTURE.txt`:
+- `docs/architecture/<domain>/README.md` per top-level domain
+- `COMPLETE_STRUCTURE.txt` for full structure and ports
+- ADRs in `docs/adr/` for decisions and scope
 
-Use this master README as the entry point, then navigate into domain-specific docs for details.
+Use this master README as the entry point, then jump into the domain folder or ADRs for details.

@@ -1,7 +1,8 @@
 # ADR-037: Manufacturing & Production (PP)
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (Planned - Blueprint Defined)
 **Date**: 2026-02-01
+**Updated**: 2026-02-06 - Clarified process manufacturing extension scope and implementation status
 **Deciders**: Architecture Team, Operations Team
 **Priority**: P2 (Medium)
 **Tier**: Add-on
@@ -12,6 +13,24 @@ Manufacturing requires coordinated planning, execution, and costing. This ADR de
 
 ## Decision
 Implement a **Manufacturing & Production (PP)** capability that covers BOM/routing, MRP, production order execution, and WIP tracking integrated with inventory, procurement, sales, and controlling.
+
+### Bounded Context Architecture
+
+```
+manufacturing/                          # Manufacturing Bounded Context (ADR-037)
+├── manufacturing-shared/               # Shared identifiers (ADR-006 compliant)
+├── manufacturing-mrp/                  # MRP Planning (Port 9351)
+├── manufacturing-production/           # Production Orders (Port 9352)
+├── manufacturing-shopfloor/            # Shop Floor Execution (Port 9353)
+├── manufacturing-bom/                  # BOM Management (Port 9354)
+├── manufacturing-costing/              # Product Costing (Port 9355)
+├── manufacturing-capacity/             # Capacity Planning (Port 9356)
+├── manufacturing-subcontracting/       # Subcontracting (Port 9357)
+└── manufacturing-analytics/            # Manufacturing Analytics (Port 9358)
+```
+
+**Package Structure**: `com.chiroerp.manufacturing.*`
+**Port Range**: 9351-9359 (avoids conflict with Commerce 9301-9309)
 
 ### Scope
 - Bill of Materials (BOM) and routing management.
@@ -150,11 +169,39 @@ Process manufacturing industries (chemicals, pharmaceuticals, food & beverage, o
 - **Co-product valuation**: Posting accuracy >= 99.5%.
 - **Campaign efficiency**: Setup time reduction >= 20% vs single-batch runs.
 
+## Implementation Status (Discrete vs Process Manufacturing)
+
+- **Discrete manufacturing (current blueprint)**: The bounded context architecture above (BOM, routing, MRP, production orders, costing, capacity, subcontracting, analytics) is the planned baseline and is represented in `COMPLETE_STRUCTURE.txt`.
+- **Process manufacturing (included in blueprint)**: The capabilities in the Process Manufacturing Extension are now modeled as the `manufacturing-process` subdomain (Port 9359) in `COMPLETE_STRUCTURE.txt`, including recipe management, process orders, batch genealogy, co-products/by-products, campaign management, and continuous production monitoring.
+
 ### Implementation Phasing
-- **Phase 5A**: Recipe management and process orders (5 months).
-- **Phase 5B**: Batch genealogy and lot traceability (4 months).
-- **Phase 5C**: Co-products/by-products and yield optimization (3 months).
-- **Phase 5D**: Campaign management and continuous production (4 months).
+The **Process Manufacturing Extension** is **NOW included in the COMPLETE_STRUCTURE.txt blueprint** as of 2026-02-06. The `manufacturing-process` subdomain covers chemical/pharma/food/beverage industries with full hexagonal architecture.
+
+**Current Scope (COMPLETE_STRUCTURE.txt - Full Manufacturing)**:
+- ✅ BOM Management (manufacturing-bom)
+- ✅ MRP Planning (manufacturing-mrp)
+- ✅ Production Orders (manufacturing-production)
+- ✅ Shop Floor Execution (manufacturing-shopfloor)
+- ✅ Product Costing (manufacturing-costing)
+- ✅ Capacity Planning (manufacturing-capacity)
+- ✅ Subcontracting (manufacturing-subcontracting)
+- ✅ Manufacturing Analytics (manufacturing-analytics)
+- ✅ Quality Management (manufacturing-quality with 7 sub-subdomains)
+- ✅ **Process Manufacturing (manufacturing-process)** - Port 9359
+  - Recipe/Formula Management
+  - Process Order Execution
+  - Batch Genealogy & Traceability
+  - Co-products & By-products Management
+  - Campaign Management
+  - Continuous Production Monitoring
+  - SCADA/DCS Integration (OPC UA)
+
+**Port Assignments**:
+- Discrete Manufacturing: 9351-9358
+- Process Manufacturing: 9359
+- Quality Management: 9501-9507
+
+---
 
 ## Compliance
 - **SOX**: controlled postings for WIP and variances.

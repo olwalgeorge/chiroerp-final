@@ -1,7 +1,8 @@
 # ADR-053: Fleet Management (Add-on)
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (Planned - Blueprint Defined)
 **Date**: 2026-02-05
+**Updated**: 2026-02-06 - Fixed port assignments (9761-9768) to avoid MDM conflict
 **Deciders**: Architecture Team, Operations Team
 **Priority**: P3 (Optional Add-on)
 **Tier**: Add-on
@@ -20,18 +21,21 @@ Fleet Management is implemented as 8 subdomains within the `fleet/` bounded cont
 
 ```
 fleet/                                                # Fleet Management Bounded Context (ADR-053)
-├── fleet-shared/                                     # Shared fleet types
-├── fleet-vehicle-master/                             # Vehicle Master Data (Port 9701)
-├── fleet-driver-management/                          # Driver Management (Port 9702)
-├── fleet-telematics/                                 # Telematics Integration (Port 9703)
-├── fleet-fuel-management/                            # Fuel Card Management (Port 9704)
-├── fleet-maintenance/                                # Fleet Maintenance (Port 9705)
-├── fleet-compliance/                                 # Compliance Management (Port 9706)
-├── fleet-utilization/                                # Utilization & TCO (Port 9707)
-└── fleet-lifecycle/                                  # Vehicle Lifecycle (Port 9708)
+├── fleet-shared/                                     # Shared fleet types (ADR-006 compliant)
+├── fleet-vehicle-master/                             # Vehicle Master Data (Port 9761)
+├── fleet-driver-management/                          # Driver Management (Port 9762)
+├── fleet-telematics/                                 # Telematics Integration (Port 9763)
+├── fleet-fuel-management/                            # Fuel Card Management (Port 9764)
+├── fleet-maintenance/                                # Fleet Maintenance (Port 9765)
+├── fleet-compliance/                                 # Compliance Management (Port 9766)
+├── fleet-utilization/                                # Utilization & TCO (Port 9767)
+└── fleet-lifecycle/                                  # Vehicle Lifecycle (Port 9768)
 ```
 
-#### 1. Vehicle Master Data (Port 9701)
+**Package Structure**: `com.chiroerp.fleet.*`
+**Port Range**: 9761-9769 (avoids conflict with MDM 9701-9709)
+
+#### 1. Vehicle Master Data (Port 9761)
 **Package**: `com.chiroerp.fleet.vehiclemaster`
 
 | Layer | Component | Description |
@@ -43,7 +47,7 @@ fleet/                                                # Fleet Management Bounded
 | **Domain Services** | `VehicleRegistrationService`, `FleetHierarchyService`, `AssetIntegrationService` | Business logic |
 | **REST Controllers** | `VehicleResource`, `FleetPoolResource` | API endpoints |
 
-#### 2. Driver Management (Port 9702)
+#### 2. Driver Management (Port 9762)
 **Package**: `com.chiroerp.fleet.drivermanagement`
 
 | Layer | Component | Description |
@@ -55,7 +59,7 @@ fleet/                                                # Fleet Management Bounded
 | **Domain Services** | `DriverAssignmentService`, `SafetyScoreCalculationService`, `LicenseValidationService`, `ComplianceCheckService` | Business logic |
 | **REST Controllers** | `DriverResource`, `DriverAssignmentResource` | API endpoints |
 
-#### 3. Telematics Integration (Port 9703)
+#### 3. Telematics Integration (Port 9763)
 **Package**: `com.chiroerp.fleet.telematics`
 
 | Layer | Component | Description |
@@ -69,7 +73,7 @@ fleet/                                                # Fleet Management Bounded
 | **Webhook Adapters** | `TelematicsWebhookReceiver` | Real-time event ingestion |
 | **Vendor Adapters** | `GeotabAdapter`, `SamsaraAdapter`, `VerizonConnectAdapter` | Telematics vendor integration |
 
-#### 4. Fuel Card Management (Port 9704)
+#### 4. Fuel Card Management (Port 9764)
 **Package**: `com.chiroerp.fleet.fuelmanagement`
 
 | Layer | Component | Description |
@@ -82,7 +86,7 @@ fleet/                                                # Fleet Management Bounded
 | **REST Controllers** | `FuelTransactionResource`, `FuelCardResource` | API endpoints |
 | **Vendor Adapters** | `WEXAdapter`, `VoyagerAdapter`, `ComdataAdapter`, `ShellFleetAdapter` | Fuel card provider integration |
 
-#### 5. Fleet Maintenance (Port 9705)
+#### 5. Fleet Maintenance (Port 9765)
 **Package**: `com.chiroerp.fleet.maintenance`
 
 | Layer | Component | Description |
@@ -94,7 +98,7 @@ fleet/                                                # Fleet Management Bounded
 | **Domain Services** | `MaintenanceSchedulingService`, `InspectionManagementService`, `RecallTrackingService`, `WarrantyManagementService`, `DowntimeTrackingService` | Business logic |
 | **REST Controllers** | `MaintenanceScheduleResource`, `InspectionResource` | API endpoints |
 
-#### 6. Compliance Management (Port 9706)
+#### 6. Compliance Management (Port 9766)
 **Package**: `com.chiroerp.fleet.compliance`
 
 | Layer | Component | Description |
@@ -106,7 +110,7 @@ fleet/                                                # Fleet Management Bounded
 | **Domain Services** | `RegistrationTrackingService`, `InsuranceManagementService`, `DOTComplianceService`, `HOSMonitoringService`, `DQFileManagementService`, `EnvironmentalComplianceService` | Business logic |
 | **REST Controllers** | `RegistrationResource`, `InsuranceResource`, `DOTComplianceResource` | API endpoints |
 
-#### 7. Utilization & TCO (Port 9707)
+#### 7. Utilization & TCO (Port 9767)
 **Package**: `com.chiroerp.fleet.utilization`
 
 | Layer | Component | Description |
@@ -118,7 +122,7 @@ fleet/                                                # Fleet Management Bounded
 | **Domain Services** | `UtilizationCalculationService`, `TCOCalculationService`, `FleetKPIService`, `BenchmarkingService`, `ReplacementPlanningService` | Business logic |
 | **REST Controllers** | `UtilizationResource`, `TCOResource`, `FleetKPIResource` | API endpoints |
 
-#### 8. Vehicle Lifecycle (Port 9708)
+#### 8. Vehicle Lifecycle (Port 9768)
 **Package**: `com.chiroerp.fleet.lifecycle`
 
 | Layer | Component | Description |
@@ -149,14 +153,14 @@ fleet/                                                # Fleet Management Bounded
 
 | Subdomain | Port | Package |
 |-----------|------|---------|
-| Vehicle Master Data | 9701 | `com.chiroerp.fleet.vehiclemaster` |
-| Driver Management | 9702 | `com.chiroerp.fleet.drivermanagement` |
-| Telematics Integration | 9703 | `com.chiroerp.fleet.telematics` |
-| Fuel Card Management | 9704 | `com.chiroerp.fleet.fuelmanagement` |
-| Fleet Maintenance | 9705 | `com.chiroerp.fleet.maintenance` |
-| Compliance Management | 9706 | `com.chiroerp.fleet.compliance` |
-| Utilization & TCO | 9707 | `com.chiroerp.fleet.utilization` |
-| Vehicle Lifecycle | 9708 | `com.chiroerp.fleet.lifecycle` |
+| Vehicle Master Data | 9761 | `com.chiroerp.fleet.vehiclemaster` |
+| Driver Management | 9762 | `com.chiroerp.fleet.drivermanagement` |
+| Telematics Integration | 9763 | `com.chiroerp.fleet.telematics` |
+| Fuel Card Management | 9764 | `com.chiroerp.fleet.fuelmanagement` |
+| Fleet Maintenance | 9765 | `com.chiroerp.fleet.maintenance` |
+| Compliance Management | 9766 | `com.chiroerp.fleet.compliance` |
+| Utilization & TCO | 9767 | `com.chiroerp.fleet.utilization` |
+| Vehicle Lifecycle | 9768 | `com.chiroerp.fleet.lifecycle` |
 
 ## Core Capabilities
 
@@ -446,76 +450,76 @@ The 8 Fleet Management subdomains integrate through domain events and queries:
 
 | Source → Target | Integration Pattern | Purpose |
 |-----------------|---------------------|---------|
-| Vehicle Master (9701) → Driver Management (9702) | Event/Query | Provide vehicle info for driver assignment |
-| Driver Management (9702) → Telematics (9703) | Event | Link driver to telematics behavior events |
-| Telematics (9703) → Driver Management (9702) | Event | Update driver safety scores |
-| Telematics (9703) → Fuel Management (9704) | Event | Validate fuel transaction odometer |
-| Telematics (9703) → Fleet Maintenance (9705) | Event | Trigger maintenance alerts from diagnostics |
-| Fuel Management (9704) → Utilization (9707) | Event | Provide fuel cost data for TCO |
-| Fleet Maintenance (9705) → Utilization (9707) | Event | Provide maintenance cost data for TCO |
-| Compliance (9706) → Driver Management (9702) | Query | Validate driver license/certification |
-| Utilization (9707) → Lifecycle (9708) | Event | Recommend vehicle replacement |
-| Lifecycle (9708) → Vehicle Master (9701) | Event | Create/update/retire vehicles |
+| Vehicle Master (9761) → Driver Management (9762) | Event/Query | Provide vehicle info for driver assignment |
+| Driver Management (9762) → Telematics (9763) | Event | Link driver to telematics behavior events |
+| Telematics (9763) → Driver Management (9762) | Event | Update driver safety scores |
+| Telematics (9763) → Fuel Management (9764) | Event | Validate fuel transaction odometer |
+| Telematics (9763) → Fleet Maintenance (9765) | Event | Trigger maintenance alerts from diagnostics |
+| Fuel Management (9764) → Utilization (9767) | Event | Provide fuel cost data for TCO |
+| Fleet Maintenance (9765) → Utilization (9767) | Event | Provide maintenance cost data for TCO |
+| Compliance (9766) → Driver Management (9762) | Query | Validate driver license/certification |
+| Utilization (9767) → Lifecycle (9768) | Event | Recommend vehicle replacement |
+| Lifecycle (9768) → Vehicle Master (9761) | Event | Create/update/retire vehicles |
 
 ### External Module Integration
 
 #### Fixed Assets (ADR-021)
-- **Vehicle Master (9701)** → Vehicle capitalization and depreciation.
-- **Lifecycle (9708)** → Asset disposal accounting (sale, trade-in, scrap).
+- **Vehicle Master (9761)** → Vehicle capitalization and depreciation.
+- **Lifecycle (9768)** → Asset disposal accounting (sale, trade-in, scrap).
 - Transfer between cost centers.
 
 #### Lease Accounting (ADR-033)
-- **Vehicle Master (9701)** → Operating and finance lease setup for leased vehicles.
+- **Vehicle Master (9761)** → Operating and finance lease setup for leased vehicles.
 - Lease payment processing and ROU asset tracking.
 - Lease return and disposition.
 
 #### Procurement (ADR-023)
-- **Lifecycle (9708)** → Vehicle purchase orders and supplier management.
-- **Fleet Maintenance (9705)** → Parts procurement for repairs.
+- **Lifecycle (9768)** → Vehicle purchase orders and supplier management.
+- **Fleet Maintenance (9765)** → Parts procurement for repairs.
 - Fuel card and toll tag ordering.
 
 #### Plant Maintenance (ADR-040)
-- **Fleet Maintenance (9705)** → Work order management for vehicle repairs.
+- **Fleet Maintenance (9765)** → Work order management for vehicle repairs.
 - Spare parts inventory and usage.
 - Maintenance task lists and checklists.
 - Downtime tracking.
 
 #### Controlling (CO, ADR-028)
-- **Fuel Management (9704)** → Cost center allocation for fuel.
-- **Fleet Maintenance (9705)** → Cost allocation for maintenance, insurance.
+- **Fuel Management (9764)** → Cost center allocation for fuel.
+- **Fleet Maintenance (9765)** → Cost allocation for maintenance, insurance.
 - Internal orders for vehicle repairs.
 - Profitability analysis for delivery/service fleets.
 - Fleet budget vs actual tracking.
 
 #### Treasury (ADR-026)
-- **Fuel Management (9704)** → Fuel card payment processing.
-- **Compliance (9706)** → Insurance premium payments.
+- **Fuel Management (9764)** → Fuel card payment processing.
+- **Compliance (9766)** → Insurance premium payments.
 - Registration fee payments.
 
 #### HR Integration (ADR-034)
-- **Driver Management (9702)** → Driver master data (employee assignments).
+- **Driver Management (9762)** → Driver master data (employee assignments).
 - Driver training records and certifications.
 - Payroll integration for mileage reimbursement.
 
 #### Field Service (ADR-042)
-- **Driver Management (9702)** → Technician vehicle assignments.
-- **Telematics (9703)** → Trip tracking and customer visit verification.
+- **Driver Management (9762)** → Technician vehicle assignments.
+- **Telematics (9763)** → Trip tracking and customer visit verification.
 - Parts inventory on service vehicles.
 
 #### ESG Reporting (ADR-035)
-- **Fuel Management (9704)** → Scope 1 emissions from fleet fuel consumption.
-- **Utilization (9707)** → Fuel efficiency trends and sustainability KPIs.
+- **Fuel Management (9764)** → Scope 1 emissions from fleet fuel consumption.
+- **Utilization (9767)** → Fuel efficiency trends and sustainability KPIs.
 - Electric vehicle (EV) adoption tracking.
 
 #### Analytics (ADR-016)
-- **Utilization (9707)** → Fleet performance dashboards (TCO, utilization, safety).
-- **Fuel Management (9704)** → Fuel consumption analytics and trend analysis.
-- **Driver Management (9702)** → Driver behavior scorecards.
-- **Fleet Maintenance (9705)** → Maintenance cost benchmarking.
+- **Utilization (9767)** → Fleet performance dashboards (TCO, utilization, safety).
+- **Fuel Management (9764)** → Fuel consumption analytics and trend analysis.
+- **Driver Management (9762)** → Driver behavior scorecards.
+- **Fleet Maintenance (9765)** → Maintenance cost benchmarking.
 
 #### Master Data Governance (ADR-027)
-- **Vehicle Master (9701)** → Vehicle master data stewardship.
-- **Driver Management (9702)** → Driver data quality and validation.
+- **Vehicle Master (9761)** → Vehicle master data stewardship.
+- **Driver Management (9762)** → Driver data quality and validation.
 - Vendor master (service providers, fuel stations).
 
 ## Non-Functional Requirements
@@ -604,31 +608,31 @@ The 8 Fleet Management subdomains integrate through domain events and queries:
 Implementation follows the subdomain architecture within `fleet/`:
 
 ### Phase 1: Foundation (Core)
-- **fleet-vehicle-master** (Port 9701): Vehicle master data, hierarchy, pool management.
-- **fleet-driver-management** (Port 9702): Driver registry, assignments, license tracking.
-- **fleet-fuel-management** (Port 9704): Fuel card integration, transaction processing, efficiency.
+- **fleet-vehicle-master** (Port 9761): Vehicle master data, hierarchy, pool management.
+- **fleet-driver-management** (Port 9762): Driver registry, assignments, license tracking.
+- **fleet-fuel-management** (Port 9764): Fuel card integration, transaction processing, efficiency.
 - Integration with Fixed Assets (ADR-021) and Procurement (ADR-023).
 
 ### Phase 2: Telematics (Advanced)
-- **fleet-telematics** (Port 9703): GPS tracking, real-time location, trip history.
+- **fleet-telematics** (Port 9763): GPS tracking, real-time location, trip history.
 - Odometer sync and mileage capture.
 - Driver behavior monitoring (speeding, harsh braking).
 - Geofencing and alerts.
 - Vendor adapters: Geotab, Samsara, Verizon Connect.
 
 ### Phase 3: Maintenance & Compliance (Advanced)
-- **fleet-maintenance** (Port 9705): PM scheduling, service history, inspections (DVIR, annual, DOT).
-- **fleet-compliance** (Port 9706): Registration, insurance, DOT compliance, HOS, ELD integration.
+- **fleet-maintenance** (Port 9765): PM scheduling, service history, inspections (DVIR, annual, DOT).
+- **fleet-compliance** (Port 9766): Registration, insurance, DOT compliance, HOS, ELD integration.
 - Integration with Plant Maintenance (ADR-040) for work orders.
 
 ### Phase 4: Analytics & Optimization (Advanced)
-- **fleet-utilization** (Port 9707): Fleet performance dashboards, utilization metrics.
+- **fleet-utilization** (Port 9767): Fleet performance dashboards, utilization metrics.
 - TCO analysis and benchmarking.
 - Predictive maintenance integration.
 - Right-sizing recommendations.
 
 ### Phase 5: Lifecycle Management (Advanced)
-- **fleet-lifecycle** (Port 9708): Acquisition workflow, deployment, transfer, disposal.
+- **fleet-lifecycle** (Port 9768): Acquisition workflow, deployment, transfer, disposal.
 - Asset capitalization integration.
 - Disposal accounting.
 

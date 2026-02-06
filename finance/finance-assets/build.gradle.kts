@@ -1,1 +1,0 @@
-// finance-assets module (aggregator)
