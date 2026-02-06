@@ -381,6 +381,76 @@ chiroerp/
 │               │                   └── SagaCoordinatorTest.kt
 │               └── resources/
 │
+│   ├── enterprise-ml/                           # ADR-070: Enterprise ML Platform (P3-2028)
+│   │   ├── build.gradle.kts                     # NOTE: Centralizes ML capabilities for all domains
+│   │   └── src/                                 # AutoML, Feature Store, Model Registry, Monitoring
+│   │       ├── main/
+│   │       │   ├── kotlin/
+│   │       │   │   └── com/
+│   │       │   │       └── chiroerp/
+│   │       │   │           └── shared/
+│   │       │   │               └── ml/
+│   │       │   │                   ├── featurestore/              # Feast Feature Store
+│   │       │   │                   │   ├── FeatureStore.kt
+│   │       │   │                   │   ├── FeatureView.kt
+│   │       │   │                   │   ├── Entity.kt
+│   │       │   │                   │   ├── OnlineStore.kt         # Redis
+│   │       │   │                   │   ├── OfflineStore.kt        # PostgreSQL
+│   │       │   │                   │   └── FeatureService.kt
+│   │       │   │                   ├── modelregistry/             # MLflow Model Registry
+│   │       │   │                   │   ├── ModelRegistry.kt
+│   │       │   │                   │   ├── RegisteredModel.kt
+│   │       │   │                   │   ├── ModelVersion.kt
+│   │       │   │                   │   ├── ModelStage.kt          # Staging, Production, Archived
+│   │       │   │                   │   ├── ModelMetadata.kt
+│   │       │   │                   │   └── ModelArtifact.kt
+│   │       │   │                   ├── automl/                    # AutoML Engine
+│   │       │   │                   │   ├── AutoMLEngine.kt
+│   │       │   │                   │   ├── ModelCandidates.kt     # ARIMA, Prophet, XGBoost, LSTM
+│   │       │   │                   │   ├── HyperparameterTuning.kt
+│   │       │   │                   │   ├── CrossValidation.kt
+│   │       │   │                   │   ├── ModelSelection.kt       # Champion/challenger
+│   │       │   │                   │   └── ModelEvaluation.kt     # MAPE, MAE, RMSE
+│   │       │   │                   ├── monitoring/                # Evidently AI Monitoring
+│   │       │   │                   │   ├── ModelMonitor.kt
+│   │       │   │                   │   ├── DataDriftDetection.kt
+│   │       │   │                   │   ├── ModelDriftDetection.kt
+│   │       │   │                   │   ├── PerformanceMonitor.kt
+│   │       │   │                   │   ├── Alert.kt
+│   │       │   │                   │   └── RetriggerTraining.kt
+│   │       │   │                   ├── explainability/            # SHAP Explainability
+│   │       │   │                   │   ├── ShapExplainer.kt
+│   │       │   │                   │   ├── FeatureImportance.kt
+│   │       │   │                   │   ├── ShapValues.kt
+│   │       │   │                   │   └── ForecastDecomposition.kt
+│   │       │   │                   ├── pipeline/                  # ML Pipelines
+│   │       │   │                   │   ├── TrainingPipeline.kt
+│   │       │   │                   │   ├── InferencePipeline.kt
+│   │       │   │                   │   ├── DataPreprocessing.kt
+│   │       │   │                   │   ├── FeatureEngineering.kt
+│   │       │   │                   │   └── ModelDeployment.kt
+│   │       │   │                   └── common/
+│   │       │   │                       ├── MLModelType.kt          # ARIMA, Prophet, XGBoost, LSTM, Transformer
+│   │       │   │                       ├── TimeHorizon.kt          # 30/60/90-day
+│   │       │   │                       ├── ConfidenceInterval.kt   # p10/p50/p90
+│   │       │   │                       ├── ModelMetrics.kt         # MAPE, MAE, RMSE, Bias
+│   │       │   │                       └── TrainingConfig.kt
+│   │       │   └── resources/
+│   │       │       └── feast/                                  # Feast configuration
+│   │       │           └── feature_store.yaml
+│   │       └── test/
+│   │           ├── kotlin/
+│   │           │   └── com/
+│   │           │       └── chiroerp/
+│   │           │           └── shared/
+│   │           │               └── ml/
+│   │           │                   ├── FeatureStoreTest.kt
+│   │           │                   ├── ModelRegistryTest.kt
+│   │           │                   ├── AutoMLEngineTest.kt
+│   │           │                   ├── ModelMonitorTest.kt
+│   │           │                   └── ShapExplainerTest.kt
+│   │           └── resources/
+│
 ├── tenancy-identity/                            # Tenancy & Identity Bounded Context (ADR-005)
 │   │                                            # NOTE: Different from org-model!
 │   │                                            # org-model = organizational hierarchy WITHIN a tenant
@@ -1941,6 +2011,132 @@ chiroerp/
                     │                       └── TaxCalculationIntegrationTest.kt
                     └── resources/
                         └── application-test.yml
+    
+    └── finance-forecasting/                     # Financial Forecasting Subdomain - ADR-070
+        ├── forecasting-domain/
+        │   ├── build.gradle.kts
+        │   └── src/
+        │       ├── main/
+        │       │   ├── kotlin/
+        │       │   │   └── com/
+        │       │   │       └── chiroerp/
+        │       │   │           └── finance/
+        │       │   │               └── forecasting/
+        │       │   │                   └── domain/
+        │       │   │                       ├── model/
+        │       │   │                       │   ├── cashflow/
+        │       │   │                       │   │   ├── CashFlowForecast.kt          # Aggregate Root
+        │       │   │                       │   │   ├── ForecastId.kt
+        │       │   │                       │   │   ├── ARAgingForecast.kt           # Predict payment timing
+        │       │   │                       │   │   ├── APAgingForecast.kt           # Predict payment obligations
+        │       │   │                       │   │   ├── PaymentBehaviorModel.kt      # ML payment patterns
+        │       │   │                       │   │   └── CashPosition.kt              # Daily cash forecast
+        │       │   │                       │   ├── pnl/
+        │       │   │                       │   │   ├── PnLForecast.kt               # Aggregate Root
+        │       │   │                       │   │   ├── RevenueForecasting.kt        # ARIMA revenue
+        │       │   │                       │   │   ├── ExpenseForecasting.kt        # Pattern-based
+        │       │   │                       │   │   ├── RollingForecast.kt           # 12-month rolling
+        │       │   │                       │   │   └── VarianceAnalysis.kt
+        │       │   │                       │   └── working-capital/
+        │       │   │                       │       ├── WorkingCapitalForecast.kt
+        │       │   │                       │       ├── DSOForecast.kt               # Days Sales Outstanding
+        │       │   │                       │       ├── DPOForecast.kt               # Days Payable Outstanding
+        │       │   │                       │       └── DIOForecast.kt               # Days Inventory Outstanding
+        │       │   │                       ├── event/
+        │       │   │                       │   ├── CashFlowForecastGeneratedEvent.kt
+        │       │   │                       │   ├── PnLForecastGeneratedEvent.kt
+        │       │   │                       │   └── ForecastAccuracyDegradedEvent.kt
+        │       │   │                       ├── port/
+        │       │   │                       │   ├── input/
+        │       │   │                       │   │   ├── GenerateCashFlowForecastUseCase.kt
+        │       │   │                       │   │   ├── GeneratePnLForecastUseCase.kt
+        │       │   │                       │   │   └── FinanceForecastQueryPort.kt
+        │       │   │                       │   └── output/
+        │       │   │                       │       ├── FinanceForecastRepository.kt
+        │       │   │                       │       ├── ARDataPort.kt
+        │       │   │                       │       ├── APDataPort.kt
+        │       │   │                       │       ├── GLDataPort.kt
+        │       │   │                       │       ├── MLPlatformPort.kt            # Uses enterprise-ml
+        │       │   │                       │       └── ForecastEventPublisher.kt
+        │       │   │                       └── service/
+        │       │   │                           ├── CashFlowForecastingService.kt
+        │       │   │                           ├── PaymentBehaviorMLService.kt      # XGBoost
+        │       │   │                           └── PnLForecastingService.kt         # ARIMA
+        │       │   └── resources/
+        │       └── test/
+        │           └── kotlin/
+        │               └── com/
+        │                   └── chiroerp/
+        │                       └── finance/
+        │                           └── forecasting/
+        │                               └── domain/
+        │                                   ├── CashFlowForecastTest.kt
+        │                                   └── PaymentBehaviorMLServiceTest.kt
+        ├── forecasting-application/
+        │   ├── build.gradle.kts
+        │   └── src/
+        │       ├── main/
+        │       │   ├── kotlin/
+        │       │   │   └── com/
+        │       │   │       └── chiroerp/
+        │       │   │           └── finance/
+        │       │   │               └── forecasting/
+        │       │   │                   └── application/
+        │       │   │                       ├── command/
+        │       │   │                       │   ├── GenerateCashFlowForecastCommand.kt
+        │       │   │                       │   ├── GeneratePnLForecastCommand.kt
+        │       │   │                       │   └── RetrainModelCommand.kt
+        │       │   │                       ├── query/
+        │       │   │                       │   ├── GetCashFlowForecastQuery.kt
+        │       │   │                       │   ├── GetPnLForecastQuery.kt
+        │       │   │                       │   └── GetForecastAccuracyQuery.kt
+        │       │   │                       └── handler/
+        │       │   │                           ├── FinanceForecastCommandHandler.kt
+        │       │   │                           └── FinanceForecastQueryHandler.kt
+        │       │   └── resources/
+        │       └── test/
+        │           └── kotlin/
+        │               └── com/
+        │                   └── chiroerp/
+        │                       └── finance/
+        │                           └── forecasting/
+        │                               └── application/
+        │                                   └── FinanceForecastCommandHandlerTest.kt
+        └── forecasting-infrastructure/
+            ├── build.gradle.kts
+            └── src/
+                ├── main/
+                │   ├── kotlin/
+                │   │   └── com/
+                │   │       └── chiroerp/
+                │   │           └── finance/
+                │   │               └── forecasting/
+                │   │                   └── infrastructure/
+                │   │                       ├── adapter/
+                │   │                       │   ├── input/
+                │   │                       │   │   └── rest/
+                │   │                       │   │       └── FinanceForecastController.kt
+                │   │                       │   └── output/
+                │   │                       │       ├── persistence/
+                │   │                       │       │   ├── FinanceForecastJpaRepository.kt
+                │   │                       │       │   └── FinanceForecastEntity.kt
+                │   │                       │       ├── ml/
+                │   │                       │       │   ├── XGBoostPaymentBehaviorAdapter.kt
+                │   │                       │       │   ├── ARIMAPnLForecastAdapter.kt
+                │   │                       │       │   └── MLPlatformAdapter.kt     # Uses platform-shared/enterprise-ml
+                │   │                       │       └── messaging/
+                │   │                       │           └── KafkaEventPublisher.kt
+                │   │                       └── FinanceForecasting Application.kt
+                │   └── resources/
+                │       └── application.yml
+                └── test/
+                    └── kotlin/
+                        └── com/
+                            └── chiroerp/
+                                └── finance/
+                                    └── forecasting/
+                                        └── infrastructure/
+                                            └── FinanceForecastControllerTest.kt
 
 ├── mdm/                                         # Master Data Governance (ADR-027)
 │   │                                            # Golden records, data quality, stewardship
@@ -5771,6 +5967,148 @@ chiroerp/
 │               │           └── KafkaEventPublisher.kt
 │               └── ProcurementInvoiceMatchApplication.kt
 │
+│   └── procurement-global-trade/                      # Port 9206 - Global trade & customs management (ADR-071)
+│       ├── global-trade-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/procurement/globaltrade/domain/
+│       │       ├── model/
+│       │       │   ├── hscode/
+│       │       │   │   ├── HSCode.kt                  # Aggregate root - Harmonized System code classification
+│       │       │   │   ├── HSCodeVersion.kt           # WCO HS2017/2022/2027
+│       │       │   │   ├── HSCodeClassification.kt    # ML-predicted HS code (BERT+XGBoost 80% accuracy)
+│       │       │   │   ├── HSCodeRule.kt              # General Rules of Interpretation (GRI 1-6)
+│       │       │   │   ├── HSCodeConfidence.kt        # ML confidence score (0-100%)
+│       │       │   │   ├── ClassificationHistory.kt   # Audit trail of HS code changes
+│       │       │   │   └── HSCodeBinding.kt           # CBP Binding Ruling validity 10 years
+│       │       │   ├── fta/
+│       │       │   │   ├── FreeTradeAgreement.kt      # Aggregate root - FTA eligibility engine
+│       │       │   │   ├── FTAType.kt                 # USMCA, EU, CPTPP, ASEAN, MERCOSUR
+│       │       │   │   ├── OriginCriteria.kt          # Wholly obtained, substantial transformation, regional value content
+│       │       │   │   ├── RVCCalculation.kt          # Regional Value Content methods (net cost, transaction value)
+│       │       │   │   ├── TariffShift.kt             # Change in Tariff Classification (CTC)
+│       │       │   │   ├── FTACertificate.kt          # Certificate of Origin (USMCA/EUR.1/Form E)
+│       │       │   │   ├── FTAEligibility.kt          # Eligibility determination result
+│       │       │   │   └── DutyRate.kt                # MFN vs. FTA preferential duty rate
+│       │       │   ├── customs/
+│       │       │   │   ├── CustomsDeclaration.kt      # Aggregate root - Import/export customs entry
+│       │       │   │   ├── DeclarationType.kt         # Consumption, Warehouse, TIB, FTZ
+│       │       │   │   ├── EntryNumber.kt             # CBP 11-digit entry number
+│       │       │   │   ├── CBPForm7501.kt             # U.S. CBP Entry Summary
+│       │       │   │   ├── EUSADForm.kt               # EU Single Administrative Document
+│       │       │   │   ├── CanadaB3Form.kt            # Canada Customs Coding Form B3
+│       │       │   │   ├── CommercialInvoice.kt       # Commercial invoice requirements
+│       │       │   │   ├── PackingList.kt             # Packing list, quantity, weight
+│       │       │   │   ├── BillOfLading.kt            # Ocean/air BOL, container numbers
+│       │       │   │   ├── DutyTaxCalculation.kt      # Duty, MPF, HMF, excise tax, VAT
+│       │       │   │   ├── CustomsBond.kt             # CBP continuous bond $50K minimum
+│       │       │   │   └── CustomsRelease.kt          # Entry released by CBP
+│       │       │   ├── drawback/
+│       │       │   │   ├── DutyDrawback.kt            # Aggregate root - 99% duty refund on re-exports
+│       │       │   │   ├── DrawbackType.kt            # Manufacturing, unused merchandise, rejected merchandise
+│       │       │   │   ├── DrawbackClaim.kt           # Claim filed within 5 years (TFTEA extension)
+│       │       │   │   ├── SubstitutionTracking.kt    # Same 8-digit HS code substitution
+│       │       │   │   ├── DrawbackCalculation.kt     # Claimable duty amount
+│       │       │   │   ├── DrawbackDocumentation.kt   # Import entry, export docs, proof of export
+│       │       │   │   └── DrawbackStatus.kt          # Pending, approved, paid, denied
+│       │       │   ├── compliance/
+│       │       │   │   ├── SanctionsScreening.kt      # Aggregate root - OFAC/BIS sanctions screening
+│       │       │   │   ├── OFACList.kt                # OFAC SDN, SSI, FSE lists
+│       │       │   │   ├── BISDeniedPersonsList.kt    # BIS Denied Persons List (DPL)
+│       │       │   │   ├── EURestrictedParties.kt     # EU sanctions list
+│       │       │   │   ├── ScreeningResult.kt         # Match found (blocked), cleared
+│       │       │   │   ├── ScreeningRule.kt           # Fuzzy matching threshold 85%
+│       │       │   │   ├── LicenseRequirement.kt      # EAR export license, ITAR
+│       │       │   │   └── ComplianceException.kt     # Blocked shipment, escalation
+│       │       │   └── TradeValuation.kt              # WTO valuation methods (transaction value, fallback methods)
+│       │       ├── event/
+│       │       │   ├── HSCodeClassifiedEvent.kt
+│       │       │   ├── FTACertificateIssuedEvent.kt
+│       │       │   ├── CustomsDeclarationFiledEvent.kt
+│       │       │   ├── CustomsEntryReleasedEvent.kt
+│       │       │   ├── DrawbackClaimFiledEvent.kt
+│       │       │   ├── DrawbackPaidEvent.kt
+│       │       │   ├── SanctionsMatchFoundEvent.kt
+│       │       │   └── ShipmentBlockedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── HSCodeNotFoundException.kt
+│       │       │   ├── InvalidHSCodeException.kt
+│       │       │   ├── FTAIneligibleException.kt
+│       │       │   ├── CustomsDeclarationFailedException.kt
+│       │       │   ├── DrawbackClaimDeniedException.kt
+│       │       │   ├── SanctionsViolationException.kt
+│       │       │   └── LicenseRequiredException.kt
+│       │       └── service/
+│       │           ├── HSCodeMLClassifierService.kt   # BERT+XGBoost ML classification
+│       │           ├── FTAEligibilityService.kt       # FTA qualification logic
+│       │           ├── RVCCalculationService.kt       # Regional Value Content calculation
+│       │           ├── CustomsValuationService.kt     # WTO valuation methods
+│       │           ├── DutyTaxCalculationService.kt   # Tariff rates, tax calculation
+│       │           ├── DrawbackClaimService.kt        # Drawback eligibility, claim filing
+│       │           └── SanctionsScreeningService.kt   # Real-time sanctions screening
+│       ├── global-trade-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/procurement/globaltrade/application/
+│       │       ├── command/
+│       │       │   ├── ClassifyHSCodeCommand.kt
+│       │       │   ├── RequestFTACertificateCommand.kt
+│       │       │   ├── FileCustomsDeclarationCommand.kt
+│       │       │   ├── SubmitDrawbackClaimCommand.kt
+│       │       │   └── ScreenSanctionsCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetHSCodeQuery.kt
+│       │       │   ├── GetFTAEligibilityQuery.kt
+│       │       │   ├── GetCustomsDeclarationQuery.kt
+│       │       │   ├── GetDrawbackStatusQuery.kt
+│       │       │   ├── GetTariffRatesQuery.kt
+│       │       │   └── GetSanctionsScreeningResultQuery.kt
+│       │       ├── handler/
+│       │       │   ├── ClassifyHSCodeHandler.kt
+│       │       │   ├── RequestFTACertificateHandler.kt
+│       │       │   ├── FileCustomsDeclarationHandler.kt
+│       │       │   ├── SubmitDrawbackClaimHandler.kt
+│       │       │   └── ScreenSanctionsHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── HSCodeClassificationUseCase.kt
+│       │           │   ├── FTAManagementUseCase.kt
+│       │           │   ├── CustomsDeclarationUseCase.kt
+│       │           │   ├── DrawbackUseCase.kt
+│       │           │   └── SanctionsScreeningUseCase.kt
+│       │           └── output/
+│       │               ├── HSCodeRepositoryPort.kt
+│       │               ├── FTARepositoryPort.kt
+│       │               ├── CustomsDeclarationRepositoryPort.kt
+│       │               ├── DrawbackRepositoryPort.kt
+│       │               ├── SanctionsRepositoryPort.kt
+│       │               └── GlobalTradeEventPublisherPort.kt
+│       └── global-trade-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/procurement/globaltrade/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── HSCodeResource.kt
+│               │   │   │   ├── FTAResource.kt
+│               │   │   │   ├── CustomsDeclarationResource.kt
+│               │   │   │   ├── DrawbackResource.kt
+│               │   │   │   └── SanctionsScreeningResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── HSCodeJpaRepository.kt
+│               │       │   ├── FTAJpaRepository.kt
+│               │       │   ├── CustomsDeclarationJpaRepository.kt
+│               │       │   ├── DrawbackJpaRepository.kt
+│               │       │   └── SanctionsJpaRepository.kt
+│               │       ├── messaging/
+│               │       │   └── KafkaEventPublisher.kt
+│               │       └── ml/
+│               │           ├── HSCodeBERTAdapter.kt   # BERT transformer for text classification
+│               │           ├── HSCodeXGBoostAdapter.kt # XGBoost ensemble model
+│               │           └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│               └── ProcurementGlobalTradeApplication.kt
+│
 ├── maintenance/                                        # Plant Maintenance Bounded Context (ADR-040)
 │   ├── maintenance-shared/                            # Shared maintenance types
 │   │   ├── build.gradle.kts
@@ -9284,6 +9622,1397 @@ chiroerp/
 │   │           │       └── messaging/
 │   │           │           └── KafkaEventPublisher.kt
 │   │           └── AccountHealthApplication.kt
+│   │
+│   └── crm-sales-forecasting/                        # Sales Forecasting Subdomain (Port 9456) - ADR-070
+│       ├── sales-forecasting-domain/
+│       │   └── src/main/kotlin/com/chiroerp/crm/salesforecasting/domain/
+│       │       ├── model/
+│       │       │   ├── SalesForecast.kt              # Aggregate Root
+│       │       │   ├── ForecastId.kt
+│       │       │   ├── RevenueForecast.kt            # LSTM time series
+│       │       │   ├── PipelineForecast.kt           # XGBoost won/loss
+│       │       │   ├── WinProbability.kt             # ML-predicted win rate
+│       │       │   ├── ForecastHorizon.kt            # 30/60/90/180-day
+│       │       │   ├── RevenueDecomposition.kt       # Trend, seasonality, residual
+│       │       │   └── ForecastAccuracy.kt           # MAPE, MAE, RMSE
+│       │       ├── event/
+│       │       │   ├── SalesForecastGeneratedEvent.kt
+│       │       │   ├── PipelineForecastUpdatedEvent.kt
+│       │       │   └── ForecastAccuracyDegradedEvent.kt
+│       │       ├── port/
+│       │       │   ├── input/
+│       │       │   │   ├── GenerateSalesForecastUseCase.kt
+│       │       │   │   ├── PredictWinProbabilityUseCase.kt
+│       │       │   │   └── SalesForecastQueryPort.kt
+│       │       │   └── output/
+│       │       │       ├── SalesForecastRepository.kt
+│       │       │       ├── PipelineDataPort.kt
+│       │       │       ├── MLPlatformPort.kt          # Uses enterprise-ml
+│       │       │       └── ForecastEventPublisher.kt
+│       │       └── service/
+│       │           ├── RevenueForecastingService.kt   # LSTM
+│       │           ├── WinProbabilityService.kt       # XGBoost
+│       │           └── ForecastDecompositionService.kt
+│       ├── sales-forecasting-application/
+│       │   └── src/main/kotlin/com/chiroerp/crm/salesforecasting/application/
+│       │       ├── command/
+│       │       │   ├── GenerateSalesForecastCommand.kt
+│       │       │   ├── PredictWinProbabilityCommand.kt
+│       │       │   └── RetrainModelCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetSalesForecastQuery.kt
+│       │       │   ├── GetPipelineForecastQuery.kt
+│       │       │   └── GetForecastAccuracyQuery.kt
+│       │       └── handler/
+│       │           ├── SalesForecastCommandHandler.kt
+│       │           └── SalesForecastQueryHandler.kt
+│       └── sales-forecasting-infrastructure/
+│           └── src/main/kotlin/com/chiroerp/crm/salesforecasting/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   └── rest/
+│               │   │       └── SalesForecastController.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── SalesForecastJpaRepository.kt
+│               │       │   └── SalesForecastEntity.kt
+│               │       ├── ml/
+│               │       │   ├── LSTMRevenueForecastAdapter.kt
+│               │       │   ├── XGBoostWinProbabilityAdapter.kt
+│               │       │   └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── SalesForecastingApplication.kt
+
+================
+
+├── utilities/                                          # Utilities Industry Bounded Context (ADR-072)
+│   ├── utilities-shared/                               # Shared utilities types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/utilities/shared/
+│   │       ├── MeterId.kt
+│   │       ├── ServicePointId.kt
+│   │       ├── MeterReadingId.kt
+│   │       ├── OutageId.kt
+│   │       ├── UtilityType.kt                         # Electric, gas, water, wastewater
+│   │       ├── RateClass.kt                           # Residential, commercial, industrial
+│   │       ├── MeterType.kt                           # AMI, AMR, manual
+│   │       └── ServiceStatus.kt                       # Active, disconnected, suspended
+│   │
+│   ├── utilities-mtc/                                  # Port 9501 - Meter-to-Cash (ADR-072)
+│   │   ├── mtc-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/mtc/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Meter.kt                       # Aggregate root
+│   │   │       │   ├── MeterManufacturer.kt           # Itron, Landis+Gyr, Aclara
+│   │   │       │   ├── MeterRegister.kt               # kWh, kW demand, kVar
+│   │   │       │   ├── CommunicationModule.kt         # RF mesh, cellular, PLC
+│   │   │       │   ├── MeterReading.kt                # Aggregate root - interval data
+│   │   │       │   ├── IntervalData.kt                # 15-min, hourly readings
+│   │   │       │   ├── ReadingSource.kt               # AMI, AMR, manual, estimated
+│   │   │       │   ├── ValidationError.kt             # Negative, spike, flatline
+│   │   │       │   ├── VEE.kt                         # Validation, Editing, Estimation
+│   │   │       │   ├── LoadProfile.kt                 # Time-of-Use profile
+│   │   │       │   └── EnergyConsumption.kt           # Billed consumption
+│   │   │       ├── event/
+│   │   │       │   ├── MeterInstalledEvent.kt
+│   │   │       │   ├── MeterReadingReceivedEvent.kt
+│   │   │       │   ├── ReadingValidationFailedEvent.kt
+│   │   │       │   ├── IntervalDataLoadedEvent.kt
+│   │   │       │   └── ConsumptionCalculatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── MeterNotFoundException.kt
+│   │   │       │   ├── InvalidReadingException.kt
+│   │   │       │   └── ValidationFailedException.kt
+│   │   │       └── service/
+│   │   │           ├── MeterDataManagementService.kt  # MDM
+│   │   │           ├── VEEService.kt                  # Validation, Editing, Estimation
+│   │   │           └── LoadProfileService.kt
+│   │   ├── mtc-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/mtc/application/
+│   │   │       ├── command/
+│   │   │       │   ├── InstallMeterCommand.kt
+│   │   │       │   ├── RecordMeterReadingCommand.kt
+│   │   │       │   ├── LoadIntervalDataCommand.kt
+│   │   │       │   └── ValidateReadingsCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetMeterQuery.kt
+│   │   │       │   ├── GetMeterReadingsQuery.kt
+│   │   │       │   ├── GetIntervalDataQuery.kt
+│   │   │       │   └── GetLoadProfileQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── InstallMeterHandler.kt
+│   │   │       │   ├── RecordMeterReadingHandler.kt
+│   │   │       │   └── LoadIntervalDataHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── MeterManagementUseCase.kt
+│   │   │           │   └── MeterReadingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── MeterRepositoryPort.kt
+│   │   │               ├── MeterReadingRepositoryPort.kt
+│   │   │               └── MTCEventPublisherPort.kt
+│   │   └── mtc-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/utilities/mtc/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── MeterResource.kt
+│   │           │   │   │   └── MeterReadingResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── MeterJpaRepository.kt
+│   │           │       │   └── MeterReadingJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── ami/
+│   │           │           ├── ItronAMIAdapter.kt     # Itron OpenWay integration
+│   │           │           ├── LandisGyrAMIAdapter.kt # Landis+Gyr Gridstream
+│   │           │           └── AclaraAMIAdapter.kt    # Aclara STAR Network
+│   │           └── MTCApplication.kt
+│   │
+│   ├── utilities-billing/                              # Port 9502 - Utility Billing (ADR-072)
+│   │   ├── billing-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/billing/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── UtilityInvoice.kt              # Aggregate root
+│   │   │       │   ├── RateTariff.kt                  # Aggregate root - rate schedule
+│   │   │       │   ├── TieredRate.kt                  # 0-500 kWh, 501-1000 kWh, 1000+
+│   │   │       │   ├── TimeOfUseRate.kt               # Peak, off-peak, super off-peak
+│   │   │       │   ├── DemandCharge.kt                # kW demand billing
+│   │   │       │   ├── EnergyCharge.kt                # kWh consumption billing
+│   │   │       │   ├── FixedCharge.kt                 # Customer charge, meter charge
+│   │   │       │   ├── FuelAdjustmentClause.kt        # Fuel cost recovery
+│   │   │       │   ├── TaxSurcharge.kt                # Utility tax, franchise fee
+│   │   │       │   └── BillDeterminant.kt             # Consumption, demand, days
+│   │   │       ├── event/
+│   │   │       │   ├── UtilityInvoiceGeneratedEvent.kt
+│   │   │       │   ├── RateTariffAppliedEvent.kt
+│   │   │       │   ├── DemandChargeCalculatedEvent.kt
+│   │   │       │   └── InvoicePostedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RateTariffNotFoundException.kt
+│   │   │       │   └── InvalidBillingPeriodException.kt
+│   │   │       └── service/
+│   │   │           ├── BillingDeterminantService.kt
+│   │   │           ├── RateTariffService.kt
+│   │   │           └── DemandChargeCalculationService.kt
+│   │   ├── billing-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/billing/application/
+│   │   │       ├── command/
+│   │   │       │   ├── GenerateUtilityInvoiceCommand.kt
+│   │   │       │   ├── ApplyRateTariffCommand.kt
+│   │   │       │   └── PostInvoiceCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetUtilityInvoiceQuery.kt
+│   │   │       │   ├── GetRateTariffQuery.kt
+│   │   │       │   └── GetBillingHistoryQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── GenerateUtilityInvoiceHandler.kt
+│   │   │       │   └── ApplyRateTariffHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── UtilityBillingUseCase.kt
+│   │   │           │   └── RateTariffUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── UtilityInvoiceRepositoryPort.kt
+│   │   │               ├── RateTariffRepositoryPort.kt
+│   │   │               └── BillingEventPublisherPort.kt
+│   │   └── billing-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/utilities/billing/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── UtilityInvoiceResource.kt
+│   │           │   │   │   └── RateTariffResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── UtilityInvoiceJpaRepository.kt
+│   │           │       │   └── RateTariffJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── UtilityBillingApplication.kt
+│   │
+│   ├── utilities-asset-mgmt/                           # Port 9503 - Utility Asset Management (ADR-072)
+│   │   ├── asset-mgmt-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/assetmgmt/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── UtilityAsset.kt                # Aggregate root
+│   │   │       │   ├── AssetType.kt                   # Transformer, conductor, pole, switch
+│   │   │       │   ├── Transformer.kt                 # Distribution transformer
+│   │   │       │   ├── TransformerRating.kt           # 25kVA, 50kVA, 75kVA, 100kVA
+│   │   │       │   ├── Conductor.kt                   # Overhead wire, underground cable
+│   │   │       │   ├── Pole.kt                        # Wood, concrete, steel pole
+│   │   │       │   ├── GISLocation.kt                 # Esri ArcGIS lat/lon
+│   │   │       │   ├── AssetLifecycle.kt              # 40-year lifecycle
+│   │   │       │   ├── DepreciationSchedule.kt        # Straight-line 40 years
+│   │   │       │   ├── AssetCondition.kt              # Poor, fair, good, excellent
+│   │   │       │   └── ReplacementForecast.kt         # ML predictive maintenance
+│   │   │       ├── event/
+│   │   │       │   ├── UtilityAssetInstalledEvent.kt
+│   │   │       │   ├── AssetConditionChangedEvent.kt
+│   │   │       │   ├── ReplacementScheduledEvent.kt
+│   │   │       │   └── AssetRetiredEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── AssetNotFoundException.kt
+│   │   │       │   └── InvalidAssetLocationException.kt
+│   │   │       └── service/
+│   │   │           ├── AssetConditionService.kt
+│   │   │           ├── LifecycleManagementService.kt
+│   │   │           └── PredictiveMaintenanceMLService.kt # ML failure prediction
+│   │   ├── asset-mgmt-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/assetmgmt/application/
+│   │   │       ├── command/
+│   │   │       │   ├── InstallUtilityAssetCommand.kt
+│   │   │       │   ├── RecordAssetConditionCommand.kt
+│   │   │       │   ├── ScheduleReplacementCommand.kt
+│   │   │       │   └── RetireAssetCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetUtilityAssetQuery.kt
+│   │   │       │   ├── GetAssetConditionQuery.kt
+│   │   │       │   ├── GetReplacementForecastQuery.kt
+│   │   │       │   └── GetGISLocationQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── InstallUtilityAssetHandler.kt
+│   │   │       │   └── ScheduleReplacementHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── AssetManagementUseCase.kt
+│   │   │           │   └── PredictiveMaintenanceUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── UtilityAssetRepositoryPort.kt
+│   │   │               ├── AssetEventPublisherPort.kt
+│   │   │               └── GISIntegrationPort.kt
+│   │   └── asset-mgmt-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/utilities/assetmgmt/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── UtilityAssetResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── UtilityAssetJpaRepository.kt
+│   │           │       │   └── AssetConditionJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       ├── gis/
+│   │           │       │   └── EsriArcGISAdapter.kt   # Esri ArcGIS integration
+│   │           │       └── ml/
+│   │           │           ├── PredictiveMaintenanceMLAdapter.kt
+│   │           │           └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│   │           └── AssetManagementApplication.kt
+│   │
+│   ├── utilities-oms/                                  # Port 9504 - Outage Management System (ADR-072)
+│   │   ├── oms-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/oms/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Outage.kt                      # Aggregate root
+│   │   │       │   ├── OutageCause.kt                 # Storm, equipment failure, tree contact
+│   │   │       │   ├── AffectedCustomers.kt           # Customers impacted
+│   │   │       │   ├── LastGaspNotification.kt        # AMI last gasp detection
+│   │   │       │   ├── CrewDispatch.kt                # Aggregate root
+│   │   │       │   ├── CrewLocation.kt                # GPS tracking
+│   │   │       │   ├── CrewETA.kt                     # Estimated time of arrival
+│   │   │       │   ├── RestorationTime.kt             # ETR (Estimated Time of Restoration)
+│   │   │       │   ├── CustomerNotification.kt        # SMS/email/IVR notifications
+│   │   │       │   └── OutageReport.kt                # SAIDI, SAIFI, CAIDI metrics
+│   │   │       ├── event/
+│   │   │       │   ├── OutageDetectedEvent.kt
+│   │   │       │   ├── LastGaspReceivedEvent.kt
+│   │   │       │   ├── CrewDispatchedEvent.kt
+│   │   │       │   ├── PowerRestoredEvent.kt
+│   │   │       │   └── CustomerNotifiedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── OutageNotFoundException.kt
+│   │   │       │   └── NoAvailableCrewException.kt
+│   │   │       └── service/
+│   │   │           ├── OutageDetectionService.kt
+│   │   │           ├── CrewDispatchService.kt
+│   │   │           └── CustomerNotificationService.kt
+│   │   ├── oms-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/oms/application/
+│   │   │       ├── command/
+│   │   │       │   ├── ReportOutageCommand.kt
+│   │   │       │   ├── DispatchCrewCommand.kt
+│   │   │       │   ├── RestorePowerCommand.kt
+│   │   │       │   └── NotifyCustomersCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetOutageQuery.kt
+│   │   │       │   ├── GetActiveOutagesQuery.kt
+│   │   │       │   ├── GetCrewLocationQuery.kt
+│   │   │       │   └── GetOutageMetricsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── ReportOutageHandler.kt
+│   │   │       │   ├── DispatchCrewHandler.kt
+│   │   │       │   └── RestorePowerHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── OutageManagementUseCase.kt
+│   │   │           │   └── CrewDispatchUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── OutageRepositoryPort.kt
+│   │   │               ├── CrewDispatchRepositoryPort.kt
+│   │   │               ├── OMSEventPublisherPort.kt
+│   │   │               └── NotificationPort.kt
+│   │   └── oms-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/utilities/oms/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── OutageResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── OutageJpaRepository.kt
+│   │           │       │   └── CrewDispatchJpaRepository.kt
+│   │           │       ├── messaging/
+│   │           │       │   └── KafkaEventPublisher.kt
+│   │           │       └── notification/
+│   │           │           ├── SMSNotificationAdapter.kt
+│   │           │           └── IVRNotificationAdapter.kt
+│   │           └── OMSApplication.kt
+│   │
+│   ├── utilities-cis/                                  # Port 9505 - Customer Information System (ADR-072)
+│   │   ├── cis-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/cis/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── UtilityAccount.kt              # Aggregate root
+│   │   │       │   ├── ServicePoint.kt                # Service location
+│   │   │       │   ├── ServiceAgreement.kt            # Contract
+│   │   │       │   ├── ServiceConnection.kt           # Connect/disconnect
+│   │   │       │   ├── DepositRequirement.kt          # Security deposit
+│   │   │       │   ├── CreditScore.kt                 # Credit check
+│   │   │       │   ├── PaymentArrangement.kt          # Payment plan
+│   │   │       │   └── CustomerPortal.kt              # Self-service portal
+│   │   │       ├── event/
+│   │   │       │   ├── UtilityAccountCreatedEvent.kt
+│   │   │       │   ├── ServiceConnectedEvent.kt
+│   │   │       │   ├── ServiceDisconnectedEvent.kt
+│   │   │       │   └── PaymentArrangementCreatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── UtilityAccountNotFoundException.kt
+│   │   │       │   └── InsufficientDepositException.kt
+│   │   │       └── service/
+│   │   │           ├── AccountManagementService.kt
+│   │   │           └── ServiceConnectionService.kt
+│   │   ├── cis-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/utilities/cis/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateUtilityAccountCommand.kt
+│   │   │       │   ├── ConnectServiceCommand.kt
+│   │   │       │   ├── DisconnectServiceCommand.kt
+│   │   │       │   └── CreatePaymentArrangementCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetUtilityAccountQuery.kt
+│   │   │       │   ├── GetServiceAgreementQuery.kt
+│   │   │       │   └── GetPaymentArrangementQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateUtilityAccountHandler.kt
+│   │   │       │   └── ConnectServiceHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── UtilityAccountUseCase.kt
+│   │   │           │   └── ServiceConnectionUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── UtilityAccountRepositoryPort.kt
+│   │   │               └── CISEventPublisherPort.kt
+│   │   └── cis-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/utilities/cis/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── UtilityAccountResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── UtilityAccountJpaRepository.kt
+│   │           │       │   └── ServiceAgreementJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── CISApplication.kt
+│   │
+│   └── utilities-regulatory/                           # Port 9506 - Regulatory Compliance (ADR-072)
+│       ├── regulatory-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/utilities/regulatory/domain/
+│       │       ├── model/
+│       │       │   ├── FERCReport.kt                  # Aggregate root
+│       │       │   ├── FERCForm1.kt                   # Electric utility annual report
+│       │       │   ├── FERCForm2.kt                   # Gas utility annual report
+│       │       │   ├── RegulatoryAssetBase.kt         # Rate base calculation
+│       │       │   ├── AllowedROE.kt                  # Return on equity
+│       │       │   ├── CostOfService.kt               # Cost recovery
+│       │       │   └── RevenueRequirement.kt          # Revenue needed
+│       │       ├── event/
+│       │       │   ├── FERCReportGeneratedEvent.kt
+│       │       │   ├── RegulatoryFilingSubmittedEvent.kt
+│       │       │   └── RateBaseAdjustedEvent.kt
+│       │       ├── exception/
+│       │       │   └── InvalidFERCReportException.kt
+│       │       └── service/
+│       │           ├── FERCReportingService.kt
+│       │           └── RateBaseCal culationService.kt
+│       ├── regulatory-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/utilities/regulatory/application/
+│       │       ├── command/
+│       │       │   ├── GenerateFERCReportCommand.kt
+│       │       │   ├── SubmitRegulatoryFilingCommand.kt
+│       │       │   └── AdjustRateBaseCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetFERCReportQuery.kt
+│       │       │   ├── GetRateBaseQuery.kt
+│       │       │   └── GetRevenueRequirementQuery.kt
+│       │       ├── handler/
+│       │       │   ├── GenerateFERCReportHandler.kt
+│       │       │   └── SubmitRegulatoryFilingHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   └── RegulatoryComplianceUseCase.kt
+│       │           └── output/
+│       │               ├── FERCReportRepositoryPort.kt
+│       │               └── RegulatoryEventPublisherPort.kt
+│       └── regulatory-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/utilities/regulatory/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   └── RegulatoryResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── FERCReportJpaRepository.kt
+│               │       │   └── RateBaseJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── RegulatoryComplianceApplication.kt
+
+================
+
+├── oil-gas/                                            # Oil & Gas Industry Bounded Context (ADR-073)
+│   ├── oil-gas-shared/                                 # Shared oil & gas types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/oilgas/shared/
+│   │       ├── WellId.kt
+│   │       ├── LeaseId.kt
+│   │       ├── AFEId.kt                              # Authorization for Expenditure
+│   │       ├── JIBId.kt                              # Joint Interest Billing
+│   │       ├── WellStatus.kt                         # Drilling, producing, plugged
+│   │       ├── ProductionStream.kt                   # Oil, gas, NGL, condensate
+│   │       └── OwnershipType.kt                      # Working interest, royalty, overriding royalty
+│   │
+│   ├── oil-gas-upstream/                               # Port 9601 - Upstream E&P (ADR-073)
+│   │   ├── upstream-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/oilgas/upstream/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── afe/
+│   │   │       │   │   ├── AFE.kt                     # Aggregate root - Authorization for Expenditure
+│   │   │       │   │   ├── AFEBudget.kt               # $2M-20M/well drilling budget
+│   │   │       │   │   ├── AFECategory.kt             # Drilling, completion, equipment, facilities
+│   │   │       │   │   ├── AFEApproval.kt             # Multi-partner approval
+│   │   │       │   │   ├── AFEActuals.kt              # Actual vs. budget variance
+│   │   │       │   │   └── AFERevision.kt             # Supplemental AFE
+│   │   │       │   ├── jib/
+│   │   │       │   │   ├── JointInterestBilling.kt    # Aggregate root - JIB
+│   │   │       │   │   ├── JIBInvoice.kt              # Joint interest billing invoice
+│   │   │       │   │   ├── OwnershipInterest.kt       # Working interest % (60/40, 50/50)
+│   │   │       │   │   ├── JIBLineItem.kt             # Drilling costs, completion costs
+│   │   │       │   │   ├── PartnerShare.kt            # Partner proportionate share
+│   │   │       │   │   └── CashCall.kt                # Partner cash contribution
+│   │   │       │   ├── production/
+│   │   │       │   │   ├── ProductionAccounting.kt    # Aggregate root
+│   │   │       │   │   ├── WellProduction.kt          # Daily production volumes
+│   │   │       │   │   ├── OilVolume.kt               # Barrels (bbl)
+│   │   │       │   │   ├── GasVolume.kt               # Mcf (thousand cubic feet)
+│   │   │       │   │   ├── NGLVolume.kt               # Natural gas liquids
+│   │   │       │   │   ├── WaterVolume.kt             # Produced water (bbl)
+│   │   │       │   │   ├── RevenueDistribution.kt     # Partner revenue share
+│   │   │       │   │   └── ProductionTax.kt           # Severance tax 4-7%
+│   │   │       │   └── reserves/
+│   │   │       │       ├── SECReserves.kt             # Aggregate root - SEC reserves
+│   │   │       │       ├── ProvedReserves.kt          # 1P (P90 certainty)
+│   │   │       │       ├── ProbableReserves.kt        # 2P (P50 certainty)
+│   │   │       │       ├── PossibleReserves.kt        # 3P (P10 certainty)
+│   │   │       │       ├── PV10.kt                    # Present Value at 10% discount
+│   │   │       │       ├── StandardizedMeasure.kt     # SEC Regulation S-X
+│   │   │       │       └── DeclineAnalysis.kt         # Hyperbolic decline curve
+│   │   │       ├── event/
+│   │   │       │   ├── AFECreatedEvent.kt
+│   │   │       │   ├── AFEApprovedEvent.kt
+│   │   │       │   ├── JIBInvoiceGeneratedEvent.kt
+│   │   │       │   ├── CashCallIssuedEvent.kt
+│   │   │       │   ├── ProductionRecordedEvent.kt
+│   │   │       │   └── SECReservesUpdatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── AFENotFoundException.kt
+│   │   │       │   ├── InsufficientOwnershipException.kt
+│   │   │       │   └── InvalidProductionVolumeException.kt
+│   │   │       └── service/
+│   │   │           ├── AFEManagementService.kt
+│   │   │           ├── JIBCalculationService.kt
+│   │   │           ├── ProductionAllocationService.kt
+│   │   │           └── SECReservesCalculationService.kt
+│   │   ├── upstream-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/oilgas/upstream/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateAFECommand.kt
+│   │   │       │   ├── ApproveAFECommand.kt
+│   │   │       │   ├── GenerateJIBInvoiceCommand.kt
+│   │   │       │   ├── IssueCashCallCommand.kt
+│   │   │       │   ├── RecordProductionCommand.kt
+│   │   │       │   └── UpdateSECReservesCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetAFEQuery.kt
+│   │   │       │   ├── GetJIBInvoiceQuery.kt
+│   │   │       │   ├── GetProductionQuery.kt
+│   │   │       │   ├── GetSECReservesQuery.kt
+│   │   │       │   └── GetPV10Query.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreateAFEHandler.kt
+│   │   │       │   ├── GenerateJIBInvoiceHandler.kt
+│   │   │       │   └── RecordProductionHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── AFEManagementUseCase.kt
+│   │   │           │   ├── JIBManagementUseCase.kt
+│   │   │           │   ├── ProductionAccountingUseCase.kt
+│   │   │           │   └── SECReservesUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── AFERepositoryPort.kt
+│   │   │               ├── JIBRepositoryPort.kt
+│   │   │               ├── ProductionRepositoryPort.kt
+│   │   │               ├── SECReservesRepositoryPort.kt
+│   │   │               └── UpstreamEventPublisherPort.kt
+│   │   └── upstream-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/oilgas/upstream/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── AFEResource.kt
+│   │           │   │   │   ├── JIBResource.kt
+│   │           │   │   │   ├── ProductionResource.kt
+│   │           │   │   │   └── SECReservesResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── AFEJpaRepository.kt
+│   │           │       │   ├── JIBJpaRepository.kt
+│   │           │       │   ├── ProductionJpaRepository.kt
+│   │           │       │   └── SECReservesJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── UpstreamApplication.kt
+│   │
+│   ├── oil-gas-midstream/                              # Port 9602 - Midstream Transportation (ADR-073)
+│   │   ├── midstream-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/oilgas/midstream/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── PipelineNomination.kt          # Aggregate root
+│   │   │       │   ├── NominationVolume.kt            # Requested transport volume
+│   │   │       │   ├── PipelineCapacity.kt            # Maximum capacity
+│   │   │       │   ├── Prorationing.kt                # Capacity allocation % (when oversubscribed)
+│   │   │       │   ├── TariffRate.kt                  # Aggregate root - Transportation tariff
+│   │   │       │   ├── FERCTariff.kt                  # FERC-regulated interstate tariff
+│   │   │       │   ├── IntrastateTariff.kt            # Non-FERC intrastate tariff
+│   │   │       │   ├── TariffBilling.kt               # Monthly tariff billing
+│   │   │       │   ├── FERCForm6.kt                   # Oil pipeline annual report
+│   │   │       │   ├── FERCForm2.kt                   # Gas pipeline annual report
+│   │   │       │   └── PipelineStatement.kt           # Volume transported
+│   │   │       ├── event/
+│   │   │       │   ├── NominationSubmittedEvent.kt
+│   │   │       │   ├── NominationConfirmedEvent.kt
+│   │   │       │   ├── PipelineProratedEvent.kt
+│   │   │       │   └── TariffBilledEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── NominationNotFoundException.kt
+│   │   │       │   └── ExceedsPipelineCapacityException.kt
+│   │   │       └── service/
+│   │   │           ├── NominationManagementService.kt
+│   │   │           ├── CapacityAllocationService.kt
+│   │   │           └── TariffBillingService.kt
+│   │   ├── midstream-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/oilgas/midstream/application/
+│   │   │       ├── command/
+│   │   │       │   ├── SubmitNominationCommand.kt
+│   │   │       │   ├── ConfirmNominationCommand.kt
+│   │   │       │   └── GenerateTariffBillingCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetNominationQuery.kt
+│   │   │       │   ├── GetPipelineCapacityQuery.kt
+│   │   │       │   ├── GetTariffRateQuery.kt
+│   │   │       │   └── GetFERCReportQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── SubmitNominationHandler.kt
+│   │   │       │   └── GenerateTariffBillingHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── NominationManagementUseCase.kt
+│   │   │           │   └── TariffBillingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── NominationRepositoryPort.kt
+│   │   │               ├── TariffRepositoryPort.kt
+│   │   │               └── MidstreamEventPublisherPort.kt
+│   │   └── midstream-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/oilgas/midstream/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── NominationResource.kt
+│   │           │   │   │   └── TariffResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── NominationJpaRepository.kt
+│   │           │       │   └── TariffJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── MidstreamApplication.kt
+│   │
+│   └── oil-gas-downstream/                             # Port 9603 - Downstream Refining (ADR-073)
+│       ├── downstream-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/oilgas/downstream/domain/
+│       │       ├── model/
+│       │       │   ├── RefiningRun.kt                 # Aggregate root - Refinery production run
+│       │       │   ├── CrudeInput.kt                  # Crude oil feedstock
+│       │       │   ├── ProductYield.kt                # Gasoline, diesel, jet fuel, residual
+│       │       │   ├── GasolineBlending.kt            # Aggregate root - Blending recipes
+│       │       │   ├── OctaneRating.kt                # 87, 89, 91, 93 octane
+│       │       │   ├── DieselBlending.kt              # Diesel fuel blending
+│       │       │   ├── CetaneRating.kt                # Cetane number (diesel ignition quality)
+│       │       │   ├── RefineryYield.kt               # Product yields (% of crude input)
+│       │       │   ├── RackPricing.kt                 # Aggregate root - Terminal rack pricing
+│       │       │   ├── RackRate.kt                    # $/gallon terminal price
+│       │       │   ├── FreightDifferential.kt         # Freight cost adjustment
+│       │       │   └── RefineryMargin.kt              # Crack spread (refining margin)
+│       │       ├── event/
+│       │       │   ├── RefiningRunCompletedEvent.kt
+│       │       │   ├── GasolineBlendedEvent.kt
+│       │       │   ├── DieselBlendedEvent.kt
+│       │       │   └── RackPriceUpdatedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── InvalidBlendException.kt
+│       │       │   └── InsufficientCrudeException.kt
+│       │       └── service/
+│       │           ├── RefiningOptimizationService.kt
+│       │           ├── BlendingOptimizationService.kt
+│       │           └── RackPricingService.kt
+│       ├── downstream-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/oilgas/downstream/application/
+│       │       ├── command/
+│       │       │   ├── CreateRefiningRunCommand.kt
+│       │       │   ├── BlendGasolineCommand.kt
+│       │       │   ├── BlendDieselCommand.kt
+│       │       │   └── UpdateRackPriceCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetRefiningRunQuery.kt
+│       │       │   ├── GetProductYieldQuery.kt
+│       │       │   ├── GetRackPriceQuery.kt
+│       │       │   └── GetRefineryMarginQuery.kt
+│       │       ├── handler/
+│       │       │   ├── CreateRefiningRunHandler.kt
+│       │       │   ├── BlendGasolineHandler.kt
+│       │       │   └── UpdateRackPriceHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── RefiningManagementUseCase.kt
+│       │           │   ├── BlendingManagementUseCase.kt
+│       │           │   └── RackPricingUseCase.kt
+│       │           └── output/
+│       │               ├── RefiningRunRepositoryPort.kt
+│       │               ├── BlendingRepositoryPort.kt
+│       │               ├── RackPriceRepositoryPort.kt
+│       │               └── DownstreamEventPublisherPort.kt
+│       └── downstream-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/oilgas/downstream/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   ├── RefiningRunResource.kt
+│               │   │   │   ├── BlendingResource.kt
+│               │   │   │   └── RackPriceResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── RefiningRunJpaRepository.kt
+│               │       │   ├── BlendingJpaRepository.kt
+│               │       │   └── RackPriceJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── DownstreamApplication.kt
+
+================
+
+├── real-estate/                                        # Real Estate Management Bounded Context (ADR-074)
+│   ├── real-estate-shared/                             # Shared real estate types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/realestate/shared/
+│   │       ├── PropertyId.kt
+│   │       ├── LeaseId.kt
+│   │       ├── TenantId.kt
+│   │       ├── UnitId.kt
+│   │       ├── PropertyType.kt                        # Multifamily, office, retail, industrial, hospitality
+│   │       ├── LeaseType.kt                           # Gross, modified gross, triple net (NNN)
+│   │       └── UnitStatus.kt                          # Vacant, occupied, under renovation
+│   │
+│   ├── real-estate-property-mgmt/                      # Port 9701 - Property Portfolio Management (ADR-074)
+│   │   ├── property-mgmt-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/propertymgmt/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Property.kt                    # Aggregate root
+│   │   │       │   ├── PropertyAddress.kt             # Street, city, state, zip
+│   │   │       │   ├── PropertySize.kt                # Square feet, acres
+│   │   │       │   ├── YearBuilt.kt                   # Construction year
+│   │   │       │   ├── PropertyClass.kt               # Class A, B, C
+│   │   │       │   ├── Unit.kt                        # Aggregate root - Rental unit
+│   │   │       │   ├── UnitNumber.kt                  # Apt 101, Suite 200
+│   │   │       │   ├── UnitSize.kt                    # Square feet
+│   │   │       │   ├── Bedrooms.kt                    # 1BR, 2BR, 3BR
+│   │   │       │   ├── Tenant.kt                      # Aggregate root
+│   │   │       │   ├── TenantContact.kt               # Name, phone, email
+│   │   │       │   ├── EmergencyContact.kt            # Emergency contact info
+│   │   │       │   └── TenantScreening.kt             # Credit check, background check
+│   │   │       ├── event/
+│   │   │       │   ├── PropertyCreatedEvent.kt
+│   │   │       │   ├── UnitAddedEvent.kt
+│   │   │       │   ├── TenantOnboardedEvent.kt
+│   │   │       │   └── UnitVacatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── PropertyNotFoundException.kt
+│   │   │       │   ├── UnitNotFoundException.kt
+│   │   │       │   └── TenantNotFoundException.kt
+│   │   │       └── service/
+│   │   │           ├── PropertyManagementService.kt
+│   │   │           └── TenantScreeningService.kt
+│   │   ├── property-mgmt-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/propertymgmt/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreatePropertyCommand.kt
+│   │   │       │   ├── AddUnitCommand.kt
+│   │   │       │   ├── OnboardTenantCommand.kt
+│   │   │       │   └── VacateUnitCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetPropertyQuery.kt
+│   │   │       │   ├── GetUnitQuery.kt
+│   │   │       │   ├── GetVacantUnitsQuery.kt
+│   │   │       │   └── GetTenantQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── CreatePropertyHandler.kt
+│   │   │       │   └── OnboardTenantHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── PropertyManagementUseCase.kt
+│   │   │           │   └── TenantManagementUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── PropertyRepositoryPort.kt
+│   │   │               ├── UnitRepositoryPort.kt
+│   │   │               ├── TenantRepositoryPort.kt
+│   │   │               └── PropertyEventPublisherPort.kt
+│   │   └── property-mgmt-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/realestate/propertymgmt/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── PropertyResource.kt
+│   │           │   │   │   ├── UnitResource.kt
+│   │           │   │   │   └── TenantResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── PropertyJpaRepository.kt
+│   │           │       │   ├── UnitJpaRepository.kt
+│   │           │       │   └── TenantJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── PropertyManagementApplication.kt
+│   │
+│   ├── real-estate-lease-admin/                        # Port 9702 - Lease Administration (ADR-074)
+│   │   ├── lease-admin-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/leaseadmin/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── Lease.kt                       # Aggregate root
+│   │   │       │   ├── LeaseTerms.kt                  # Start, end, renewal options
+│   │   │       │   ├── BaseRent.kt                    # Monthly base rent
+│   │   │       │   ├── RentEscalation.kt              # Annual 3% increase, CPI adjustment
+│   │   │       │   ├── CAMCharges.kt                  # Common Area Maintenance charges
+│   │   │       │   ├── CAMReconciliation.kt           # Annual CAM reconciliation
+│   │   │       │   ├── TenantImprovement.kt           # TI allowance
+│   │   │       │   ├── SecurityDeposit.kt             # Deposit amount
+│   │   │       │   ├── LeaseRenewal.kt                # Renewal option
+│   │   │       │   └── LeaseAmendment.kt              # Lease modification
+│   │   │       ├── event/
+│   │   │       │   ├── LeaseExecutedEvent.kt
+│   │   │       │   ├── RentEscalationAppliedEvent.kt
+│   │   │       │   ├── CAMReconciliationCompletedEvent.kt
+│   │   │       │   └── LeaseRenewedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── LeaseNotFoundException.kt
+│   │   │       │   └── InvalidLeaseTermsException.kt
+│   │   │       └── service/
+│   │   │           ├── LeaseAdministrationService.kt
+│   │   │           ├── RentEscalationService.kt
+│   │   │           └── CAMReconciliationService.kt
+│   │   ├── lease-admin-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/leaseadmin/application/
+│   │   │       ├── command/
+│   │   │       │   ├── ExecuteLeaseCommand.kt
+│   │   │       │   ├── ApplyRentEscalationCommand.kt
+│   │   │       │   ├── ReconcileCAMCommand.kt
+│   │   │       │   └── RenewLeaseCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetLeaseQuery.kt
+│   │   │       │   ├── GetLeaseTermsQuery.kt
+│   │   │       │   ├── GetCAMReconciliationQuery.kt
+│   │   │       │   └── GetExpiringLeasesQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── ExecuteLeaseHandler.kt
+│   │   │       │   └── ReconcileCAMHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── LeaseAdministrationUseCase.kt
+│   │   │           │   └── CAMReconciliationUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── LeaseRepositoryPort.kt
+│   │   │               └── LeaseEventPublisherPort.kt
+│   │   └── lease-admin-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/realestate/leaseadmin/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── LeaseResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── LeaseJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── LeaseAdministrationApplication.kt
+│   │
+│   ├── real-estate-tenant-billing/                     # Port 9703 - Tenant Billing (ADR-074)
+│   │   ├── tenant-billing-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/tenantbilling/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── TenantInvoice.kt               # Aggregate root
+│   │   │       │   ├── RentCharge.kt                  # Base rent
+│   │   │       │   ├── CAMCharge.kt                   # CAM pro-rata share
+│   │   │       │   ├── UtilityCharge.kt               # Water, electric, gas
+│   │   │       │   ├── ParkingCharge.kt               # Parking fees
+│   │   │       │   ├── LateFee.kt                     # Late payment fee
+│   │   │       │   ├── NSFFee.kt                      # NSF (Non-Sufficient Funds) fee
+│   │   │       │   └── TenantCredit.kt                # Security deposit application
+│   │   │       ├── event/
+│   │   │       │   ├── TenantInvoiceGeneratedEvent.kt
+│   │   │       │   ├── LateFeeAssessedEvent.kt
+│   │   │       │   └── TenantCreditAppliedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   └── InvalidChargeException.kt
+│   │   │       └── service/
+│   │   │           ├── TenantBillingService.kt
+│   │   │           └── LateFeeCalculationService.kt
+│   │   ├── tenant-billing-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/tenantbilling/application/
+│   │   │       ├── command/
+│   │   │       │   ├── GenerateTenantInvoiceCommand.kt
+│   │   │       │   ├── AssessLateFeeCommand.kt
+│   │   │       │   └── ApplyTenantCreditCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetTenantInvoiceQuery.kt
+│   │   │       │   ├── GetBillingHistoryQuery.kt
+│   │   │       │   └── GetOutstandingBalanceQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── GenerateTenantInvoiceHandler.kt
+│   │   │       │   └── AssessLateFeeHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   └── TenantBillingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── TenantInvoiceRepositoryPort.kt
+│   │   │               └── TenantBillingEventPublisherPort.kt
+│   │   └── tenant-billing-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/realestate/tenantbilling/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── TenantInvoiceResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── TenantInvoiceJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── TenantBillingApplication.kt
+│   │
+│   ├── real-estate-lease-accounting/                   # Port 9704 - Lease Accounting ASC 842 (ADR-074)
+│   │   ├── lease-accounting-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/leaseaccounting/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ASC842Lease.kt                 # Aggregate root - ASC 842 lease
+│   │   │       │   ├── LeaseClassification.kt         # Operating, finance
+│   │   │       │   ├── ROUAsset.kt                    # Right-of-Use asset
+│   │   │       │   ├── LeaseLiability.kt              # Lease liability
+│   │   │       │   ├── DiscountRate.kt                # Incremental borrowing rate
+│   │   │       │   ├── LeasePaymentSchedule.kt        # Monthly payment stream
+│   │   │       │   ├── AmortizationSchedule.kt        # ROU asset amortization
+│   │   │       │   ├── InterestExpense.kt             # Interest on lease liability
+│   │   │       │   ├── LeaseModification.kt           # Modification accounting
+│   │   │       │   └── LeaseTermination.kt            # Early termination accounting
+│   │   │       ├── event/
+│   │   │       │   ├── ROUAssetRecognizedEvent.kt
+│   │   │       │   ├── LeaseLiabilityRecognizedEvent.kt
+│   │   │       │   ├── LeasePaymentMadeEvent.kt
+│   │   │       │   └── LeaseTerminatedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── InvalidLeaseClassificationException.kt
+│   │   │       │   └── InvalidDiscountRateException.kt
+│   │   │       └── service/
+│   │   │           ├── ASC842CalculationService.kt
+│   │   │           ├── ROUAssetAmortizationService.kt
+│   │   │           └── LeaseLiabilityAccretionService.kt
+│   │   ├── lease-accounting-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/realestate/leaseaccounting/application/
+│   │   │       ├── command/
+│   │   │       │   ├── RecognizeROUAssetCommand.kt
+│   │   │       │   ├── RecognizeLeaseLiabilityCommand.kt
+│   │   │       │   ├── RecordLeasePaymentCommand.kt
+│   │   │       │   └── TerminateLeaseCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetASC842LeaseQuery.kt
+│   │   │       │   ├── GetROUAssetQuery.kt
+│   │   │       │   ├── GetLeaseLiabilityQuery.kt
+│   │   │       │   └── GetAmortizationScheduleQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── RecognizeROUAssetHandler.kt
+│   │   │       │   └── RecordLeasePaymentHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   └── LeaseAccountingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ASC842LeaseRepositoryPort.kt
+│   │   │               └── LeaseAccountingEventPublisherPort.kt
+│   │   └── lease-accounting-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/realestate/leaseaccounting/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── ASC842LeaseResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ASC842LeaseJpaRepository.kt
+│   │           │       │   └── AmortizationScheduleJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── LeaseAccountingApplication.kt
+│   │
+│   └── real-estate-maintenance/                        # Port 9705 - Property Maintenance (ADR-074)
+│       ├── maintenance-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/realestate/maintenance/domain/
+│       │       ├── model/
+│       │       │   ├── WorkOrder.kt                   # Aggregate root
+│       │       │   ├── WorkOrderType.kt               # Emergency, routine, preventive
+│       │       │   ├── MaintenanceRequest.kt          # Tenant request
+│       │       │   ├── WorkPriority.kt                # Critical, high, medium, low
+│       │       │   ├── Vendor.kt                      # Aggregate root
+│       │       │   ├── VendorContract.kt              # Vendor service agreement
+│       │       │   └── WorkCompletion.kt              # Work completed
+│       │       ├── event/
+│       │       │   ├── WorkOrderCreatedEvent.kt
+│       │       │   ├── WorkOrderAssignedEvent.kt
+│       │       │   └── WorkOrderCompletedEvent.kt
+│       │       ├── exception/
+│       │       │   ├── WorkOrderNotFoundException.kt
+│       │       │   └── VendorNotFoundException.kt
+│       │       └── service/
+│       │           └── WorkOrderManagementService.kt
+│       ├── maintenance-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/realestate/maintenance/application/
+│       │       ├── command/
+│       │       │   ├── CreateWorkOrderCommand.kt
+│       │       │   ├── AssignWorkOrderCommand.kt
+│       │       │   └── CompleteWorkOrderCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetWorkOrderQuery.kt
+│       │       │   ├── GetOpenWorkOrdersQuery.kt
+│       │       │   └── GetVendorQuery.kt
+│       │       ├── handler/
+│       │       │   ├── CreateWorkOrderHandler.kt
+│       │       │   └── CompleteWorkOrderHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   └── MaintenanceManagementUseCase.kt
+│       │           └── output/
+│       │               ├── WorkOrderRepositoryPort.kt
+│       │               ├── VendorRepositoryPort.kt
+│       │               └── MaintenanceEventPublisherPort.kt
+│       └── maintenance-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/realestate/maintenance/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   └── WorkOrderResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── WorkOrderJpaRepository.kt
+│               │       │   └── VendorJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── MaintenanceApplication.kt
+
+================
+
+├── media-entertainment/                                # Media & Entertainment Bounded Context (ADR-075)
+│   ├── media-shared/                                   # Shared media types
+│   │   ├── build.gradle.kts
+│   │   └── src/main/kotlin/com/chiroerp/media/shared/
+│   │       ├── ContentId.kt
+│   │       ├── RightsId.kt
+│   │       ├── RoyaltyId.kt
+│   │       ├── ProjectId.kt
+│   │       ├── ContentType.kt                         # Film, TV series, music, documentary
+│   │       ├── DistributionChannel.kt                 # Theatrical, streaming, home video, broadcast
+│   │       └── RoyaltyType.kt                         # Performance, mechanical, synchronization
+│   │
+│   ├── media-rights-mgmt/                              # Port 9801 - Rights Management (ADR-075)
+│   │   ├── rights-mgmt-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/rightsmgmt/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ContentRights.kt               # Aggregate root
+│   │   │       │   ├── RightsAcquisition.kt           # Rights purchase agreement
+│   │   │       │   ├── RightsTerritory.kt             # Geographic rights (US, Canada, Worldwide)
+│   │   │       │   ├── DistributionWindow.kt          # Aggregate root - Distribution windows
+│   │   │       │   ├── TheatricalWindow.kt            # 45-90 days exclusive theatrical
+│   │   │       │   ├── StreamingWindow.kt             # Streaming release date
+│   │   │       │   ├── HomeVideoWindow.kt             # DVD/Blu-ray release
+│   │   │       │   ├── BroadcastWindow.kt             # TV broadcast rights
+│   │   │       │   ├── RightsExpiration.kt            # Rights expiration tracking
+│   │   │       │   ├── Sublicense.kt                  # Sublicense to third parties
+│   │   │       │   └── RightsReversion.kt             # Rights revert to owner
+│   │   │       ├── event/
+│   │   │       │   ├── RightsAcquiredEvent.kt
+│   │   │       │   ├── DistributionWindowOpenedEvent.kt
+│   │   │       │   ├── RightsExpiredEvent.kt
+│   │   │       │   └── SublicenseGrantedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RightsNotFoundException.kt
+│   │   │       │   └── RightsExpiredException.kt
+│   │   │       └── service/
+│   │   │           ├── RightsManagementService.kt
+│   │   │           └── DistributionWindowService.kt
+│   │   ├── rights-mgmt-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/rightsmgmt/application/
+│   │   │       ├── command/
+│   │   │       │   ├── AcquireRightsCommand.kt
+│   │   │       │   ├── OpenDistributionWindowCommand.kt
+│   │   │       │   ├── GrantSublicenseCommand.kt
+│   │   │       │   └── ExpireRightsCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetContentRightsQuery.kt
+│   │   │       │   ├── GetDistributionWindowQuery.kt
+│   │   │       │   ├── GetExpiringRightsQuery.kt
+│   │   │       │   └── GetSublicensesQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── AcquireRightsHandler.kt
+│   │   │       │   └── OpenDistributionWindowHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── RightsManagementUseCase.kt
+│   │   │           │   └── DistributionWindowUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ContentRightsRepositoryPort.kt
+│   │   │               └── RightsEventPublisherPort.kt
+│   │   └── rights-mgmt-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/media/rightsmgmt/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── ContentRightsResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ContentRightsJpaRepository.kt
+│   │           │       │   └── DistributionWindowJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── RightsManagementApplication.kt
+│   │
+│   ├── media-royalty-accounting/                       # Port 9802 - Royalty Accounting (ADR-075)
+│   │   ├── royalty-accounting-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/royaltyaccounting/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── artist/
+│   │   │       │   │   ├── ArtistRoyalty.kt           # Aggregate root - Artist/actor royalties
+│   │   │       │   │   ├── RoyaltyRate.kt             # % of gross or net
+│   │   │       │   │   ├── BackendPoints.kt           # % of net profits
+│   │   │       │   │   ├── FirstDollarGross.kt        # No recoupment, paid from day 1
+│   │   │       │   │   ├── AdvanceRecoupment.kt       # Recoup advance before royalties
+│   │   │       │   │   └── RoyaltyEscalation.kt       # Escalating rate by revenue thresholds
+│   │   │       │   ├── music/
+│   │   │       │   │   ├── MusicRoyalty.kt            # Aggregate root - Music publishing
+│   │   │       │   │   ├── MechanicalRoyalty.kt       # Mechanical royalty (reproductions)
+│   │   │       │   │   ├── PerformanceRoyalty.kt      # Performance royalty (radio, live)
+│   │   │       │   │   ├── SynchronizationRoyalty.kt  # Sync royalty (film, TV, ads)
+│   │   │       │   │   ├── StreamingRoyalty.kt        # Streaming royalty (Spotify, Apple Music)
+│   │   │       │   │   └── PRO.kt                     # Performing Rights Organization (ASCAP, BMI, SESAC)
+│   │   │       │   └── participant/
+│   │   │       │       ├── ParticipantAccounting.kt   # Aggregate root - Profit participant
+│   │   │       │       ├── NetProfits.kt              # Gross - distribution costs - marketing
+│   │   │       │       ├── DistributionCosts.kt       # Prints, advertising
+│   │   │       │       ├── MarketingCosts.kt          # P&A (prints & advertising)
+│   │   │       │       ├── ParticipantShare.kt        # % of net profits
+│   │   │       │       └── ParticipantStatement.kt    # Quarterly participant statement
+│   │   │       ├── event/
+│   │   │       │   ├── ArtistRoyaltyAccruedEvent.kt
+│   │   │       │   ├── MechanicalRoyaltyPaidEvent.kt
+│   │   │       │   ├── PerformanceRoyaltyPaidEvent.kt
+│   │   │       │   └── ParticipantStatementGeneratedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── RoyaltyNotFoundException.kt
+│   │   │       │   └── InsufficientNetProfitsException.kt
+│   │   │       └── service/
+│   │   │           ├── ArtistRoyaltyCalculationService.kt
+│   │   │           ├── MusicRoyaltyCalculationService.kt
+│   │   │           └── ParticipantAccountingService.kt
+│   │   ├── royalty-accounting-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/royaltyaccounting/application/
+│   │   │       ├── command/
+│   │   │       │   ├── AccrueArtistRoyaltyCommand.kt
+│   │   │       │   ├── PayMechanicalRoyaltyCommand.kt
+│   │   │       │   ├── PayPerformanceRoyaltyCommand.kt
+│   │   │       │   └── GenerateParticipantStatementCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetArtistRoyaltyQuery.kt
+│   │   │       │   ├── GetMusicRoyaltyQuery.kt
+│   │   │       │   ├── GetParticipantAccountingQuery.kt
+│   │   │       │   └── GetNetProfitsQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── AccrueArtistRoyaltyHandler.kt
+│   │   │       │   └── GenerateParticipantStatementHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── ArtistRoyaltyUseCase.kt
+│   │   │           │   ├── MusicRoyaltyUseCase.kt
+│   │   │           │   └── ParticipantAccountingUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ArtistRoyaltyRepositoryPort.kt
+│   │   │               ├── MusicRoyaltyRepositoryPort.kt
+│   │   │               ├── ParticipantAccountingRepositoryPort.kt
+│   │   │               └── RoyaltyEventPublisherPort.kt
+│   │   └── royalty-accounting-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/media/royaltyaccounting/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   ├── ArtistRoyaltyResource.kt
+│   │           │   │   │   ├── MusicRoyaltyResource.kt
+│   │           │   │   │   └── ParticipantAccountingResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   ├── ArtistRoyaltyJpaRepository.kt
+│   │           │       │   ├── MusicRoyaltyJpaRepository.kt
+│   │           │       │   └── ParticipantAccountingJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── RoyaltyAccountingApplication.kt
+│   │
+│   ├── media-content-distribution/                     # Port 9803 - Content Distribution (ADR-075)
+│   │   ├── content-distribution-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/contentdistribution/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── ContentDistribution.kt         # Aggregate root
+│   │   │       │   ├── PlatformLicense.kt             # License to Netflix, Disney+, Hulu, etc.
+│   │   │       │   ├── LicenseFee.kt                  # Per-title license fee
+│   │   │       │   ├── RevenueShare.kt                # Revenue share % (60/40, 70/30)
+│   │   │       │   ├── StreamingAnalytics.kt          # Views, completion rate, engagement
+│   │   │       │   ├── ViewCount.kt                   # Total views
+│   │   │       │   ├── CompletionRate.kt              # % viewers who finished
+│   │   │       │   ├── AverageWatchTime.kt            # Average viewing duration
+│   │   │       │   └── PlatformPayment.kt             # Monthly platform payment
+│   │   │       ├── event/
+│   │   │       │   ├── ContentLicensedEvent.kt
+│   │   │       │   ├── ContentStreamedEvent.kt
+│   │   │       │   └── PlatformPaymentReceivedEvent.kt
+│   │   │       ├── exception/
+│   │   │       │   ├── LicenseNotFoundException.kt
+│   │   │       │   └── InvalidPlatformException.kt
+│   │   │       └── service/
+│   │   │           ├── ContentDistributionService.kt
+│   │   │           └── StreamingAnalyticsService.kt
+│   │   ├── content-distribution-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/media/contentdistribution/application/
+│   │   │       ├── command/
+│   │   │       │   ├── LicenseContentCommand.kt
+│   │   │       │   ├── RecordStreamCommand.kt
+│   │   │       │   └── ReceivePlatformPaymentCommand.kt
+│   │   │       ├── query/
+│   │   │       │   ├── GetContentDistributionQuery.kt
+│   │   │       │   ├── GetStreamingAnalyticsQuery.kt
+│   │   │       │   └── GetPlatformPaymentQuery.kt
+│   │   │       ├── handler/
+│   │   │       │   ├── LicenseContentHandler.kt
+│   │   │       │   └── RecordStreamHandler.kt
+│   │   │       └── port/
+│   │   │           ├── input/
+│   │   │           │   ├── ContentDistributionUseCase.kt
+│   │   │           │   └── StreamingAnalyticsUseCase.kt
+│   │   │           └── output/
+│   │   │               ├── ContentDistributionRepositoryPort.kt
+│   │   │               └── DistributionEventPublisherPort.kt
+│   │   └── content-distribution-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/media/contentdistribution/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   ├── rest/
+│   │           │   │   │   └── ContentDistributionResource.kt
+│   │           │   │   └── messaging/
+│   │           │   │       └── KafkaEventConsumer.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── ContentDistributionJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── ContentDistributionApplication.kt
+│   │
+│   └── media-project-accounting/                       # Port 9804 - Project Accounting (ADR-075)
+│       ├── project-accounting-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/media/projectaccounting/domain/
+│       │       ├── model/
+│       │       │   ├── ProductionProject.kt           # Aggregate root - Film/TV production
+│       │       │   ├── ProductionBudget.kt            # $10M-200M production budget
+│       │       │   ├── BudgetCategory.kt              # Above-the-line, below-the-line
+│       │       │   ├── AboveTheLineCosts.kt           # Talent, director, producer
+│       │       │   ├── TalentDeal.kt                  # Actor compensation (upfront + backend)
+│       │       │   ├── DirectorDeal.kt                # Director compensation
+│       │       │   ├── ProducerDeal.kt                # Producer compensation
+│       │       │   ├── BelowTheLineCosts.kt           # Crew, equipment, post-production
+│       │       │   ├── CrewCosts.kt                   # DP, gaffer, sound, etc.
+│       │       │   ├── EquipmentRental.kt             # Camera, lighting, grip
+│       │       │   ├── LocationCosts.kt               # Location fees, permits
+│       │       │   ├── PostProductionCosts.kt         # Editing, VFX, color, sound mixing
+│       │       │   ├── VFXCosts.kt                    # Visual effects budget
+│       │       │   └── ProductionActuals.kt           # Actual costs vs. budget
+│       │       ├── event/
+│       │       │   ├── ProductionProjectCreatedEvent.kt
+│       │       │   ├── BudgetApprovedEvent.kt
+│       │       │   ├── ProductionStartedEvent.kt
+│       │       │   ├── ProductionCompletedEvent.kt
+│       │       │   └── BudgetOverrunEvent.kt
+│       │       ├── exception/
+│       │       │   ├── ProjectNotFoundException.kt
+│       │       │   └── BudgetExceededException.kt
+│       │       └── service/
+│       │           ├── ProductionBudgetingService.kt
+│       │           └── CostTrackingService.kt
+│       ├── project-accounting-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/media/projectaccounting/application/
+│       │       ├── command/
+│       │       │   ├── CreateProductionProjectCommand.kt
+│       │       │   ├── ApproveBudgetCommand.kt
+│       │       │   ├── StartProductionCommand.kt
+│       │       │   ├── RecordProductionCostCommand.kt
+│       │       │   └── CompleteProductionCommand.kt
+│       │       ├── query/
+│       │       │   ├── GetProductionProjectQuery.kt
+│       │       │   ├── GetProductionBudgetQuery.kt
+│       │       │   ├── GetBudgetVarianceQuery.kt
+│       │       │   └── GetProductionActualsQuery.kt
+│       │       ├── handler/
+│       │       │   ├── CreateProductionProjectHandler.kt
+│       │       │   ├── ApproveBudgetHandler.kt
+│       │       │   └── RecordProductionCostHandler.kt
+│       │       └── port/
+│       │           ├── input/
+│       │           │   ├── ProductionProjectUseCase.kt
+│       │           │   └── CostTrackingUseCase.kt
+│       │           └── output/
+│       │               ├── ProductionProjectRepositoryPort.kt
+│       │               └── ProjectAccountingEventPublisherPort.kt
+│       └── project-accounting-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/media/projectaccounting/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   ├── rest/
+│               │   │   │   └── ProductionProjectResource.kt
+│               │   │   └── messaging/
+│               │   │       └── KafkaEventConsumer.kt
+│               │   └── output/
+│               │       ├── persistence/
+│               │       │   ├── ProductionProjectJpaRepository.kt
+│               │       │   └── ProductionBudgetJpaRepository.kt
+│               │       └── messaging/
+│               │           └── KafkaEventPublisher.kt
+│               └── ProjectAccountingApplication.kt
 
 ================
 
@@ -9295,6 +11024,7 @@ settings.gradle.kts includes:
 - include("platform-shared:config-model")
 - include("platform-shared:org-model")
 - include("platform-shared:workflow-model")
+- include("platform-shared:enterprise-ml")
 - include("tenancy-identity:tenancy-shared")
 - include("tenancy-identity:tenancy-core")
 - include("tenancy-identity:identity-core")
@@ -9315,6 +11045,9 @@ settings.gradle.kts includes:
 - include("finance:finance-tax:tax-domain")
 - include("finance:finance-tax:tax-application")
 - include("finance:finance-tax:tax-infrastructure")
+- include("finance:finance-forecasting:forecasting-domain")
+- include("finance:finance-forecasting:forecasting-application")
+- include("finance:finance-forecasting:forecasting-infrastructure")
 - include("mdm:mdm-shared")
 - include("mdm:mdm-hub:hub-domain")
 - include("mdm:mdm-hub:hub-application")
@@ -9424,6 +11157,9 @@ settings.gradle.kts includes:
 - include("procurement:procurement-invoice-match:invoice-match-domain")
 - include("procurement:procurement-invoice-match:invoice-match-application")
 - include("procurement:procurement-invoice-match:invoice-match-infrastructure")
+- include("procurement:procurement-global-trade:global-trade-domain")
+- include("procurement:procurement-global-trade:global-trade-application")
+- include("procurement:procurement-global-trade:global-trade-infrastructure")
 
 # Maintenance bounded context (ADR-040 - Plant Maintenance with Physical ALM)
 - include("maintenance:maintenance-shared")
@@ -9548,6 +11284,75 @@ settings.gradle.kts includes:
 - include("crm:crm-account-health:account-health-domain")
 - include("crm:crm-account-health:account-health-application")
 - include("crm:crm-account-health:account-health-infrastructure")
+- include("crm:crm-sales-forecasting:sales-forecasting-domain")
+- include("crm:crm-sales-forecasting:sales-forecasting-application")
+- include("crm:crm-sales-forecasting:sales-forecasting-infrastructure")
+
+# Utilities Industry (ADR-072)
+- include("utilities:utilities-shared")
+- include("utilities:utilities-mtc:mtc-domain")
+- include("utilities:utilities-mtc:mtc-application")
+- include("utilities:utilities-mtc:mtc-infrastructure")
+- include("utilities:utilities-billing:billing-domain")
+- include("utilities:utilities-billing:billing-application")
+- include("utilities:utilities-billing:billing-infrastructure")
+- include("utilities:utilities-asset-mgmt:asset-mgmt-domain")
+- include("utilities:utilities-asset-mgmt:asset-mgmt-application")
+- include("utilities:utilities-asset-mgmt:asset-mgmt-infrastructure")
+- include("utilities:utilities-oms:oms-domain")
+- include("utilities:utilities-oms:oms-application")
+- include("utilities:utilities-oms:oms-infrastructure")
+- include("utilities:utilities-cis:cis-domain")
+- include("utilities:utilities-cis:cis-application")
+- include("utilities:utilities-cis:cis-infrastructure")
+- include("utilities:utilities-regulatory:regulatory-domain")
+- include("utilities:utilities-regulatory:regulatory-application")
+- include("utilities:utilities-regulatory:regulatory-infrastructure")
+
+# Oil & Gas Industry (ADR-073)
+- include("oil-gas:oil-gas-shared")
+- include("oil-gas:oil-gas-upstream:upstream-domain")
+- include("oil-gas:oil-gas-upstream:upstream-application")
+- include("oil-gas:oil-gas-upstream:upstream-infrastructure")
+- include("oil-gas:oil-gas-midstream:midstream-domain")
+- include("oil-gas:oil-gas-midstream:midstream-application")
+- include("oil-gas:oil-gas-midstream:midstream-infrastructure")
+- include("oil-gas:oil-gas-downstream:downstream-domain")
+- include("oil-gas:oil-gas-downstream:downstream-application")
+- include("oil-gas:oil-gas-downstream:downstream-infrastructure")
+
+# Real Estate Management (ADR-074)
+- include("real-estate:real-estate-shared")
+- include("real-estate:real-estate-property-mgmt:property-mgmt-domain")
+- include("real-estate:real-estate-property-mgmt:property-mgmt-application")
+- include("real-estate:real-estate-property-mgmt:property-mgmt-infrastructure")
+- include("real-estate:real-estate-lease-admin:lease-admin-domain")
+- include("real-estate:real-estate-lease-admin:lease-admin-application")
+- include("real-estate:real-estate-lease-admin:lease-admin-infrastructure")
+- include("real-estate:real-estate-tenant-billing:tenant-billing-domain")
+- include("real-estate:real-estate-tenant-billing:tenant-billing-application")
+- include("real-estate:real-estate-tenant-billing:tenant-billing-infrastructure")
+- include("real-estate:real-estate-lease-accounting:lease-accounting-domain")
+- include("real-estate:real-estate-lease-accounting:lease-accounting-application")
+- include("real-estate:real-estate-lease-accounting:lease-accounting-infrastructure")
+- include("real-estate:real-estate-maintenance:maintenance-domain")
+- include("real-estate:real-estate-maintenance:maintenance-application")
+- include("real-estate:real-estate-maintenance:maintenance-infrastructure")
+
+# Media & Entertainment (ADR-075)
+- include("media-entertainment:media-shared")
+- include("media-entertainment:media-rights-mgmt:rights-mgmt-domain")
+- include("media-entertainment:media-rights-mgmt:rights-mgmt-application")
+- include("media-entertainment:media-rights-mgmt:rights-mgmt-infrastructure")
+- include("media-entertainment:media-royalty-accounting:royalty-accounting-domain")
+- include("media-entertainment:media-royalty-accounting:royalty-accounting-application")
+- include("media-entertainment:media-royalty-accounting:royalty-accounting-infrastructure")
+- include("media-entertainment:media-content-distribution:content-distribution-domain")
+- include("media-entertainment:media-content-distribution:content-distribution-application")
+- include("media-entertainment:media-content-distribution:content-distribution-infrastructure")
+- include("media-entertainment:media-project-accounting:project-accounting-domain")
+- include("media-entertainment:media-project-accounting:project-accounting-application")
+- include("media-entertainment:media-project-accounting:project-accounting-infrastructure")
 
 
 PACKAGE NAMING CONVENTION
@@ -9931,6 +11736,161 @@ CRM Account Health (Port 9455):
 - com.chiroerp.crm.accounthealth.domain.*     # AccountHealth, HealthScore, RiskSignal, ChurnPrediction
 - com.chiroerp.crm.accounthealth.application.* # Commands, queries, handlers
 - com.chiroerp.crm.accounthealth.infrastructure.* # JPA, Kafka, REST
+
+CRM Sales Forecasting (Port 9456 - P3 ADR-070):
+- com.chiroerp.crm.salesforecasting.domain.*         # SalesForecast, RevenueForecast, PipelineForecast, WinProbability, ForecastHorizon, RevenueDecomposition
+- com.chiroerp.crm.salesforecasting.application.*    # Commands, queries, forecasting services
+- com.chiroerp.crm.salesforecasting.infrastructure.* # JPA, Kafka, REST, LSTM/XGBoost ML models, MLPlatform adapter
+
+Finance Forecasting (P3 ADR-070):
+- com.chiroerp.finance.forecasting.domain.cashflow.* # CashFlowForecast, ARAgingForecast, APAgingForecast, PaymentBehaviorModel, CashPosition
+- com.chiroerp.finance.forecasting.domain.pnl.*      # PnLForecast, RevenueForecasting, ExpenseForecasting, RollingForecast, VarianceAnalysis
+- com.chiroerp.finance.forecasting.domain.workingcapital.* # WorkingCapitalForecast, DSOForecast, DPOForecast, DIOForecast
+- com.chiroerp.finance.forecasting.application.*     # Commands, queries, forecasting services
+- com.chiroerp.finance.forecasting.infrastructure.*  # JPA, Kafka, REST, ARIMA/XGBoost ML models, MLPlatform adapter
+
+Procurement Global Trade (Port 9206 - P3 ADR-071):
+- com.chiroerp.procurement.globaltrade.domain.hscode.* # HSCode, HSCodeClassification, HSCodeRule, HSCodeBinding
+- com.chiroerp.procurement.globaltrade.domain.fta.*  # FreeTradeAgreement, OriginCriteria, RVCCalculation, TariffShift, FTACertificate, DutyRate
+- com.chiroerp.procurement.globaltrade.domain.customs.* # CustomsDeclaration, CBPForm7501, EUSADForm, CanadaB3Form, DutyTaxCalculation, CustomsBond, CustomsRelease
+- com.chiroerp.procurement.globaltrade.domain.drawback.* # DutyDrawback, DrawbackClaim, SubstitutionTracking
+- com.chiroerp.procurement.globaltrade.domain.compliance.* # SanctionsScreening, OFACList, BISDeniedPersonsList, ScreeningResult
+- com.chiroerp.procurement.globaltrade.application.*     # Commands, queries, services
+- com.chiroerp.procurement.globaltrade.infrastructure.*  # JPA, Kafka, REST, BERT/XGBoost ML models, Customs APIs
+
+Platform Shared ML (P3 ADR-070):
+- com.chiroerp.shared.ml.featurestore.*              # FeatureStore, FeatureView, Entity, OnlineStore, OfflineStore
+- com.chiroerp.shared.ml.modelregistry.*             # RegisteredModel, ModelVersion, ModelStage
+- com.chiroerp.shared.ml.automl.*                    # AutoMLEngine, ModelCandidates, HyperparameterTuning, CrossValidation, ModelSelection
+- com.chiroerp.shared.ml.monitoring.*                # DataDriftDetection, ModelDriftDetection, PerformanceMonitor, RetriggerTraining
+- com.chiroerp.shared.ml.explainability.*            # ShapExplainer, FeatureImportance, ForecastDecomposition
+- com.chiroerp.shared.ml.pipeline.*                  # PipelineDefinition, PipelineExecutor
+- com.chiroerp.shared.ml.common.*                    # MLModel, MLPrediction, MLMetrics
+
+# ═══════════════════════════════════════════════════════════════════════════
+# UTILITIES INDUSTRY BOUNDED CONTEXT (ADR-072) - P3 Industry Vertical
+# ═══════════════════════════════════════════════════════════════════════════
+
+Utilities Shared:
+- com.chiroerp.utilities.shared.*                    # MeterId, ServicePointId, UtilityType, RateClass, MeterType
+
+Utilities MTC (Port 9501 - Meter-to-Cash):
+- com.chiroerp.utilities.mtc.domain.*                # Meter, MeterReading, IntervalData, VEE, LoadProfile
+- com.chiroerp.utilities.mtc.application.*           # Commands, queries, services
+- com.chiroerp.utilities.mtc.infrastructure.ami.*    # Itron OpenWay, Landis+Gyr Gridstream, Aclara STAR Network adapters
+- com.chiroerp.utilities.mtc.infrastructure.*        # JPA, Kafka, REST
+
+Utilities Billing (Port 9502):
+- com.chiroerp.utilities.billing.domain.*            # UtilityInvoice, RateTariff, TieredRate, TimeOfUseRate, DemandCharge, FuelAdjustmentClause
+- com.chiroerp.utilities.billing.application.*       # Commands, queries, services
+- com.chiroerp.utilities.billing.infrastructure.*    # JPA, Kafka, REST, Finance AR integration
+
+Utilities Asset Management (Port 9503):
+- com.chiroerp.utilities.assetmgmt.domain.*          # UtilityAsset, Transformer, Conductor, Pole, GISLocation, AssetLifecycle, DepreciationSchedule, ReplacementForecast
+- com.chiroerp.utilities.assetmgmt.application.*     # Commands, queries, services
+- com.chiroerp.utilities.assetmgmt.infrastructure.gis.* # Esri ArcGIS integration
+- com.chiroerp.utilities.assetmgmt.infrastructure.*  # JPA, Kafka, REST, ML predictive maintenance
+
+Utilities OMS (Port 9504 - Outage Management):
+- com.chiroerp.utilities.oms.domain.*                # Outage, LastGaspNotification, CrewDispatch, CrewLocation, CrewETA, RestorationTime, CustomerNotification, OutageReport
+- com.chiroerp.utilities.oms.application.*           # Commands, queries, services
+- com.chiroerp.utilities.oms.infrastructure.*        # JPA, Kafka, REST, SMS/email/IVR adapters
+
+Utilities CIS (Port 9505 - Customer Information):
+- com.chiroerp.utilities.cis.domain.*                # UtilityAccount, ServicePoint, ServiceAgreement, ServiceConnection, DepositRequirement, PaymentArrangement, CustomerPortal
+- com.chiroerp.utilities.cis.application.*           # Commands, queries, services
+- com.chiroerp.utilities.cis.infrastructure.*        # JPA, Kafka, REST, Customer portal
+
+Utilities Regulatory (Port 9506):
+- com.chiroerp.utilities.regulatory.domain.*         # FERCReport, FERCForm1, FERCForm2, RegulatoryAssetBase, AllowedROE, CostOfService
+- com.chiroerp.utilities.regulatory.application.*    # Commands, queries, services
+- com.chiroerp.utilities.regulatory.infrastructure.* # JPA, Kafka, REST, FERC filing APIs
+
+# ═══════════════════════════════════════════════════════════════════════════
+# OIL & GAS INDUSTRY BOUNDED CONTEXT (ADR-073) - P3 Industry Vertical
+# ═══════════════════════════════════════════════════════════════════════════
+
+Oil & Gas Shared:
+- com.chiroerp.oilgas.shared.*                       # WellId, LeaseId, AFEId, JIBId, WellStatus, ProductionStream, OwnershipType
+
+Oil & Gas Upstream (Port 9601 - E&P):
+- com.chiroerp.oilgas.upstream.domain.afe.*          # AFE, DrillingBudget, OwnershipInterest, CashCall
+- com.chiroerp.oilgas.upstream.domain.jib.*          # JointInterestBilling, OwnershipInterest, JIBStatement
+- com.chiroerp.oilgas.upstream.domain.production.*   # ProductionAccounting, OilVolume, GasVolume, NGLVolume, WaterVolume, AllocationRule
+- com.chiroerp.oilgas.upstream.domain.reserves.*     # SECReserves, ProvedReserves, ProbableReserves, PossibleReserves, PV10, DeclineAnalysis
+- com.chiroerp.oilgas.upstream.application.*         # Commands, queries, services
+- com.chiroerp.oilgas.upstream.infrastructure.*      # JPA, Kafka, REST, Finance CO/GL integration
+
+Oil & Gas Midstream (Port 9602 - Transportation):
+- com.chiroerp.oilgas.midstream.domain.*             # PipelineNomination, PipelineCapacity, Prorationing, TariffRate, FERCForm6, FERCForm2
+- com.chiroerp.oilgas.midstream.application.*        # Commands, queries, services
+- com.chiroerp.oilgas.midstream.infrastructure.*     # JPA, Kafka, REST, FERC reporting
+
+Oil & Gas Downstream (Port 9603 - Refining):
+- com.chiroerp.oilgas.downstream.domain.*            # RefiningRun, CrudeInput, ProductYield, GasolineBlending, DieselBlending, RackPricing, RefineryMargin
+- com.chiroerp.oilgas.downstream.application.*       # Commands, queries, services
+- com.chiroerp.oilgas.downstream.infrastructure.*    # JPA, Kafka, REST, Pricing feeds
+
+# ═══════════════════════════════════════════════════════════════════════════
+# REAL ESTATE BOUNDED CONTEXT (ADR-074) - P3 Industry Vertical
+# ═══════════════════════════════════════════════════════════════════════════
+
+Real Estate Shared:
+- com.chiroerp.realestate.shared.*                   # PropertyId, LeaseId, TenantId, UnitId, PropertyType, LeaseType, UnitStatus
+
+Real Estate Property Management (Port 9701):
+- com.chiroerp.realestate.propertymgmt.domain.*      # Property, PropertyAddress, PropertyClass, Unit, UnitNumber, Bedrooms, Tenant, TenantScreening
+- com.chiroerp.realestate.propertymgmt.application.* # Commands, queries, services
+- com.chiroerp.realestate.propertymgmt.infrastructure.* # JPA, Kafka, REST, KYC integration
+
+Real Estate Lease Admin (Port 9702):
+- com.chiroerp.realestate.leaseadmin.domain.*        # Lease, LeaseTerms, BaseRent, RentEscalation, CAMCharges, CAMReconciliation, TenantImprovement, SecurityDeposit, LeaseRenewal, LeaseAmendment
+- com.chiroerp.realestate.leaseadmin.application.*   # Commands, queries, services
+- com.chiroerp.realestate.leaseadmin.infrastructure.* # JPA, Kafka, REST, Workflow integration
+
+Real Estate Tenant Billing (Port 9703):
+- com.chiroerp.realestate.tenantbilling.domain.*     # TenantInvoice, RentCharge, CAMCharge, UtilityCharge, ParkingCharge, LateFee, NSFFee, TenantCredit
+- com.chiroerp.realestate.tenantbilling.application.* # Commands, queries, services
+- com.chiroerp.realestate.tenantbilling.infrastructure.* # JPA, Kafka, REST, Finance AR integration
+
+Real Estate Lease Accounting (Port 9704 - ASC 842):
+- com.chiroerp.realestate.leaseaccounting.domain.*   # ASC842Lease, LeaseClassification, ROUAsset, LeaseLiability, DiscountRate, LeasePaymentSchedule, AmortizationSchedule, InterestExpense, LeaseModification, LeaseTermination
+- com.chiroerp.realestate.leaseaccounting.application.* # Commands, queries, services
+- com.chiroerp.realestate.leaseaccounting.infrastructure.* # JPA, Kafka, REST, Finance GL integration
+
+Real Estate Maintenance (Port 9705):
+- com.chiroerp.realestate.maintenance.domain.*       # WorkOrder, WorkOrderType, MaintenanceRequest, WorkPriority, Vendor, VendorContract
+- com.chiroerp.realestate.maintenance.application.*  # Commands, queries, services
+- com.chiroerp.realestate.maintenance.infrastructure.* # JPA, Kafka, REST, Vendor portal
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MEDIA & ENTERTAINMENT BOUNDED CONTEXT (ADR-075) - P3 Industry Vertical
+# ═══════════════════════════════════════════════════════════════════════════
+
+Media & Entertainment Shared:
+- com.chiroerp.media.shared.*                        # ContentId, RightsId, RoyaltyId, ProjectId, ContentType, DistributionChannel, RoyaltyType
+
+Media Rights Management (Port 9801):
+- com.chiroerp.media.rightsmgmt.domain.*             # ContentRights, RightsAcquisition, RightsTerritory, DistributionWindow, TheatricalWindow, StreamingWindow, HomeVideoWindow, BroadcastWindow, RightsExpiration, Sublicense, RightsReversion
+- com.chiroerp.media.rightsmgmt.application.*        # Commands, queries, services
+- com.chiroerp.media.rightsmgmt.infrastructure.*     # JPA, Kafka, REST, Contract management
+
+Media Royalty Accounting (Port 9802):
+- com.chiroerp.media.royaltyaccounting.domain.artist.* # ArtistRoyalty, RoyaltyRate, BackendPoints, FirstDollarGross, AdvanceRecoupment
+- com.chiroerp.media.royaltyaccounting.domain.music.* # MusicRoyalty, MechanicalRoyalty, PerformanceRoyalty, SynchronizationRoyalty, StreamingRoyalty, PRO
+- com.chiroerp.media.royaltyaccounting.domain.participant.* # ParticipantAccounting, NetProfits, ParticipantStatement
+- com.chiroerp.media.royaltyaccounting.application.* # Commands, queries, services
+- com.chiroerp.media.royaltyaccounting.infrastructure.* # JPA, Kafka, REST, Finance AP integration, PRO integrations (ASCAP/BMI/SESAC)
+
+Media Content Distribution (Port 9803):
+- com.chiroerp.media.contentdistribution.domain.*    # ContentDistribution, PlatformLicense, LicenseFee, RevenueShare, StreamingAnalytics, ViewCount, CompletionRate, AverageWatchTime, PlatformPayment
+- com.chiroerp.media.contentdistribution.application.* # Commands, queries, services
+- com.chiroerp.media.contentdistribution.infrastructure.* # JPA, Kafka, REST, Netflix/Disney+/Hulu APIs
+
+Media Project Accounting (Port 9804):
+- com.chiroerp.media.projectaccounting.domain.*      # ProductionProject, ProductionBudget, BudgetCategory, AboveTheLineCosts, TalentDeal, DirectorDeal, ProducerDeal, BelowTheLineCosts, CrewCosts, EquipmentRental, LocationCosts, PostProductionCosts, VFXCosts, ProductionActuals
+- com.chiroerp.media.projectaccounting.application.* # Commands, queries, services
+- com.chiroerp.media.projectaccounting.infrastructure.* # JPA, Kafka, REST, Finance CO integration
 
 
 DATABASE STRUCTURE
