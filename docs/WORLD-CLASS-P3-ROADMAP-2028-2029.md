@@ -14,19 +14,19 @@ This document outlines the **Phase 3 (P3) roadmap** for ChiroERP's evolution fro
 
 ### Current State (February 2026)
 - **Rating**: 8.7/10 (actual) → 9.0/10 target by Q4 2027
-- **Investment Completed**: $8.99M-$13.00M (11 ADRs Production-Ready)
-- **Investment In Progress**: $3.68M-$5.03M (4 ADRs: ADR-039 QMS, ADR-042 FSM, ADR-050 Public Sector, ADR-051 Insurance)
-- **Total Through P2**: $12.67M-$18.03M
+- **Investment Completed**: $13.67M-$19.28M (15 ADRs Production-Ready)
+- **Investment In Progress**: $0 (P2 ADRs production-ready; execution starts Q2-Q3 2027)
+- **Total Through P2**: $13.67M-$19.28M
 
 ### P3 Objectives
 - **Rating Target**: 9.5/10 by 2029 (industry-leading)
 - **Investment**: $3.3M-$4.9M (4-6 ADRs)
 - **Timeframe**: 2028-2029 (24 months)
 - **Focus Areas**:
-  1. **AI/ML Enterprise Deployment** (ADR-056 expansion)
-  2. **Global Trade & Customs** (new vertical)
-  3. **Utilities Industry** (new vertical)
-  4. **Oil & Gas Industry** (new vertical)
+  1. **AI/ML Enterprise Deployment** (ADR-070)
+  2. **Global Trade & Customs** (ADR-071)
+  3. **Utilities Industry** (ADR-072)
+  4. **Oil & Gas Industry** (ADR-073)
   5. **Real Estate Management** (optional)
   6. **Media & Entertainment** (optional)
 

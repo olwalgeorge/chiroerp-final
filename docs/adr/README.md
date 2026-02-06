@@ -47,10 +47,10 @@ This directory contains Architecture Decision Records documenting significant ar
 | [ADR-036](ADR-036-project-accounting.md) | Project Accounting (PS) | Draft (Not Implemented) | 2026-02-02 | Low | Add-on |
 | [ADR-037](ADR-037-manufacturing-production.md) | Manufacturing & Production (PP) | Accepted (Planned - Blueprint Defined) | 2026-02-01 | Medium | Add-on |
 | [ADR-038](ADR-038-warehouse-execution-wms.md) | Warehouse Execution System (WES/WMS) | Draft (Not Implemented) | 2026-02-01 | Medium | Add-on |
-| [ADR-039](ADR-039-quality-management.md) | Quality Management (QM) | Draft (Not Implemented) | 2026-02-02 | Low | Add-on |
+| [ADR-039](ADR-039-quality-management.md) | Quality Management (QM) | Accepted (Production-Ready; Implementation Starting Q2 2027) | 2026-02-05 | Low | Add-on |
 | [ADR-040](ADR-040-plant-maintenance.md) | Plant Maintenance (PM) | Draft (Not Implemented) | 2026-02-02 | Low | Add-on |
 | [ADR-041](ADR-041-marketplace-domain.md) | Marketplace Domain | Draft (Not Implemented) | 2026-02-01 | Medium | Add-on |
-| [ADR-042](ADR-042-field-service-operations.md) | Field Service Operations | Draft (Not Implemented) | 2026-02-01 | Medium | Add-on |
+| [ADR-042](ADR-042-field-service-operations.md) | Field Service Operations | Accepted (Production-Ready; Implementation Starting Q2 2027) | 2026-02-05 | Medium | Add-on |
 | [ADR-043](ADR-043-crm-customer-management.md) | CRM & Customer Management | Accepted (Planned - Blueprint Defined) | 2026-02-01 | Medium | Add-on |
 | [ADR-044](ADR-044-configuration-rules-framework.md) | Configuration & Rules Framework | Draft (Not Implemented) | 2026-02-03 | Critical | Core |
 | [ADR-045](ADR-045-enterprise-organizational-model.md) | Enterprise Organizational Model | Draft (Not Implemented) | 2026-02-03 | Critical | Core |
@@ -58,8 +58,8 @@ This directory contains Architecture Decision Records documenting significant ar
 | [ADR-047](ADR-047-localization-regulatory-framework.md) | Localization & Regulatory Framework | Draft (Not Implemented) | 2026-02-03 | High | Core |
 | [ADR-048](ADR-048-frontend-architecture.md) | Frontend Architecture | Draft (Not Implemented) | 2026-02-03 | High | Core |
 | [ADR-049](ADR-049-extensibility-model-enhancement.md) | Extensibility Model Enhancement | Draft (Not Implemented) | 2026-02-03 | High | Core |
-| [ADR-050](ADR-050-public-sector-government.md) | Public Sector & Government Accounting | Draft (Not Implemented) | 2026-02-03 | Low | Add-on |
-| [ADR-051](ADR-051-insurance-policy-claims.md) | Insurance Policy & Claims Management | Draft (Not Implemented) | 2026-02-03 | Low | Add-on |
+| [ADR-050](ADR-050-public-sector-government.md) | Public Sector & Government Accounting | Accepted (Production-Ready; Implementation Starting Q2 2027) | 2026-02-06 | Low | Add-on |
+| [ADR-051](ADR-051-insurance-policy-claims.md) | Insurance Policy & Claims Management | Accepted (Production-Ready; Implementation Starting Q3 2027) | 2026-02-06 | Low | Add-on |
 | [ADR-052](ADR-052-contingent-workforce-professional-services.md) | Contingent Workforce & Professional Services Management | Draft (Not Implemented) | 2026-02-03 | Medium | Add-on |
 | [ADR-053](ADR-053-fleet-management.md) | Fleet Management | Accepted (Planned - Blueprint Defined) | 2026-02-03 | Low | Add-on |
 | [ADR-054](ADR-054-travel-expense-management.md) | Travel & Expense Management (T&E) | Draft (Not Implemented) | 2026-02-03 | High | Advanced |

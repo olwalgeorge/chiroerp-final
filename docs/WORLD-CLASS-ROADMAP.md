@@ -23,8 +23,8 @@ This document outlines the phased approach to addressing all identified gaps in 
 |-------|-------------------|-------------------|--------|---------------|
 | **P0 Foundation** | $1.68M-$2.27M | $1.68M-$2.27M | ✅ **100% Complete** | All 5 ADRs done |
 | **P1 Global** | $3.51M-$5.63M | $3.51M-$5.63M | ✅ **80% Complete** | +ADR-062 Tax Engine |
-| **P2 Enhancement** | $2.82M-$3.83M | $3.80M-$5.10M | 🚧 **50% Complete** | +Healthcare, +APS |
-| **Total** | $8.01M-$11.73M | **$8.99M-$13.00M** | **11 ADRs Created** | **+25% value** |
+| **P2 Enhancement** | $2.82M-$3.83M | $8.48M-$11.38M | ✅ **100% Complete** | +Healthcare, +APS, +QMS, +FSM, +Public Sector, +Insurance |
+| **Total** | $8.01M-$11.73M | **$13.67M-$19.28M** | **15 ADRs Created** | **+25% value** |
 
 **Strategic Enhancements Made**:
 - ✅ **ADR-062: Multi-Country Tax Engine** *(Not in original plan)* - Unlocks 50+ countries immediately
@@ -38,9 +38,9 @@ This document outlines the phased approach to addressing all identified gaps in 
 - **APS capability** closes gap with SAP IBP, Oracle Demantra for complex manufacturers
 
 **Next Steps**:
-1. Upgrade **ADR-039 (QMS)** and **ADR-042 (FSM)** from Draft → Production-Ready
-2. Complete **ADR-050 (Public Sector)** and **ADR-051 (Insurance)** per original plan
-3. Execute on **P3 Advanced Capabilities** (2028+)
+1. Begin implementation planning for **ADR-039/042** (Q2 2027 start) and **ADR-050/051** (Q3 2027 start)
+2. Execute on **P3 Advanced Capabilities** starting Q1 2028 (ADR-070/071/072/073)
+3. Validate optional P3 demand for **ADR-074/075** by Q4 2028
 
 **Current Rating**: **8.2 → 8.7/10** (improved by +0.5 with completed ADRs)
 
@@ -170,26 +170,18 @@ This document outlines the phased approach to addressing all identified gaps in 
 #### Planned Enhancements
 
 **2028 Roadmap**
-- [ ] Advanced Planning & Optimization (ADR-066)
-  - Demand planning with ML
-  - Supply network planning
-  - Finite capacity scheduling
-  - Global ATP
-- [ ] Global Trade & Customs (ADR-067)
-  - Import/export compliance
-  - Customs management
-  - Preferential trade (FTA rules)
-- [ ] Healthcare/Pharma full suite
-  - GxP compliance (FDA 21 CFR Part 11)
-  - Clinical trials management
-  - Serialization (track & trace)
+- [ ] AI Demand Forecasting (ADR-070)
+  - Enterprise-wide forecasting (inventory, sales, finance, HR, procurement)
+  - AutoML + explainability
+- [ ] Global Trade & Customs (ADR-071)
+  - Import/export compliance, HS codes, FTA, sanctions screening
+- [ ] Utilities Industry Solution (ADR-072)
+  - Meter-to-cash, asset/work management, regulatory reporting
 
 **2029+ Strategic Evaluation**
-- [ ] Utilities industry solution (ADR-068)
-- [ ] Oil & Gas industry solution (ADR-069)
-- [ ] Real Estate management
-- [ ] Media & Entertainment
-- [ ] Banking/Financial Services
+- [ ] Oil & Gas Industry Solution (ADR-073)
+- [ ] Real Estate Management (ADR-074, optional)
+- [ ] Media & Entertainment (ADR-075, optional)
 
 **Outcome**: Rating 9.5/10, comprehensive ERP platform
 

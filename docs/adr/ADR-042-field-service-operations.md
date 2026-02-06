@@ -1,8 +1,8 @@
 # ADR-042: Field Service Management (FSM)
 
-**Status**: Accepted (Implementation Starting Q2 2027)
+**Status**: Accepted (Production-Ready; Implementation Starting Q2 2027)
 **Date**: 2026-02-05
-**Updated**: 2026-02-06 - Promoted to Accepted with world-class enhancements
+**Updated**: 2026-02-06 - Promoted to Production-Ready with world-class enhancements
 **Deciders**: Architecture Team, Operations Team, Service Team
 **Priority**: P2 (Enhancement - Service Operations)
 **Tier**: Add-on
