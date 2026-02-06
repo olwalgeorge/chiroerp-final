@@ -1824,7 +1824,7 @@ chiroerp/
     │   │       │   │                       │       ├── TransferRepository.kt
     │   │       │   │                       │       ├── GeneralLedgerPort.kt           # GL integration
     │   │       │   │                       │       ├── PurchasingPort.kt              # PO/Invoice link
-    │   │       │   │                       │       ├── InsurancePort.kt               # Insurance integration
+    │   │       │   │                       │       ├── InsuranceProviderPort.kt       # Insurance provider integration (ADR-051)
     │   │       │   │                       │       ├── AssetRegisterReadRepository.kt # Read model
     │   │       │   │                       │       └── EventPublisherPort.kt
     │   │       │   │                       └── service/
@@ -7941,6 +7941,8 @@ chiroerp/
 │   │           └── FleetMaintenanceApplication.kt
 │   │
 │   ├── fleet-compliance/                             # Compliance Management (Port 9766)
+│   │                                                   # Fleet insurance = client-side policy tracking
+│   │                                                   # Insurance providers live in industry-addons/insurance (ADR-051)
 │   │   ├── compliance-domain/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/compliance/domain/
@@ -7948,9 +7950,9 @@ chiroerp/
 │   │   │       │   ├── VehicleRegistration.kt        # Registration aggregate
 │   │   │       │   ├── RegistrationState.kt          # State-specific registration
 │   │   │       │   ├── IRPRegistration.kt            # Interstate registration
-│   │   │       │   ├── InsurancePolicy.kt            # Insurance aggregate
-│   │   │       │   ├── InsuranceCoverage.kt          # Coverage types
-│   │   │       │   ├── InsuranceClaim.kt             # Claims tracking
+│   │   │       │   ├── FleetInsurancePolicy.kt       # Client policy tracking
+│   │   │       │   ├── FleetInsuranceCoverage.kt     # Coverage types
+│   │   │       │   ├── FleetInsuranceClaim.kt        # Claims tracking
 │   │   │       │   ├── DOTCompliance.kt              # DOT compliance aggregate
 │   │   │       │   ├── FMCSACarrier.kt               # Carrier info
 │   │   │       │   ├── HoursOfService.kt             # HOS tracking
@@ -7958,24 +7960,24 @@ chiroerp/
 │   │   │       │   ├── DriverQualificationFile.kt    # DQ file
 │   │   │       │   ├── DrugAlcoholTest.kt            # Testing records
 │   │   │       │   ├── EnvironmentalCompliance.kt    # Emissions, CARB
-│   │   │       │   └── COIGeneration.kt              # Certificate of Insurance
+│   │   │       │   └── FleetCOIGeneration.kt         # Certificate of Insurance
 │   │   │       ├── event/
 │   │   │       │   ├── RegistrationExpiringSoonEvent.kt
 │   │   │       │   ├── RegistrationRenewedEvent.kt
-│   │   │       │   ├── InsuranceExpiringSoonEvent.kt
-│   │   │       │   ├── InsuranceClaimFiledEvent.kt
+│   │   │       │   ├── FleetInsuranceExpiringSoonEvent.kt
+│   │   │       │   ├── FleetInsuranceClaimFiledEvent.kt
 │   │   │       │   ├── DOTViolationRecordedEvent.kt
 │   │   │       │   ├── HOSViolationDetectedEvent.kt
 │   │   │       │   ├── DQFileUpdatedEvent.kt
 │   │   │       │   └── EmissionsTestDueEvent.kt
 │   │   │       ├── exception/
 │   │   │       │   ├── RegistrationExpiredException.kt
-│   │   │       │   ├── InsuranceLapsedException.kt
+│   │   │       │   ├── FleetInsuranceLapsedException.kt
 │   │   │       │   ├── DOTComplianceViolationException.kt
 │   │   │       │   └── HOSViolationException.kt
 │   │   │       └── service/
 │   │   │           ├── RegistrationTrackingService.kt
-│   │   │           ├── InsuranceManagementService.kt
+│   │   │           ├── FleetInsuranceManagementService.kt
 │   │   │           ├── DOTComplianceService.kt
 │   │   │           ├── HOSMonitoringService.kt
 │   │   │           ├── DQFileManagementService.kt
@@ -7985,8 +7987,8 @@ chiroerp/
 │   │   │   └── src/main/kotlin/com/chiroerp/fleet/compliance/application/
 │   │   │       ├── command/
 │   │   │       │   ├── RenewRegistrationCommand.kt
-│   │   │       │   ├── UpdateInsurancePolicyCommand.kt
-│   │   │       │   ├── FileInsuranceClaimCommand.kt
+│   │   │       │   ├── UpdateFleetInsurancePolicyCommand.kt
+│   │   │       │   ├── FileFleetInsuranceClaimCommand.kt
 │   │   │       │   ├── RecordHOSEntryCommand.kt
 │   │   │       │   ├── UpdateDQFileCommand.kt
 │   │   │       │   ├── RecordDrugTestCommand.kt
@@ -7994,8 +7996,8 @@ chiroerp/
 │   │   │       ├── query/
 │   │   │       │   ├── GetRegistrationStatusQuery.kt
 │   │   │       │   ├── GetExpiringRegistrationsQuery.kt
-│   │   │       │   ├── GetInsuranceCoverageQuery.kt
-│   │   │       │   ├── GetOpenClaimsQuery.kt
+│   │   │       │   ├── GetFleetInsuranceCoverageQuery.kt
+│   │   │       │   ├── GetFleetInsuranceClaimsQuery.kt
 │   │   │       │   ├── GetDOTComplianceStatusQuery.kt
 │   │   │       │   ├── GetHOSReportQuery.kt
 │   │   │       │   └── GetDQFileStatusQuery.kt
@@ -8006,11 +8008,11 @@ chiroerp/
 │   │   │       └── port/
 │   │   │           ├── input/
 │   │   │           │   ├── RegistrationUseCase.kt
-│   │   │           │   ├── InsuranceUseCase.kt
+│   │   │           │   ├── FleetInsuranceUseCase.kt
 │   │   │           │   └── DOTComplianceUseCase.kt
 │   │   │           └── output/
 │   │   │               ├── RegistrationRepositoryPort.kt
-│   │   │               ├── InsuranceRepositoryPort.kt
+│   │   │               ├── FleetInsuranceRepositoryPort.kt
 │   │   │               ├── DOTComplianceRepositoryPort.kt
 │   │   │               ├── ELDIntegrationPort.kt
 │   │   │               └── ComplianceEventPublisherPort.kt
@@ -8021,14 +8023,14 @@ chiroerp/
 │   │           │   ├── input/
 │   │           │   │   ├── rest/
 │   │           │   │   │   ├── RegistrationResource.kt
-│   │           │   │   │   ├── InsuranceResource.kt
+│   │           │   │   │   ├── FleetInsuranceResource.kt
 │   │           │   │   │   └── DOTComplianceResource.kt
 │   │           │   │   └── messaging/
 │   │           │   │       └── KafkaEventConsumer.kt
 │   │           │   └── output/
 │   │           │       ├── persistence/
 │   │           │       │   ├── RegistrationJpaRepository.kt
-│   │           │       │   ├── InsuranceJpaRepository.kt
+│   │           │       │   ├── FleetInsuranceJpaRepository.kt
 │   │           │       │   └── DOTComplianceJpaRepository.kt
 │   │           │       ├── eld-providers/
 │   │           │       │   └── ELDIntegrationAdapter.kt
@@ -10004,7 +10006,7 @@ chiroerp/
 │   │           └── src/main/kotlin/com/chiroerp/publicsector/appropriations/infrastructure/
 │   │               └── AppropriationsApplication.kt
 │   │
-│   ├── insurance/                                  # ADR-051
+│   ├── insurance/                                  # ADR-051 - Insurance provider operations (carrier-side)
 │   │   ├── insurance-shared/
 │   │   │   ├── build.gradle.kts
 │   │   │   └── src/main/kotlin/com/chiroerp/insurance/shared/
@@ -12363,7 +12365,7 @@ Public Sector (ADR-050):
 - com.chiroerp.publicsector.appropriations.application.* # Commands, queries, services
 - com.chiroerp.publicsector.appropriations.infrastructure.* # JPA, Kafka, REST
 
-Insurance (ADR-051):
+Insurance Providers (ADR-051):
 - com.chiroerp.insurance.shared.*                    # PolicyId, ClaimId, UnderwritingCaseId, ReinsuranceTreatyId
 - com.chiroerp.insurance.policy.domain.*             # Policy, Coverage, Premium, Endorsement, Renewal, Cancellation
 - com.chiroerp.insurance.policy.application.*        # Commands, queries, services

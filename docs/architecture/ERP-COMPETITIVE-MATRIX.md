@@ -3,6 +3,10 @@
 **Date**: February 6, 2026  
 **Purpose**: Visual representation of ChiroERP vs World-Class ERPs
 
+**Audit Note**: This matrix distinguishes between architectural blueprint coverage (per `COMPLETE_STRUCTURE.txt`)
+and verified production readiness/certifications. Items labeled *Blueprinted* exist in design but are not assumed
+production-ready.
+
 ---
 
 ## Overall Scorecard
@@ -12,7 +16,7 @@
 │ ChiroERP vs World-Class ERP Systems                             │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
-│  OVERALL GRADE: 8.2/10 ⭐⭐⭐⭐                                  │
+│  OVERALL GRADE: 8.2/10 (implementation) ⭐⭐⭐⭐                │
 │                                                                 │
 │  Status: ENTERPRISE-READY WITH STRATEGIC GAPS                   │
 │                                                                 │
@@ -145,12 +149,14 @@ AVERAGE                       5.5/10      9.3/10      8.0/10      8.3/10
 │ 2. SUPPLY CHAIN (8.5/10)                                    │
 │    • Procurement, Inventory, Sales, Manufacturing           │
 │    • Full WMS, Quality, Maintenance                         │
-│    • Missing: SAP APO-level advanced planning               │
+│    • Gap vs SAP APO-level planning in production            │
+│    • Blueprinted: APS (ADR-067)                             │
 │                                                             │
 │ 3. MANUFACTURING (9.0/10)                                   │
 │    • Discrete + Process (ADR-037)                           │
 │    • MRP, BOM, Shop Floor, Costing                          │
-│    • Missing: Finite capacity scheduling (PP/DS)            │
+│    • Blueprinted: Finite capacity scheduling in design      │
+│    • Production maturity TBD                                │
 │                                                             │
 │ 4. MDM (8.0/10)                                             │
 │    • Golden record, data quality, stewardship               │
@@ -171,36 +177,36 @@ AVERAGE                       5.5/10      9.3/10      8.0/10      8.3/10
 │    • SOC 2 Type II (blocking enterprise sales)              │
 │    • ISO 27001 (required for EU/global)                     │
 │    • HIPAA (for healthcare)                                 │
+│    • Frameworks blueprint exists; certifications pending    │
 │    Timeline: Q2-Q4 2026 (SOC 2), Q3 2026-Q1 2027 (ISO)     │
 │                                                             │
 │ 2. LOCALIZATION (7.0/10) - IMPORTANT                        │
-│    Strong: East Africa (Kenya, Uganda, Tanzania)            │
-│    Planned: Southern Africa, West Africa, US, UK, EU        │
-│    Missing: LATAM (Brazil), Asia (China, Japan)             │
+│    Blueprinted: East Africa + global country packs          │
+│    Production/local certifications pending                  │
+│    Missing: China (not yet in blueprint)                    │
 │    Timeline: 15+ countries by end of 2027                   │
 │                                                             │
 │ 3. INDUSTRY SOLUTIONS (6.0/10) - STRATEGIC                 │
-│    Strong: Manufacturing, Retail, Distribution              │
-│    Planned: Public Sector (ADR-050), Insurance (ADR-051)    │
-│    Missing: Oil & Gas, Utilities, Telecom, Banking          │
+│    Blueprinted: Public Sector (ADR-050)                     │
+│    Blueprinted: Insurance (ADR-051)                         │
+│    Blueprinted: Healthcare (ADR-066)                        │
+│    Blueprinted: Utilities (ADR-072), Oil & Gas (ADR-073)    │
+│    Missing: Telecom, Banking                                │
 │    Strategy: Focus on 5-6 industries, not 27 like SAP       │
 │                                                             │
 │ 4. OPERATIONAL TOOLING (6.5/10) - IMPORTANT                │
-│    Missing:                                                 │
-│    • Upgrade management (zero-downtime)                     │
-│    • Data migration wizards                                 │
-│    • Config transport system (dev → test → prod)            │
+│    Blueprinted: platform-operations (ADR-060/061/063)       │
+│    Production hardening pending                             │
 │    Timeline: Q3-Q4 2026                                     │
 │                                                             │
 │ 5. GLOBAL TRADE (5.0/10) - NICHE                           │
-│    Missing:                                                 │
-│    • Import/export compliance                               │
-│    • Customs management                                     │
-│    • Preferential trade (FTA rules)                         │
+│    Blueprinted: procurement-global-trade (ADR-071)          │
+│    Partner integrations likely required                     │
 │    Strategy: Integrate with GTM specialists (Descartes)     │
 │                                                             │
 │ 6. HCM CORE (6.0/10) - STRATEGIC CHOICE                    │
-│    Missing: Core HR, Payroll, Recruiting, Learning          │
+│    Blueprinted: core HR domain + payroll integration        │
+│    Missing: full payroll, recruiting, learning              │
 │    Strategy: INTEGRATE with Workday, ADP, BambooHR          │
 │    Focus: VMS, T&E, Workforce Scheduling (differentiators)  │
 └─────────────────────────────────────────────────────────────┘
@@ -327,24 +333,24 @@ End of 2027 (Target)
 
 ---
 
-## Strategic Partnerships (Don't Build)
+## Strategic Partnerships (Complement / Accelerate)
 
 ```
-INTEGRATE, DON'T BUILD:
+INTEGRATE OR ACCELERATE:
 
-Core HR & Payroll
+Core HR & Payroll (full-suite)
 └─ Workday, ADP, BambooHR, Gusto
 
 Marketing Automation
 └─ HubSpot, Marketo, Pardot
 
-Global Trade Management
+Global Trade Management (filings/screening at scale)
 └─ Descartes, Amber Road, Thomson Reuters
 
-Advanced Planning (APO)
-└─ o9 Solutions, Kinaxis, Blue Yonder
+Advanced Planning (Tier-1 APS)
+└─ o9 Solutions, Kinaxis, Blue Yonder (optional)
 
-Tax Compliance
+Tax Compliance (real-time rates/filing)
 └─ Avalara, Vertex, Sovos
 
 Business Intelligence
@@ -408,10 +414,10 @@ Payment Processing
 ║   • Superior TCO (9.5/10)                                   ║
 ║                                                             ║
 ║   Gaps (Addressable):                                       ║
-║   • Compliance certifications (SOC 2, ISO 27001)            ║
-║   • Global localization (15+ countries needed)              ║
-║   • Operational maturity (upgrade, migration tools)         ║
-║   • Industry add-ons (public sector, insurance, healthcare) ║
+║   • Compliance certifications (audits pending)              ║
+║   • Global localization (country packs blueprint)           ║
+║   • Operational maturity (platform-operations hardening)    ║
+║   • Industry add-ons (PS/insurance/healthcare hardening)    ║
 ║                                                             ║
 ║   Recommendation:                                           ║
 ║   Execute 18-month roadmap → World-class status by 2027     ║
