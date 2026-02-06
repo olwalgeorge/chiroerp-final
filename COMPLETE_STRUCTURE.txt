@@ -2,7 +2,7 @@ ChiroERP - Complete Platform-Shared, Finance, and Inventory Structure
 ===============================================================
 Based on ADRs and improved.txt specifications
 Generated: February 5, 2026
-Updated: February 6, 2026 - ADR-006 Governance Compliance
+Updated: February 6, 2026 - World-Class Roadmap Structural Alignment (Upgrade-First, P0-P2)
 
 GOVERNANCE NOTES (ADR-006)
 ==========================
@@ -125,6 +125,32 @@ chiroerp/
 │   │       │   │                   │   ├── Permission.kt
 │   │       │   │                   │   ├── Role.kt
 │   │       │   │                   │   └── AccessDeniedException.kt
+│   │       │   │                   ├── compliance/                    # ADR-058/059/064 (upgrade to common-security)
+│   │       │   │                   │   ├── soc2/
+│   │       │   │                   │   │   ├── Soc2Control.kt
+│   │       │   │                   │   │   ├── Soc2ControlId.kt
+│   │       │   │                   │   │   ├── Soc2ControlStatus.kt
+│   │       │   │                   │   │   ├── Soc2Evidence.kt
+│   │       │   │                   │   │   ├── Soc2TestProcedure.kt
+│   │       │   │                   │   │   └── Soc2RiskAssessment.kt
+│   │       │   │                   │   ├── iso27001/
+│   │       │   │                   │   │   ├── Iso27001Control.kt
+│   │       │   │                   │   │   ├── Iso27001Annex.kt
+│   │       │   │                   │   │   ├── StatementOfApplicability.kt
+│   │       │   │                   │   │   ├── IsmsPolicy.kt
+│   │       │   │                   │   │   ├── RiskRegister.kt
+│   │       │   │                   │   │   ├── RiskTreatmentPlan.kt
+│   │       │   │                   │   │   ├── AssetInventory.kt
+│   │       │   │                   │   │   └── InternalAudit.kt
+│   │       │   │                   │   └── gdpr/
+│   │       │   │                   │       ├── DataSubjectRight.kt
+│   │       │   │                   │       ├── ConsentRecord.kt
+│   │       │   │                   │       ├── LawfulBasis.kt
+│   │       │   │                   │       ├── ProcessingActivity.kt
+│   │       │   │                   │       ├── DataRetentionPolicy.kt
+│   │       │   │                   │       ├── BreachNotification.kt
+│   │       │   │                   │       ├── DataExportRequest.kt
+│   │       │   │                   │       └── DataDeletionRequest.kt
 │   │       │   │                   ├── context/
 │   │       │   │                   │   ├── SecurityContext.kt
 │   │       │   │                   │   ├── SecurityContextHolder.kt
@@ -147,7 +173,12 @@ chiroerp/
 │   │           │                   ├── AuthorizationTest.kt
 │   │           │                   ├── PermissionCheckerTest.kt
 │   │           │                   ├── SodValidatorTest.kt
-│   │           │                   └── SecurityContextTest.kt
+│   │           │                   ├── SecurityContextTest.kt
+│   │           │                   └── compliance/
+│   │           │                       ├── Soc2ControlTest.kt
+│   │           │                       ├── Iso27001ControlTest.kt
+│   │           │                       ├── StatementOfApplicabilityTest.kt
+│   │           │                       └── GdprConsentTest.kt
 │   │           └── resources/
 │   │
 │   ├── common-observability/
@@ -237,11 +268,51 @@ chiroerp/
 │   │       │   │                   │   ├── CustomFieldValidation.kt
 │   │       │   │                   │   ├── CustomizationRule.kt
 │   │       │   │                   │   └── ExtensionPoint.kt
+│   │       │   │                   ├── localization/                   # ADR-062/065 (upgrade to config-model)
+│   │       │   │                   │   ├── CountryProfile.kt
+│   │       │   │                   │   ├── CountryCode.kt
+│   │       │   │                   │   ├── LocalizationRequirement.kt
+│   │       │   │                   │   ├── TaxRegime.kt
+│   │       │   │                   │   ├── EInvoicingProfile.kt
+│   │       │   │                   │   ├── StatutoryReport.kt
+│   │       │   │                   │   ├── CalendarProfile.kt
+│   │       │   │                   │   ├── LocaleSettings.kt
+│   │       │   │                   │   ├── LocalizationResolver.kt
+│   │       │   │                   │   └── CountryRuleEngine.kt
 │   │       │   │                   └── source/
 │   │       │   │                       ├── ConfigurationSource.kt
 │   │       │   │                       ├── ConfigurationLoader.kt
 │   │       │   │                       └── ConfigurationRefresher.kt
 │   │       │   └── resources/
+│   │       │       └── localization/
+│   │       │           └── country-packs/
+│   │       │               ├── africa/
+│   │       │               │   ├── kenya/
+│   │       │               │   ├── uganda/
+│   │       │               │   ├── south-africa/
+│   │       │               │   ├── nigeria/
+│   │       │               │   └── ghana/
+│   │       │               ├── north-america/
+│   │       │               │   ├── united-states/
+│   │       │               │   ├── canada/
+│   │       │               │   └── mexico/
+│   │       │               ├── europe/
+│   │       │               │   ├── united-kingdom/
+│   │       │               │   ├── germany/
+│   │       │               │   ├── france/
+│   │       │               │   ├── netherlands/
+│   │       │               │   ├── spain/
+│   │       │               │   └── italy/
+│   │       │               ├── asia-pacific/
+│   │       │               │   ├── india/
+│   │       │               │   ├── australia/
+│   │       │               │   ├── japan/
+│   │       │               │   └── singapore/
+│   │       │               ├── middle-east/
+│   │       │               │   ├── united-arab-emirates/
+│   │       │               │   └── saudi-arabia/
+│   │       │               └── latin-america/
+│   │       │                   └── brazil/
 │   │       └── test/
 │   │           ├── kotlin/
 │   │           │   └── com/
@@ -252,7 +323,9 @@ chiroerp/
 │   │           │                   ├── TenantConfigurationTest.kt
 │   │           │                   ├── ModuleConfigurationTest.kt
 │   │           │                   ├── CustomFieldTest.kt
-│   │           │                   └── ConfigurationLoaderTest.kt
+│   │           │                   ├── ConfigurationLoaderTest.kt
+│   │           │                   ├── CountryProfileTest.kt
+│   │           │                   └── LocalizationResolverTest.kt
 │   │           └── resources/
 │   │
 │   ├── org-model/
@@ -380,6 +453,126 @@ chiroerp/
 │               │                   ├── SagaDefinitionTest.kt
 │               │                   └── SagaCoordinatorTest.kt
 │               └── resources/
+│
+├── platform-operations/                          # Platform Operations (ADR-060/061/063)
+│   │
+│   ├── upgrade-management/                       # ADR-060
+│   │   ├── upgrade-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/platform/operations/upgrade/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── UpgradePlan.kt
+│   │   │       │   ├── UpgradeStep.kt
+│   │   │       │   ├── UpgradeWindow.kt
+│   │   │       │   ├── RollbackPlan.kt
+│   │   │       │   ├── UpgradeStatus.kt
+│   │   │       │   └── CompatibilityMatrix.kt
+│   │   │       └── event/
+│   │   │           ├── UpgradePlannedEvent.kt
+│   │   │           ├── UpgradeStartedEvent.kt
+│   │   │           ├── UpgradeCompletedEvent.kt
+│   │   │           └── RollbackTriggeredEvent.kt
+│   │   ├── upgrade-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/platform/operations/upgrade/application/
+│   │   │       ├── command/
+│   │   │       │   ├── PlanUpgradeCommand.kt
+│   │   │       │   ├── StartUpgradeCommand.kt
+│   │   │       │   ├── CompleteUpgradeCommand.kt
+│   │   │       │   └── TriggerRollbackCommand.kt
+│   │   │       └── query/
+│   │   │           ├── GetUpgradePlanQuery.kt
+│   │   │           ├── GetUpgradeStatusQuery.kt
+│   │   │           └── GetCompatibilityMatrixQuery.kt
+│   │   └── upgrade-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/platform/operations/upgrade/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       └── UpgradeManagementResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── UpgradePlanJpaRepository.kt
+│   │           │       └── messaging/
+│   │           │           └── KafkaEventPublisher.kt
+│   │           └── UpgradeManagementApplication.kt
+│   │
+│   ├── data-migration/                            # ADR-061
+│   │   ├── migration-domain/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/platform/operations/migration/domain/
+│   │   │       ├── model/
+│   │   │       │   ├── MigrationProject.kt
+│   │   │       │   ├── SourceSystem.kt
+│   │   │       │   ├── TargetSystem.kt
+│   │   │       │   ├── MigrationMapping.kt
+│   │   │       │   ├── DataTransformation.kt
+│   │   │       │   ├── ValidationRule.kt
+│   │   │       │   ├── MigrationBatch.kt
+│   │   │       │   └── ReconciliationResult.kt
+│   │   │       └── service/
+│   │   │           ├── MigrationPlanner.kt
+│   │   │           └── DataValidationService.kt
+│   │   ├── migration-application/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/platform/operations/migration/application/
+│   │   │       ├── command/
+│   │   │       │   ├── CreateMigrationProjectCommand.kt
+│   │   │       │   ├── ImportSourceDataCommand.kt
+│   │   │       │   └── RunValidationCommand.kt
+│   │   │       └── query/
+│   │   │           ├── GetMigrationProjectQuery.kt
+│   │   │           └── GetValidationResultsQuery.kt
+│   │   └── migration-infrastructure/
+│   │       ├── build.gradle.kts
+│   │       └── src/main/kotlin/com/chiroerp/platform/operations/migration/infrastructure/
+│   │           ├── adapter/
+│   │           │   ├── input/
+│   │           │   │   └── rest/
+│   │           │   │       └── DataMigrationResource.kt
+│   │           │   └── output/
+│   │           │       ├── persistence/
+│   │           │       │   └── MigrationProjectJpaRepository.kt
+│   │           │       └── etl/
+│   │           │           └── EtlPipelineAdapter.kt
+│   │           └── DataMigrationApplication.kt
+│   │
+│   └── config-transport/                          # ADR-063
+│       ├── transport-domain/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/platform/operations/transport/domain/
+│       │       ├── model/
+│       │       │   ├── TransportPackage.kt
+│       │       │   ├── TransportRequest.kt
+│       │       │   ├── ChangeSet.kt
+│       │       │   ├── Environment.kt
+│       │       │   ├── ApprovalGate.kt
+│       │       │   └── TransportStatus.kt
+│       │       └── service/
+│       │           ├── TransportPlanner.kt
+│       │           └── ConflictDetectionService.kt
+│       ├── transport-application/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/platform/operations/transport/application/
+│       │       ├── command/
+│       │       │   ├── CreateTransportPackageCommand.kt
+│       │       │   ├── PromoteToEnvironmentCommand.kt
+│       │       │   └── ApproveTransportCommand.kt
+│       │       └── query/
+│       │           ├── GetTransportPackageQuery.kt
+│       │           └── GetTransportStatusQuery.kt
+│       └── transport-infrastructure/
+│           ├── build.gradle.kts
+│           └── src/main/kotlin/com/chiroerp/platform/operations/transport/infrastructure/
+│               ├── adapter/
+│               │   ├── input/
+│               │   │   └── rest/
+│               │   │       └── ConfigTransportResource.kt
+│               │   └── output/
+│               │       └── persistence/
+│               │           └── TransportPackageJpaRepository.kt
+│               └── ConfigTransportApplication.kt
 │
 ├── ai-platform/                                 # AI/ML Platform (ADR-070) - Separate from platform-shared
 │   │                                            # NOTE: Moved out of platform-shared per ADR-006 governance
@@ -824,8 +1017,6 @@ chiroerp/
     │   │       │   │               └── gl/
     │   │       │   │                   └── domain/
     │   │       │   │                       ├── model/
-    │   │       │   │                       │   ├── ledger/
-    │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root
     │   │       │   │                       │   ├── ledger/
     │   │       │   │                       │   │   ├── GeneralLedger.kt          # Aggregate Root (uses shared LedgerId)
     │   │       │   │                       │   │   ├── LedgerType.kt             # Primary, Secondary, Statistical
@@ -1489,7 +1680,7 @@ chiroerp/
     │           │           └── migration/
     │           │               ├── V1__create_ap_schema.sql
     │           │
-                   ├── V2__create_vendor_tables.sql
+    │           │               ├── V2__create_vendor_tables.sql
     │           │               ├── V3__create_bill_tables.sql
     │           │               ├── V4__create_payment_run_tables.sql
     │           │               └── V5__create_event_outbox_table.sql
@@ -9690,6 +9881,359 @@ chiroerp/
 
 ================
 
+├── industry-addons/                               # P1/P2 Industry Add-ons (ADR-050/051/066)
+│   │
+│   ├── public-sector/                             # ADR-050
+│   │   ├── public-sector-shared/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/publicsector/shared/
+│   │   │       ├── FundId.kt
+│   │   │       ├── GrantId.kt
+│   │   │       ├── AppropriationId.kt
+│   │   │       ├── EncumbranceId.kt
+│   │   │       ├── AgencyId.kt
+│   │   │       └── FiscalYear.kt
+│   │   ├── public-sector-fund-accounting/
+│   │   │   ├── fund-accounting-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/fund/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Fund.kt
+│   │   │   │       │   ├── FundType.kt
+│   │   │   │       │   ├── FundBalance.kt
+│   │   │   │       │   ├── BudgetAuthority.kt
+│   │   │   │       │   ├── Expenditure.kt
+│   │   │   │       │   └── Revenue.kt
+│   │   │   │       └── event/
+│   │   │   │           ├── FundCreatedEvent.kt
+│   │   │   │           └── BudgetPostedEvent.kt
+│   │   │   ├── fund-accounting-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/fund/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateFundCommand.kt
+│   │   │   │       │   └── PostBudgetCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           ├── GetFundQuery.kt
+│   │   │   │           └── GetFundBalanceQuery.kt
+│   │   │   └── fund-accounting-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/publicsector/fund/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   ├── input/
+│   │   │           │   │   └── rest/
+│   │   │           │   │       └── FundAccountingResource.kt
+│   │   │           │   └── output/
+│   │   │           │       └── persistence/
+│   │   │           │           └── FundJpaRepository.kt
+│   │   │           └── FundAccountingApplication.kt
+│   │   ├── public-sector-grants-management/
+│   │   │   ├── grants-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/grants/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Grant.kt
+│   │   │   │       │   ├── GrantAward.kt
+│   │   │   │       │   ├── GrantLifecycle.kt
+│   │   │   │       │   ├── ComplianceRequirement.kt
+│   │   │   │       │   └── SEFARecord.kt
+│   │   │   │       └── event/
+│   │   │   │           ├── GrantAwardedEvent.kt
+│   │   │   │           └── GrantClosedEvent.kt
+│   │   │   ├── grants-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/grants/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── AwardGrantCommand.kt
+│   │   │   │       │   └── CloseGrantCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           └── GetGrantStatusQuery.kt
+│   │   │   └── grants-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/publicsector/grants/infrastructure/
+│   │   │           ├── adapter/
+│   │   │           │   └── input/
+│   │   │           │       └── rest/
+│   │   │           │           └── GrantsManagementResource.kt
+│   │   │           └── GrantsManagementApplication.kt
+│   │   ├── public-sector-encumbrance/
+│   │   │   ├── encumbrance-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/encumbrance/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Encumbrance.kt
+│   │   │   │       │   ├── EncumbranceStatus.kt
+│   │   │   │       │   ├── PreEncumbrance.kt
+│   │   │   │       │   └── EncumbranceRelease.kt
+│   │   │   │       └── event/
+│   │   │   │           ├── EncumbranceCreatedEvent.kt
+│   │   │   │           └── EncumbranceLiquidatedEvent.kt
+│   │   │   ├── encumbrance-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/publicsector/encumbrance/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── CreateEncumbranceCommand.kt
+│   │   │   │       │   └── LiquidateEncumbranceCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           └── GetEncumbranceStatusQuery.kt
+│   │   │   └── encumbrance-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/publicsector/encumbrance/infrastructure/
+│   │   │           └── EncumbranceAccountingApplication.kt
+│   │   └── public-sector-appropriations/
+│   │       ├── appropriations-domain/
+│   │       │   ├── build.gradle.kts
+│   │       │   └── src/main/kotlin/com/chiroerp/publicsector/appropriations/domain/
+│   │       │       ├── model/
+│   │       │       │   ├── AppropriationAuthority.kt
+│   │       │       │   ├── Apportionment.kt
+│   │       │       │   ├── USSGLAccount.kt
+│   │       │       │   ├── TAFSCode.kt
+│   │       │       │   └── SF133Report.kt
+│   │       │       └── event/
+│   │       │           └── AppropriationPostedEvent.kt
+│   │       ├── appropriations-application/
+│   │       │   ├── build.gradle.kts
+│   │       │   └── src/main/kotlin/com/chiroerp/publicsector/appropriations/application/
+│   │       │       ├── command/
+│   │       │       │   └── PostAppropriationCommand.kt
+│   │       │       └── query/
+│   │       │           └── GetAppropriationStatusQuery.kt
+│   │       └── appropriations-infrastructure/
+│   │           ├── build.gradle.kts
+│   │           └── src/main/kotlin/com/chiroerp/publicsector/appropriations/infrastructure/
+│   │               └── AppropriationsApplication.kt
+│   │
+│   ├── insurance/                                  # ADR-051
+│   │   ├── insurance-shared/
+│   │   │   ├── build.gradle.kts
+│   │   │   └── src/main/kotlin/com/chiroerp/insurance/shared/
+│   │   │       ├── PolicyId.kt
+│   │   │       ├── ClaimId.kt
+│   │   │       ├── UnderwritingCaseId.kt
+│   │   │       ├── ReinsuranceTreatyId.kt
+│   │   │       └── InsuredId.kt
+│   │   ├── insurance-policy-admin/
+│   │   │   ├── policy-admin-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/policy/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Policy.kt
+│   │   │   │       │   ├── PolicyStatus.kt
+│   │   │   │       │   ├── Coverage.kt
+│   │   │   │       │   ├── Premium.kt
+│   │   │   │       │   ├── Endorsement.kt
+│   │   │   │       │   ├── Renewal.kt
+│   │   │   │       │   └── Cancellation.kt
+│   │   │   │       └── event/
+│   │   │   │           └── PolicyBoundEvent.kt
+│   │   │   ├── policy-admin-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/policy/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   ├── BindPolicyCommand.kt
+│   │   │   │       │   └── EndorsePolicyCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           └── GetPolicyQuery.kt
+│   │   │   └── policy-admin-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/insurance/policy/infrastructure/
+│   │   │           └── PolicyAdminApplication.kt
+│   │   ├── insurance-claims-management/
+│   │   │   ├── claims-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/claims/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── Claim.kt
+│   │   │   │       │   ├── ClaimStatus.kt
+│   │   │   │       │   ├── LossEvent.kt
+│   │   │   │       │   ├── Reserve.kt
+│   │   │   │       │   ├── Payment.kt
+│   │   │   │       │   └── Recovery.kt
+│   │   │   │       └── event/
+│   │   │   │           └── ClaimFiledEvent.kt
+│   │   │   ├── claims-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/claims/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   └── FileClaimCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           └── GetClaimQuery.kt
+│   │   │   └── claims-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/insurance/claims/infrastructure/
+│   │   │           └── ClaimsManagementApplication.kt
+│   │   ├── insurance-underwriting/
+│   │   │   ├── underwriting-domain/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/underwriting/domain/
+│   │   │   │       ├── model/
+│   │   │   │       │   ├── UnderwritingCase.kt
+│   │   │   │       │   ├── RiskScore.kt
+│   │   │   │       │   ├── RatingFactor.kt
+│   │   │   │       │   └── UnderwritingDecision.kt
+│   │   │   │       └── event/
+│   │   │   │           └── UnderwritingApprovedEvent.kt
+│   │   │   ├── underwriting-application/
+│   │   │   │   ├── build.gradle.kts
+│   │   │   │   └── src/main/kotlin/com/chiroerp/insurance/underwriting/application/
+│   │   │   │       ├── command/
+│   │   │   │       │   └── EvaluateRiskCommand.kt
+│   │   │   │       └── query/
+│   │   │   │           └── GetUnderwritingCaseQuery.kt
+│   │   │   └── underwriting-infrastructure/
+│   │   │       ├── build.gradle.kts
+│   │   │       └── src/main/kotlin/com/chiroerp/insurance/underwriting/infrastructure/
+│   │   │           └── UnderwritingApplication.kt
+│   │   └── insurance-reinsurance/
+│   │       ├── reinsurance-domain/
+│   │       │   ├── build.gradle.kts
+│   │       │   └── src/main/kotlin/com/chiroerp/insurance/reinsurance/domain/
+│   │       │       ├── model/
+│   │       │       │   ├── ReinsuranceTreaty.kt
+│   │       │       │   ├── Cession.kt
+│   │       │       │   ├── Recovery.kt
+│   │       │       │   └── BordereauxReport.kt
+│   │       │       └── event/
+│   │       │           └── RecoveryBookedEvent.kt
+│   │       ├── reinsurance-application/
+│   │       │   ├── build.gradle.kts
+│   │       │   └── src/main/kotlin/com/chiroerp/insurance/reinsurance/application/
+│   │       │       ├── command/
+│   │       │       │   └── PostCessionCommand.kt
+│   │       │       └── query/
+│   │       │           └── GetTreatyExposureQuery.kt
+│   │       └── reinsurance-infrastructure/
+│   │           ├── build.gradle.kts
+│   │           └── src/main/kotlin/com/chiroerp/insurance/reinsurance/infrastructure/
+│   │               └── ReinsuranceApplication.kt
+│   │
+│   └── healthcare-pharma/                         # ADR-066
+│       ├── healthcare-shared/
+│       │   ├── build.gradle.kts
+│       │   └── src/main/kotlin/com/chiroerp/healthcare/shared/
+│       │       ├── PatientId.kt
+│       │       ├── EncounterId.kt
+│       │       ├── ProviderId.kt
+│       │       ├── FhirResourceId.kt
+│       │       ├── ClinicalTrialId.kt
+│       │       └── LotId.kt
+│       ├── healthcare-core/
+│       │   ├── healthcare-domain/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/core/domain/
+│       │   │       ├── model/
+│       │   │       │   ├── Patient.kt
+│       │   │       │   ├── Encounter.kt
+│       │   │       │   ├── Appointment.kt
+│       │   │       │   ├── DiagnosisCode.kt
+│       │   │       │   ├── ProcedureCode.kt
+│       │   │       │   ├── CarePlan.kt
+│       │   │       │   ├── Charge.kt
+│       │   │       │   ├── Claim.kt
+│       │   │       │   └── Remittance.kt
+│       │   │       └── event/
+│       │   │           └── EncounterClosedEvent.kt
+│       │   ├── healthcare-application/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/core/application/
+│       │   │       ├── command/
+│       │   │       │   └── RegisterPatientCommand.kt
+│       │   │       └── query/
+│       │   │           └── GetPatientSummaryQuery.kt
+│       │   └── healthcare-infrastructure/
+│       │       ├── build.gradle.kts
+│       │       └── src/main/kotlin/com/chiroerp/healthcare/core/infrastructure/
+│       │           └── HealthcareCoreApplication.kt
+│       ├── healthcare-compliance/
+│       │   ├── compliance-domain/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/compliance/domain/
+│       │   │       ├── model/
+│       │   │       │   ├── HipaaPolicy.kt
+│       │   │       │   ├── AccessLog.kt
+│       │   │       │   ├── AuditTrail.kt
+│       │   │       │   ├── GxpValidation.kt
+│       │   │       │   └── Part11Signature.kt
+│       │   │       └── event/
+│       │   │           └── PrivacyIncidentReportedEvent.kt
+│       │   ├── compliance-application/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/compliance/application/
+│       │   │       ├── command/
+│       │   │       │   └── RecordAccessEventCommand.kt
+│       │   │       └── query/
+│       │   │           └── GetPrivacyAuditQuery.kt
+│       │   └── compliance-infrastructure/
+│       │       ├── build.gradle.kts
+│       │       └── src/main/kotlin/com/chiroerp/healthcare/compliance/infrastructure/
+│       │           └── HealthcareComplianceApplication.kt
+│       ├── healthcare-telehealth/
+│       │   ├── telehealth-domain/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/telehealth/domain/
+│       │   │       ├── model/
+│       │   │       │   ├── Televisit.kt
+│       │   │       │   ├── VideoSession.kt
+│       │   │       │   └── RemoteConsent.kt
+│       │   │       └── event/
+│       │   │           └── TelevisitCompletedEvent.kt
+│       │   ├── telehealth-application/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/healthcare/telehealth/application/
+│       │   │       ├── command/
+│       │   │       │   └── ScheduleTelevisitCommand.kt
+│       │   │       └── query/
+│       │   │           └── GetTelevisitQuery.kt
+│       │   └── telehealth-infrastructure/
+│       │       ├── build.gradle.kts
+│       │       └── src/main/kotlin/com/chiroerp/healthcare/telehealth/infrastructure/
+│       │           └── TelehealthApplication.kt
+│       ├── pharma-clinical-trials/
+│       │   ├── trials-domain/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/pharma/trials/domain/
+│       │   │       ├── model/
+│       │   │       │   ├── ClinicalTrial.kt
+│       │   │       │   ├── StudyProtocol.kt
+│       │   │       │   ├── TrialSite.kt
+│       │   │       │   ├── SubjectEnrollment.kt
+│       │   │       │   └── AdverseEvent.kt
+│       │   │       └── event/
+│       │   │           └── TrialEnrollmentEvent.kt
+│       │   ├── trials-application/
+│       │   │   ├── build.gradle.kts
+│       │   │   └── src/main/kotlin/com/chiroerp/pharma/trials/application/
+│       │   │       ├── command/
+│       │   │       │   └── EnrollSubjectCommand.kt
+│       │   │       └── query/
+│       │   │           └── GetTrialStatusQuery.kt
+│       │   └── trials-infrastructure/
+│       │       ├── build.gradle.kts
+│       │       └── src/main/kotlin/com/chiroerp/pharma/trials/infrastructure/
+│       │           └── ClinicalTrialsApplication.kt
+│       └── pharma-serialization/
+│           ├── serialization-domain/
+│           │   ├── build.gradle.kts
+│           │   └── src/main/kotlin/com/chiroerp/pharma/serialization/domain/
+│           │       ├── model/
+│           │       │   ├── SerializedLot.kt
+│           │       │   ├── SerializationEvent.kt
+│           │       │   └── DSCSACompliance.kt
+│           │       └── event/
+│           │           └── SerializationCommittedEvent.kt
+│           ├── serialization-application/
+│           │   ├── build.gradle.kts
+│           │   └── src/main/kotlin/com/chiroerp/pharma/serialization/application/
+│           │       ├── command/
+│           │       │   └── RegisterSerializationCommand.kt
+│           │       └── query/
+│           │           └── GetSerializationStatusQuery.kt
+│           └── serialization-infrastructure/
+│               ├── build.gradle.kts
+│               └── src/main/kotlin/com/chiroerp/pharma/serialization/infrastructure/
+│                   └── PharmaSerializationApplication.kt
+
 ├── utilities/                                          # Utilities Industry Bounded Context (ADR-072)
 │   ├── utilities-shared/                               # Shared utilities types
 │   │   ├── build.gradle.kts
@@ -11029,6 +11573,15 @@ settings.gradle.kts includes:
 - include("platform-shared:org-model")
 - include("platform-shared:workflow-model")
 - include("platform-shared:enterprise-ml")
+- include("platform-operations:upgrade-management:upgrade-domain")
+- include("platform-operations:upgrade-management:upgrade-application")
+- include("platform-operations:upgrade-management:upgrade-infrastructure")
+- include("platform-operations:data-migration:migration-domain")
+- include("platform-operations:data-migration:migration-application")
+- include("platform-operations:data-migration:migration-infrastructure")
+- include("platform-operations:config-transport:transport-domain")
+- include("platform-operations:config-transport:transport-application")
+- include("platform-operations:config-transport:transport-infrastructure")
 - include("tenancy-identity:tenancy-shared")
 - include("tenancy-identity:tenancy-core")
 - include("tenancy-identity:identity-core")
@@ -11292,6 +11845,50 @@ settings.gradle.kts includes:
 - include("crm:crm-sales-forecasting:sales-forecasting-application")
 - include("crm:crm-sales-forecasting:sales-forecasting-infrastructure")
 
+# Industry Add-ons (ADR-050/051/066)
+- include("industry-addons:public-sector:public-sector-shared")
+- include("industry-addons:public-sector:public-sector-fund-accounting:fund-accounting-domain")
+- include("industry-addons:public-sector:public-sector-fund-accounting:fund-accounting-application")
+- include("industry-addons:public-sector:public-sector-fund-accounting:fund-accounting-infrastructure")
+- include("industry-addons:public-sector:public-sector-grants-management:grants-domain")
+- include("industry-addons:public-sector:public-sector-grants-management:grants-application")
+- include("industry-addons:public-sector:public-sector-grants-management:grants-infrastructure")
+- include("industry-addons:public-sector:public-sector-encumbrance:encumbrance-domain")
+- include("industry-addons:public-sector:public-sector-encumbrance:encumbrance-application")
+- include("industry-addons:public-sector:public-sector-encumbrance:encumbrance-infrastructure")
+- include("industry-addons:public-sector:public-sector-appropriations:appropriations-domain")
+- include("industry-addons:public-sector:public-sector-appropriations:appropriations-application")
+- include("industry-addons:public-sector:public-sector-appropriations:appropriations-infrastructure")
+- include("industry-addons:insurance:insurance-shared")
+- include("industry-addons:insurance:insurance-policy-admin:policy-admin-domain")
+- include("industry-addons:insurance:insurance-policy-admin:policy-admin-application")
+- include("industry-addons:insurance:insurance-policy-admin:policy-admin-infrastructure")
+- include("industry-addons:insurance:insurance-claims-management:claims-domain")
+- include("industry-addons:insurance:insurance-claims-management:claims-application")
+- include("industry-addons:insurance:insurance-claims-management:claims-infrastructure")
+- include("industry-addons:insurance:insurance-underwriting:underwriting-domain")
+- include("industry-addons:insurance:insurance-underwriting:underwriting-application")
+- include("industry-addons:insurance:insurance-underwriting:underwriting-infrastructure")
+- include("industry-addons:insurance:insurance-reinsurance:reinsurance-domain")
+- include("industry-addons:insurance:insurance-reinsurance:reinsurance-application")
+- include("industry-addons:insurance:insurance-reinsurance:reinsurance-infrastructure")
+- include("industry-addons:healthcare-pharma:healthcare-shared")
+- include("industry-addons:healthcare-pharma:healthcare-core:healthcare-domain")
+- include("industry-addons:healthcare-pharma:healthcare-core:healthcare-application")
+- include("industry-addons:healthcare-pharma:healthcare-core:healthcare-infrastructure")
+- include("industry-addons:healthcare-pharma:healthcare-compliance:compliance-domain")
+- include("industry-addons:healthcare-pharma:healthcare-compliance:compliance-application")
+- include("industry-addons:healthcare-pharma:healthcare-compliance:compliance-infrastructure")
+- include("industry-addons:healthcare-pharma:healthcare-telehealth:telehealth-domain")
+- include("industry-addons:healthcare-pharma:healthcare-telehealth:telehealth-application")
+- include("industry-addons:healthcare-pharma:healthcare-telehealth:telehealth-infrastructure")
+- include("industry-addons:healthcare-pharma:pharma-clinical-trials:trials-domain")
+- include("industry-addons:healthcare-pharma:pharma-clinical-trials:trials-application")
+- include("industry-addons:healthcare-pharma:pharma-clinical-trials:trials-infrastructure")
+- include("industry-addons:healthcare-pharma:pharma-serialization:serialization-domain")
+- include("industry-addons:healthcare-pharma:pharma-serialization:serialization-application")
+- include("industry-addons:healthcare-pharma:pharma-serialization:serialization-infrastructure")
+
 # Utilities Industry (ADR-072)
 - include("utilities:utilities-shared")
 - include("utilities:utilities-mtc:mtc-domain")
@@ -11370,6 +11967,11 @@ Platform Shared:
 - com.chiroerp.shared.config.*
 - com.chiroerp.shared.org.*
 - com.chiroerp.shared.workflow.*
+
+Platform Operations:
+- com.chiroerp.platform.operations.upgrade.*
+- com.chiroerp.platform.operations.migration.*
+- com.chiroerp.platform.operations.transport.*
 
 Tenancy & Identity Domain:
 - com.chiroerp.tenancy.shared.*               # Shared types (TenantId, TenantContext)
@@ -11745,6 +12347,54 @@ CRM Sales Forecasting (Port 9456 - P3 ADR-070):
 - com.chiroerp.crm.salesforecasting.domain.*         # SalesForecast, RevenueForecast, PipelineForecast, WinProbability, ForecastHorizon, RevenueDecomposition
 - com.chiroerp.crm.salesforecasting.application.*    # Commands, queries, forecasting services
 - com.chiroerp.crm.salesforecasting.infrastructure.* # JPA, Kafka, REST, LSTM/XGBoost ML models, MLPlatform adapter
+
+Public Sector (ADR-050):
+- com.chiroerp.publicsector.shared.*                 # FundId, GrantId, AppropriationId, EncumbranceId
+- com.chiroerp.publicsector.fund.domain.*            # Fund, FundBalance, BudgetAuthority, Revenue, Expenditure
+- com.chiroerp.publicsector.fund.application.*       # Commands, queries, services
+- com.chiroerp.publicsector.fund.infrastructure.*    # JPA, Kafka, REST
+- com.chiroerp.publicsector.grants.domain.*          # Grant, GrantAward, ComplianceRequirement, SEFARecord
+- com.chiroerp.publicsector.grants.application.*     # Commands, queries, services
+- com.chiroerp.publicsector.grants.infrastructure.*  # JPA, Kafka, REST
+- com.chiroerp.publicsector.encumbrance.domain.*     # Encumbrance, PreEncumbrance, EncumbranceRelease
+- com.chiroerp.publicsector.encumbrance.application.* # Commands, queries, services
+- com.chiroerp.publicsector.encumbrance.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.publicsector.appropriations.domain.*  # AppropriationAuthority, Apportionment, USSGLAccount, SF133Report
+- com.chiroerp.publicsector.appropriations.application.* # Commands, queries, services
+- com.chiroerp.publicsector.appropriations.infrastructure.* # JPA, Kafka, REST
+
+Insurance (ADR-051):
+- com.chiroerp.insurance.shared.*                    # PolicyId, ClaimId, UnderwritingCaseId, ReinsuranceTreatyId
+- com.chiroerp.insurance.policy.domain.*             # Policy, Coverage, Premium, Endorsement, Renewal, Cancellation
+- com.chiroerp.insurance.policy.application.*        # Commands, queries, services
+- com.chiroerp.insurance.policy.infrastructure.*     # JPA, Kafka, REST
+- com.chiroerp.insurance.claims.domain.*             # Claim, LossEvent, Reserve, Payment, Recovery
+- com.chiroerp.insurance.claims.application.*        # Commands, queries, services
+- com.chiroerp.insurance.claims.infrastructure.*     # JPA, Kafka, REST
+- com.chiroerp.insurance.underwriting.domain.*       # UnderwritingCase, RiskScore, RatingFactor, Decision
+- com.chiroerp.insurance.underwriting.application.*  # Commands, queries, services
+- com.chiroerp.insurance.underwriting.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.insurance.reinsurance.domain.*        # ReinsuranceTreaty, Cession, Recovery, BordereauxReport
+- com.chiroerp.insurance.reinsurance.application.*   # Commands, queries, services
+- com.chiroerp.insurance.reinsurance.infrastructure.* # JPA, Kafka, REST
+
+Healthcare & Pharma (ADR-066):
+- com.chiroerp.healthcare.shared.*                   # PatientId, EncounterId, ProviderId, FhirResourceId
+- com.chiroerp.healthcare.core.domain.*              # Patient, Encounter, Appointment, CarePlan, Charge, Claim, Remittance
+- com.chiroerp.healthcare.core.application.*         # Commands, queries, services
+- com.chiroerp.healthcare.core.infrastructure.*      # JPA, Kafka, REST, FHIR adapters
+- com.chiroerp.healthcare.compliance.domain.*        # HipaaPolicy, AccessLog, AuditTrail, GxpValidation, Part11Signature
+- com.chiroerp.healthcare.compliance.application.*   # Commands, queries, services
+- com.chiroerp.healthcare.compliance.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.healthcare.telehealth.domain.*        # Televisit, VideoSession, RemoteConsent
+- com.chiroerp.healthcare.telehealth.application.*   # Commands, queries, services
+- com.chiroerp.healthcare.telehealth.infrastructure.* # JPA, Kafka, REST
+- com.chiroerp.pharma.trials.domain.*                # ClinicalTrial, StudyProtocol, TrialSite, SubjectEnrollment, AdverseEvent
+- com.chiroerp.pharma.trials.application.*           # Commands, queries, services
+- com.chiroerp.pharma.trials.infrastructure.*        # JPA, Kafka, REST
+- com.chiroerp.pharma.serialization.domain.*         # SerializedLot, SerializationEvent, DSCSACompliance
+- com.chiroerp.pharma.serialization.application.*    # Commands, queries, services
+- com.chiroerp.pharma.serialization.infrastructure.* # JPA, Kafka, REST
 
 Finance Forecasting (P3 ADR-070):
 - com.chiroerp.finance.forecasting.domain.cashflow.* # CashFlowForecast, ARAgingForecast, APAgingForecast, PaymentBehaviorModel, CashPosition

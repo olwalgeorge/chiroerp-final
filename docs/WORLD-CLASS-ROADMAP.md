@@ -243,10 +243,11 @@ Each ADR will result in new bounded contexts or modules added to `COMPLETE_STRUC
 ### Compliance & Governance (Platform-Wide)
 ```
 platform-shared/
-├── common-compliance/          # NEW (ADR-058, 059, 064)
-│   ├── soc2-controls/
-│   ├── iso27001-isms/
-│   └── gdpr-framework/
+├── common-security/            # UPGRADE (ADR-058, 059, 064)
+│   └── compliance/
+│       ├── soc2-controls/
+│       ├── iso27001-isms/
+│       └── gdpr-framework/
 ```
 
 ### Operations & DevOps
@@ -259,25 +260,37 @@ platform-operations/            # NEW (ADR-060, 061, 063)
 
 ### Localization Enhancements
 ```
-localization/                   # ENHANCED (ADR-062)
-├── country-packs/
-│   ├── africa/
-│   │   ├── kenya/
-│   │   ├── uganda/
-│   │   ├── south-africa/      # NEW
-│   │   ├── nigeria/            # NEW
-│   │   └── ghana/              # NEW
-│   ├── north-america/
-│   │   ├── united-states/      # NEW
-│   │   └── canada/             # NEW
-│   ├── europe/
-│   │   ├── united-kingdom/     # NEW
-│   │   ├── germany/            # NEW
-│   │   ├── france/             # NEW
-│   │   └── netherlands/        # NEW
-│   └── asia-pacific/
-│       ├── india/              # NEW
-│       └── australia/          # NEW
+platform-shared/config-model/   # UPGRADE (ADR-062/065)
+└── resources/
+    └── localization/
+        └── country-packs/
+            ├── africa/
+            │   ├── kenya/
+            │   ├── uganda/
+            │   ├── south-africa/      # NEW
+            │   ├── nigeria/            # NEW
+            │   └── ghana/              # NEW
+            ├── north-america/
+            │   ├── united-states/      # NEW
+            │   ├── canada/             # NEW
+            │   └── mexico/             # NEW
+            ├── europe/
+            │   ├── united-kingdom/     # NEW
+            │   ├── germany/            # NEW
+            │   ├── france/             # NEW
+            │   ├── netherlands/        # NEW
+            │   ├── spain/              # NEW
+            │   └── italy/              # NEW
+            ├── asia-pacific/
+            │   ├── india/              # NEW
+            │   ├── australia/          # NEW
+            │   ├── japan/              # NEW
+            │   └── singapore/          # NEW
+            ├── middle-east/
+            │   ├── united-arab-emirates/ # NEW
+            │   └── saudi-arabia/         # NEW
+            └── latin-america/
+                └── brazil/              # NEW
 ```
 
 ### Industry Add-ons
@@ -448,7 +461,7 @@ industry-addons/                # NEW
 4. ✅ Create ADR-061: Data Migration Toolkit
 
 ### Day 3-4: Structural Blueprints
-5. ✅ Add `platform-shared/common-compliance/` to COMPLETE_STRUCTURE.txt
+5. ✅ Add compliance primitives under `platform-shared/common-security/` (upgrade) in COMPLETE_STRUCTURE.txt
 6. ✅ Add `platform-operations/` to COMPLETE_STRUCTURE.txt
 7. ✅ Update ADR-050 (Public Sector) with complete structure
 8. ✅ Update ADR-051 (Insurance) with complete structure
