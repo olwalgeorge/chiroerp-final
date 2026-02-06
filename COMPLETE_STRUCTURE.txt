@@ -30,8 +30,8 @@ chiroerp/
 │   │       │   │               └── types/
 │   │       │   │                   ├── primitives/                   # ADR-006: ONLY technical primitives
 │   │       │   │                   │   ├── Identifier.kt             # Generic ID wrapper
-│   │       │   │                   │   ├── AuditInfo.kt              # Technical audit trail (ALLOWED per ADR-006)
-│   │       │   │                   │   └── CorrelationId.kt          # Request correlation
+│   │       │   │                   │   └── AuditInfo.kt              # Technical audit trail (ALLOWED per ADR-006)
+│   │       │   │                   │   # NOTE: CorrelationId is in common-observability/correlation/
 │   │       │   │                   │   # NOTE: Money, Address, PhoneNumber, Email, TaxId
 │   │       │   │                   │   # are FORBIDDEN here per ADR-006 - must be duplicated
 │   │       │   │                   │   # in each bounded context with context-specific semantics
@@ -381,6 +381,10 @@ chiroerp/
 │               │                   └── SagaCoordinatorTest.kt
 │               └── resources/
 │
+├── ai-platform/                                 # AI/ML Platform (ADR-070) - Separate from platform-shared
+│   │                                            # NOTE: Moved out of platform-shared per ADR-006 governance
+│   │                                            # (max 7 modules in platform-shared)
+│   │
 │   ├── enterprise-ml/                           # ADR-070: Enterprise ML Platform (P3-2028)
 │   │   ├── build.gradle.kts                     # NOTE: Centralizes ML capabilities for all domains
 │   │   └── src/                                 # AutoML, Feature Store, Model Registry, Monitoring
@@ -388,7 +392,7 @@ chiroerp/
 │   │       │   ├── kotlin/
 │   │       │   │   └── com/
 │   │       │   │       └── chiroerp/
-│   │       │   │           └── shared/
+│   │       │   │           └── ai/
 │   │       │   │               └── ml/
 │   │       │   │                   ├── featurestore/              # Feast Feature Store
 │   │       │   │                   │   ├── FeatureStore.kt
@@ -442,7 +446,7 @@ chiroerp/
 │   │           ├── kotlin/
 │   │           │   └── com/
 │   │           │       └── chiroerp/
-│   │           │           └── shared/
+│   │           │           └── ai/
 │   │           │               └── ml/
 │   │           │                   ├── FeatureStoreTest.kt
 │   │           │                   ├── ModelRegistryTest.kt
@@ -2123,7 +2127,7 @@ chiroerp/
                 │   │                       │       ├── ml/
                 │   │                       │       │   ├── XGBoostPaymentBehaviorAdapter.kt
                 │   │                       │       │   ├── ARIMAPnLForecastAdapter.kt
-                │   │                       │       │   └── MLPlatformAdapter.kt     # Uses platform-shared/enterprise-ml
+                │   │                       │       │   └── MLPlatformAdapter.kt     # Uses ai-platform/enterprise-ml
                 │   │                       │       └── messaging/
                 │   │                       │           └── KafkaEventPublisher.kt
                 │   │                       └── FinanceForecasting Application.kt
@@ -6106,7 +6110,7 @@ chiroerp/
 │               │       └── ml/
 │               │           ├── HSCodeBERTAdapter.kt   # BERT transformer for text classification
 │               │           ├── HSCodeXGBoostAdapter.kt # XGBoost ensemble model
-│               │           └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│               │           └── MLPlatformAdapter.kt   # Uses ai-platform/enterprise-ml
 │               └── ProcurementGlobalTradeApplication.kt
 │
 ├── maintenance/                                        # Plant Maintenance Bounded Context (ADR-040)
@@ -9679,7 +9683,7 @@ chiroerp/
 │               │       ├── ml/
 │               │       │   ├── LSTMRevenueForecastAdapter.kt
 │               │       │   ├── XGBoostWinProbabilityAdapter.kt
-│               │       │   └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│               │       │   └── MLPlatformAdapter.kt   # Uses ai-platform/enterprise-ml
 │               │       └── messaging/
 │               │           └── KafkaEventPublisher.kt
 │               └── SalesForecastingApplication.kt
@@ -9914,7 +9918,7 @@ chiroerp/
 │   │           │       │   └── EsriArcGISAdapter.kt   # Esri ArcGIS integration
 │   │           │       └── ml/
 │   │           │           ├── PredictiveMaintenanceMLAdapter.kt
-│   │           │           └── MLPlatformAdapter.kt   # Uses platform-shared/enterprise-ml
+│   │           │           └── MLPlatformAdapter.kt   # Uses ai-platform/enterprise-ml
 │   │           └── AssetManagementApplication.kt
 │   │
 │   ├── utilities-oms/                                  # Port 9504 - Outage Management System (ADR-072)
