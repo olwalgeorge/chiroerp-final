@@ -648,7 +648,7 @@ chiroerp/
 │   │           │                   └── ShapExplainerTest.kt
 │   │           └── resources/
 │
-├── tenancy-identity/                            # Tenancy & Identity Bounded Context (ADR-005)
+├── bounded-contexts/tenancy-identity/           # Tenancy & Identity Bounded Context (ADR-005)
 │   │                                            # NOTE: Different from org-model!
 │   │                                            # org-model = organizational hierarchy WITHIN a tenant
 │   │                                            # tenancy-identity = multi-tenant isolation & identity management
@@ -962,7 +962,7 @@ chiroerp/
 │               └── mock-responses/
 │                   └── backend-responses.json
 │
-└── finance/                                     # Finance Domain (ADR-009)
+└── bounded-contexts/finance/                    # Finance Domain (ADR-009)
     │
     ├── finance-shared/                              # ADR-006 COMPLIANT: Identifiers and value objects only
     │   ├── build.gradle.kts
@@ -11584,29 +11584,29 @@ settings.gradle.kts includes:
 - include("platform-operations:config-transport:transport-domain")
 - include("platform-operations:config-transport:transport-application")
 - include("platform-operations:config-transport:transport-infrastructure")
-- include("tenancy-identity:tenancy-shared")
-- include("tenancy-identity:tenancy-core")
-- include("tenancy-identity:identity-core")
+- include("bounded-contexts:tenancy-identity:tenancy-shared")
+- include("bounded-contexts:tenancy-identity:tenancy-core")
+- include("bounded-contexts:tenancy-identity:identity-core")
 - include("api-gateway")
-- include("finance:finance-shared")
-- include("finance:finance-gl:gl-domain")
-- include("finance:finance-gl:gl-application")
-- include("finance:finance-gl:gl-infrastructure")
-- include("finance:finance-ar:ar-domain")
-- include("finance:finance-ar:ar-application")
-- include("finance:finance-ar:ar-infrastructure")
-- include("finance:finance-ap:ap-domain")
-- include("finance:finance-ap:ap-application")
-- include("finance:finance-ap:ap-infrastructure")
-- include("finance:finance-assets:assets-domain")
-- include("finance:finance-assets:assets-application")
-- include("finance:finance-assets:assets-infrastructure")
-- include("finance:finance-tax:tax-domain")
-- include("finance:finance-tax:tax-application")
-- include("finance:finance-tax:tax-infrastructure")
-- include("finance:finance-forecasting:forecasting-domain")
-- include("finance:finance-forecasting:forecasting-application")
-- include("finance:finance-forecasting:forecasting-infrastructure")
+- include("bounded-contexts:finance:finance-shared")
+- include("bounded-contexts:finance:finance-gl:gl-domain")
+- include("bounded-contexts:finance:finance-gl:gl-application")
+- include("bounded-contexts:finance:finance-gl:gl-infrastructure")
+- include("bounded-contexts:finance:finance-ar:ar-domain")
+- include("bounded-contexts:finance:finance-ar:ar-application")
+- include("bounded-contexts:finance:finance-ar:ar-infrastructure")
+- include("bounded-contexts:finance:finance-ap:ap-domain")
+- include("bounded-contexts:finance:finance-ap:ap-application")
+- include("bounded-contexts:finance:finance-ap:ap-infrastructure")
+- include("bounded-contexts:finance:finance-assets:assets-domain")
+- include("bounded-contexts:finance:finance-assets:assets-application")
+- include("bounded-contexts:finance:finance-assets:assets-infrastructure")
+- include("bounded-contexts:finance:finance-tax:tax-domain")
+- include("bounded-contexts:finance:finance-tax:tax-application")
+- include("bounded-contexts:finance:finance-tax:tax-infrastructure")
+- include("bounded-contexts:finance:finance-forecasting:forecasting-domain")
+- include("bounded-contexts:finance:finance-forecasting:forecasting-application")
+- include("bounded-contexts:finance:finance-forecasting:forecasting-infrastructure")
 - include("mdm:mdm-shared")
 - include("mdm:mdm-hub:hub-domain")
 - include("mdm:mdm-hub:hub-application")
