@@ -54,7 +54,7 @@ dependencyResolutionManagement {
 // Excluded directories: build, .gradle, build-logic, buildSrc
 // =============================================================================
 
-val excludedDirs = setOf("build", ".gradle", "build-logic", "buildSrc", ".git", ".github", "docs", "scripts")
+val excludedDirs = setOf("build", ".gradle", "build-logic", "buildSrc", ".git", ".github", "docs", "scripts", "bounded-contexts")
 
 fun includeModulesRecursively(dir: File, parentPath: String = "") {
     dir.listFiles()?.forEach { file ->
@@ -129,39 +129,73 @@ include("platform-shared:org-model")
 include("platform-shared:workflow-model")
 
 // Tenancy-Identity Bounded Context (ADR-005)
-include("tenancy-identity:tenancy-shared")
-include("tenancy-identity:tenancy-core")
-include("tenancy-identity:identity-core")
+include("bounded-contexts:tenancy-identity:tenancy-shared")
+include("bounded-contexts:tenancy-identity:tenancy-core")
+include("bounded-contexts:tenancy-identity:identity-core")
 
 // Finance Shared - Common types across all finance subdomains
-include("finance:finance-shared")
+include("bounded-contexts:finance:finance-shared")
 
 // Bounded Contexts - Finance Domain
-include("finance:finance-gl:gl-domain")
-include("finance:finance-gl:gl-application")
-include("finance:finance-gl:gl-infrastructure")
+include("bounded-contexts:finance:finance-gl:gl-domain")
+include("bounded-contexts:finance:finance-gl:gl-application")
+include("bounded-contexts:finance:finance-gl:gl-infrastructure")
 
-include("finance:finance-ar:ar-domain")
-include("finance:finance-ar:ar-application")
-include("finance:finance-ar:ar-infrastructure")
+include("bounded-contexts:finance:finance-ar:ar-domain")
+include("bounded-contexts:finance:finance-ar:ar-application")
+include("bounded-contexts:finance:finance-ar:ar-infrastructure")
 
-include("finance:finance-ap:ap-domain")
-include("finance:finance-ap:ap-application")
-include("finance:finance-ap:ap-infrastructure")
+include("bounded-contexts:finance:finance-ap:ap-domain")
+include("bounded-contexts:finance:finance-ap:ap-application")
+include("bounded-contexts:finance:finance-ap:ap-infrastructure")
 
-include("finance:finance-assets:assets-domain")
-include("finance:finance-assets:assets-application")
-include("finance:finance-assets:assets-infrastructure")
+include("bounded-contexts:finance:finance-assets:assets-domain")
+include("bounded-contexts:finance:finance-assets:assets-application")
+include("bounded-contexts:finance:finance-assets:assets-infrastructure")
 
-include("finance:finance-tax:tax-domain")
-include("finance:finance-tax:tax-application")
-include("finance:finance-tax:tax-infrastructure")
+include("bounded-contexts:finance:finance-tax:tax-domain")
+include("bounded-contexts:finance:finance-tax:tax-application")
+include("bounded-contexts:finance:finance-tax:tax-infrastructure")
+
+// Explicit projectDir mapping keeps IDE import stable and avoids stale
+// directory guesses for hierarchical bounded context module names.
+val boundedContextProjectDirs = mapOf(
+    ":bounded-contexts:tenancy-identity:tenancy-shared" to "bounded-contexts/tenancy-identity/tenancy-shared",
+    ":bounded-contexts:tenancy-identity:tenancy-core" to "bounded-contexts/tenancy-identity/tenancy-core",
+    ":bounded-contexts:tenancy-identity:identity-core" to "bounded-contexts/tenancy-identity/identity-core",
+
+    ":bounded-contexts:finance:finance-shared" to "bounded-contexts/finance/finance-shared",
+
+    ":bounded-contexts:finance:finance-gl:gl-domain" to "bounded-contexts/finance/finance-gl/gl-domain",
+    ":bounded-contexts:finance:finance-gl:gl-application" to "bounded-contexts/finance/finance-gl/gl-application",
+    ":bounded-contexts:finance:finance-gl:gl-infrastructure" to "bounded-contexts/finance/finance-gl/gl-infrastructure",
+
+    ":bounded-contexts:finance:finance-ar:ar-domain" to "bounded-contexts/finance/finance-ar/ar-domain",
+    ":bounded-contexts:finance:finance-ar:ar-application" to "bounded-contexts/finance/finance-ar/ar-application",
+    ":bounded-contexts:finance:finance-ar:ar-infrastructure" to "bounded-contexts/finance/finance-ar/ar-infrastructure",
+
+    ":bounded-contexts:finance:finance-ap:ap-domain" to "bounded-contexts/finance/finance-ap/ap-domain",
+    ":bounded-contexts:finance:finance-ap:ap-application" to "bounded-contexts/finance/finance-ap/ap-application",
+    ":bounded-contexts:finance:finance-ap:ap-infrastructure" to "bounded-contexts/finance/finance-ap/ap-infrastructure",
+
+    ":bounded-contexts:finance:finance-assets:assets-domain" to "bounded-contexts/finance/finance-assets/assets-domain",
+    ":bounded-contexts:finance:finance-assets:assets-application" to "bounded-contexts/finance/finance-assets/assets-application",
+    ":bounded-contexts:finance:finance-assets:assets-infrastructure" to "bounded-contexts/finance/finance-assets/assets-infrastructure",
+
+    ":bounded-contexts:finance:finance-tax:tax-domain" to "bounded-contexts/finance/finance-tax/tax-domain",
+    ":bounded-contexts:finance:finance-tax:tax-application" to "bounded-contexts/finance/finance-tax/tax-application",
+    ":bounded-contexts:finance:finance-tax:tax-infrastructure" to "bounded-contexts/finance/finance-tax/tax-infrastructure",
+)
+
+boundedContextProjectDirs.forEach { (path, dir) ->
+    project(path).projectDir = file(dir)
+}
 
 // Finance Public Sector Subdomain (ADR-050)
-// MISSING: include("finance:finance-public-sector")
-// MISSING: include("finance:finance-public-sector:finance-public-sector-domain")
-// MISSING: include("finance:finance-public-sector:finance-public-sector-application")
-// MISSING: include("finance:finance-public-sector:finance-public-sector-infrastructure")
+// MISSING: include("bounded-contexts:finance:finance-public-sector")
+// MISSING: include("bounded-contexts:finance:finance-public-sector:finance-public-sector-domain")
+// MISSING: include("bounded-contexts:finance:finance-public-sector:finance-public-sector-application")
+// MISSING: include("bounded-contexts:finance:finance-public-sector:finance-public-sector-infrastructure")
 
 // Insurance Bounded Context (ADR-051)
 // MISSING: include("insurance:insurance-shared")

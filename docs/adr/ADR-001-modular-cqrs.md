@@ -272,7 +272,7 @@ Exceptions require an ADR update and explicit approval.
 
 ### Command Example (Actual Implementation)
 ```kotlin
-// In tenancy-identity/identity-application/port/input/command/
+// In bounded-contexts/tenancy-identity/identity-application/port/input/command/
 package com.erp.identity.application.port.input.command
 
 import com.erp.identity.domain.model.identity.RoleId
@@ -313,7 +313,7 @@ data class CreateUserCommand(
 
 ### Use Case Example (Actual Implementation)
 ```kotlin
-// In tenancy-identity/identity-application/service/
+// In bounded-contexts/tenancy-identity/identity-application/service/
 package com.erp.identity.application.service
 
 import com.erp.identity.domain.model.identity.User
@@ -363,7 +363,7 @@ class CreateUserUseCase(
 
 ### REST Integration (Actual Implementation)
 ```kotlin
-// In tenancy-identity/identity-infrastructure/adapter/input/rest/
+// In bounded-contexts/tenancy-identity/identity-infrastructure/adapter/input/rest/
 package com.erp.identity.infrastructure.adapter.input.rest
 
 import com.erp.identity.application.port.input.command.CreateUserCommand

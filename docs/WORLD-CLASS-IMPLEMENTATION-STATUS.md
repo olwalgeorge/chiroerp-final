@@ -40,7 +40,7 @@ Use this checklist per ADR before upgrading status from **Blueprinted** to **Imp
 | ADR-059 | `platform-shared/common-security/...` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
 | ADR-060 | `platform-operations/upgrade-management/` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
 | ADR-061 | `platform-operations/data-migration/` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
-| ADR-062 | `finance/finance-tax/`, `platform-shared/config-model/...` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
+| ADR-062 | `bounded-contexts/finance/finance-tax/`, `platform-shared/config-model/...` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
 | ADR-063 | `platform-operations/config-transport/` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
 | ADR-064 | `platform-shared/common-security/...` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
 | ADR-065 | `platform-shared/config-model/...` | Missing in repo (blueprint only) | Codex | 2026-02-06 |
@@ -152,7 +152,7 @@ Advanced Planning & Scheduling (ADR-067) ⭐ *Enterprise Manufacturing*
 ### ADR-062: Multi-Country Tax Engine
 **Status**: ✅ Blueprint Complete ⭐ *Bonus - Not in Original Roadmap*  
 **Implementation Status**: ⚪ Not verified in code  
-**Blueprint Evidence**: `finance/finance-tax/`, `platform-shared/config-model/src/main/kotlin/com/chiroerp/shared/config/localization/`  
+**Blueprint Evidence**: `bounded-contexts/finance/finance-tax/`, `platform-shared/config-model/src/main/kotlin/com/chiroerp/shared/config/localization/`  
 **Estimated Investment**: $596K-867K first year  
 **Timeline (planned)**: Q1 2027 (14 weeks)  
 

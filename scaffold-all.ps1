@@ -142,7 +142,7 @@ $layers = @("domain", "application", "infrastructure")
 Write-Host "`n=== FINANCE BOUNDED CONTEXT ===" -ForegroundColor Magenta
 
 foreach ($module in $financeModules) {
-    $modulePath = Join-Path $BasePath "finance/$module"
+    $modulePath = Join-Path $BasePath "bounded-contexts/finance/$module"
     $moduleName = $module -replace "finance-", ""
 
     if ($module -eq "finance-shared") {
@@ -186,10 +186,10 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:${module}:${domainModule}"))
-    implementation(project(":finance:${module}:${applicationModule}"))
+    implementation(project(":bounded-contexts:finance:${module}:${domainModule}"))
+    implementation(project(":bounded-contexts:finance:${module}:${applicationModule}"))
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
             } elseif ($layer -eq "application") {
@@ -200,9 +200,9 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:${module}:${domainModule}"))
+    implementation(project(":bounded-contexts:finance:${module}:${domainModule}"))
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
             } else {
@@ -214,7 +214,7 @@ plugins {
 
 dependencies {
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
             }

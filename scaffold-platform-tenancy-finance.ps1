@@ -1,5 +1,6 @@
 # Scaffold Platform-Shared, Tenancy-Identity, and Finance Domains
 # Generated: February 6, 2026
+# Updated: February 7, 2026 - Canonical finance layer naming cleanup alignment
 # Based on COMPLETE_STRUCTURE.txt and ADR-005 / ADR-006 governance
 #
 # ADR-006 GOVERNANCE COMPLIANCE:
@@ -47,6 +48,18 @@ function New-File {
             Write-Host "Created file: $Path" -ForegroundColor Green
         } else {
             Write-Host "File already exists: $Path" -ForegroundColor Blue
+        }
+    }
+}
+
+function Remove-Directory {
+    param([string]$Path)
+    if ($DryRun) {
+        Write-Host "[DRY RUN] Would remove directory: $Path" -ForegroundColor Gray
+    } else {
+        if (Test-Path $Path) {
+            Remove-Item -Path $Path -Recurse -Force
+            Write-Host "Removed legacy directory: $Path" -ForegroundColor Yellow
         }
     }
 }
@@ -186,7 +199,7 @@ dependencies {
 Write-Host "`n=== TENANCY-IDENTITY BOUNDED CONTEXT ===" -ForegroundColor Magenta
 
 # Tenancy-shared module
-$tenancySharedPath = Join-Path $BasePath "tenancy-identity/tenancy-shared"
+$tenancySharedPath = Join-Path $BasePath "bounded-contexts/tenancy-identity/tenancy-shared"
 New-File -Path (Join-Path $tenancySharedPath "build.gradle.kts") -Content @"
 // tenancy-shared build configuration
 // ADR-005/ADR-006: Context-specific value objects for Tenancy & Identity
@@ -217,7 +230,7 @@ foreach ($moduleConfig in $tenancyModules) {
     $packageRoot = $moduleConfig.PackageRoot
     $subdomainName = $moduleConfig.Subdomain
 
-    $modulePath = Join-Path $BasePath "tenancy-identity/$moduleName"
+    $modulePath = Join-Path $BasePath "bounded-contexts/tenancy-identity/$moduleName"
 
     New-File -Path (Join-Path $modulePath "build.gradle.kts") -Content @"
 // $moduleName build configuration
@@ -227,7 +240,7 @@ plugins {
 
 dependencies {
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":tenancy-identity:tenancy-shared"))
+    implementation(project(":bounded-contexts:tenancy-identity:tenancy-shared"))
 }
 "@
 
@@ -275,7 +288,7 @@ $financeLayers = @("domain", "application", "infrastructure")
 Write-Host "`n=== FINANCE BOUNDED CONTEXT ===" -ForegroundColor Magenta
 
 # Finance shared module
-$financeSharedPath = Join-Path $BasePath "finance/finance-shared"
+$financeSharedPath = Join-Path $BasePath "bounded-contexts/finance/finance-shared"
 New-File -Path (Join-Path $financeSharedPath "build.gradle.kts") -Content @"
 // finance-shared build configuration
 // ADR-006: Context-specific value objects for Finance bounded context
@@ -303,7 +316,7 @@ foreach ($moduleConfig in $financeModules) {
     $shortName = $moduleConfig.Short
     $appSuffix = $moduleConfig.AppSuffix
 
-    $modulePath = Join-Path $BasePath "finance/$moduleName"
+    $modulePath = Join-Path $BasePath "bounded-contexts/finance/$moduleName"
 
     foreach ($layer in $financeLayers) {
         $layerModule = "${shortName}-${layer}"
@@ -319,10 +332,10 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:${moduleName}:${domainModule}"))
-    implementation(project(":finance:${moduleName}:${applicationModule}"))
+    implementation(project(":bounded-contexts:finance:${moduleName}:${domainModule}"))
+    implementation(project(":bounded-contexts:finance:${moduleName}:${applicationModule}"))
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
         } elseif ($layer -eq "application") {
@@ -333,9 +346,9 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":finance:${moduleName}:${domainModule}"))
+    implementation(project(":bounded-contexts:finance:${moduleName}:${domainModule}"))
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
         } else {
@@ -347,7 +360,7 @@ plugins {
 
 dependencies {
     implementation(project(":platform-shared:common-types"))
-    implementation(project(":finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-shared"))
 }
 "@
         }
@@ -438,6 +451,30 @@ fun main(args: Array<String>) {
 }
 "@
         }
+    }
+}
+
+# Cleanup legacy duplicate finance folders from earlier scaffold naming.
+# These are non-canonical folders (e.g. finance-gl-application) and can confuse IDE import.
+# Build this list dynamically from current finance modules/layers so it stays current.
+$legacyFinanceFolders = @()
+foreach ($moduleConfig in $financeModules) {
+    $moduleName = $moduleConfig.Name
+    foreach ($layer in $financeLayers) {
+        $legacyFinanceFolders += "bounded-contexts/finance/$moduleName/${moduleName}-${layer}"
+    }
+}
+$legacyFinanceFolders = $legacyFinanceFolders | Sort-Object -Unique
+
+Write-Host "`n=== FINANCE LEGACY FOLDER CLEANUP ===" -ForegroundColor Magenta
+foreach ($legacyFolder in $legacyFinanceFolders) {
+    $legacyPath = Join-Path $BasePath $legacyFolder
+    $legacyBuildFile = Join-Path $legacyPath "build.gradle.kts"
+
+    if ((Test-Path $legacyPath) -and !(Test-Path $legacyBuildFile)) {
+        Remove-Directory -Path $legacyPath
+    } elseif (Test-Path $legacyPath) {
+        Write-Host "Skipped legacy folder with build file (manual cleanup): $legacyPath" -ForegroundColor DarkYellow
     }
 }
 

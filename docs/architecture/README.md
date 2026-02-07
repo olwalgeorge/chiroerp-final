@@ -9,9 +9,9 @@ This document provides a master index, integration map, and standards for the Ch
 | Domain | Subdomains | Port Range | Docs | Tier | Status |
 |--------|------------|------------|------|------|--------|
 | Platform Shared | 7 | N/A | [platform-shared/README.md](./platform-shared/README.md) | Core | Complete |
-| Tenancy & Identity | 3 | TBD | [tenancy-identity/README.md](./tenancy-identity/README.md) | Core | Complete |
+| Tenancy & Identity | 3 | TBD | [bounded-contexts/tenancy-identity/](../../bounded-contexts/tenancy-identity/) | Core | Complete |
 | API Gateway | 1 | TBD | [api-gateway/README.md](./api-gateway/README.md) | Core | Complete |
-| Finance (FI) | 6 | TBD (not specified in `COMPLETE_STRUCTURE.txt`) | [finance/README.md](./finance/README.md) | Core | Complete |
+| Finance (FI) | 6 | TBD (not specified in `COMPLETE_STRUCTURE.txt`) | [bounded-contexts/finance/](../../bounded-contexts/finance/) | Core | Complete |
 | Master Data Governance (MDG) | 6 | 9701-9705 | [mdm/README.md](./mdm/README.md) | Advanced | Complete |
 | Inventory (MM-IM) | 8 | 9001-9009 | [inventory/README.md](./inventory/README.md) | Core | Complete + Advanced Ops |
 | Analytics & Reporting | 7 | 9801-9806 | [analytics/README.md](./analytics/README.md) | Advanced | Complete |

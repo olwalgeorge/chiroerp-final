@@ -30,21 +30,21 @@ $financeModules = @(
 
 # Layer modules for finance
 $layerModules = @(
-    "finance-gl-domain",
-    "finance-gl-application",
-    "finance-gl-infrastructure",
-    "finance-ar-domain",
-    "finance-ar-application",
-    "finance-ar-infrastructure",
-    "finance-ap-domain",
-    "finance-ap-application",
-    "finance-ap-infrastructure",
-    "finance-assets-domain",
-    "finance-assets-application",
-    "finance-assets-infrastructure",
-    "finance-tax-domain",
-    "finance-tax-application",
-    "finance-tax-infrastructure"
+    "gl-domain",
+    "gl-application",
+    "gl-infrastructure",
+    "ar-domain",
+    "ar-application",
+    "ar-infrastructure",
+    "ap-domain",
+    "ap-application",
+    "ap-infrastructure",
+    "assets-domain",
+    "assets-application",
+    "assets-infrastructure",
+    "tax-domain",
+    "tax-application",
+    "tax-infrastructure"
 )
 
 function Update-BuildFile {
@@ -145,7 +145,7 @@ foreach ($module in $platformModules) {
 
 # Update finance modules
 foreach ($module in $financeModules) {
-    $modulePath = Join-Path $BasePath "finance/$module"
+    $modulePath = Join-Path $BasePath "bounded-contexts/finance/$module"
 
     # Update build.gradle.kts
     Update-BuildFile -FilePath (Join-Path $modulePath "build.gradle.kts")
@@ -156,7 +156,7 @@ foreach ($layer in $layerModules) {
     $parts = $layer -split "-"
     $domain = $parts[0] + "-" + $parts[1]
     $layerType = $parts[2]
-    $layerPath = Join-Path $BasePath "finance/$domain/$layer"
+    $layerPath = Join-Path $BasePath "bounded-contexts/finance/$domain/$layer"
 
     # Update build.gradle.kts
     Update-BuildFile -FilePath (Join-Path $layerPath "build.gradle.kts")

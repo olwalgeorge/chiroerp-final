@@ -122,6 +122,7 @@ tasks.register("listModules") {
 
         val modulesByDomain = subprojects.groupBy { project ->
             when {
+                project.path.contains(":bounded-contexts:tenancy-identity") -> "Tenancy & Identity Domain"
                 project.path.contains(":bounded-contexts:finance") -> "Finance Domain"
                 project.path.contains(":bounded-contexts:inventory") -> "Inventory Domain"
                 project.path.contains(":bounded-contexts:sales") -> "Sales Domain"
@@ -138,6 +139,7 @@ tasks.register("listModules") {
                 project.path.contains(":platform-infrastructure") -> "Platform Infrastructure"
                 project.path.contains(":api-gateway") -> "API Gateway"
                 project.path.contains(":portal") -> "Portal/UI"
+                project.path.contains(":bounded-contexts") -> "Bounded Contexts (Other)"
                 else -> "Other"
             }
         }
@@ -158,6 +160,7 @@ tasks.register("listModules") {
 tasks.register("checkArchitecture") {
     group = "verification"
     description = "Validates architectural rules (ADR-001, ADR-002, ADR-006)"
+    notCompatibleWithConfigurationCache("Uses Project model/dependencies in task action for custom architecture scanning")
 
     doLast {
         println("\n=== Architecture Compliance Check ===\n")
@@ -184,7 +187,7 @@ tasks.register("checkArchitecture") {
         subprojects.filter { it.path.contains(":platform-shared") }.forEach { sharedProject ->
             val config = sharedProject.configurations.findByName("implementation")
             config?.dependencies?.forEach { dep ->
-                if (dep.toString().contains("bounded-contexts") || dep.toString().contains(":finance:")) {
+                if (dep.toString().contains("bounded-contexts")) {
                     println("❌ VIOLATION: Platform-shared module ${sharedProject.path} depends on bounded context/domain module")
                     violations++
                 }

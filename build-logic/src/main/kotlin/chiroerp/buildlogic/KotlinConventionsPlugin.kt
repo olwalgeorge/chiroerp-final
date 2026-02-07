@@ -54,8 +54,11 @@ class KotlinConventionsPlugin : Plugin<Project> {
                 //     freeCompilerArgs.add("-Xexplicit-api=strict")
                 // }
             }
-            
-            // Output Kotlin classes to java/main directory for Quarkus compatibility
+        }
+
+        // Keep main Kotlin classes in java/main for Quarkus codegen classpath compatibility.
+        // Do not override test output directories, otherwise Test tasks can become NO-SOURCE.
+        tasks.named<KotlinJvmCompile>("compileKotlin").configure {
             destinationDirectory.set(layout.buildDirectory.dir("classes/java/main"))
         }
 
