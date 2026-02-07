@@ -82,10 +82,24 @@ class QuarkusConventionsPlugin : Plugin<Project> {
             dependsOn("quarkusDev")
         }
 
+        // Quarkus code generation expects this directory on the Java classpath even when
+        // modules are Kotlin-only and compileJava is skipped with NO-SOURCE.
+        val ensureJavaMainClassesDir = tasks.register("ensureJavaMainClassesDir") {
+            val mainClassesDir = layout.buildDirectory.dir("classes/java/main")
+            outputs.dir(mainClassesDir)
+            doLast {
+                mainClassesDir.get().asFile.mkdirs()
+            }
+        }
+
         // Fix task dependency ordering for Quarkus build tasks
         tasks.configureEach {
             if (name.startsWith("quarkus") && name.contains("Build")) {
                 mustRunAfter("compileTestKotlin")
+            }
+
+            if (name == "quarkusGenerateCode" || name == "quarkusGenerateCodeTests") {
+                dependsOn(ensureJavaMainClassesDir)
             }
         }
     }

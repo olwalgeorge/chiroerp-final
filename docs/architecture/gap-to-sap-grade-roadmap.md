@@ -24,7 +24,7 @@
 
 ### The Solution
 **18-Month Product Roadmap** in 6 phases:
-- **Phase 1-2 (Months 1-6)**: Platform Foundation + Kenya MVP (Config/Org/Workflow + Kenya O2C/P2P)
+- **Phase 1-2 (Months 1-6)**: Shared Platform + Tenancy + Finance MVP (Config/Org/Workflow + multi-tenant GL/AP/AR + core O2C/P2P)
 - **Phase 3 (Months 7-9)**: Scale Foundation + Advanced Inventory Operations (3-country readiness, 10K users, retail depth)
 - **Phase 4 (Months 10-12)**: Enterprise Features (enterprise deal, SoD, intercompany, period close)
 - **Phase 5-6 (Months 13-18)**: Localization Scale + Compliance (15 country packs, partners, ISO/SOC2)
@@ -37,7 +37,7 @@
 
 ### Success Metrics
 - ✅ **Configuration Coverage**: 85%+ variation without custom code
-- ✅ **Localization**: 3 country packs by Phase 3 (Kenya, Tanzania, US reference) → 15 by Phase 5
+- ✅ **Localization**: 3 country packs by Phase 3 (reference + 2) → 15 by Phase 5
 - ✅ **Scale Proof**: 10,000 concurrent users, 1M transactions/month
 - ✅ **Enterprise Deal**: $500K+ ARR contract with bank/telecom/manufacturing company
 - ✅ **Partner Ecosystem**: 5+ implementation partners certified
@@ -134,7 +134,7 @@ Each phase has **explicit exit criteria** that must be met before proceeding. Th
 | Phase | Duration | Investment | Exit Criteria | Business Outcome |
 |-------|----------|------------|---------------|------------------|
 | **Phase 1** | 3 months | $880K | Config + Org + Workflow engines operational | Platform foundation validated |
-| **Phase 2** | 3 months | $880K | Kenya customer live (1000+ tx/month) | Product-market fit proven |
+| **Phase 2** | 3 months | $880K | Tenancy + Finance MVP live (pilot customer, 1000+ tx/month) | Product-market fit proven |
 | **Phase 3** | 3 months | $1,080K | 3 countries, 10K users, advanced inventory ops | Scale model validated + retail depth |
 | **Phase 4** | 3 months | $880K | Enterprise deal ($500K+ ARR) signed | Enterprise viability proven |
 | **Phase 5** | 3 months | $880K | 15 country packs, partner ecosystem | Geographic scale achieved |
@@ -149,7 +149,7 @@ Each phase has **explicit exit criteria** that must be met before proceeding. Th
 
 | Risk | Probability | Impact | Mitigation | Owner |
 |------|-------------|--------|------------|-------|
-| **R1: Kenya eTIMS integration failure** | 40% | 🔴 HIGH | Hire Kenya-based integration specialist, 8-week buffer | Platform Lead |
+| **R1: Tenant isolation breach** | 30% | 🔴 HIGH | Mandatory tenant context enforcement, automated isolation tests, security review | Platform Lead |
 | **R2: Config engine adoption < 80%** | 30% | 🔴 HIGH | Reference implementation as proof, config UI training | Product Manager |
 | **R3: First customer churn (< 6 months)** | 25% | 🔴 HIGH | Dedicated customer success manager, weekly check-ins | Customer Success |
 | **R4: Performance targets missed (< 10K users)** | 35% | 🔴 HIGH | Early load testing (Month 4), database optimization budget | Platform Lead |
@@ -182,7 +182,7 @@ Each phase has **explicit exit criteria** that must be met before proceeding. Th
 ```
 Config Engine (Week 1-6)
     ├─→ Pricing Rules (Week 7) [blocks O2C]
-    ├─→ Tax Rules (Week 8) [blocks Kenya invoice]
+    ├─→ Tax Rules (Week 8) [blocks AR/AP invoicing]
     └─→ Posting Rules (Week 9) [blocks GL]
 
 Org Model (Week 1-6)
@@ -193,18 +193,19 @@ Workflow Engine (Week 1-6)
     └─→ P2P Approval (Week 10) [blocks purchase orders]
 ```
 
-### Phase 2 Dependencies (Kenya MVP)
+### Phase 2 Dependencies (Tenancy + Finance MVP)
 ```
-KRA eTIMS Integration (Week 13-16)
-    ├─→ Config Engine (pricing, tax) [BLOCKING]
-    └─→ GL Posting Rules [BLOCKING]
+Tenant Provisioning (Week 13-14)
+    ├─→ Tenant context enforcement [BLOCKING]
+    └─→ Org + Auth + Config [BLOCKING]
 
-M-Pesa Integration (Week 14-16)
-    └─→ Workflow Engine (payment reconciliation) [BLOCKING]
+Finance Core (Week 13-18)
+    ├─→ GL Posting Rules [BLOCKING]
+    ├─→ Tax Rules [BLOCKING]
+    └─→ Workflow Engine (approvals) [BLOCKING]
 
-Kenya O2C (Week 17-20)
-    ├─→ KRA eTIMS [BLOCKING]
-    ├─→ M-Pesa [BLOCKING]
+Core O2C + P2P (Week 17-20)
+    ├─→ Finance Core [BLOCKING]
     └─→ Config + Org + Workflow [BLOCKING]
 ```
 
@@ -218,7 +219,7 @@ Performance Testing (Week 29-32)
     └─→ Kafka Partitioning [BLOCKING]
 ```
 
-**Critical Path**: Config Engine → Kenya eTIMS → Kenya Customer → Scale Validation
+**Critical Path**: Config Engine → Tenancy → Finance MVP → Pilot Customer → Scale Validation
 
 ---
 
@@ -281,8 +282,8 @@ Performance Testing (Week 29-32)
 
 **Definition of Done**:
 - [ ] Configuration UI deployed (React admin panel)
-- [ ] 10+ pricing rules configured (Kenya volume discount, customer segment)
-- [ ] 5+ tax rules configured (Kenya VAT 16%, Withholding VAT 6%)
+- [ ] 10+ pricing rules configured (volume discount, customer segment)
+- [ ] 5+ tax rules configured (reference VAT/GST, withholding rules)
 - [ ] 20+ posting rules configured (IFRS accounts)
 - [ ] 5+ approval rules configured (PO < $1K auto-approve, > $10K CEO approval)
 - [ ] Org hierarchy loaded (3 levels: company → department → team)
@@ -291,7 +292,7 @@ Performance Testing (Week 29-32)
 - [ ] Performance tested (1000 config rule evaluations/sec)
 - [ ] Documentation complete (config admin guide, API docs)
 
-**Business Outcome**: Platform foundation validated, ready for Kenya customer
+**Business Outcome**: Platform foundation validated, ready for finance MVP pilot customer
 
 ---
 
@@ -481,7 +482,7 @@ const ConfigurationManager = () => {
 - [ ] Audit logging (who changed what when)
 - [ ] Testing framework (simulate config changes before production)
 
-**Success Metric**: 85%+ of Kenya O2C variation handled via config (no code changes)
+**Success Metric**: 85%+ of finance O2C variation handled via config (no code changes)
 
 ---
 
@@ -761,8 +762,8 @@ const TaskInbox = () => {
 
 ---
 
-### Phase 2: Kenya Country Pack v1 (Months 4-6)
-**Goal**: Prove ChiroERP works in production with real Kenya customer
+### Phase 2: Tenancy + Finance MVP (Months 4-6)
+**Goal**: Prove multi-tenant finance core works in production with a pilot customer
 
 **Investment**: $880K (3 months × $293K/month incl. team + infra + compliance)
 
@@ -770,94 +771,94 @@ const TaskInbox = () => {
 
 | Criterion | Acceptance Test | Success Metric |
 |-----------|-----------------|----------------|
-| **KRA eTIMS Production** | 1000+ invoices submitted with Cu numbers | 95%+ Cu retrieval success rate |
-| **M-Pesa Production** | 500+ payments received via C2B callback | 98%+ payment success rate |
-| **Kenya Customer Live** | 10+ users, 1000+ transactions/month | Customer NPS > 30 |
-| **O2C Flow Complete** | Order → Invoice (eTIMS) → Payment (M-Pesa) → GL | < 3 P0 bugs/month |
-| **P2P Flow Complete** | PR → PO (workflow) → Invoice verify → Payment | < 3 P0 bugs/month |
-| **Performance Validated** | 1000 orders/month processed | < 2s API response (p95) |
-| **Configuration Coverage** | 80%+ Kenya variation via config (no code) | Zero customer-specific code |
+| **Tenant Isolation Verified** | Cross-tenant access tests pass | Zero data leakage in automated suite |
+| **Finance Core Live** | GL/AP/AR posting + close | < 10 days month-end close |
+| **Pilot Customer Live** | 10+ users, 1000+ transactions/month | Customer NPS > 30 |
+| **O2C Flow Complete** | Order → Invoice → Payment → GL | < 3 P0 bugs/month |
+| **P2P Flow Complete** | PR → PO (workflow) → Receipt → Payment | < 3 P0 bugs/month |
+| **Performance Validated** | 1000 transactions/month processed | < 2s API response (p95) |
+| **Configuration Coverage** | 80%+ finance variation via config | Zero customer-specific code |
 
 **Definition of Done**:
-- [ ] KRA eTIMS certified (5 virtual devices, production API key)
-- [ ] M-Pesa Daraja certified (production Paybill, OAuth2 working)
-- [ ] Kenya Country Pack installed (VAT 16%, IFRS CoA, eTIMS + M-Pesa)
-- [ ] First customer signed ($20K-$35K ARR)
+- [ ] Tenant provisioning API + admin UI
+- [ ] Tenant context enforced across services (filters + tests)
+- [ ] GL/AP/AR live (posting rules, journals, invoices, bills, payments)
+- [ ] Bank import/reconciliation (CSV or API)
+- [ ] O2C and P2P flows wired end-to-end
+- [ ] Finance team can close month-end (< 10 days)
+- [ ] Pilot customer signed ($20K-$35K ARR)
 - [ ] Customer onboarded (10+ users trained)
 - [ ] 1000+ transactions processed (orders + invoices + payments)
-- [ ] Finance team can close month-end (< 10 days)
 - [ ] Customer success playbook created (weekly check-ins, escalation)
 - [ ] Case study published (customer testimonial, metrics)
 - [ ] Sales deck updated (live customer proof)
 
-**Business Outcome**: Product-market fit proven, referenceable customer
+**Business Outcome**: Finance MVP validated, referenceable customer
 
 ---
 
-#### 2.1 KRA eTIMS Integration (Production)
+#### 2.1 Tenant Provisioning & Isolation (Production)
 
 **Deliverables**:
-- [ ] Device registration (5 virtual devices)
-- [ ] Invoice submission (Cu number retrieval < 2s)
-- [ ] Error handling (retry logic for 30% timeout rate)
-- [ ] Monitoring (eTIMS response time, Cu cache hit rate)
+- [ ] Automated tenant creation (ID, schema/row-level partitioning)
+- [ ] Tenant context propagation in API + messaging
+- [ ] Cross-tenant access tests (negative test suite)
+- [ ] Tenant-level quotas and limits
 
-**Success Metric**: 5,000 invoices/day with 95%+ Cu retrieval success rate
+**Success Metric**: 0 cross-tenant data access in automated tests
 
 ---
 
-#### 2.2 M-Pesa Daraja API Integration (Production)
+#### 2.2 Finance Core (GL/AP/AR) (Production)
 
 **Deliverables**:
-- [ ] OAuth2 token management (3600s refresh)
-- [ ] C2B callback handling (< 30s response time)
-- [ ] Payment reconciliation (daily M-Pesa statement match)
-- [ ] Rate limit handling (100 req/sec max)
+- [ ] Chart of accounts + posting rules
+- [ ] Journal entries + period close
+- [ ] AR invoices + customer payments
+- [ ] AP bills + vendor payments
+- [ ] Reconciliation reports (bank + sub-ledgers)
 
-**Success Metric**: 1,000 payments/day with 98%+ success rate
+**Success Metric**: 1,000+ finance postings/day with < 1% exception rate
 
 ---
 
-#### 2.3 Kenya O2C Flow (Production)
+#### 2.3 Core O2C Flow (Production)
 
 **Deliverables**:
 - [ ] Sales order entry (pricing from config)
 - [ ] Credit check (workflow-based)
-- [ ] Invoice generation (KRA eTIMS Cu number)
-- [ ] Payment receipt (M-Pesa C2B callback)
-- [ ] GL posting (IFRS accounts from config)
+- [ ] Invoice generation
+- [ ] Payment receipt
+- [ ] GL posting (accounts from config)
 
 **Success Metric**: 1,000 orders/month processed end-to-end
 
 ---
 
-#### 2.4 Kenya P2P Flow (Production)
+#### 2.4 Core P2P Flow (Production)
 
 **Deliverables**:
 - [ ] Purchase requisition
 - [ ] PO approval (workflow-based, 3 levels)
 - [ ] Goods receipt
-- [ ] Invoice verification (KRA eTIMS Cu number check)
-- [ ] Payment (M-Pesa B2B or RTGS)
-- [ ] Withholding VAT (6% calculated from config)
+- [ ] Invoice verification
+- [ ] Payment + withholding handling from config
 
 **Success Metric**: 500 POs/month processed end-to-end
 
 ---
 
-#### 2.5 First Production Customer
+#### 2.5 First Production Customer (Finance MVP)
 
 **Target Customer Profile**:
 - **Industry**: Distribution/Wholesale (fast O2C + P2P cycles)
-- **Size**: 50-200 employees, KES 500M-2B revenue ($4M-$15M)
-- **Pain Point**: Manual KRA eTIMS submission, M-Pesa reconciliation
-- **Deal Size**: KES 3M-5M ($20K-$35K) annual license
+- **Size**: 50-200 employees, $4M-$15M revenue
+- **Pain Point**: Fragmented finance + manual approvals
+- **Deal Size**: $20K-$35K annual license
 
 **Customer Success Criteria**:
 - [ ] 10+ users onboarded (sales + procurement + finance)
 - [ ] 1,000+ transactions/month (orders + invoices + payments)
-- [ ] 95%+ KRA eTIMS Cu retrieval success
-- [ ] 98%+ M-Pesa payment success
 - [ ] < 3 P0 bugs/month (after go-live)
 
 ---
@@ -1583,8 +1584,8 @@ spec:
 
 | Item | Timeline | Cost | Rationale |
 |------|----------|------|-----------|
-| **KRA eTIMS (Kenya)** | Month 4 | $2K | Device registration, production approval |
-| **M-Pesa Daraja (Kenya)** | Month 5 | Free | Safaricom certification |
+| **KRA eTIMS (Kenya)** | Month 8 | $2K | Device registration, production approval (Phase 3 localization) |
+| **M-Pesa Daraja (Kenya)** | Month 9 | Free | Safaricom certification (Phase 3 localization) |
 | **TRA VFD (Tanzania)** | Month 8 | $1.5K | VFD license, TRA approval |
 | **ISO 27001** | Month 12-18 | $30K | ISMS implementation + Stage 1/2 audits |
 | **SOC 2 Type II** | Month 12-18 | $50K | 6-month observation + Big 4 audit |
@@ -1613,16 +1614,16 @@ spec:
 
 ## RACI Matrix (Ownership per Workstream)
 
-### Phase 1-2: Platform + Kenya MVP
+### Phase 1-2: Platform + Tenancy + Finance MVP
 
 | Workstream | Responsible | Accountable | Consulted | Informed |
 |------------|-------------|-------------|-----------|----------|
 | **Config Engine** | Platform Lead | CTO | Product Manager | VP Engineering |
 | **Org Model** | Platform Lead | CTO | Security Lead | VP Engineering |
 | **Workflow Engine** | Platform Lead | CTO | Product Manager | VP Engineering |
-| **KRA eTIMS Integration** | Backend Lead (Kenya) | VP Engineering | Localization Lead | CTO |
-| **M-Pesa Integration** | Backend Lead (Kenya) | VP Engineering | Localization Lead | CTO |
-| **Kenya Customer** | Implementation Lead | VP Sales | Customer Success | CEO |
+| **Tenant Provisioning** | Platform Lead | CTO | Security Lead | VP Engineering |
+| **Finance Core (GL/AP/AR)** | Finance Domain Lead | VP Engineering | Product Manager | CTO |
+| **Pilot Customer (Finance MVP)** | Implementation Lead | VP Sales | Customer Success | CEO |
 
 ---
 
@@ -1682,8 +1683,8 @@ spec:
 | Quarter | New Customers | Lost Customers | Net Customers | Avg ARR | New ARR | Churned ARR | Net ARR | Cumulative ARR |
 |---------|---------------|----------------|---------------|---------|---------|-------------|---------|----------------|
 | **Q1** | 0 | 0 | 0 | $0 | $0 | $0 | $0 | **$0** |
-| **Q2** | 1 (Kenya) | 0 | 1 | $30K | $30K | $0 | $30K | **$30K** |
-| **Q3** | 2 (Kenya, Tanzania) | 0 | 3 | $30K | $60K | $0 | $60K | **$90K** |
+| **Q2** | 1 (Pilot customer) | 0 | 1 | $30K | $30K | $0 | $30K | **$30K** |
+| **Q3** | 2 (Pilot + Regional) | 0 | 3 | $30K | $60K | $0 | $60K | **$90K** |
 | **Q4** | 2 (Tanzania, US) | 0 | 5 | $30K | $60K | $0 | $60K | **$150K** |
 
 **Year 1 Total**: 5 customers, $150K ARR
@@ -1838,7 +1839,7 @@ spec:
 **Mitigation**: Country pack factory + partner certification per country
 
 ### Risk 3: No Production Proof
-**Mitigation**: Kenya MVP (Phase 2) validates architecture with real customer
+**Mitigation**: Finance MVP (Phase 2) validates architecture with real customer
 
 ### Risk 4: SAP Ecosystem Advantage (10K+ partners)
 **Mitigation**: Target SAP-dissatisfied mid-market (500-5000 employees) in Africa
@@ -1858,24 +1859,24 @@ spec:
 ### Week 3-4: Pricing Config MVP
 - [ ] Build pricing evaluation engine
 - [ ] Create pricing rule UI (React admin)
-- [ ] Test with Kenya pricing rules (volume discount, customer segment)
+- [ ] Test with reference pricing rules (volume discount, customer segment)
 
 ### Month 2: Tax + Posting Config
-- [ ] Build tax calculation engine (Kenya VAT 16%, Withholding VAT 6%)
+- [ ] Build tax calculation engine (reference VAT/GST, withholding rules)
 - [ ] Build posting rule engine (IFRS accounts)
-- [ ] Test with Kenya O2C flow (sales order → invoice → GL posting)
+- [ ] Test with core O2C flow (sales order → invoice → GL posting)
 
 ### Month 3: Approval Config + Workflow
 - [ ] Build approval matrix config
 - [ ] Integrate with Temporal workflow engine
-- [ ] Test with Kenya P2P flow (PR → PO approval → payment)
+- [ ] Test with core P2P flow (PR → PO approval → payment)
 
 ---
 
 **Ready to execute?** Let me know if you want me to:
 1. **Create detailed sprint plans** (2-week sprints for Phase 1)
 2. **Build configuration engine code** (Kotlin + React)
-3. **Set up Kenya development environment** (KRA eTIMS sandbox + M-Pesa sandbox)
+3. **Set up pilot finance environment** (tenant provisioning + bank sandbox)
 
 ---
 

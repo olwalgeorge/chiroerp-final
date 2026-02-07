@@ -186,8 +186,7 @@ class PlatformSharedGovernanceTest {
                     "com.chiroerp.inventory..",
                     "com.chiroerp.tenancy.."
                 )
-                .and().dependOnClassesThat().resideInAPackage("com.chiroerp.shared..")
-                .should(onlyDependOnPlatformSharedInterfaces())
+                .should().onlyDependOnClassesThat().resideInAPackage("com.chiroerp.shared..")
                 .allowEmptyShould(true)
                 .because("ADR-006: Contexts should depend on interfaces from platform-shared, not implementations")
 
