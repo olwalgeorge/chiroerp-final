@@ -74,6 +74,13 @@ class KotlinConventionsPlugin : Plugin<Project> {
         tasks.withType<Test>().configureEach {
             useJUnitPlatform()
 
+            // During scaffold-heavy phases, many modules contain generated placeholder test sources.
+            // Keep architecture governance strict in :architecture-tests, but don't fail other
+            // modules on "no discovered tests" until ADR-019 testing standards are rolled out.
+            if (project.path != ":architecture-tests") {
+                failOnNoDiscoveredTests = false
+            }
+
             // Parallel test execution
             maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 
