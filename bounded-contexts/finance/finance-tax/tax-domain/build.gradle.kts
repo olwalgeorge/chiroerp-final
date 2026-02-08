@@ -1,5 +1,7 @@
-﻿/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/finance/finance-tax/tax-domain/build.gradle.kts
- * TODO: Add Gradle Kotlin DSL content.
- */
+plugins {
+    id("chiroerp.kotlin-conventions")
+}
+
+dependencies {
+    implementation(project(":bounded-contexts:finance:finance-shared"))
+}

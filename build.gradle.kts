@@ -8,6 +8,7 @@
  */
 
 import org.gradle.api.artifacts.ProjectDependency
+import org.gradle.api.GradleException
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -199,6 +200,7 @@ tasks.register("checkArchitecture") {
         } else {
             println("\n⚠️  Found $violations architectural violation(s)")
             println("See ADR-001 (CQRS), ADR-002 (Database-per-Context), ADR-006 (Platform Governance)")
+            throw GradleException("Architecture compliance failed with $violations violation(s)")
         }
 
         println("\n=====================================\n")
@@ -211,10 +213,17 @@ val architectureTest = tasks.register("architectureTest") {
     dependsOn(project(":architecture-tests").tasks.named("test"))
 }
 
+tasks.register("validateArchitecture") {
+    group = "verification"
+    description = "Runs all architecture quality gates (dependency rules + ArchUnit suite)"
+    notCompatibleWithConfigurationCache("Includes checkArchitecture task that inspects the project model")
+    dependsOn("checkArchitecture", architectureTest)
+}
+
 tasks.register("preCommit") {
     group = "verification"
     description = "Fast pre-commit checks for architecture compliance"
-    dependsOn(architectureTest)
+    dependsOn("validateArchitecture")
 }
 
 tasks.register("installGitHooks") {

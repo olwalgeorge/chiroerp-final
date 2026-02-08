@@ -1,5 +1,10 @@
-﻿/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/finance/finance-gl/gl-application/build.gradle.kts
- * TODO: Add Gradle Kotlin DSL content.
- */
+plugins {
+    id("chiroerp.kotlin-conventions")
+}
+
+dependencies {
+    implementation(project(":bounded-contexts:finance:finance-shared"))
+    implementation(project(":bounded-contexts:finance:finance-gl:gl-domain"))
+
+    compileOnly("jakarta.validation:jakarta.validation-api:3.1.1")
+}

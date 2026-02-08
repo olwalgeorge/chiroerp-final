@@ -10,17 +10,33 @@ tasks.withType<Test>().configureEach {
 dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.3.0")
 
-    // Test against the main modules
+    // Test against active workspace modules (domain/application/infrastructure + shared)
     testRuntimeOnly(project(":platform-shared:common-types"))
+    testRuntimeOnly(project(":platform-shared:common-messaging"))
+    testRuntimeOnly(project(":platform-shared:common-security"))
+    testRuntimeOnly(project(":platform-shared:common-observability"))
+    testRuntimeOnly(project(":platform-shared:config-model"))
+    testRuntimeOnly(project(":platform-shared:org-model"))
+    testRuntimeOnly(project(":platform-shared:workflow-model"))
+
+    testRuntimeOnly(project(":bounded-contexts:tenancy-identity:tenancy-shared"))
+    testRuntimeOnly(project(":bounded-contexts:tenancy-identity:tenancy-core"))
+    testRuntimeOnly(project(":bounded-contexts:tenancy-identity:identity-core"))
+
     testRuntimeOnly(project(":bounded-contexts:finance:finance-shared"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-ap:ap-domain"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-ap:ap-application"))
+    testRuntimeOnly(project(":bounded-contexts:finance:finance-ap:ap-infrastructure"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-ar:ar-domain"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-ar:ar-application"))
+    testRuntimeOnly(project(":bounded-contexts:finance:finance-ar:ar-infrastructure"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-assets:assets-domain"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-assets:assets-application"))
+    testRuntimeOnly(project(":bounded-contexts:finance:finance-assets:assets-infrastructure"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-gl:gl-domain"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-gl:gl-application"))
+    testRuntimeOnly(project(":bounded-contexts:finance:finance-gl:gl-infrastructure"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-tax:tax-domain"))
     testRuntimeOnly(project(":bounded-contexts:finance:finance-tax:tax-application"))
+    testRuntimeOnly(project(":bounded-contexts:finance:finance-tax:tax-infrastructure"))
 }

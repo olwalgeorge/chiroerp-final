@@ -1,4 +1,4 @@
-﻿package com.chiroerp.finance.tax.domain.model.return
+﻿package com.chiroerp.finance.tax.domain.model.taxreturn
 
 /*
  * Placeholder generated from COMPLETE_STRUCTURE.txt
