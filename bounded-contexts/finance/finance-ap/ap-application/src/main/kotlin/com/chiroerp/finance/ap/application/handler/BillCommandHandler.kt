@@ -9,11 +9,13 @@ import com.chiroerp.finance.ap.domain.model.BillLine
 import com.chiroerp.finance.shared.identifiers.BillId
 import com.chiroerp.shared.types.results.DomainError
 import com.chiroerp.shared.types.results.Result
+import jakarta.transaction.Transactional
 
 class BillCommandHandler(
     private val billRepository: BillRepository,
     private val eventPublisher: APEventPublisher,
 ) {
+    @Transactional
     fun handle(command: CreateBillCommand): Result<BillId> {
         if (command.lines.isEmpty()) {
             return Result.failure(SimpleDomainError("EMPTY_BILL", "Bill must contain at least one line"))
@@ -42,6 +44,7 @@ class BillCommandHandler(
         }
     }
 
+    @Transactional
     fun handle(command: PostBillCommand): Result<Unit> {
         val bill = billRepository.findById(command.tenantId, command.billId)
             ?: return Result.failure(SimpleDomainError("BILL_NOT_FOUND", "Bill not found for tenant"))

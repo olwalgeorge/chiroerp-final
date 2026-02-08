@@ -1,5 +1,6 @@
 package com.chiroerp.finance.ap.infrastructure.persistence
 
+import com.chiroerp.finance.ap.domain.model.BillAllocation
 import com.chiroerp.finance.ap.domain.model.Payment
 import com.chiroerp.finance.ap.domain.model.PaymentStatus
 import com.chiroerp.finance.shared.identifiers.PaymentId
@@ -44,7 +45,17 @@ class PaymentEntity : PanacheEntityBase() {
     @Column(name = "allocated_amount", nullable = false, precision = 19, scale = 6)
     var allocatedAmount: BigDecimal = BigDecimal.ZERO
 
-    fun toDomain(): Payment {
+    fun toDomain(allocations: MutableList<BillAllocation>): Payment {
+        val allocatedAmount = allocations
+            .map { it.amount }
+            .fold(Money.zero(Currency.of(currency))) { acc, next -> acc + next }
+
+        val resolvedStatus = when {
+            allocatedAmount.amount.signum() == 0 -> PaymentStatus.UNALLOCATED
+            allocatedAmount.amount >= amount -> PaymentStatus.FULLY_ALLOCATED
+            else -> PaymentStatus.PARTIALLY_ALLOCATED
+        }
+
         return Payment.reconstruct(
             id = PaymentId(id),
             tenantId = tenantId,
@@ -52,8 +63,8 @@ class PaymentEntity : PanacheEntityBase() {
             amount = Money.of(amount, Currency.of(currency)),
             paidAt = paidAt,
             reference = reference,
-            allocations = mutableListOf(), // TODO: load from separate table if needed
-            status = status,
+            allocations = allocations,
+            status = resolvedStatus,
         )
     }
 

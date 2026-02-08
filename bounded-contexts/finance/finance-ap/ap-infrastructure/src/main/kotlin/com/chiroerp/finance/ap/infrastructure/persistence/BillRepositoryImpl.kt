@@ -4,18 +4,38 @@ import com.chiroerp.finance.ap.application.service.BillRepository
 import com.chiroerp.finance.ap.domain.model.Bill
 import com.chiroerp.finance.ap.domain.model.BillStatus
 import com.chiroerp.finance.shared.identifiers.BillId
-import io.quarkus.hibernate.orm.panache.PanacheQuery
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase
 import jakarta.enterprise.context.ApplicationScoped
+import jakarta.transaction.Transactional
 import java.util.*
 
 @ApplicationScoped
 class BillRepositoryImpl : PanacheRepositoryBase<BillEntity, UUID>, BillRepository {
 
+    @Transactional
     override fun save(bill: Bill): Bill {
-        val entity = BillEntity.fromDomain(bill)
-        persist(entity)
-        return entity.toDomain()
+        val existing = list("id = ?1 and tenantId = ?2", bill.id.value, bill.tenantId).firstOrNull()
+
+        val managed = if (existing == null) {
+            BillEntity.fromDomain(bill).also { persist(it) }
+        } else {
+            existing.apply {
+                vendorId = bill.vendorId
+                billNumber = bill.billNumber
+                currency = bill.currency.code
+                issueDate = bill.issueDate
+                dueDate = bill.dueDate
+                status = bill.status
+
+                lines.clear()
+                lines.addAll(bill.lines.map { BillLineEntity.fromDomain(it, this) })
+
+                allocations.clear()
+                allocations.addAll(bill.allocations.map { BillAllocationEntity.fromDomain(it, this) })
+            }
+        }
+
+        return managed.toDomain()
     }
 
     override fun findById(tenantId: UUID, billId: BillId): Bill? {

@@ -10,12 +10,14 @@ import com.chiroerp.finance.ap.domain.model.Payment
 import com.chiroerp.finance.shared.identifiers.PaymentId
 import com.chiroerp.shared.types.results.DomainError
 import com.chiroerp.shared.types.results.Result
+import jakarta.transaction.Transactional
 
 class PaymentCommandHandler(
     private val paymentRepository: PaymentRepository,
     private val billRepository: BillRepository,
     private val eventPublisher: APEventPublisher,
 ) {
+    @Transactional
     fun handle(command: RecordPaymentCommand): Result<PaymentId> {
         return try {
             val payment = Payment.create(
@@ -43,6 +45,7 @@ class PaymentCommandHandler(
         }
     }
 
+    @Transactional
     fun handle(command: ApplyPaymentCommand): Result<Unit> {
         val bill = billRepository.findById(command.tenantId, command.billId)
             ?: return Result.failure(SimpleDomainError("BILL_NOT_FOUND", "Bill not found for tenant"))

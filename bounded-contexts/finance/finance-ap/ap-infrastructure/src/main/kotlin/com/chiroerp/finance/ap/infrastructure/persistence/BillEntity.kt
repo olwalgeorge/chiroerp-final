@@ -1,6 +1,7 @@
 package com.chiroerp.finance.ap.infrastructure.persistence
 
 import com.chiroerp.finance.ap.domain.model.Bill
+import com.chiroerp.finance.ap.domain.model.BillAllocation
 import com.chiroerp.finance.ap.domain.model.BillLine
 import com.chiroerp.finance.ap.domain.model.BillStatus
 import com.chiroerp.finance.ap.domain.model.PaymentAllocation
@@ -153,6 +154,12 @@ class BillAllocationEntity : PanacheEntityBase() {
 
     fun toDomain(): PaymentAllocation = PaymentAllocation(
         paymentId = com.chiroerp.finance.shared.identifiers.PaymentId(paymentId),
+        amount = Money.of(amount, Currency.of(currency)),
+        appliedAt = appliedAt,
+    )
+
+    fun toPaymentAllocationDomain(): BillAllocation = BillAllocation(
+        billId = BillId(bill.id),
         amount = Money.of(amount, Currency.of(currency)),
         appliedAt = appliedAt,
     )
