@@ -2,7 +2,7 @@ ChiroERP - Complete Platform-Shared, Finance, and Inventory Structure
 ===============================================================
 Based on ADRs and improved.txt specifications
 Generated: February 5, 2026
-Updated: February 6, 2026 - World-Class Roadmap Structural Alignment (Upgrade-First, P0-P2)
+Updated: February 8, 2026 - ADR-Compliant Ports/Outbox/Inbox Enforcement
 
 GOVERNANCE NOTES (ADR-006)
 ==========================
@@ -11,6 +11,48 @@ GOVERNANCE NOTES (ADR-006)
    in each bounded context's *-shared module with context-specific semantics
 3. Maximum 7 modules in platform-shared (adding 8th requires ADR amendment)
 4. No domain models, business logic, or shared DTOs in platform-shared
+
+MANDATORY STRUCTURE CONTRACT (ADR-001, ADR-003, ADR-010, ADR-011, ADR-013, ADR-020)
+======================================================================================
+These requirements are NON-OPTIONAL for every implemented bounded context in this file.
+
+1. Hexagonal (Ports & Adapters) - ADR-001 / ADR-020:
+   - `{context}-application/port/input/command|query/` MUST exist
+   - `{context}-application/port/output/` MUST exist
+   - `{context}-infrastructure/adapter/input/rest/` MUST exist
+   - `{context}-infrastructure/adapter/output/` MUST exist
+
+2. Event Publishing Reliability - ADR-003 / ADR-020:
+   - Event publishers MUST write through transactional outbox
+   - Required folders:
+     - `adapter/output/event/*OutboxEventPublisher.kt`
+     - `adapter/output/messaging/outbox/*OutboxEventScheduler.kt`
+     - `adapter/output/messaging/outbox/*KafkaOutboxMessagePublisher.kt`
+   - Required DB artifact:
+     - migration creating `<context>_event_outbox` table
+
+3. Event Consumption Idempotency - ADR-011 / ADR-013 / ADR-020:
+   - Any context with `adapter/input/event/*EventConsumer.kt` MUST also define inbox/idempotency
+   - Required folders:
+     - `adapter/output/messaging/inbox/EventInboxEntity.kt`
+     - `adapter/output/messaging/inbox/EventInboxRepository.kt`
+     - `adapter/output/messaging/inbox/EventInboxProcessor.kt`
+   - Required DB artifact:
+     - migration creating `<context>_event_inbox` table
+
+4. Kafka EDA Transport - ADR-003 / ADR-020:
+   - `adapter/output/messaging/kafka/` MUST contain publisher(s), schema(s), and consumer wiring where applicable
+   - Kafka publishing from application handlers is prohibited; only outbox relay publishes to broker
+
+5. REST Validation - ADR-010:
+   - Every REST adapter MUST include validation package under `adapter/input/rest/validation/`
+   - Required artifacts:
+     - `*BeanParam.kt` (or equivalent request validation object)
+     - `RestValidationExceptionMapper.kt`
+     - `ValidationErrorResponse.kt`
+     - `ValidationAuditFilter.kt`
+     - `ValidationMetricsFilter.kt`
+   - Request parsing/format validation must happen in REST layer before application/domain handling
 
 ROOT STRUCTURE
 ==============
@@ -1219,11 +1261,19 @@ chiroerp/
     │           │   │                       │   │   │           ├── TrialBalanceDto.kt
     │           │   │                       │   │   │           ├── BalanceSheetDto.kt
     │           │   │                       │   │   │           └── PeriodStatusDto.kt
+    │           │   │                       │   │   ├── validation/
+    │           │   │                       │   │       ├── GLBeanParam.kt
+    │           │   │                       │   │       ├── RestValidationExceptionMapper.kt
+    │           │   │                       │   │       ├── ValidationErrorResponse.kt
+    │           │   │                       │   │       ├── ValidationAuditFilter.kt
+    │           │   │                       │   │       └── ValidationMetricsFilter.kt
     │           │   │                       │   │   └── event/
     │           │   │                       │   │       ├── SubLedgerEventConsumer.kt       # AR/AP/FA postings
     │           │   │                       │   │       ├── InventoryEventConsumer.kt       # Inventory valuations
     │           │   │                       │   │       └── PayrollEventConsumer.kt         # HR payroll postings
     │           │   │                       │   └── output/
+    │           │   │                       │       ├── event/
+    │           │   │                       │       │   └── GLOutboxEventPublisher.kt
     │           │   │                       │       ├── persistence/
     │           │   │                       │       │   ├── jpa/
     │           │   │                       │       │   │   ├── JournalEntryJpaAdapter.kt
@@ -1237,13 +1287,15 @@ chiroerp/
     │           │   │                       │       │   │   │   ├── BalanceEntity.kt
     │           │   │                       │       │   │   │   ├── ExchangeRateEntity.kt
     │           │   │                       │       │   │   │   ├── LegalEntityEntity.kt
-    │           │   │                       │       │   │   │   └── EventOutboxEntity.kt
+    │           │   │                       │       │   │   │   ├── EventOutboxEntity.kt
+    │           │   │                       │       │   │   │   └── EventInboxEntity.kt
     │           │   │                       │       │   │   └── repository/
     │           │   │                       │       │   │       ├── JournalEntryJpaRepository.kt
     │           │   │                       │       │   │       ├── AccountJpaRepository.kt
     │           │   │                       │       │   │       ├── BalanceJpaRepository.kt
     │           │   │                       │       │   │       ├── FiscalPeriodJpaRepository.kt
-    │           │   │                       │       │   │       └── EventOutboxRepository.kt
+    │           │   │                       │       │   │       ├── EventOutboxRepository.kt
+    │           │   │                       │       │   │       └── EventInboxRepository.kt
     │           │   │                       │       │   └── reporting/
     │           │   │                       │       │       ├── TrialBalanceReadAdapter.kt
     │           │   │                       │       │       ├── BalanceSheetReadAdapter.kt
@@ -1268,9 +1320,16 @@ chiroerp/
     │           │   │                       │       │   │       ├── JournalPostedSchema.avro
     │           │   │                       │       │   │       ├── PeriodClosedSchema.avro
     │           │   │                       │       │   │       └── BalanceUpdatedSchema.avro
-    │           │   │                       │       │   └── outbox/
+    │           │   │                       │       │   ├── outbox/
     │           │   │                       │       │       ├── GLOutboxEventPublisher.kt
+    │           │   │                       │       │       ├── GLKafkaOutboxMessagePublisher.kt
+    │           │   │                       │       │       ├── GLOutboxEventScheduler.kt
     │           │   │                       │       │       └── EventOutboxRelay.kt
+    │           │   │                       │       │   └── inbox/
+    │           │   │                       │       │       ├── EventInboxEntity.kt
+    │           │   │                       │       │       ├── EventInboxRepository.kt
+    │           │   │                       │       │       ├── EventInboxProcessor.kt
+    │           │   │                       │       │       └── GLEventInboxConsumer.kt
     │           │   │                       │       └── client/
     │           │   │                       │           ├── TaxServiceClient.kt
     │           │   │                       │           ├── IntercompanyClient.kt
@@ -1293,7 +1352,8 @@ chiroerp/
     │           │               ├── V4__create_fiscal_period_tables.sql
     │           │               ├── V5__create_balance_tables.sql
     │           │               ├── V6__create_exchange_rate_tables.sql
-    │           │               └── V7__create_event_outbox_table.sql
+    │           │               ├── V7__create_event_outbox_table.sql
+    │           │               └── V8__create_event_inbox_table.sql
     │           └── test/
     │               ├── kotlin/
     │               │   └── com/
@@ -1305,7 +1365,8 @@ chiroerp/
     │               │                       ├── AccountResourceTest.kt
     │               │                       ├── JournalEntryJpaAdapterTest.kt
     │               │                       ├── AccountJpaAdapterTest.kt
-    │               │                       └── EventOutboxRelayTest.kt
+    │               │                       ├── EventOutboxRelayTest.kt
+    │               │                       └── EventInboxProcessorTest.kt
     │               └── resources/
     │                   └── application-test.yml
     │
@@ -1394,7 +1455,8 @@ chiroerp/
     │   │       │   │                       │   └── output/
     │   │       │   │                       │       ├── InvoiceRepository.kt
     │   │       │   │                       │       ├── PaymentRepository.kt
-    │   │       │   │                       │       └── GeneralLedgerPort.kt
+    │   │       │   │                       │       ├── GeneralLedgerPort.kt
+    │   │       │   │                       │       └── EventPublisherPort.kt
     │   │       │   │                       └── service/
     │   │       │   │                           ├── command/
     │   │       │   │                           │   ├── InvoiceCommandHandler.kt
@@ -1418,38 +1480,94 @@ chiroerp/
     │           │   │                   └── infrastructure/
     │           │   │                       ├── adapter/
     │           │   │                       │   ├── input/
-    │           │   │                       │   │   └── rest/
-    │           │   │                       │   │       ├── InvoiceResource.kt
-    │           │   │                       │   │       ├── PaymentResource.kt
-    │           │   │                       │   │       └── dto/
-    │           │   │                       │   │           ├── request/
-    │           │   │                       │   │           │   ├── CreateInvoiceRequest.kt
-    │           │   │                       │   │           │   └── RecordPaymentRequest.kt
-    │           │   │                       │   │           └── response/
-    │           │   │                       │   │               ├── InvoiceDto.kt
-    │           │   │                       │   │               └── AgingReportDto.kt
+    │           │   │                       │   │   ├── rest/
+    │           │   │                       │   │   │   ├── InvoiceResource.kt
+    │           │   │                       │   │   │   ├── PaymentResource.kt
+    │           │   │                       │   │   │   └── dto/
+    │           │   │                       │   │   │       ├── request/
+    │           │   │                       │   │   │       │   ├── CreateInvoiceRequest.kt
+    │           │   │                       │   │   │       │   ├── RecordPaymentRequest.kt
+    │           │   │                       │   │   │       │   └── ApplyPaymentRequest.kt
+    │           │   │                       │   │   │       └── response/
+    │           │   │                       │   │   │           ├── InvoiceDto.kt
+    │           │   │                       │   │   │           ├── PaymentDto.kt
+    │           │   │                       │   │   │           └── AgingReportDto.kt
+    │           │   │                       │   │   ├── validation/
+    │           │   │                       │   │   │   ├── ARBeanParam.kt
+    │           │   │                       │   │   │   ├── RestValidationExceptionMapper.kt
+    │           │   │                       │   │   │   ├── ValidationErrorResponse.kt
+    │           │   │                       │   │   │   ├── ValidationAuditFilter.kt
+    │           │   │                       │   │   │   └── ValidationMetricsFilter.kt
+    │           │   │                       │   │   └── event/
+    │           │   │                       │   │       ├── SalesOrderEventConsumer.kt
+    │           │   │                       │   │       └── CreditMemoEventConsumer.kt
     │           │   │                       │   └── output/
-    │           │   │                       │       └── persistence/
-    │           │   │                       │           └── jpa/
-    │           │   │                       │               ├── InvoiceJpaAdapter.kt
-    │           │   │                       │               ├── entity/
-    │           │   │                       │               │   ├── InvoiceEntity.kt
-    │           │   │                       │               │   └── PaymentEntity.kt
-    │           │   │                       │               └── repository/
-    │           │   │                       │                   ├── InvoiceJpaRepository.kt
-    │           │   │                       │                   └── PaymentJpaRepository.kt
+    │           │   │                       │       ├── event/
+    │           │   │                       │       │   └── AROutboxEventPublisher.kt
+    │           │   │                       │       ├── persistence/
+    │           │   │                       │       │   └── jpa/
+    │           │   │                       │       │       ├── InvoiceJpaAdapter.kt
+    │           │   │                       │       │       ├── PaymentJpaAdapter.kt
+    │           │   │                       │       │       ├── entity/
+    │           │   │                       │       │       │   ├── InvoiceEntity.kt
+    │           │   │                       │       │       │   ├── PaymentEntity.kt
+    │           │   │                       │       │       │   ├── EventOutboxEntity.kt
+    │           │   │                       │       │       │   └── EventInboxEntity.kt
+    │           │   │                       │       │       └── repository/
+    │           │   │                       │       │           ├── InvoiceJpaRepository.kt
+    │           │   │                       │       │           ├── PaymentJpaRepository.kt
+    │           │   │                       │       │           ├── EventOutboxRepository.kt
+    │           │   │                       │       │           └── EventInboxRepository.kt
+    │           │   │                       │       ├── integration/
+    │           │   │                       │       │   └── GeneralLedgerAdapter.kt
+    │           │   │                       │       └── messaging/
+    │           │   │                       │           ├── kafka/
+    │           │   │                       │           │   ├── AREventPublisher.kt
+    │           │   │                       │           │   ├── AREventConsumer.kt
+    │           │   │                       │           │   └── schema/
+    │           │   │                       │           │       ├── InvoicePostedSchema.avro
+    │           │   │                       │           │       ├── PaymentReceivedSchema.avro
+    │           │   │                       │           │       └── PaymentAppliedSchema.avro
+    │           │   │                       │           ├── outbox/
+    │           │   │                       │           │   ├── ARKafkaOutboxMessagePublisher.kt
+    │           │   │                       │           │   ├── AROutboxEventScheduler.kt
+    │           │   │                       │           │   └── EventOutboxRelay.kt
+    │           │   │                       │           └── inbox/
+    │           │   │                       │               ├── EventInboxEntity.kt
+    │           │   │                       │               ├── EventInboxRepository.kt
+    │           │   │                       │               ├── EventInboxProcessor.kt
+    │           │   │                       │               └── AREventInboxConsumer.kt
     │           │   │                       ├── configuration/
-    │           │   │                       │   └── ARDependencyInjection.kt
+    │           │   │                       │   ├── ARDependencyInjection.kt
+    │           │   │                       │   ├── PersistenceConfiguration.kt
+    │           │   │                       │   └── MessagingConfiguration.kt
     │           │   │                       └── FinanceARApplication.kt
     │           │   └── resources/
     │           │       ├── application.yml
+    │           │       ├── application-dev.yml
+    │           │       ├── application-prod.yml
     │           │       └── db/
     │           │           └── migration/
     │           │               ├── V1__create_ar_schema.sql
-    │           │               └── V2__create_invoice_tables.sql
+    │           │               ├── V2__create_invoice_tables.sql
+    │           │               ├── V3__create_payment_tables.sql
+    │           │               ├── V4__create_event_outbox_table.sql
+    │           │               └── V5__create_event_inbox_table.sql
     │           └── test/
     │               ├── kotlin/
+    │               │   └── com/
+    │               │       └── chiroerp/
+    │               │           └── finance/
+    │               │               └── ar/
+    │               │                   └── infrastructure/
+    │               │                       ├── InvoiceResourceTest.kt
+    │               │                       ├── PaymentResourceTest.kt
+    │               │                       ├── InvoiceJpaAdapterTest.kt
+    │               │                       ├── EventOutboxRelayTest.kt
+    │               │                       ├── EventInboxProcessorTest.kt
+    │               │                       └── InvoiceResourceValidationTest.kt
     │               └── resources/
+    │                   └── application-test.yml
     │
     ├── finance-ap/                              # Accounts Payable Subdomain
     │   ├── ap-domain/
@@ -1631,10 +1749,18 @@ chiroerp/
     │           │   │                       │   │   │           ├── VendorDto.kt
     │           │   │                       │   │   │           ├── PaymentRunDto.kt
     │           │   │                       │   │   │           └── AgingPayablesDto.kt
+    │           │   │                       │   │   ├── validation/
+    │           │   │                       │   │   │   ├── APBeanParam.kt
+    │           │   │                       │   │   │   ├── RestValidationExceptionMapper.kt
+    │           │   │                       │   │   │   ├── ValidationErrorResponse.kt
+    │           │   │                       │   │   │   ├── ValidationAuditFilter.kt
+    │           │   │                       │   │   │   └── ValidationMetricsFilter.kt
     │           │   │                       │   │   └── event/
     │           │   │                       │   │       ├── PurchaseOrderEventConsumer.kt
     │           │   │                       │   │       └── ReceiptEventConsumer.kt
     │           │   │                       │   └── output/
+    │           │   │                       │       ├── event/
+    │           │   │                       │       │   └── APOutboxEventPublisher.kt
     │           │   │                       │       ├── persistence/
     │           │   │                       │       │   └── jpa/
     │           │   │                       │       │       ├── BillJpaAdapter.kt
@@ -1646,12 +1772,14 @@ chiroerp/
     │           │   │                       │       │       │   ├── VendorEntity.kt
     │           │   │                       │       │       │   ├── PaymentRunEntity.kt
     │           │   │                       │       │       │   ├── PaymentRunLineEntity.kt
-    │           │   │                       │       │       │   └── EventOutboxEntity.kt
+    │           │   │                       │       │       │   ├── EventOutboxEntity.kt
+    │           │   │                       │       │       │   └── EventInboxEntity.kt
     │           │   │                       │       │       └── repository/
     │           │   │                       │       │           ├── BillJpaRepository.kt
     │           │   │                       │       │           ├── VendorJpaRepository.kt
     │           │   │                       │       │           ├── PaymentRunJpaRepository.kt
-    │           │   │                       │       │           └── EventOutboxRepository.kt
+    │           │   │                       │       │           ├── EventOutboxRepository.kt
+    │           │   │                       │       │           └── EventInboxRepository.kt
     │           │   │                       │       ├── integration/
     │           │   │                       │       │   ├── GLSubLedgerAdapter.kt
     │           │   │                       │       │   ├── PurchaseOrderAdapter.kt
@@ -1662,11 +1790,21 @@ chiroerp/
     │           │   │                       │       │   ├── WireTransferProvider.kt
     │           │   │                       │       │   └── CheckPrintProvider.kt
     │           │   │                       │       └── messaging/
-    │           │   │                       │           └── kafka/
+    │           │   │                       │           ├── kafka/
     │           │   │                       │               ├── APEventPublisher.kt
+    │           │   │                       │               ├── APEventConsumer.kt
     │           │   │                       │               └── schema/
     │           │   │                       │                   ├── BillPostedSchema.avro
     │           │   │                       │                   └── PaymentExecutedSchema.avro
+    │           │   │                       │           ├── outbox/
+    │           │   │                       │           │   ├── APKafkaOutboxMessagePublisher.kt
+    │           │   │                       │           │   ├── APOutboxEventScheduler.kt
+    │           │   │                       │           │   └── EventOutboxRelay.kt
+    │           │   │                       │           └── inbox/
+    │           │   │                       │               ├── EventInboxEntity.kt
+    │           │   │                       │               ├── EventInboxRepository.kt
+    │           │   │                       │               ├── EventInboxProcessor.kt
+    │           │   │                       │               └── APEventInboxConsumer.kt
     │           │   │                       ├── configuration/
     │           │   │                       │   ├── APDependencyInjection.kt
     │           │   │                       │   ├── PersistenceConfiguration.kt
@@ -1683,7 +1821,8 @@ chiroerp/
     │           │               ├── V2__create_vendor_tables.sql
     │           │               ├── V3__create_bill_tables.sql
     │           │               ├── V4__create_payment_run_tables.sql
-    │           │               └── V5__create_event_outbox_table.sql
+    │           │               ├── V5__create_event_outbox_table.sql
+    │           │               └── V6__create_event_inbox_table.sql
     │           └── test/
     │               ├── kotlin/
     │               │   └── com/
@@ -1693,7 +1832,10 @@ chiroerp/
     │               │                   └── infrastructure/
     │               │                       ├── BillResourceTest.kt
     │               │                       ├── BillJpaAdapterTest.kt
-    │               │                       └── PaymentRunIntegrationTest.kt
+    │               │                       ├── PaymentRunIntegrationTest.kt
+    │               │                       ├── EventOutboxRelayTest.kt
+    │               │                       ├── EventInboxProcessorTest.kt
+    │               │                       └── BillResourceValidationTest.kt
     │               └── resources/
     │                   └── application-test.yml
     │
@@ -1881,10 +2023,18 @@ chiroerp/
     │           │   │                       │   │   │           ├── DepreciationEntryDto.kt
     │           │   │                       │   │   │           ├── AssetRegisterDto.kt
     │           │   │                       │   │   │           └── DisposalDto.kt
+    │           │   │                       │   │   ├── validation/
+    │           │   │                       │   │   │   ├── AssetsBeanParam.kt
+    │           │   │                       │   │   │   ├── RestValidationExceptionMapper.kt
+    │           │   │                       │   │   │   ├── ValidationErrorResponse.kt
+    │           │   │                       │   │   │   ├── ValidationAuditFilter.kt
+    │           │   │                       │   │   │   └── ValidationMetricsFilter.kt
     │           │   │                       │   │   └── event/
     │           │   │                       │   │       ├── PurchaseOrderEventConsumer.kt  # Auto-create from PO
     │           │   │                       │   │       └── InvoiceEventConsumer.kt        # Capitalization trigger
     │           │   │                       │   └── output/
+    │           │   │                       │       ├── event/
+    │           │   │                       │       │   └── FAOutboxEventPublisher.kt
     │           │   │                       │       ├── persistence/
     │           │   │                       │       │   └── jpa/
     │           │   │                       │       │       ├── FixedAssetJpaAdapter.kt
@@ -1897,12 +2047,14 @@ chiroerp/
     │           │   │                       │       │       │   ├── AssetDisposalEntity.kt
     │           │   │                       │       │       │   ├── AssetTransferEntity.kt
     │           │   │                       │       │       │   ├── MaintenanceRecordEntity.kt
-    │           │   │                       │       │       │   └── EventOutboxEntity.kt
+    │           │   │                       │       │       │   ├── EventOutboxEntity.kt
+    │           │   │                       │       │       │   └── EventInboxEntity.kt
     │           │   │                       │       │       └── repository/
     │           │   │                       │       │           ├── FixedAssetJpaRepository.kt
     │           │   │                       │       │           ├── DepreciationJpaRepository.kt
     │           │   │                       │       │           ├── DisposalJpaRepository.kt
-    │           │   │                       │       │           └── EventOutboxRepository.kt
+    │           │   │                       │       │           ├── EventOutboxRepository.kt
+    │           │   │                       │       │           └── EventInboxRepository.kt
     │           │   │                       │       ├── reporting/
     │           │   │                       │       │   ├── AssetRegisterReadAdapter.kt
     │           │   │                       │       │   ├── DepreciationReportAdapter.kt
@@ -1913,12 +2065,22 @@ chiroerp/
     │           │   │                       │       │   ├── GLSubLedgerAdapter.kt
     │           │   │                       │       │   └── PurchasingAdapter.kt
     │           │   │                       │       └── messaging/
-    │           │   │                       │           └── kafka/
+    │           │   │                       │           ├── kafka/
     │           │   │                       │               ├── FAEventPublisher.kt
+    │           │   │                       │               ├── FAEventConsumer.kt
     │           │   │                       │               └── schema/
     │           │   │                       │                   ├── AssetAcquiredSchema.avro
     │           │   │                       │                   ├── DepreciationPostedSchema.avro
     │           │   │                       │                   └── AssetDisposedSchema.avro
+    │           │   │                       │           ├── outbox/
+    │           │   │                       │           │   ├── FAKafkaOutboxMessagePublisher.kt
+    │           │   │                       │           │   ├── FAOutboxEventScheduler.kt
+    │           │   │                       │           │   └── EventOutboxRelay.kt
+    │           │   │                       │           └── inbox/
+    │           │   │                       │               ├── EventInboxEntity.kt
+    │           │   │                       │               ├── EventInboxRepository.kt
+    │           │   │                       │               ├── EventInboxProcessor.kt
+    │           │   │                       │               └── FAEventInboxConsumer.kt
     │           │   │                       ├── configuration/
     │           │   │                       │   ├── FADependencyInjection.kt
     │           │   │                       │   ├── PersistenceConfiguration.kt
@@ -1935,7 +2097,8 @@ chiroerp/
     │           │               ├── V3__create_depreciation_tables.sql
     │           │               ├── V4__create_disposal_tables.sql
     │           │               ├── V5__create_transfer_tables.sql
-    │           │               └── V6__create_event_outbox_table.sql
+    │           │               ├── V6__create_event_outbox_table.sql
+    │           │               └── V7__create_event_inbox_table.sql
     │           └── test/
     │               ├── kotlin/
     │               │   └── com/
@@ -1946,7 +2109,10 @@ chiroerp/
     │               │                       ├── AssetResourceTest.kt
     │               │                       ├── DepreciationResourceTest.kt
     │               │                       ├── FixedAssetJpaAdapterTest.kt
-    │               │                       └── DepreciationIntegrationTest.kt
+    │               │                       ├── DepreciationIntegrationTest.kt
+    │               │                       ├── EventOutboxRelayTest.kt
+    │               │                       ├── EventInboxProcessorTest.kt
+    │               │                       └── AssetResourceValidationTest.kt
     │               └── resources/
     │                   └── application-test.yml
     │
@@ -2126,11 +2292,19 @@ chiroerp/
                 │   │                       │   │   │           ├── TaxReturnLineDto.kt
                 │   │                       │   │   │           ├── WithholdingDto.kt
                 │   │                       │   │   │           └── TaxLiabilityReportDto.kt
+                │   │                       │   │   ├── validation/
+                │   │                       │   │   │   ├── TaxBeanParam.kt
+                │   │                       │   │   │   ├── RestValidationExceptionMapper.kt
+                │   │                       │   │   │   ├── ValidationErrorResponse.kt
+                │   │                       │   │   │   ├── ValidationAuditFilter.kt
+                │   │                       │   │   │   └── ValidationMetricsFilter.kt
                 │   │                       │   │   └── event/
                 │   │                       │   │       ├── InvoicePostedEventConsumer.kt    # AR tax
                 │   │                       │   │       ├── BillPostedEventConsumer.kt       # AP tax
                 │   │                       │   │       └── PayrollEventConsumer.kt          # Withholding
                 │   │                       │   └── output/
+                │   │                       │       ├── event/
+                │   │                       │       │   └── TaxOutboxEventPublisher.kt
                 │   │                       │       ├── persistence/
                 │   │                       │       │   └── jpa/
                 │   │                       │       │       ├── TaxCodeJpaAdapter.kt
@@ -2144,12 +2318,14 @@ chiroerp/
                 │   │                       │       │       │   ├── TaxReturnLineEntity.kt
                 │   │                       │       │       │   ├── WithholdingTaxEntity.kt
                 │   │                       │       │       │   ├── WithholdingCertificateEntity.kt
-                │   │                       │       │       │   └── EventOutboxEntity.kt
+                │   │                       │       │       │   ├── EventOutboxEntity.kt
+                │   │                       │       │       │   └── EventInboxEntity.kt
                 │   │                       │       │       └── repository/
                 │   │                       │       │           ├── TaxCodeJpaRepository.kt
                 │   │                       │       │           ├── TaxReturnJpaRepository.kt
                 │   │                       │       │           ├── WithholdingJpaRepository.kt
-                │   │                       │       │           └── EventOutboxRepository.kt
+                │   │                       │       │           ├── EventOutboxRepository.kt
+                │   │                       │       │           └── EventInboxRepository.kt
                 │   │                       │       ├── reporting/
                 │   │                       │       │   ├── TaxLiabilityReadAdapter.kt
                 │   │                       │       │   ├── WithholdingReportAdapter.kt
@@ -2170,11 +2346,21 @@ chiroerp/
                 │   │                       │       │   ├── IRSEFilingAdapter.kt           # US IRS
                 │   │                       │       │   └── VATEFilingAdapter.kt           # EU VAT
                 │   │                       │       └── messaging/
-                │   │                       │           └── kafka/
+                │   │                       │           ├── kafka/
                 │   │                       │               ├── TaxEventPublisher.kt
+                │   │                       │               ├── TaxEventConsumer.kt
                 │   │                       │               └── schema/
                 │   │                       │                   ├── TaxCalculatedSchema.avro
                 │   │                       │                   └── TaxReturnFiledSchema.avro
+                │   │                       │           ├── outbox/
+                │   │                       │           │   ├── TaxKafkaOutboxMessagePublisher.kt
+                │   │                       │           │   ├── TaxOutboxEventScheduler.kt
+                │   │                       │           │   └── EventOutboxRelay.kt
+                │   │                       │           └── inbox/
+                │   │                       │               ├── EventInboxEntity.kt
+                │   │                       │               ├── EventInboxRepository.kt
+                │   │                       │               ├── EventInboxProcessor.kt
+                │   │                       │               └── TaxEventInboxConsumer.kt
                 │   │                       ├── configuration/
                 │   │                       │   ├── TaxDependencyInjection.kt
                 │   │                       │   ├── PersistenceConfiguration.kt
@@ -2192,7 +2378,8 @@ chiroerp/
                 │               ├── V3__create_tax_calculation_tables.sql
                 │               ├── V4__create_tax_return_tables.sql
                 │               ├── V5__create_withholding_tables.sql
-                │               └── V6__create_event_outbox_table.sql
+                │               ├── V6__create_event_outbox_table.sql
+                │               └── V7__create_event_inbox_table.sql
                 └── test/
                     ├── kotlin/
                     │   └── com/
@@ -2203,7 +2390,10 @@ chiroerp/
                     │                       ├── TaxCodeResourceTest.kt
                     │                       ├── TaxReturnResourceTest.kt
                     │                       ├── TaxCodeJpaAdapterTest.kt
-                    │                       └── TaxCalculationIntegrationTest.kt
+                    │                       ├── TaxCalculationIntegrationTest.kt
+                    │                       ├── EventOutboxRelayTest.kt
+                    │                       ├── EventInboxProcessorTest.kt
+                    │                       └── TaxResourceValidationTest.kt
                     └── resources/
                         └── application-test.yml
     
@@ -12565,27 +12755,27 @@ Identity Database: tenancy_identity (same database, separate schema)
 
 GL Database: finance_gl
 - Schema: finance_gl
-- Tables: gl_account, journal_entry, journal_entry_line, fiscal_period, balance, exchange_rate, event_outbox
+- Tables: gl_account, journal_entry, journal_entry_line, fiscal_period, balance, exchange_rate, event_outbox, event_inbox
 - User: finance_gl_app (read/write), finance_gl_readonly (read-only)
 
 AR Database: finance_ar
 - Schema: finance_ar
-- Tables: customer_account, invoice, invoice_line, payment, payment_allocation, aging_snapshot
+- Tables: customer_account, invoice, invoice_line, payment, payment_allocation, aging_snapshot, event_outbox, event_inbox
 - User: finance_ar_app, finance_ar_readonly
 
 AP Database: finance_ap
 - Schema: finance_ap
-- Tables: vendor_account, bill, bill_line, vendor_payment, payment_run, payment_run_line, event_outbox
+- Tables: vendor_account, bill, bill_line, vendor_payment, payment_run, payment_run_line, event_outbox, event_inbox
 - User: finance_ap_app, finance_ap_readonly
 
 Assets Database: finance_assets
 - Schema: finance_assets
-- Tables: fixed_asset, depreciation_schedule, depreciation_entry, asset_disposal, asset_transfer, maintenance_record, event_outbox
+- Tables: fixed_asset, depreciation_schedule, depreciation_entry, asset_disposal, asset_transfer, maintenance_record, event_outbox, event_inbox
 - User: finance_assets_app, finance_assets_readonly
 
 Tax Database: finance_tax
 - Schema: finance_tax
-- Tables: tax_code, tax_rate, tax_calculation, tax_return, tax_return_line, withholding_tax, withholding_certificate, event_outbox
+- Tables: tax_code, tax_rate, tax_calculation, tax_return, tax_return_line, withholding_tax, withholding_certificate, event_outbox, event_inbox
 - User: finance_tax_app, finance_tax_readonly
 
 MDM Hub Database: mdm_hub

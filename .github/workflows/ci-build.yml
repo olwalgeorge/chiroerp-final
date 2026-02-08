@@ -241,6 +241,11 @@ jobs:
             --no-daemon \
             --stacktrace
 
+      - name: Validate COMPLETE_STRUCTURE ADR compliance
+        run: |
+          chmod +x scripts/validate-complete-structure.sh
+          ./scripts/validate-complete-structure.sh
+
       - name: Validate documentation
         run: |
           pwsh -File scripts/validate-docs.ps1

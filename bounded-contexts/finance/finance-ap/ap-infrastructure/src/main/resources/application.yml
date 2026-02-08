@@ -1,7 +1,0 @@
-quarkus:
-  application:
-    name: ap-infrastructure
-  profile: dev
-
-quarkus.http:
-  port: 8080

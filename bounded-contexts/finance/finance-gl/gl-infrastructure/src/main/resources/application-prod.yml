@@ -1,5 +1,0 @@
-quarkus:
-  datasource:
-    db-kind: postgresql
-    jdbc:
-      url: jdbc:postgresql://prod-host:5432/chiroerp
