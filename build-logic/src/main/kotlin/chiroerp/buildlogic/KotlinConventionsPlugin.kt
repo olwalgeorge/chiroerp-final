@@ -106,6 +106,9 @@ class KotlinConventionsPlugin : Plugin<Project> {
             "testImplementation"("io.kotest:kotest-assertions-core:5.9.1")
             "testImplementation"("org.assertj:assertj-core:3.26.3")
 
+            // JBoss LogManager for Quarkus compatibility (version from Quarkus 3.17.4 BOM)
+            "testRuntimeOnly"("org.jboss.logmanager:jboss-logmanager:3.0.6.Final")
+
             // Test runtime
             "testRuntimeOnly"("org.junit.platform:junit-platform-launcher:1.11.2")
             "testRuntimeOnly"("org.junit.jupiter:junit-jupiter-engine:5.11.2")
