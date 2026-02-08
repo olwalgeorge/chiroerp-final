@@ -1,13 +1,13 @@
 # ChiroERP Implementation Progress
 
-**Generated:** 2026-02-03 21:42:19
+**Generated:** 2026-02-08 13:50:47
 
 ## 📊 Overall Status
 
 | Metric | Progress |
 |--------|----------|
 | **Modules** | 0 / 0 (0%) |
-| **ADRs** | 0 / 57 |
+| **ADRs** | 0 / 74 |
 | **Domains** | 12 |
 
 ## 🏢 Domain Progress
