@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-gl/gl-infrastructure/src/main/resources/db/migration/V3__create_journal_entry_tables.sql
+-- TODO: Add SQL statements.

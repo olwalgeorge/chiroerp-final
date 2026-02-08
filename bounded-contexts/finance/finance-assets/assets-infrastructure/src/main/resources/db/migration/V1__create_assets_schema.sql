@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-assets/assets-infrastructure/src/main/resources/db/migration/V1__create_assets_schema.sql
+-- TODO: Add SQL statements.

@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/tenancy-identity/identity-core/src/main/resources/db/migration/V003__create_permission_table.sql
+-- TODO: Add SQL statements.

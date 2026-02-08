@@ -1,0 +1,8 @@
+﻿package com.chiroerp.finance.tax.infrastructure.adapter.output.filing
+
+/*
+ * Placeholder generated from COMPLETE_STRUCTURE.txt
+ * Path: bounded-contexts/finance/finance-tax/tax-infrastructure/src/main/kotlin/com/chiroerp/finance/tax/infrastructure/adapter/output/filing/IRSEFilingAdapter.kt
+ */
+@Suppress("unused")
+private const val PLACEHOLDER_IRSEFILINGADAPTER = "TODO: Implement bounded-contexts/finance/finance-tax/tax-infrastructure/src/main/kotlin/com/chiroerp/finance/tax/infrastructure/adapter/output/filing/IRSEFilingAdapter.kt"

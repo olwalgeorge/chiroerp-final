@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-gl/gl-infrastructure/src/main/resources/db/migration/V7__create_event_outbox_table.sql
+-- TODO: Add SQL statements.

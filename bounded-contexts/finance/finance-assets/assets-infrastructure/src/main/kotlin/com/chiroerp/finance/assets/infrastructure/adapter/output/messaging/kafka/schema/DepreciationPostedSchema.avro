@@ -1,0 +1,11 @@
+﻿{
+  "type": "record",
+  "name": "DepreciationPostedSchema",
+  "namespace": "com.chiroerp.placeholder",
+  "fields": [
+    {
+      "name": "todo",
+      "type": "string"
+    }
+  ]
+}

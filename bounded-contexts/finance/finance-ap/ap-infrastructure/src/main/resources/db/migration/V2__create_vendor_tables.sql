@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-ap/ap-infrastructure/src/main/resources/db/migration/V2__create_vendor_tables.sql
+-- TODO: Add SQL statements.

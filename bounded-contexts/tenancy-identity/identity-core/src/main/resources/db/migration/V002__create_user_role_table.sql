@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/tenancy-identity/identity-core/src/main/resources/db/migration/V002__create_user_role_table.sql
+-- TODO: Add SQL statements.

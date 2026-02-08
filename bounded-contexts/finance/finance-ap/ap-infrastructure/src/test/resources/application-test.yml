@@ -1,0 +1,4 @@
+﻿# Placeholder generated from COMPLETE_STRUCTURE.txt
+placeholder:
+  path: "bounded-contexts/finance/finance-ap/ap-infrastructure/src/test/resources/application-test.yml"
+  todo: "Replace with actual configuration"

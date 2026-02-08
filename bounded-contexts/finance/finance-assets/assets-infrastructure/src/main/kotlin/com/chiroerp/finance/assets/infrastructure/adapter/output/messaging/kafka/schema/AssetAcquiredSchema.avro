@@ -1,0 +1,11 @@
+﻿{
+  "type": "record",
+  "name": "AssetAcquiredSchema",
+  "namespace": "com.chiroerp.placeholder",
+  "fields": [
+    {
+      "name": "todo",
+      "type": "string"
+    }
+  ]
+}

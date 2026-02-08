@@ -1,0 +1,11 @@
+﻿{
+  "type": "record",
+  "name": "TaxCalculatedSchema",
+  "namespace": "com.chiroerp.placeholder",
+  "fields": [
+    {
+      "name": "todo",
+      "type": "string"
+    }
+  ]
+}

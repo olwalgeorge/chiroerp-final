@@ -1,0 +1,4 @@
+﻿# Placeholder generated from COMPLETE_STRUCTURE.txt
+placeholder:
+  path: "bounded-contexts/finance/finance-gl/gl-infrastructure/src/main/resources/application-dev.yml"
+  todo: "Replace with actual configuration"

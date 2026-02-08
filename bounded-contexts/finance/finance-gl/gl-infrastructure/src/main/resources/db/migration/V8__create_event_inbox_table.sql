@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-gl/gl-infrastructure/src/main/resources/db/migration/V8__create_event_inbox_table.sql
+-- TODO: Add SQL statements.

@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/finance/finance-tax/tax-infrastructure/src/main/resources/db/migration/V3__create_tax_calculation_tables.sql
+-- TODO: Add SQL statements.

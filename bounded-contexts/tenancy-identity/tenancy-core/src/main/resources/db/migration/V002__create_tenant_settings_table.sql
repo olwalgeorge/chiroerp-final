@@ -1,0 +1,3 @@
+﻿-- Placeholder generated from COMPLETE_STRUCTURE.txt
+-- Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/resources/db/migration/V002__create_tenant_settings_table.sql
+-- TODO: Add SQL statements.
