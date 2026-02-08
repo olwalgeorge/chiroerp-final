@@ -178,7 +178,7 @@ if (-not $SkipDocker) {
 
     Set-Location $rootDir
 
-    Write-Info "Starting PostgreSQL, Kafka, Redis, Temporal, and observability stack..."
+    Write-Info "Starting PostgreSQL, Redpanda, Redis, Temporal, and observability stack..."
     docker-compose up -d
 
     if ($LASTEXITCODE -ne 0) {
@@ -193,9 +193,8 @@ if (-not $SkipDocker) {
     Write-Info "Checking service health..."
 
     $services = @(
-        @{ Name = "PostgreSQL (Finance)"; Port = 5432 }
-        @{ Name = "PostgreSQL (Sales)"; Port = 5433 }
-        @{ Name = "PostgreSQL (Inventory)"; Port = 5434 }
+        @{ Name = "PostgreSQL (App, schema-partitioned)"; Port = 5432 }
+        @{ Name = "PostgreSQL (Temporal)"; Port = 5437 }
         @{ Name = "Redpanda (Kafka API)"; Port = 19092 }
         @{ Name = "Redpanda Schema Registry"; Port = 18081 }
         @{ Name = "Redis"; Port = 6379 }
@@ -292,9 +291,8 @@ Write-Host "━━━━━━━━━━━━━━━━━━━━━━�
 Write-Host ""
 
 Write-Info "Available services:"
-Write-Host "  🐘 PostgreSQL (Finance):    localhost:5432" -ForegroundColor White
-Write-Host "  🐘 PostgreSQL (Sales):       localhost:5433" -ForegroundColor White
-Write-Host "  🐘 PostgreSQL (Inventory):   localhost:5434" -ForegroundColor White
+Write-Host "  🐘 PostgreSQL (App DB):      localhost:5432" -ForegroundColor White
+Write-Host "  🐘 PostgreSQL (Temporal):    localhost:5437" -ForegroundColor White
 Write-Host "  📨 Redpanda (Kafka API):     localhost:19092 (external), localhost:9092 (docker)" -ForegroundColor White
 Write-Host "  📋 Schema Registry:          localhost:18081" -ForegroundColor White
 Write-Host "  🔴 Redis:                     localhost:6379" -ForegroundColor White

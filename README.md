@@ -12,6 +12,7 @@
 - [Architecture Overview](docs/architecture/README.md) - 12 domains, 92 modules, 57+ ADRs
 - [Build System Guide](docs/architecture/BUILD_SYSTEM_ADOPTION.md) - Gradle 9.0 + Convention Plugins
 - [Deployment Guide](docs/architecture/DEPLOYMENT-GUIDE.md) - 3-tier topology (SMB → Enterprise)
+- [MVP Infra Prep](docs/MVP-INFRA-PREIMPLEMENTATION.md) - Local pre-implementation runtime baseline
 - [Config Engine Design](docs/architecture/CONFIG-ENGINE-IMPLEMENTATION.md) - Adaptability framework
 - [ADR Index](docs/adr/README.md) - All architectural decisions
 - [Workspace Structure](docs/architecture/WORKSPACE-STRUCTURE.md) - Target file tree

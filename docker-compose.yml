@@ -1,166 +1,111 @@
-version: '3.8'
+# ChiroERP Local Infrastructure Stack (Pre-Implementation MVP)
+# Application modules are placeholders; this stack prepares production-adaptable infra.
+#
+# Database strategy for current MVP stage:
+# - Single PostgreSQL instance for app modules (schema-per-service boundary)
+# - Dedicated PostgreSQL instance for Temporal workflow engine
 
-# ChiroERP Local Development Stack
-# Provides all infrastructure services needed for local development
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
 
 services:
-  # PostgreSQL Databases (Database-per-Bounded-Context)
-
-  postgres-finance-gl:
+  postgres-app:
     image: postgres:16-alpine
-    container_name: chiroerp-postgres-finance-gl
+    container_name: chiroerp-postgres-app
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: finance_gl
-      POSTGRES_USER: chiroerp
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: ${POSTGRES_APP_DB:-chiroerp}
+      POSTGRES_USER: ${POSTGRES_APP_USER:-chiroerp_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_APP_PASSWORD:-dev_password}
+      POSTGRES_INITDB_ARGS: --encoding=UTF8 --locale=C
     ports:
-      - "5432:5432"
+      - "${POSTGRES_APP_PORT:-5432}:5432"
     volumes:
-      - postgres-finance-gl-data:/var/lib/postgresql/data
-      - ./database/init/finance-gl:/docker-entrypoint-initdb.d
+      - postgres-app-data:/var/lib/postgresql/data
+      - ./database/init/postgres-app:/docker-entrypoint-initdb.d:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d finance_gl"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_APP_USER:-chiroerp_admin} -d ${POSTGRES_APP_DB:-chiroerp}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     networks:
       - chiroerp-network
-
-  postgres-sales:
-    image: postgres:16-alpine
-    container_name: chiroerp-postgres-sales
-    environment:
-      POSTGRES_DB: sales
-      POSTGRES_USER: chiroerp
-      POSTGRES_PASSWORD: dev_password
-    ports:
-      - "5433:5432"
-    volumes:
-      - postgres-sales-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d sales"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chiroerp-network
-
-  postgres-inventory:
-    image: postgres:16-alpine
-    container_name: chiroerp-postgres-inventory
-    environment:
-      POSTGRES_DB: inventory
-      POSTGRES_USER: chiroerp
-      POSTGRES_PASSWORD: dev_password
-    ports:
-      - "5434:5432"
-    volumes:
-      - postgres-inventory-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d inventory"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chiroerp-network
-
-  postgres-procurement:
-    image: postgres:16-alpine
-    container_name: chiroerp-postgres-procurement
-    environment:
-      POSTGRES_DB: procurement
-      POSTGRES_USER: chiroerp
-      POSTGRES_PASSWORD: dev_password
-    ports:
-      - "5435:5432"
-    volumes:
-      - postgres-procurement-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d procurement"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chiroerp-network
-
-  postgres-production:
-    image: postgres:16-alpine
-    container_name: chiroerp-postgres-production
-    environment:
-      POSTGRES_DB: production
-      POSTGRES_USER: chiroerp
-      POSTGRES_PASSWORD: dev_password
-    ports:
-      - "5436:5432"
-    volumes:
-      - postgres-production-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U chiroerp -d production"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - chiroerp-network
+    logging: *default-logging
 
   postgres-temporal:
     image: postgres:16-alpine
     container_name: chiroerp-postgres-temporal
+    restart: unless-stopped
     environment:
-      POSTGRES_DB: temporal
-      POSTGRES_USER: temporal
-      POSTGRES_PASSWORD: temporal
+      POSTGRES_DB: ${TEMPORAL_DB_NAME:-temporal}
+      POSTGRES_USER: ${TEMPORAL_DB_USER:-temporal}
+      POSTGRES_PASSWORD: ${TEMPORAL_DB_PASSWORD:-temporal}
     ports:
-      - "5437:5432"
+      - "${POSTGRES_TEMPORAL_PORT:-5437}:5432"
     volumes:
       - postgres-temporal-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U temporal -d temporal"]
+      test: ["CMD-SHELL", "pg_isready -U ${TEMPORAL_DB_USER:-temporal} -d ${TEMPORAL_DB_NAME:-temporal}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     networks:
       - chiroerp-network
-
-  # Redpanda - Kafka API-compatible Event Streaming Platform
-  # NOTE: For local development only. Production uses Apache Kafka with Strimzi.
-  # Redpanda is 10x faster startup, uses less memory, and has built-in Schema Registry.
+    logging: *default-logging
 
   redpanda:
     image: docker.redpanda.com/redpandadata/redpanda:v24.2.11
     container_name: chiroerp-redpanda
+    restart: unless-stopped
     command:
       - redpanda
       - start
-      - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
-      - --advertise-kafka-addr internal://redpanda:9092,external://localhost:19092
-      - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
-      - --advertise-pandaproxy-addr internal://redpanda:8082,external://localhost:18082
-      - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
-      - --rpc-addr redpanda:33145
-      - --advertise-rpc-addr redpanda:33145
-      - --mode dev-container
-      - --smp 1
-      - --memory 1G
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:19092
+      - --pandaproxy-addr
+      - internal://0.0.0.0:8082,external://0.0.0.0:18082
+      - --advertise-pandaproxy-addr
+      - internal://redpanda:8082,external://localhost:18082
+      - --schema-registry-addr
+      - internal://0.0.0.0:8081,external://0.0.0.0:18081
+      - --rpc-addr
+      - redpanda:33145
+      - --advertise-rpc-addr
+      - redpanda:33145
+      - --mode
+      - dev-container
+      - --smp
+      - "1"
+      - --memory
+      - 1G
     ports:
-      - "19092:19092"  # Kafka API (external)
-      - "18081:8081"   # Schema Registry API
-      - "18082:8082"   # HTTP Proxy API
-      - "9644:9644"    # Admin API
-      - "9092:9092"    # Kafka API (internal - for docker network)
+      - "19092:19092" # Kafka API (host)
+      - "18081:8081" # Schema Registry API (host)
+      - "18082:8082" # HTTP Proxy API (host)
+      - "9644:9644" # Admin/metrics API
     volumes:
       - redpanda-data:/var/lib/redpanda/data
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
       interval: 5s
       timeout: 10s
-      retries: 10
+      retries: 12
       start_period: 10s
     networks:
       - chiroerp-network
+    logging: *default-logging
 
   redpanda-console:
     image: docker.redpanda.com/redpandadata/console:v2.7.2
     container_name: chiroerp-redpanda-console
+    restart: unless-stopped
     depends_on:
       redpanda:
         condition: service_healthy
@@ -172,69 +117,76 @@ services:
       - "8090:8080"
     networks:
       - chiroerp-network
-
-  # Redis - Caching & Session Management
+    logging: *default-logging
 
   redis:
     image: redis:7-alpine
     container_name: chiroerp-redis
-    command: redis-server --appendonly yes --requirepass dev_password
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:-dev_password}"]
     ports:
       - "6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a ${REDIS_PASSWORD:-dev_password} ping | grep -q PONG"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
     networks:
       - chiroerp-network
+    logging: *default-logging
 
   redis-commander:
     image: rediscommander/redis-commander:latest
     container_name: chiroerp-redis-commander
+    restart: unless-stopped
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
     environment:
-      REDIS_HOSTS: local:redis:6379:0:dev_password
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-dev_password}
     ports:
       - "8091:8081"
     networks:
       - chiroerp-network
-
-  # Temporal - Workflow Engine
+    logging: *default-logging
 
   temporal:
     image: temporalio/auto-setup:1.22.4
     container_name: chiroerp-temporal
+    restart: unless-stopped
     depends_on:
       postgres-temporal:
         condition: service_healthy
     environment:
-      - DB=postgresql
-      - DB_PORT=5432
-      - POSTGRES_USER=temporal
-      - POSTGRES_PWD=temporal
-      - POSTGRES_SEEDS=postgres-temporal
-      - DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development-sql.yaml
+      DB: postgresql
+      DB_PORT: 5432
+      POSTGRES_USER: ${TEMPORAL_DB_USER:-temporal}
+      POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:-temporal}
+      POSTGRES_SEEDS: postgres-temporal
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
     ports:
-      - "7233:7233"  # gRPC
-      - "8233:8233"  # Web UI
+      - "7233:7233" # gRPC
+      - "8233:8233" # Internal UI port
     healthcheck:
       test: ["CMD", "tctl", "--address", "temporal:7233", "workflow", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 40s
     networks:
       - chiroerp-network
+    logging: *default-logging
 
   temporal-ui:
     image: temporalio/ui:2.22.3
     container_name: chiroerp-temporal-ui
+    restart: unless-stopped
     depends_on:
-      - temporal
+      temporal:
+        condition: service_started
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       TEMPORAL_CORS_ORIGINS: http://localhost:3000
@@ -242,70 +194,83 @@ services:
       - "8092:8080"
     networks:
       - chiroerp-network
-
-  # Observability Stack
+    logging: *default-logging
 
   jaeger:
     image: jaegertracing/all-in-one:1.53
     container_name: chiroerp-jaeger
+    restart: unless-stopped
     environment:
       COLLECTOR_OTLP_ENABLED: "true"
       COLLECTOR_ZIPKIN_HOST_PORT: ":9411"
     ports:
-      - "5775:5775/udp"  # Zipkin compact
-      - "6831:6831/udp"  # Jaeger compact
-      - "6832:6832/udp"  # Jaeger binary
-      - "5778:5778"      # Serve configs
-      - "16686:16686"    # Web UI
-      - "14268:14268"    # Jaeger collector
-      - "14250:14250"    # Jaeger gRPC
-      - "9411:9411"      # Zipkin
-      - "4317:4317"      # OTLP gRPC
-      - "4318:4318"      # OTLP HTTP
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14268:14268"
+      - "14250:14250"
+      - "9411:9411"
+      - "4317:4317"
+      - "4318:4318"
     networks:
       - chiroerp-network
+    logging: *default-logging
 
   prometheus:
     image: prom/prometheus:v2.48.1
     container_name: chiroerp-prometheus
+    restart: unless-stopped
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-      - '--web.enable-lifecycle'
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=15d
+      - --web.console.libraries=/usr/share/prometheus/console_libraries
+      - --web.console.templates=/usr/share/prometheus/consoles
+      - --web.enable-lifecycle
+    extra_hosts:
+      - host.docker.internal:host-gateway
     volumes:
+      - ./config/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus-data:/prometheus
     ports:
       - "9090:9090"
     networks:
       - chiroerp-network
+    logging: *default-logging
 
   grafana:
     image: grafana/grafana:10.2.3
     container_name: chiroerp-grafana
+    restart: unless-stopped
     depends_on:
       - prometheus
     environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_INSTALL_PLUGINS: grafana-piechart-panel
     volumes:
       - grafana-data:/var/lib/grafana
+      - ./config/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
     ports:
       - "3000:3000"
     networks:
       - chiroerp-network
-
-  # pgAdmin - Database Management UI
+    logging: *default-logging
 
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: chiroerp-pgadmin
+    restart: unless-stopped
+    depends_on:
+      postgres-app:
+        condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@chiroerp.local
-      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@chiroerp.local}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
     ports:
@@ -315,6 +280,7 @@ services:
       - ./database/pgadmin-servers.json:/pgadmin4/servers.json:ro
     networks:
       - chiroerp-network
+    logging: *default-logging
 
 networks:
   chiroerp-network:
@@ -322,16 +288,8 @@ networks:
     name: chiroerp-network
 
 volumes:
-  postgres-finance-gl-data:
-    name: chiroerp-postgres-finance-gl-data
-  postgres-sales-data:
-    name: chiroerp-postgres-sales-data
-  postgres-inventory-data:
-    name: chiroerp-postgres-inventory-data
-  postgres-procurement-data:
-    name: chiroerp-postgres-procurement-data
-  postgres-production-data:
-    name: chiroerp-postgres-production-data
+  postgres-app-data:
+    name: chiroerp-postgres-app-data
   postgres-temporal-data:
     name: chiroerp-postgres-temporal-data
   redpanda-data:

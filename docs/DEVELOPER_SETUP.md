@@ -2,6 +2,8 @@
 
 **Quick Start**: Get from zero to running code in **< 30 minutes**.
 
+> Current infra baseline for scaffold/pre-implementation stage: see `docs/MVP-INFRA-PREIMPLEMENTATION.md`.
+
 ## Table of Contents
 
 - [Prerequisites](#prerequisites)
@@ -169,8 +171,10 @@ cp .env.example .env
 
 **Key configuration values** (`.env`):
 ```bash
-# Database
-DB_PASSWORD=dev_password
+# App PostgreSQL (schema-partitioned local MVP)
+POSTGRES_APP_DB=chiroerp
+POSTGRES_APP_USER=chiroerp_admin
+POSTGRES_APP_PASSWORD=dev_password
 
 # Kafka
 KAFKA_BOOTSTRAP_SERVERS=localhost:9092
@@ -189,8 +193,8 @@ LOG_LEVEL=DEBUG
 docker-compose up -d
 ```
 
-**Services started** (14 total):
-- **6 PostgreSQL databases** (Finance, Sales, Inventory, Procurement, Production, Temporal)
+**Services started** (12 total):
+- **2 PostgreSQL instances** (`postgres-app` for schema-partitioned modules, `postgres-temporal` for Temporal)
 - **Redpanda** (Kafka API-compatible event streaming with built-in Schema Registry)
 - **Redis** (Caching)
 - **Temporal** (Workflow engine)
@@ -269,7 +273,7 @@ docker-compose ps
 docker-compose logs -f
 
 # Test database connection
-docker exec -it chiroerp-postgres-finance-1 psql -U chiroerp -d finance -c "SELECT version();"
+docker exec -it chiroerp-postgres-app psql -U chiroerp_admin -d chiroerp -c "SELECT version();"
 ```
 
 ### Run Sample Module
@@ -501,10 +505,10 @@ Connection to localhost:5432 refused
 docker-compose ps
 
 # Restart services
-docker-compose restart postgres-finance
+docker-compose restart postgres-app
 
 # Check logs
-docker-compose logs postgres-finance
+docker-compose logs postgres-app
 ```
 
 #### 7. "Kafka not available"
@@ -516,11 +520,11 @@ org.apache.kafka.common.errors.TimeoutException
 
 **Fix**:
 ```bash
-# Check Kafka health
-docker-compose ps kafka
+# Check Redpanda health
+docker-compose ps redpanda
 
-# Restart Kafka
-docker-compose restart kafka zookeeper
+# Restart Redpanda
+docker-compose restart redpanda
 
 # Wait 30 seconds for startup
 sleep 30
@@ -566,9 +570,13 @@ sleep 30
 | **Jaeger UI** | http://localhost:16686 | - |
 | **Prometheus** | http://localhost:9090 | - |
 | **Grafana** | http://localhost:3000 | admin / admin |
-| **Finance API** | http://localhost:8081 | - |
-| **Sales API** | http://localhost:8082 | - |
-| **Inventory API** | http://localhost:8083 | - |
+| **Finance GL (planned)** | http://localhost:8081 | - |
+| **Finance AR (planned)** | http://localhost:8082 | - |
+| **Finance AP (planned)** | http://localhost:8083 | - |
+| **Finance Assets (planned)** | http://localhost:8084 | - |
+| **Finance Tax (planned)** | http://localhost:8085 | - |
+| **Tenancy Core (planned)** | http://localhost:8071 | - |
+| **Identity Core (planned)** | http://localhost:8072 | - |
 
 ---
 
@@ -587,7 +595,7 @@ docker-compose down
 docker-compose logs -f
 
 # Restart specific service
-docker-compose restart postgres-finance
+docker-compose restart postgres-app
 
 # Remove everything (including volumes)
 docker-compose down -v
@@ -622,7 +630,7 @@ docker-compose ps
 
 ```bash
 # Connect to database
-docker exec -it chiroerp-postgres-finance-1 psql -U chiroerp -d finance
+docker exec -it chiroerp-postgres-app psql -U chiroerp_admin -d chiroerp
 
 # Run migration
 ./gradlew :finance-domain:flywayMigrate

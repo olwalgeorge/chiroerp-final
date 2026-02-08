@@ -1,56 +1,20 @@
 {
   "Servers": {
     "1": {
-      "Name": "ChiroERP - Finance DB",
+      "Name": "ChiroERP - App DB (Schema-Partitioned)",
       "Group": "ChiroERP",
-      "Host": "postgres-finance",
+      "Host": "postgres-app",
       "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "chiroerp",
+      "MaintenanceDB": "chiroerp",
+      "Username": "chiroerp_admin",
       "SSLMode": "prefer"
     },
     "2": {
-      "Name": "ChiroERP - Sales DB",
-      "Group": "ChiroERP",
-      "Host": "postgres-sales",
-      "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "chiroerp",
-      "SSLMode": "prefer"
-    },
-    "3": {
-      "Name": "ChiroERP - Inventory DB",
-      "Group": "ChiroERP",
-      "Host": "postgres-inventory",
-      "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "chiroerp",
-      "SSLMode": "prefer"
-    },
-    "4": {
-      "Name": "ChiroERP - Procurement DB",
-      "Group": "ChiroERP",
-      "Host": "postgres-procurement",
-      "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "chiroerp",
-      "SSLMode": "prefer"
-    },
-    "5": {
-      "Name": "ChiroERP - Production DB",
-      "Group": "ChiroERP",
-      "Host": "postgres-production",
-      "Port": 5432,
-      "MaintenanceDB": "postgres",
-      "Username": "chiroerp",
-      "SSLMode": "prefer"
-    },
-    "6": {
       "Name": "ChiroERP - Temporal DB",
       "Group": "ChiroERP",
       "Host": "postgres-temporal",
       "Port": 5432,
-      "MaintenanceDB": "postgres",
+      "MaintenanceDB": "temporal",
       "Username": "temporal",
       "SSLMode": "prefer"
     }
