@@ -158,38 +158,49 @@ tasks.register("listModules") {
     }
 }
 
-tasks.register("checkArchitecture") {
-    group = "verification"
-    description = "Validates architectural rules (ADR-001, ADR-002, ADR-006)"
-    notCompatibleWithConfigurationCache("Uses Project model/dependencies in task action for custom architecture scanning")
+// =============================================================================
+// ARCHITECTURE ENFORCEMENT TASKS
+// =============================================================================
 
-    doLast {
+abstract class ArchitectureCheckTask : DefaultTask() {
+    @get:Input
+    val domainModules = mutableListOf<String>()
+
+    @get:Input
+    val platformModules = mutableListOf<String>()
+
+    @get:Input
+    val domainDependencies = mutableMapOf<String, List<String>>()
+
+    @get:Input
+    val platformDependencies = mutableMapOf<String, List<String>>()
+
+    @TaskAction
+    fun check() {
         println("\n=== Architecture Compliance Check ===\n")
 
         var violations = 0
 
         // Rule 1: Domain modules should not depend on infrastructure or frameworks
-        subprojects.filter { it.name.endsWith("-domain") }.forEach { domainProject ->
-            val config = domainProject.configurations.findByName("implementation")
-            config?.dependencies?.forEach { dep ->
-                if (dep.name.contains("quarkus") || dep.name.contains("spring")) {
-                    println("❌ VIOLATION: Domain module ${domainProject.path} depends on framework: ${dep.name}")
+        domainDependencies.forEach { (module, deps) ->
+            deps.forEach { dep ->
+                if (dep.contains("quarkus") || dep.contains("spring")) {
+                    println("❌ VIOLATION: Domain module $module depends on framework: $dep")
                     violations++
                 }
 
-                if (dep is ProjectDependency && dep.name.endsWith("-infrastructure")) {
-                    println("❌ VIOLATION: Domain module ${domainProject.path} depends on infrastructure module ${dep.name}")
+                if (dep.endsWith("-infrastructure")) {
+                    println("❌ VIOLATION: Domain module $module depends on infrastructure module $dep")
                     violations++
                 }
             }
         }
 
         // Rule 2: platform-shared should not depend on bounded-contexts
-        subprojects.filter { it.path.contains(":platform-shared") }.forEach { sharedProject ->
-            val config = sharedProject.configurations.findByName("implementation")
-            config?.dependencies?.forEach { dep ->
-                if (dep.toString().contains("bounded-contexts")) {
-                    println("❌ VIOLATION: Platform-shared module ${sharedProject.path} depends on bounded context/domain module")
+        platformDependencies.forEach { (module, deps) ->
+            deps.forEach { dep ->
+                if (dep.contains("bounded-contexts")) {
+                    println("❌ VIOLATION: Platform-shared module $module depends on bounded context/domain module")
                     violations++
                 }
             }
@@ -204,6 +215,32 @@ tasks.register("checkArchitecture") {
         }
 
         println("\n=====================================\n")
+    }
+}
+
+tasks.register<ArchitectureCheckTask>("checkArchitecture") {
+    group = "verification"
+    description = "Validates architectural rules (ADR-001, ADR-002, ADR-006)"
+
+    // Capture dependency data during configuration phase
+    val domainProjects = subprojects.filter { it.name.endsWith("-domain") }
+    val platformProjects = subprojects.filter { it.path.contains(":platform-shared") }
+
+    domainModules.addAll(domainProjects.map { it.path })
+    platformModules.addAll(platformProjects.map { it.path })
+
+    domainProjects.forEach { domainProject ->
+        val config = domainProject.configurations.findByName("implementation")
+        val deps = config?.dependencies?.map { dep ->
+            if (dep is ProjectDependency) dep.name else dep.name
+        } ?: emptyList()
+        domainDependencies[domainProject.path] = deps
+    }
+
+    platformProjects.forEach { platformProject ->
+        val config = platformProject.configurations.findByName("implementation")
+        val deps = config?.dependencies?.map { it.toString() } ?: emptyList()
+        platformDependencies[platformProject.path] = deps
     }
 }
 

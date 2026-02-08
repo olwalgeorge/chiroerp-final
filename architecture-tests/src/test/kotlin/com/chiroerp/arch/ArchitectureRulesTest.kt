@@ -178,4 +178,142 @@ class ArchitectureRulesTest {
             }
         }
     }
+
+    // =============================================================================
+    // INFRASTRUCTURE LAYER RULES
+    // =============================================================================
+
+    @Test
+    fun `REST controllers should be in infrastructure api package`() {
+        val rule = classes()
+            .that().haveSimpleNameEndingWith("Resource")
+            .or().haveSimpleNameEndingWith("Controller")
+            .should().resideInAnyPackage("..infrastructure.api..", "..infrastructure.adapter.input.rest..")
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
+    fun `Kafka consumers should be in infrastructure messaging package`() {
+        val rule = classes()
+            .that().haveSimpleNameEndingWith("Consumer")
+            .or().haveSimpleNameEndingWith("Listener")
+            .should().resideInAnyPackage("..infrastructure.messaging..", "..infrastructure.adapter.input.kafka..")
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
+    fun `Kafka producers should be in infrastructure messaging package`() {
+        val rule = classes()
+            .that().haveSimpleNameEndingWith("Producer")
+            .or().haveSimpleNameEndingWith("Publisher")
+            .should().resideInAnyPackage("..infrastructure.messaging..", "..infrastructure.adapter.output.event..")
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
+    fun `outbox writers should only use domain events`() {
+        val rule = classes()
+            .that().haveSimpleNameContaining("Outbox")
+            .and().resideInAnyPackage("..infrastructure..")
+            .should(onlyDependOnDomainEvents())
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
+    fun `infrastructure should not call other bounded contexts directly`() {
+        val rule = classes()
+            .that().resideInAnyPackage("..infrastructure..")
+            .should(notCallOtherBoundedContextsDirectly())
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
+    fun `repositories should not expose persistence entities`() {
+        val rule = classes()
+            .that().haveSimpleNameEndingWith("Repository")
+            .and().resideInAnyPackage("..infrastructure..")
+            .should(notReturnPersistenceEntities())
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    private fun onlyDependOnDomainEvents(): ArchCondition<JavaClass> {
+        return object : ArchCondition<JavaClass>("only depend on domain events, not direct database writes") {
+            override fun check(item: JavaClass, events: ConditionEvents) {
+                // Check if outbox writer directly writes to database (should use events instead)
+                val hasDirectDbWrite = item.directDependenciesFromSelf.any { dep ->
+                    dep.targetClass.name.contains("EntityManager") || 
+                    dep.targetClass.name.contains("JdbcTemplate") ||
+                    dep.targetClass.name.contains("Repository")
+                }
+
+                if (hasDirectDbWrite) {
+                    val message = "${item.fullName} should not write directly to DB, use domain events"
+                    events.add(SimpleConditionEvent.violated(item, message))
+                }
+            }
+        }
+    }
+
+    private fun notCallOtherBoundedContextsDirectly(): ArchCondition<JavaClass> {
+        return object : ArchCondition<JavaClass>("not call other bounded contexts directly") {
+            override fun check(item: JavaClass, events: ConditionEvents) {
+                val sourceContext = extractBoundedContext(item.packageName)
+
+                item.directDependenciesFromSelf.forEach { dep ->
+                    val targetPackage = dep.targetClass.packageName
+                    val targetContext = extractBoundedContext(targetPackage)
+
+                    // Check if calling infrastructure of different context
+                    if (sourceContext != null && targetContext != null && sourceContext != targetContext) {
+                        if (targetPackage.contains(".infrastructure.")) {
+                            val message = "${item.fullName} calls ${dep.targetClass.fullName} from different bounded context"
+                            events.add(SimpleConditionEvent.violated(item, message))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun notReturnPersistenceEntities(): ArchCondition<JavaClass> {
+        return object : ArchCondition<JavaClass>("not expose JPA/persistence entities in public API") {
+            override fun check(item: JavaClass, events: ConditionEvents) {
+                item.methods.forEach { method ->
+                    if (method.modifiers.contains(com.tngtech.archunit.core.domain.JavaModifier.PUBLIC)) {
+                        val returnType = method.rawReturnType
+                        val hasEntityAnnotation = returnType.annotations.any { ann ->
+                            ann.rawType.name == "jakarta.persistence.Entity"
+                        }
+
+                        if (hasEntityAnnotation) {
+                            val message = "${item.fullName}.${method.name}() returns JPA entity ${returnType.name}"
+                            events.add(SimpleConditionEvent.violated(item, message))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun extractBoundedContext(packageName: String): String? {
+        // Extract bounded context from package like com.chiroerp.finance.gl.infrastructure
+        val parts = packageName.split(".")
+        val chiroIndex = parts.indexOf("chiroerp")
+        if (chiroIndex != -1 && parts.size > chiroIndex + 2) {
+            return "${parts[chiroIndex + 1]}.${parts[chiroIndex + 2]}" // e.g., "finance.gl"
+        }
+        return null
+    }
 }
