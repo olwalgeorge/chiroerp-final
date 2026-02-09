@@ -1,5 +1,6 @@
 package com.chiroerp.tenancy.core.infrastructure.api
 
+import com.chiroerp.tenancy.core.application.service.TenantResolutionResult
 import com.chiroerp.tenancy.core.domain.model.Tenant
 import com.chiroerp.tenancy.core.domain.model.TenantSettings
 import com.chiroerp.tenancy.shared.TenantStatus
@@ -57,3 +58,22 @@ data class TenantListResponse(
     val limit: Int,
     val count: Int,
 )
+
+/**
+ * Minimal resolution response for gateway/internal use only.
+ * Intentionally limited to prevent tenant enumeration when exposed.
+ * Full tenant details require explicit GET /api/tenants/{id} with authorization.
+ */
+data class TenantResolutionResponse(
+    val tenantId: UUID,
+    val source: String,
+    val resolved: Boolean = true,
+) {
+    companion object {
+        fun from(result: TenantResolutionResult): TenantResolutionResponse = TenantResolutionResponse(
+            tenantId = result.tenantId.value,
+            source = result.source.name,
+            resolved = true,
+        )
+    }
+}

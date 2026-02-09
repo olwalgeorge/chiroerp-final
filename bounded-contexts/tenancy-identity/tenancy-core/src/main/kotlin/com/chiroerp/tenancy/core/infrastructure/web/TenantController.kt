@@ -1,18 +1,26 @@
 package com.chiroerp.tenancy.core.infrastructure.api
 
+import com.chiroerp.tenancy.core.application.command.ActivateTenantCommand
 import com.chiroerp.tenancy.core.application.exception.TenantAlreadyExistsException
+import com.chiroerp.tenancy.core.application.exception.TenantLifecycleTransitionException
 import com.chiroerp.tenancy.core.application.exception.TenantNotFoundException
 import com.chiroerp.tenancy.core.application.handler.TenantCommandHandler
 import com.chiroerp.tenancy.core.application.handler.TenantQueryHandler
+import com.chiroerp.tenancy.core.application.query.GetTenantByDomainQuery
 import com.chiroerp.tenancy.core.application.query.GetTenantQuery
 import com.chiroerp.tenancy.core.application.query.ListTenantsQuery
+import com.chiroerp.tenancy.core.application.service.TenantResolutionService
 import com.chiroerp.tenancy.shared.TenantId
 import io.micrometer.core.instrument.MeterRegistry
+import io.quarkus.security.identity.SecurityIdentity
+import jakarta.annotation.security.RolesAllowed
 import jakarta.validation.Valid
 import jakarta.ws.rs.BadRequestException
 import jakarta.ws.rs.Consumes
 import jakarta.ws.rs.DefaultValue
+import jakarta.ws.rs.ForbiddenException
 import jakarta.ws.rs.GET
+import jakarta.ws.rs.HeaderParam
 import jakarta.ws.rs.NotFoundException
 import jakarta.ws.rs.POST
 import jakarta.ws.rs.PATCH
@@ -27,10 +35,13 @@ import jakarta.ws.rs.core.Response
 @Path("/api/tenants")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@RolesAllowed("tenant-admin", "platform-admin")
 class TenantController(
     private val tenantCommandHandler: TenantCommandHandler,
     private val tenantQueryHandler: TenantQueryHandler,
+    private val tenantResolutionService: TenantResolutionService,
     private val meterRegistry: MeterRegistry,
+    private val securityIdentity: SecurityIdentity,
 ) {
     @POST
     fun createTenant(@Valid request: CreateTenantRequest): Response {
@@ -47,8 +58,12 @@ class TenantController(
 
     @GET
     @Path("/{id}")
-    fun getTenant(@PathParam("id") rawTenantId: String): TenantResponse {
+    fun getTenant(
+        @PathParam("id") rawTenantId: String,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
+    ): TenantResponse {
         val tenantId = parseTenantId(rawTenantId)
+        requireTenantScope(tenantId, callerTenantIdHeader)
         val tenant = tenantQueryHandler.handle(GetTenantQuery(tenantId))
             ?: throw NotFoundException("Tenant $rawTenantId not found")
 
@@ -57,10 +72,43 @@ class TenantController(
     }
 
     @GET
+    @Path("/by-domain/{domain}")
+    @RolesAllowed("tenant-admin", "platform-admin")
+    fun getTenantByDomain(
+        @PathParam("domain") rawDomain: String,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
+    ): TenantResponse {
+        val tenant = try {
+            tenantQueryHandler.handle(GetTenantByDomainQuery(rawDomain))
+        } catch (ex: IllegalArgumentException) {
+            throw BadRequestException(ex.message)
+        } ?: throw NotFoundException("Tenant with domain '$rawDomain' not found")
+        requireTenantScope(tenant.id, callerTenantIdHeader)
+
+        meterRegistry.counter("chiroerp.tenancy.api.get-by-domain.requests").increment()
+        return TenantResponse.from(tenant)
+    }
+
+    @GET
     fun listTenants(
         @DefaultValue("0") @QueryParam("offset") offset: Int,
         @DefaultValue("50") @QueryParam("limit") limit: Int,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantListResponse {
+        if (securityIdentity.hasRole("tenant-admin") && !securityIdentity.hasRole("platform-admin")) {
+            val scopedTenantId = requireCallerTenantId(callerTenantIdHeader)
+            val tenant = tenantQueryHandler.handle(GetTenantQuery(scopedTenantId))
+                ?: throw NotFoundException("Tenant '${scopedTenantId.value}' not found")
+
+            meterRegistry.counter("chiroerp.tenancy.api.list.requests").increment()
+            return TenantListResponse(
+                items = listOf(TenantResponse.from(tenant)),
+                offset = 0,
+                limit = 1,
+                count = 1,
+            )
+        }
+
         val normalizedOffset = offset.coerceAtLeast(0)
         val normalizedLimit = limit.coerceIn(1, 200)
 
@@ -83,8 +131,10 @@ class TenantController(
     fun updateTenantSettings(
         @PathParam("id") rawTenantId: String,
         @Valid request: UpdateTenantSettingsRequest,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse {
         val tenantId = parseTenantId(rawTenantId)
+        requireTenantScope(tenantId, callerTenantIdHeader)
 
         return try {
             val tenant = tenantCommandHandler.handle(request.toCommand(tenantId))
@@ -95,8 +145,117 @@ class TenantController(
         }
     }
 
+    @POST
+    @Path("/{id}/activate")
+    @Consumes(MediaType.WILDCARD)
+    fun activateTenant(
+        @PathParam("id") rawTenantId: String,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
+    ): TenantResponse = executeLifecycleOperation(
+        rawTenantId = rawTenantId,
+        callerTenantIdHeader = callerTenantIdHeader,
+        metric = "chiroerp.tenancy.api.activate.requests",
+    ) { tenantId ->
+        tenantCommandHandler.handle(ActivateTenantCommand(tenantId))
+    }
+
+    @POST
+    @Path("/{id}/suspend")
+    fun suspendTenant(
+        @PathParam("id") rawTenantId: String,
+        @Valid request: SuspendTenantRequest,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
+    ): TenantResponse = executeLifecycleOperation(
+        rawTenantId = rawTenantId,
+        callerTenantIdHeader = callerTenantIdHeader,
+        metric = "chiroerp.tenancy.api.suspend.requests",
+    ) { tenantId ->
+        tenantCommandHandler.handle(request.toCommand(tenantId))
+    }
+
+    @POST
+    @Path("/{id}/terminate")
+    fun terminateTenant(
+        @PathParam("id") rawTenantId: String,
+        @Valid request: TerminateTenantRequest,
+        @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
+    ): TenantResponse = executeLifecycleOperation(
+        rawTenantId = rawTenantId,
+        callerTenantIdHeader = callerTenantIdHeader,
+        metric = "chiroerp.tenancy.api.terminate.requests",
+    ) { tenantId ->
+        tenantCommandHandler.handle(request.toCommand(tenantId))
+    }
+
+    @GET
+    @Path("/resolve")
+    @RolesAllowed("gateway-service", "platform-admin")
+    fun resolveTenant(
+        @QueryParam("domain") queryDomain: String?,
+        @HeaderParam("X-Tenant-ID") headerTenantId: String?,
+        @HeaderParam("X-Tenant-Domain") headerTenantDomain: String?,
+        @HeaderParam("Host") hostHeader: String?,
+    ): TenantResolutionResponse {
+        val resolution = try {
+            tenantResolutionService.resolveTenant(
+                queryDomain = queryDomain,
+                headerTenantId = headerTenantId,
+                headerTenantDomain = headerTenantDomain,
+                hostHeader = hostHeader,
+            )
+        } catch (ex: IllegalArgumentException) {
+            throw BadRequestException(ex.message)
+        } ?: throw NotFoundException("Unable to resolve tenant from supplied domain/headers")
+
+        meterRegistry.counter("chiroerp.tenancy.api.resolve.requests").increment()
+        return TenantResolutionResponse.from(resolution)
+    }
+
+    private fun executeLifecycleOperation(
+        rawTenantId: String,
+        callerTenantIdHeader: String?,
+        metric: String,
+        operation: (TenantId) -> com.chiroerp.tenancy.core.domain.model.Tenant,
+    ): TenantResponse {
+        val tenantId = parseTenantId(rawTenantId)
+        requireTenantScope(tenantId, callerTenantIdHeader)
+        return try {
+            val tenant = operation(tenantId)
+            meterRegistry.counter(metric).increment()
+            TenantResponse.from(tenant)
+        } catch (ex: TenantNotFoundException) {
+            throw NotFoundException(ex.message)
+        } catch (ex: TenantLifecycleTransitionException) {
+            throw WebApplicationException(ex.message, Response.Status.CONFLICT)
+        }
+    }
+
     private fun parseTenantId(rawTenantId: String): TenantId {
         return runCatching { TenantId.from(rawTenantId) }
             .getOrElse { throw BadRequestException("Invalid tenant id: $rawTenantId") }
+    }
+
+    private fun requireTenantScope(targetTenantId: TenantId, callerTenantIdHeader: String?) {
+        if (securityIdentity.hasRole("platform-admin")) {
+            return
+        }
+        if (!securityIdentity.hasRole("tenant-admin")) {
+            return
+        }
+
+        val callerTenantId = requireCallerTenantId(callerTenantIdHeader)
+        if (callerTenantId != targetTenantId) {
+            throw ForbiddenException("Cross-tenant access denied")
+        }
+    }
+
+    private fun requireCallerTenantId(callerTenantIdHeader: String?): TenantId {
+        val raw = callerTenantIdHeader?.trim()
+        if (raw.isNullOrBlank()) {
+            throw ForbiddenException("Missing X-Tenant-ID header for tenant-scoped access")
+        }
+
+        return runCatching { TenantId.from(raw) }
+            .getOrElse { throw BadRequestException("Invalid X-Tenant-ID header: $callerTenantIdHeader") }
     }
 }

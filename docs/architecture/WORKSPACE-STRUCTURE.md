@@ -13,7 +13,7 @@ This document mirrors the full workspace structure defined in `COMPLETE_STRUCTUR
 ```text
 ChiroERP - Complete Platform-Shared, Finance, and Inventory Structure
 ===============================================================
-Based on ADRs and improved.txt specifications
+Based on ADRs and `COMPLETE_STRUCTURE.txt` specifications
 Generated: February 5, 2026
 Updated: February 6, 2026 - ADR-006 Governance Compliance
 

@@ -38,8 +38,14 @@ class Tenant private constructor(
     }
 
     fun activate(occurredAt: Instant = Instant.now()) {
+        if (status == TenantStatus.TERMINATED) {
+            throw IllegalStateException("Terminated tenant cannot be activated")
+        }
         if (status == TenantStatus.ACTIVE) {
             return
+        }
+        if (status != TenantStatus.PENDING && status != TenantStatus.SUSPENDED) {
+            throw IllegalStateException("Tenant can only be activated from PENDING or SUSPENDED status, current: $status")
         }
         status = TenantStatus.ACTIVE
         updatedAt = occurredAt
@@ -47,8 +53,15 @@ class Tenant private constructor(
     }
 
     fun suspend(reason: String, occurredAt: Instant = Instant.now()) {
+        require(reason.isNotBlank()) { "Suspension reason is required" }
         if (status == TenantStatus.TERMINATED) {
             throw IllegalStateException("Terminated tenant cannot be suspended")
+        }
+        if (status == TenantStatus.PENDING) {
+            throw IllegalStateException("Pending tenant cannot be suspended - activate first")
+        }
+        if (status == TenantStatus.SUSPENDED) {
+            return
         }
         status = TenantStatus.SUSPENDED
         updatedAt = occurredAt
@@ -56,6 +69,10 @@ class Tenant private constructor(
     }
 
     fun terminate(reason: String, occurredAt: Instant = Instant.now()) {
+        require(reason.isNotBlank()) { "Termination reason is required" }
+        if (status == TenantStatus.TERMINATED) {
+            return
+        }
         status = TenantStatus.TERMINATED
         updatedAt = occurredAt
         record(TenantTerminatedEvent(id, reason, occurredAt))
@@ -99,7 +116,7 @@ class Tenant private constructor(
                 name = name.trim(),
                 domain = normalizedDomain,
                 tier = tier,
-                status = TenantStatus.ACTIVE,
+                status = TenantStatus.PENDING,
                 dataResidency = dataResidency,
                 settings = settings,
                 createdAt = now,

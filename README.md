@@ -13,6 +13,7 @@
 - [Build System Guide](docs/architecture/BUILD_SYSTEM_ADOPTION.md) - Gradle 9.0 + Convention Plugins
 - [Deployment Guide](docs/architecture/DEPLOYMENT-GUIDE.md) - 3-tier topology (SMB → Enterprise)
 - [MVP Infra Prep](docs/MVP-INFRA-PREIMPLEMENTATION.md) - Local pre-implementation runtime baseline
+- [MVP Implementation Roadmap](docs/MVP-IMPLEMENTATION-ROADMAP.md) - Trackable tenancy-identity + finance execution plan
 - [Config Engine Design](docs/architecture/CONFIG-ENGINE-IMPLEMENTATION.md) - Adaptability framework
 - [ADR Index](docs/adr/README.md) - All architectural decisions
 - [Workspace Structure](docs/architecture/WORKSPACE-STRUCTURE.md) - Target file tree
@@ -175,7 +176,8 @@ chiroerp/
 │   │   ├── DEPLOYMENT-GUIDE.md         # ✅ 3-tier deployment topology
 │   │   ├── CONFIG-ENGINE-IMPLEMENTATION.md # ✅ Config engine MVP design
 │   │   └── WORKSPACE-STRUCTURE.md      # ✅ Target file tree
-│   └── improved.txt                    # Original blueprint
+│
+├── COMPLETE_STRUCTURE.txt              # Canonical blueprint and target structure
 │
 ├── scripts/                            # ✅ CI validation scripts
 │   └── validate-docs.ps1               # Documentation validation

@@ -673,7 +673,7 @@ print(f"Recommended Price: ${recommended_price:.2f}")
 - ADR-027: Master Data Governance (SKU master, pricing master)
 
 ### Internal Documentation
-- `docs/AI-STRATEGY.md` (ChiroERP AI strategy and phasing)
+- `docs/MVP-IMPLEMENTATION-ROADMAP.md` (current MVP execution and phasing baseline)
 - `docs/architecture/retail/RETAIL-AI-ASSESSMENT.md` (retail AI gap analysis)
 
 ### External References

@@ -1,8 +1,12 @@
-﻿package com.chiroerp.tenancy.core.application.command
+package com.chiroerp.tenancy.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/command/SuspendTenantCommand.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_SUSPENDTENANTCOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/command/SuspendTenantCommand.kt"
+import com.chiroerp.tenancy.shared.TenantId
+
+data class SuspendTenantCommand(
+    val tenantId: TenantId,
+    val reason: String,
+) {
+    init {
+        require(reason.isNotBlank()) { "Suspension reason is required" }
+    }
+}

@@ -1,6 +1,8 @@
 package com.chiroerp.tenancy.core.infrastructure.api
 
 import com.chiroerp.tenancy.core.application.command.CreateTenantCommand
+import com.chiroerp.tenancy.core.application.command.SuspendTenantCommand
+import com.chiroerp.tenancy.core.application.command.TerminateTenantCommand
 import com.chiroerp.tenancy.core.application.command.UpdateTenantSettingsCommand
 import com.chiroerp.tenancy.shared.TenantId
 import com.chiroerp.tenancy.shared.TenantTier
@@ -56,5 +58,27 @@ data class UpdateTenantSettingsRequest(
         currency = currency,
         featureFlags = featureFlags,
         customConfiguration = customConfiguration,
+    )
+}
+
+data class SuspendTenantRequest(
+    @field:NotBlank
+    @field:Size(max = 500)
+    val reason: String,
+) {
+    fun toCommand(tenantId: TenantId): SuspendTenantCommand = SuspendTenantCommand(
+        tenantId = tenantId,
+        reason = reason,
+    )
+}
+
+data class TerminateTenantRequest(
+    @field:NotBlank
+    @field:Size(max = 500)
+    val reason: String,
+) {
+    fun toCommand(tenantId: TenantId): TerminateTenantCommand = TerminateTenantCommand(
+        tenantId = tenantId,
+        reason = reason,
     )
 }

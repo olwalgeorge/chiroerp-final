@@ -584,7 +584,7 @@ print(f"Promotion drives +{demand_uplift:.0f} unit sales (+{demand_uplift/baseli
 - ADR-015: Data Lifecycle Management (historical data retention, archiving)
 
 ### Internal Documentation
-- `docs/AI-STRATEGY.md` (ChiroERP AI strategy and phasing)
+- `docs/MVP-IMPLEMENTATION-ROADMAP.md` (current MVP execution and phasing baseline)
 - `docs/architecture/retail/RETAIL-AI-ASSESSMENT.md` (retail AI gap analysis)
 
 ### External References

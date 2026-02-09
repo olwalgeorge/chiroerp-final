@@ -44,7 +44,9 @@ kafka:
 
 chiroerp:
   tenancy:
-    isolation-strategy: ${TENANT_ISOLATION_STRATEGY:SCHEMA}
+    # ADR-005: AUTO mode enables tier-based isolation (STANDARD→DISCRIMINATOR, PREMIUM→SCHEMA, ENTERPRISE→DATABASE)
+    # Override with TENANT_ISOLATION_STRATEGY env var to force a specific mode (DISCRIMINATOR, SCHEMA, DATABASE)
+    isolation-strategy: ${TENANT_ISOLATION_STRATEGY:AUTO}
     default-tenant-id: ${DEFAULT_TENANT_ID:default}
   messaging:
     tenant-events:

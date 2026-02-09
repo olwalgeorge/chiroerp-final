@@ -748,8 +748,7 @@ For detailed service industry integration patterns, workflows, and data model ex
 - ADR-040 Plant Maintenance (repair work orders, loaner programs, repair center integration)
 - ADR-043 CRM & Customer Management
 - ADR-055 Workforce Scheduling & Labor Management
-- **WORLD-CLASS-ERP-GAP-ANALYSIS.md** (Field Service gap addressed)
-- **WORLD-CLASS-ROADMAP.md** (P2 Enhancement phase)
+- **docs/MVP-IMPLEMENTATION-ROADMAP.md** (active implementation execution plan)
 
 ### Internal Documentation
 - `docs/architecture/inventory/inventory-advanced-ops.md` (Service Industry Integration)

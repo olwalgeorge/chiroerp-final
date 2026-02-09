@@ -429,9 +429,8 @@ manufacturing/
 ---
 
 **Related Documents**:
-- WORLD-CLASS-ERP-GAP-ANALYSIS.md (Manufacturing Quality gap addressed)
-- WORLD-CLASS-ROADMAP.md (P2 Enhancement phase)
-- COMPLETE_STRUCTURE.txt (manufacturing/manufacturing-quality/ structure)
+- `docs/MVP-IMPLEMENTATION-ROADMAP.md` (active implementation execution plan)
+- `COMPLETE_STRUCTURE.txt` (manufacturing/manufacturing-quality/ structure)
 - **IATF 16949**: Automotive quality management.
 - **AS9100**: Aerospace quality management.
 

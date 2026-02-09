@@ -16,4 +16,7 @@ dependencies {
     implementation("io.quarkus:quarkus-micrometer")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     implementation("org.apache.kafka:kafka-clients:3.8.0")
+
+    // Enables @TestSecurity for controller-level security integration tests.
+    testImplementation("io.quarkus:quarkus-test-security")
 }

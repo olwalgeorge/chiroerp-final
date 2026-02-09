@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.MapsId
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.ColumnTransformer
 import java.time.Instant
 import java.util.UUID
 
@@ -33,9 +34,11 @@ class TenantSettingsJpaEntity {
     var currency: String = "USD"
 
     @Column(name = "feature_flags", nullable = false, columnDefinition = "jsonb")
+    @ColumnTransformer(write = "?::jsonb")
     var featureFlagsJson: String = "{}"
 
     @Column(name = "custom_config", nullable = false, columnDefinition = "jsonb")
+    @ColumnTransformer(write = "?::jsonb")
     var customConfigJson: String = "{}"
 
     @Column(name = "updated_at", nullable = false)

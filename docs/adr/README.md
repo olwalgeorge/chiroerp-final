@@ -3,7 +3,7 @@
 This directory contains Architecture Decision Records documenting significant architectural choices for the ERP platform.
 
 ## Key Documentation
-- **[AI Strategy](../AI-STRATEGY.md)**: ChiroERP's pragmatic, ROI-driven AI/ML approach (8/10 — not overengineered)
+- **[MVP Implementation Roadmap](../MVP-IMPLEMENTATION-ROADMAP.md)**: Trackable tenancy-identity + finance implementation execution plan
 
 ## ADR Index
 

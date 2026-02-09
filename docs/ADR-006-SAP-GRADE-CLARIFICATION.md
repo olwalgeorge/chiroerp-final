@@ -356,7 +356,7 @@ For team onboarding, emphasize:
 - [ADR-006: Platform-Shared Governance Rules](./adr/ADR-006-platform-shared-governance.md) - Section 5 (Updated)
 - [ADR-045: Enterprise Organizational Model](./adr/ADR-045-enterprise-organizational-model.md) - SAP/Oracle pattern alignment
 - [ADR-046: Workflow & Approval Engine](./adr/ADR-046-workflow-approval-engine.md) - Workflow infrastructure
-- [Gap-to-SAP-Grade Roadmap](./architecture/gap-to-sap-grade-roadmap.md) - Phase 1 platform foundation
+- [MVP Implementation Roadmap](./MVP-IMPLEMENTATION-ROADMAP.md) - Tenancy-Identity + Finance execution plan
 - [COMPLETE_STRUCTURE.txt](../COMPLETE_STRUCTURE.txt) - Lines 258-500 (platform-shared structure)
 
 ---
