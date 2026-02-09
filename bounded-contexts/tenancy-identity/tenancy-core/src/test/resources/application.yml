@@ -8,4 +8,10 @@ quarkus:
     jdbc:
       url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_TENANCY_SCHEMA:tenancy_core}
   flyway:
-    migrate-at-start: false
+    migrate-at-start: true
+
+chiroerp:
+  messaging:
+    tenant-events:
+      outbox:
+        enabled: false

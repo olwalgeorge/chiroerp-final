@@ -130,6 +130,11 @@ Progress update (2026-02-09):
   - Added schema/database name length limits (63 chars) with hash suffix for collision resistance
   - Implemented tenant-admin scope guard using trusted `X-Tenant-ID` header checks
   - Implemented PENDING→ACTIVE lifecycle scaffolding (provisioning execution still pending)
+- **Outbox reliability slice applied** (2026-02-09):
+  - Added `tenant_outbox` Flyway migration (`V003__create_tenant_outbox_table.sql`)
+  - Replaced direct publish path with transactional outbox writes (`TenantOutboxEventPublisher`)
+  - Added relay worker with retry/backoff (`TenantOutboxRelayService`, `TenantOutboxRelayWorker`)
+  - Added idempotency/retry tests (`TenantOutboxJpaStoreTest`, `TenantOutboxRelayServiceTest`)
 - Test placeholder `TenantJpaRepositoryTest.kt` replaced with real integration tests.
 - Added `TenantControllerTest.kt` with full API integration test coverage.
 
@@ -142,7 +147,7 @@ Progress update (2026-02-09):
 | TI-05 | Implement isolation strategy service aligned to ADR-005 tiers | Done | TI-04 | AUTO mode + slug truncation + hash suffix |
 | TI-06 | Replace placeholder tests with real unit/integration tests | Done | TI-01 | All test files now have real tests |
 | TI-07 | Add API validation and error mapping per ADR-010 | Done | TI-01 | Validation contract tests + @RolesAllowed + tenant-scope header enforcement |
-| TI-08 | Add tenancy outbox event publication reliability | Not Started | TI-02 | Outbox table + relay + idempotency tests |
+| TI-08 | Add tenancy outbox event publication reliability | Done | TI-02 | V003 outbox migration + relay worker + idempotency/retry tests |
 | TI-09 | Add health, metrics, audit logs for tenancy lifecycle | In Progress | TI-02 | `/q/health`, Prom metrics, audit evidence |
 | TI-10 | Phase 1 gate review | Not Started | TI-01..TI-09 | All quality gates pass for tenancy-core |
 
@@ -255,13 +260,13 @@ Decisions Needed:
 
 ## 7. Immediate Next 10 Actions
 
-1. Finish `TI-03` with integration tests for `by-domain` and header-based resolution.
-2. Finish `TI-04` by wiring provisioning plans to executable schema/database bootstrap hooks.
-3. Finish `TI-05` by validating runtime mode switching (`DISCRIMINATOR`/`SCHEMA`/`DATABASE`) in tests.
-4. Complete `TI-06` by replacing `TenantJpaRepositoryTest.kt` placeholder with repository integration tests.
-5. Start `TI-08` tenancy outbox delivery (table, relay worker, idempotent publish).
-6. Expand `TI-09` with tenant lifecycle audit entries for activate/suspend/terminate endpoints.
-7. Execute Phase 1 gate checklist and capture `TI-10` evidence.
+1. Finish `TI-04` by wiring provisioning plans to executable schema/database bootstrap hooks.
+2. Expand `TI-09` with tenant lifecycle audit entries for activate/suspend/terminate endpoints.
+3. Execute Phase 1 gate checklist and capture `TI-10` evidence.
+4. Add relay observability for `TI-09` (`outbox.pending`, `outbox.dispatched`, `outbox.failed` metrics).
+5. Harden outbox with dead-letter handling policy after max attempts.
+6. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.
+7. Create per-module tracker board (`MVP-03`) linking `TI-*`, `ID-*`, and `FI-*` IDs.
 8. Start `ID-01` identity-core placeholder replacement (domain layer first).
 9. Implement identity Flyway scripts (`ID-10`).
-10. Wire weekly scorecard updates (`MVP-02`) to sprint review artifacts.
+10. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
