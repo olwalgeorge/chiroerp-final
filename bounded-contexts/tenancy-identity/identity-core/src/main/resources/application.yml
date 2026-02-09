@@ -1,0 +1,46 @@
+# Identity Core runtime baseline (pre-MVP implementation)
+# ADR-005: tenant-aware identity data isolation
+# ADR-006: shared kernel governance (technical primitives only in platform-shared)
+# ADR-007: authentication/authorization strategy integration point
+
+quarkus:
+  application:
+    name: identity-core
+  http:
+    host: 0.0.0.0
+    port: ${IDENTITY_CORE_HTTP_PORT:8072}
+  datasource:
+    db-kind: postgresql
+    username: ${POSTGRES_IDENTITY_USER:svc_identity_core}
+    password: ${POSTGRES_IDENTITY_PASSWORD:dev_password}
+    jdbc:
+      url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_IDENTITY_SCHEMA:identity_core}
+      max-size: ${DB_POOL_MAX_SIZE:20}
+      min-size: ${DB_POOL_MIN_IDLE:5}
+  hibernate-orm:
+    database:
+      generation: none
+    log:
+      sql: false
+  flyway:
+    migrate-at-start: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: ${POSTGRES_IDENTITY_SCHEMA:identity_core}
+    table: flyway_history_identity_core
+  redis:
+    hosts: redis://:${REDIS_PASSWORD:dev_password}@${REDIS_HOST:localhost}:${REDIS_PORT:6379}
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+  log:
+    level: ${LOG_LEVEL:INFO}
+    console:
+      json: true
+  smallrye-health:
+    root-path: /q/health
+
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}

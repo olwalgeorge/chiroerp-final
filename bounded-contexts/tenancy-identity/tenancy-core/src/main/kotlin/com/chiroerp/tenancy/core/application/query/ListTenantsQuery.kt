@@ -1,8 +1,9 @@
-﻿package com.chiroerp.tenancy.core.application.query
+package com.chiroerp.tenancy.core.application.query
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/query/ListTenantsQuery.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_LISTTENANTSQUERY = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/query/ListTenantsQuery.kt"
+import com.chiroerp.tenancy.shared.TenantStatus
+
+data class ListTenantsQuery(
+    val offset: Int = 0,
+    val limit: Int = 50,
+    val status: TenantStatus? = null,
+)

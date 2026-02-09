@@ -1,8 +1,7 @@
-﻿package com.chiroerp.tenancy.shared.valueobjects
+package com.chiroerp.tenancy.shared.valueobjects
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/valueobjects/Email.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_EMAIL = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/valueobjects/Email.kt"
+data class Email(val value: String) {
+    init {
+        require(value.contains('@')) { "Invalid email: $value" }
+    }
+}

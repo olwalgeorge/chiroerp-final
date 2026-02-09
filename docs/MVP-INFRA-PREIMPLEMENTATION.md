@@ -68,6 +68,20 @@ docker compose ps
 docker compose logs -f postgres-app
 ```
 
+## Bootstrapped Services (Current)
+
+The following modules now include runnable Quarkus bootstrap configuration:
+
+- `bounded-contexts/tenancy-identity/tenancy-core` (port `8071`, schema `tenancy_core`)
+- `bounded-contexts/tenancy-identity/identity-core` (port `8072`, schema `identity_core`)
+
+Run locally:
+
+```bash
+./gradlew :bounded-contexts:tenancy-identity:tenancy-core:quarkusDev
+./gradlew :bounded-contexts:tenancy-identity:identity-core:quarkusDev
+```
+
 ## Production Adaptation Path
 
 When moving from pre-MVP to production-grade deployment:

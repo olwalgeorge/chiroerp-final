@@ -1,8 +1,7 @@
-﻿package com.chiroerp.tenancy.core.domain.model
+package com.chiroerp.tenancy.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/model/TenantConfiguration.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_TENANTCONFIGURATION = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/model/TenantConfiguration.kt"
+data class TenantConfiguration(
+    val settings: TenantSettings = TenantSettings(),
+    val quota: TenantQuota = TenantQuota(),
+    val subscription: TenantSubscription = TenantSubscription(),
+)

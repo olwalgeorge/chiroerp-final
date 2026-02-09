@@ -1,0 +1,51 @@
+# Tenancy Core runtime baseline (pre-MVP implementation)
+# ADR-005: tenant isolation via dedicated schema and tenant-aware model
+# ADR-006: platform-shared remains technical only
+
+quarkus:
+  application:
+    name: tenancy-core
+  http:
+    host: 0.0.0.0
+    port: ${TENANCY_CORE_HTTP_PORT:8071}
+  datasource:
+    db-kind: postgresql
+    username: ${POSTGRES_TENANCY_USER:svc_tenancy_core}
+    password: ${POSTGRES_TENANCY_PASSWORD:dev_password}
+    jdbc:
+      url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_TENANCY_SCHEMA:tenancy_core}
+      max-size: ${DB_POOL_MAX_SIZE:20}
+      min-size: ${DB_POOL_MIN_IDLE:5}
+  hibernate-orm:
+    database:
+      generation: none
+    log:
+      sql: false
+  flyway:
+    migrate-at-start: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+    schemas: ${POSTGRES_TENANCY_SCHEMA:tenancy_core}
+    table: flyway_history_tenancy_core
+  micrometer:
+    export:
+      prometheus:
+        enabled: true
+  log:
+    level: ${LOG_LEVEL:INFO}
+    console:
+      json: true
+  smallrye-health:
+    root-path: /q/health
+
+kafka:
+  bootstrap:
+    servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:19092}
+
+chiroerp:
+  tenancy:
+    isolation-strategy: ${TENANT_ISOLATION_STRATEGY:SCHEMA}
+    default-tenant-id: ${DEFAULT_TENANT_ID:default}
+  messaging:
+    tenant-events:
+      topic: ${TENANCY_EVENTS_TOPIC:tenancy.tenant.lifecycle}

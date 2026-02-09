@@ -1,8 +1,8 @@
-﻿package com.chiroerp.tenancy.shared.valueobjects
+package com.chiroerp.tenancy.shared.valueobjects
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/valueobjects/Address.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_ADDRESS = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/valueobjects/Address.kt"
+data class Address(
+    val line1: String,
+    val city: String,
+    val countryCode: String,
+    val postalCode: String? = null,
+)

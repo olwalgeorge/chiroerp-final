@@ -279,8 +279,11 @@ docker exec -it chiroerp-postgres-app psql -U chiroerp_admin -d chiroerp -c "SEL
 ### Run Sample Module
 
 ```bash
-# Start Finance domain in dev mode
-./gradlew :finance-domain:quarkusDev
+# Start tenancy module in dev mode
+./gradlew :bounded-contexts:tenancy-identity:tenancy-core:quarkusDev
+
+# Start identity module in dev mode (separate terminal)
+./gradlew :bounded-contexts:tenancy-identity:identity-core:quarkusDev
 ```
 
 **Expected output**:
@@ -290,21 +293,21 @@ __  ____  __  _____   ___  __ ____  ______
  --/ __ \/ / / / _ | / _ \/ //_/ / / / __/
  -/ /_/ / /_/ / __ |/ , _/ ,< / /_/ /\ \
 --\___\_\____/_/ |_/_/|_/_/|_|\____/___/
-2026-02-03 10:00:00,000 INFO  [io.quarkus] (Quarkus Main Thread) finance-domain 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.31.1) started in 2.345s. Listening on: http://localhost:8081
+2026-02-03 10:00:00,000 INFO  [io.quarkus] (Quarkus Main Thread) tenancy-core 1.0.0-SNAPSHOT on JVM (powered by Quarkus 3.31.1) started in 2.345s. Listening on: http://localhost:8071
 
 2026-02-03 10:00:00,001 INFO  [io.quarkus] (Quarkus Main Thread) Profile dev activated. Live Coding activated.
 ```
 
 **Test endpoints**:
 ```bash
-# Swagger UI
-http://localhost:8081/swagger-ui
+# Quarkus Dev UI
+http://localhost:8071/q/dev
 
 # Health check
-curl http://localhost:8081/q/health
+curl http://localhost:8071/q/health
 
 # Metrics
-curl http://localhost:8081/q/metrics
+curl http://localhost:8071/q/metrics
 ```
 
 ---

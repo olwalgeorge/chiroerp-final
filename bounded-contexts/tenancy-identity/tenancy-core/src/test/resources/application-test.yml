@@ -1,0 +1,11 @@
+quarkus:
+  http:
+    test-port: 0
+  datasource:
+    db-kind: postgresql
+    username: ${POSTGRES_TENANCY_USER:svc_tenancy_core}
+    password: ${POSTGRES_TENANCY_PASSWORD:dev_password}
+    jdbc:
+      url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_TENANCY_SCHEMA:tenancy_core}
+  flyway:
+    migrate-at-start: false

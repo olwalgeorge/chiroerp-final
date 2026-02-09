@@ -1,0 +1,6 @@
+quarkus:
+  log:
+    level: DEBUG
+  hibernate-orm:
+    log:
+      sql: ${DEV_SQL_LOG:false}

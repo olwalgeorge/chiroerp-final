@@ -1,0 +1,11 @@
+quarkus:
+  http:
+    test-port: 0
+  datasource:
+    db-kind: postgresql
+    username: ${POSTGRES_IDENTITY_USER:svc_identity_core}
+    password: ${POSTGRES_IDENTITY_PASSWORD:dev_password}
+    jdbc:
+      url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_IDENTITY_SCHEMA:identity_core}
+  flyway:
+    migrate-at-start: false

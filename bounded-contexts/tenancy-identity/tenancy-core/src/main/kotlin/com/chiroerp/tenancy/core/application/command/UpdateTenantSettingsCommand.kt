@@ -1,8 +1,12 @@
-﻿package com.chiroerp.tenancy.core.application.command
+package com.chiroerp.tenancy.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/command/UpdateTenantSettingsCommand.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_UPDATETENANTSETTINGSCOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/application/command/UpdateTenantSettingsCommand.kt"
+import com.chiroerp.tenancy.shared.TenantId
+
+data class UpdateTenantSettingsCommand(
+    val tenantId: TenantId,
+    val locale: String? = null,
+    val timezone: String? = null,
+    val currency: String? = null,
+    val featureFlags: Map<String, Boolean>? = null,
+    val customConfiguration: Map<String, String>? = null,
+)

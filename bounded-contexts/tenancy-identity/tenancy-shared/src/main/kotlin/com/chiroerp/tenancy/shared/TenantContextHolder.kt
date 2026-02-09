@@ -1,8 +1,18 @@
-﻿package com.chiroerp.tenancy.shared
+package com.chiroerp.tenancy.shared
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/TenantContextHolder.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_TENANTCONTEXTHOLDER = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-shared/src/main/kotlin/com/chiroerp/tenancy/shared/TenantContextHolder.kt"
+object TenantContextHolder {
+    private val context = ThreadLocal<TenantContext?>()
+
+    fun set(current: TenantContext) {
+        context.set(current)
+    }
+
+    fun get(): TenantContext? = context.get()
+
+    fun require(): TenantContext = context.get()
+        ?: throw IllegalStateException("Tenant context is not set")
+
+    fun clear() {
+        context.remove()
+    }
+}

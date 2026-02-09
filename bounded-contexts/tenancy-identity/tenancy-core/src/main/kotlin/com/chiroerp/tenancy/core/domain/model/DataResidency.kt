@@ -1,8 +1,13 @@
-﻿package com.chiroerp.tenancy.core.domain.model
+package com.chiroerp.tenancy.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/model/DataResidency.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_DATARESIDENCY = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/model/DataResidency.kt"
+data class DataResidency(val countryCode: String) {
+    init {
+        require(COUNTRY_CODE_REGEX.matches(countryCode)) {
+            "Country code must be ISO-3166 alpha-2"
+        }
+    }
+
+    companion object {
+        private val COUNTRY_CODE_REGEX = Regex("^[A-Z]{2}$")
+    }
+}

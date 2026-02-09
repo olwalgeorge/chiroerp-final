@@ -1,8 +1,14 @@
-﻿package com.chiroerp.tenancy.core.domain.event
+package com.chiroerp.tenancy.core.domain.event
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/event/TenantTerminatedEvent.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_TENANTTERMINATEDEVENT = "TODO: Implement bounded-contexts/tenancy-identity/tenancy-core/src/main/kotlin/com/chiroerp/tenancy/core/domain/event/TenantTerminatedEvent.kt"
+import com.chiroerp.tenancy.shared.TenantId
+import java.time.Instant
+import java.util.UUID
+
+data class TenantTerminatedEvent(
+    override val tenantId: TenantId,
+    val reason: String,
+    override val occurredAt: Instant,
+    override val eventId: UUID = UUID.randomUUID(),
+) : TenantDomainEvent {
+    override val eventType: String = "TenantTerminated"
+}
