@@ -37,7 +37,7 @@ This roadmap replaces prior roadmap tracks for implementation execution. The wor
 |---|---:|---:|---|
 | `bounded-contexts/tenancy-identity/tenancy-shared` | 9/9 | 0/2 | Partial (main implemented, tests placeholder) |
 | `bounded-contexts/tenancy-identity/tenancy-core` | 39/39 | 5/5 | In progress |
-| `bounded-contexts/tenancy-identity/identity-core` | 1/62 | 0/7 | Not started (bootstrap only) |
+| `bounded-contexts/tenancy-identity/identity-core` | 15/62 | 2/7 | In progress (domain layer complete) |
 | `bounded-contexts/finance/finance-shared` | 0/18 | 0/2 | Not started |
 | `bounded-contexts/finance/finance-gl/gl-domain` | 0/70 | 0/4 | Not started |
 | `bounded-contexts/finance/finance-gl/gl-application` | 0/44 | 0/4 | Not started |
@@ -161,9 +161,18 @@ Progress update (2026-02-09):
 
 ### Phase 2: Identity Core Implementation (Sprints 3-5)
 
+Progress update (2026-02-11):
+- **Domain layer implementation completed** (ID-01):
+  - Replaced all placeholder domain model files with concrete implementations: `UserId`, `UserStatus`, `IdentityProvider`, `UserProfile`, `UserCredentials`, `Permission`, `UserRole`, `MfaConfiguration`, `ExternalIdentity`, `Session` (+ `SessionStatus`)
+  - Implemented domain event contract (`UserDomainEvent`) + 8 concrete events: `UserCreatedEvent`, `UserActivatedEvent`, `UserLockedEvent`, `UserPasswordChangedEvent`, `UserRoleAssignedEvent`, `MfaEnabledEvent`, `UserLoggedInEvent`, `UserLoggedOutEvent`
+  - Implemented `User` aggregate (lines 17-180) with lifecycle/security invariants: activation/locking, password rotation history, role + permission aggregation, MFA enablement, external identity linking, login/logout event capture, domain event emission
+  - Defined domain ports: `UserRepository`, `SessionRepository`, `IdentityProviderGateway`, `UserEventPublisher`
+  - Added comprehensive domain tests: `UserTest.kt` (67 lines), `SessionTest.kt` (44 lines) covering lifecycle, password history, permission evaluation, MFA, session refresh/heartbeat/logout
+  - Build verification: `./gradlew :bounded-contexts:tenancy-identity:identity-core:test` SUCCESS (~3m36s)
+
 | ID | Work Item | Status | Depends On | Evidence / DoD |
 |---|---|---|---|---|
-| ID-01 | Replace placeholder domain model/event/port files in `identity-core` | Not Started | TI-10 | 0 placeholder main files in identity-core |
+| ID-01 | Replace placeholder domain model/event/port files in `identity-core` | Done | TI-10 | 0 placeholder domain files; `UserTest.kt`, `SessionTest.kt` tests green (2026-02-11) |
 | ID-02 | Implement user lifecycle aggregate logic and invariants | Not Started | ID-01 | Domain tests for create/activate/lock/password |
 | ID-03 | Implement authentication service (login/logout, anti-enumeration) | Not Started | ID-01 | Auth service tests and timing guard tests |
 | ID-04 | Implement RBAC + permissions with tenant scoping (ADR-007/014) | Not Started | ID-01 | Permission tests + denial tests |
@@ -268,13 +277,13 @@ Decisions Needed:
 
 ## 7. Immediate Next 10 Actions
 
-1. Execute Phase 1 gate checklist and capture `TI-10` evidence.
-2. Harden outbox with dead-letter handling policy after max attempts.
-3. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.
-4. Create per-module tracker board (`MVP-03`) linking `TI-*`, `ID-*`, and `FI-*` IDs.
-5. Start `ID-01` identity-core placeholder replacement (domain layer first).
-6. Implement identity Flyway scripts (`ID-10`).
-7. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
-8. (Done 2026-02-10) Automated enterprise database provisioning (TI-04 follow-up) with rollback path.
- 9. Instrument provisioning rollout/rollback telemetry aligned with SOC controls. **(Completed via provisioning metrics)**
-10. Document SOC/SAP runbook entries for TI-09 observability + TI-04 provisioning monitors.
+1. ✅ **(COMPLETED 2026-02-11)** Start `ID-01` identity-core placeholder replacement (domain layer first).
+2. Execute Phase 2 kickoff: begin `ID-02` user lifecycle aggregate logic and invariants.
+3. Start `ID-10` identity Flyway scripts (user/session/role/permission tables).
+4. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
+5. Implement `ID-03` authentication service (login/logout, anti-enumeration).
+6. Harden outbox with dead-letter handling policy after max attempts (TI follow-up).
+7. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.
+8. Create per-module tracker board (`MVP-03`) linking `TI-*`, `ID-*`, and `FI-*` IDs.
+9. Document SOC/SAP runbook entries for TI-09 observability + TI-04 provisioning monitors.
+10. Execute Phase 1 gate checklist and capture `TI-10` evidence (if not yet formally closed).
