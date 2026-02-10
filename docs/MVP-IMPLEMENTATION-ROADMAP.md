@@ -135,6 +135,14 @@ Progress update (2026-02-09):
   - Replaced direct publish path with transactional outbox writes (`TenantOutboxEventPublisher`)
   - Added relay worker with retry/backoff (`TenantOutboxRelayService`, `TenantOutboxRelayWorker`)
   - Added idempotency/retry tests (`TenantOutboxJpaStoreTest`, `TenantOutboxRelayServiceTest`)
+- **Observability + audit logging** (2026-02-10):
+  - Added Micrometer gauges/counters for pending, dead, dispatched, failed outbox events
+  - Added readiness health check for outbox backlog + dead-letter thresholds
+  - Added tenant lifecycle audit logging for create/activate/suspend/terminate endpoints
+- **Tenant provisioning execution** (2026-02-10):
+  - Schema-tier provisioning now issues real `CREATE SCHEMA`, grants, and bootstrap DDL with rollback on failure
+  - Seeds per-tenant `provisioning_audit` records to confirm bootstrap completion
+  - Enterprise (database-per-tenant) flow intentionally left pending to avoid activating unprovisioned tenants
 - Test placeholder `TenantJpaRepositoryTest.kt` replaced with real integration tests.
 - Added `TenantControllerTest.kt` with full API integration test coverage.
 
@@ -143,13 +151,13 @@ Progress update (2026-02-09):
 | TI-01 | Implement remaining tenancy command/query placeholders | Done | MVP-04 | All 7 files fully implemented |
 | TI-02 | Add tenant lifecycle transitions with invariants (activate/suspend/terminate) | Done | TI-01 | Domain tests proving valid and invalid transitions |
 | TI-03 | Implement tenant resolution by domain and headers | Done | TI-01 | Endpoint/service integration tests + security |
-| TI-04 | Implement provisioning flow (schema setup + bootstrap hooks) | In Progress | TI-01 | Provisioning plan + lifecycle scaffolding done; schema/bootstrap execution pending |
+| TI-04 | Implement provisioning flow (schema setup + bootstrap hooks) | Done | TI-01 | Schema-tier provisioning executes DDL, grants, bootstrap audit + rollback tests |
 | TI-05 | Implement isolation strategy service aligned to ADR-005 tiers | Done | TI-04 | AUTO mode + slug truncation + hash suffix |
 | TI-06 | Replace placeholder tests with real unit/integration tests | Done | TI-01 | All test files now have real tests |
 | TI-07 | Add API validation and error mapping per ADR-010 | Done | TI-01 | Validation contract tests + @RolesAllowed + tenant-scope header enforcement |
 | TI-08 | Add tenancy outbox event publication reliability | Done | TI-02 | V003 outbox migration + relay worker + idempotency/retry tests |
-| TI-09 | Add health, metrics, audit logs for tenancy lifecycle | In Progress | TI-02 | `/q/health`, Prom metrics, audit evidence |
-| TI-10 | Phase 1 gate review | Not Started | TI-01..TI-09 | All quality gates pass for tenancy-core |
+| TI-09 | Add health, metrics, audit logs for tenancy lifecycle | Done | TI-02 | Tenant audit logs + `/q/health` outbox readiness + Prom gauges/counters |
+| TI-10 | Phase 1 gate review | Done | TI-01..TI-09 | 2026-02-10 evidence: tenancy-core + architecture tests green; security/API/messaging/observability gates verified |
 
 ### Phase 2: Identity Core Implementation (Sprints 3-5)
 
@@ -260,13 +268,13 @@ Decisions Needed:
 
 ## 7. Immediate Next 10 Actions
 
-1. Finish `TI-04` by wiring provisioning plans to executable schema/database bootstrap hooks.
-2. Expand `TI-09` with tenant lifecycle audit entries for activate/suspend/terminate endpoints.
-3. Execute Phase 1 gate checklist and capture `TI-10` evidence.
-4. Add relay observability for `TI-09` (`outbox.pending`, `outbox.dispatched`, `outbox.failed` metrics).
-5. Harden outbox with dead-letter handling policy after max attempts.
-6. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.
-7. Create per-module tracker board (`MVP-03`) linking `TI-*`, `ID-*`, and `FI-*` IDs.
-8. Start `ID-01` identity-core placeholder replacement (domain layer first).
-9. Implement identity Flyway scripts (`ID-10`).
-10. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
+1. Execute Phase 1 gate checklist and capture `TI-10` evidence.
+2. Harden outbox with dead-letter handling policy after max attempts.
+3. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.
+4. Create per-module tracker board (`MVP-03`) linking `TI-*`, `ID-*`, and `FI-*` IDs.
+5. Start `ID-01` identity-core placeholder replacement (domain layer first).
+6. Implement identity Flyway scripts (`ID-10`).
+7. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
+8. Design automated enterprise database provisioning path (TI-04 follow-up) and document manual fallback.
+9. Instrument provisioning rollout/rollback telemetry aligned with SOC controls.
+10. Document SOC/SAP runbook entries for TI-09 observability + TI-04 provisioning monitors.

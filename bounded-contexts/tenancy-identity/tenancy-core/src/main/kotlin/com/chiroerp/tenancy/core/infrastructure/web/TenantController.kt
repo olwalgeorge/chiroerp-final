@@ -10,6 +10,10 @@ import com.chiroerp.tenancy.core.application.query.GetTenantByDomainQuery
 import com.chiroerp.tenancy.core.application.query.GetTenantQuery
 import com.chiroerp.tenancy.core.application.query.ListTenantsQuery
 import com.chiroerp.tenancy.core.application.service.TenantResolutionService
+import com.chiroerp.tenancy.core.domain.model.Tenant
+import com.chiroerp.tenancy.core.infrastructure.observability.TenantAuditActor
+import com.chiroerp.tenancy.core.infrastructure.observability.TenantAuditLogger
+import com.chiroerp.tenancy.core.infrastructure.observability.TenantLifecycleAction
 import com.chiroerp.tenancy.shared.TenantId
 import io.micrometer.core.instrument.MeterRegistry
 import io.quarkus.security.identity.SecurityIdentity
@@ -40,6 +44,7 @@ class TenantController(
     private val tenantCommandHandler: TenantCommandHandler,
     private val tenantQueryHandler: TenantQueryHandler,
     private val tenantResolutionService: TenantResolutionService,
+    private val tenantAuditLogger: TenantAuditLogger,
     private val meterRegistry: MeterRegistry,
     private val securityIdentity: SecurityIdentity,
 ) {
@@ -48,6 +53,15 @@ class TenantController(
         return try {
             val tenant = tenantCommandHandler.handle(request.toCommand())
             meterRegistry.counter("chiroerp.tenancy.api.create.requests").increment()
+            auditLifecycle(
+                action = TenantLifecycleAction.CREATE,
+                tenant = tenant,
+                callerTenantIdHeader = null,
+                metadata = mapOf(
+                    "domain" to tenant.domain,
+                    "tier" to tenant.tier.name,
+                ),
+            )
             Response.status(Response.Status.CREATED)
                 .entity(TenantResponse.from(tenant))
                 .build()
@@ -155,6 +169,7 @@ class TenantController(
         rawTenantId = rawTenantId,
         callerTenantIdHeader = callerTenantIdHeader,
         metric = "chiroerp.tenancy.api.activate.requests",
+        action = TenantLifecycleAction.ACTIVATE,
     ) { tenantId ->
         tenantCommandHandler.handle(ActivateTenantCommand(tenantId))
     }
@@ -169,6 +184,8 @@ class TenantController(
         rawTenantId = rawTenantId,
         callerTenantIdHeader = callerTenantIdHeader,
         metric = "chiroerp.tenancy.api.suspend.requests",
+        action = TenantLifecycleAction.SUSPEND,
+        metadata = mapOf("reason" to request.reason),
     ) { tenantId ->
         tenantCommandHandler.handle(request.toCommand(tenantId))
     }
@@ -183,6 +200,8 @@ class TenantController(
         rawTenantId = rawTenantId,
         callerTenantIdHeader = callerTenantIdHeader,
         metric = "chiroerp.tenancy.api.terminate.requests",
+        action = TenantLifecycleAction.TERMINATE,
+        metadata = mapOf("reason" to request.reason),
     ) { tenantId ->
         tenantCommandHandler.handle(request.toCommand(tenantId))
     }
@@ -215,6 +234,8 @@ class TenantController(
         rawTenantId: String,
         callerTenantIdHeader: String?,
         metric: String,
+        action: TenantLifecycleAction,
+        metadata: Map<String, String?> = emptyMap(),
         operation: (TenantId) -> com.chiroerp.tenancy.core.domain.model.Tenant,
     ): TenantResponse {
         val tenantId = parseTenantId(rawTenantId)
@@ -222,6 +243,12 @@ class TenantController(
         return try {
             val tenant = operation(tenantId)
             meterRegistry.counter(metric).increment()
+            auditLifecycle(
+                action = action,
+                tenant = tenant,
+                callerTenantIdHeader = callerTenantIdHeader,
+                metadata = metadata,
+            )
             TenantResponse.from(tenant)
         } catch (ex: TenantNotFoundException) {
             throw NotFoundException(ex.message)
@@ -257,5 +284,34 @@ class TenantController(
 
         return runCatching { TenantId.from(raw) }
             .getOrElse { throw BadRequestException("Invalid X-Tenant-ID header: $callerTenantIdHeader") }
+    }
+
+    private fun auditLifecycle(
+        action: TenantLifecycleAction,
+        tenant: Tenant,
+        callerTenantIdHeader: String?,
+        metadata: Map<String, String?> = emptyMap(),
+    ) {
+        val actorTenantUuid = callerTenantIdHeader?.let { parseTenantIdOrNull(it)?.value }
+        val actor = TenantAuditActor(
+            principalId = securityIdentity.principal?.name ?: "unknown",
+            tenantId = actorTenantUuid,
+            roles = securityIdentity.roles.toSet(),
+        )
+
+        tenantAuditLogger.logLifecycle(
+            action = action,
+            tenant = tenant,
+            actor = actor,
+            metadata = metadata,
+        )
+    }
+
+    private fun parseTenantIdOrNull(raw: String?): TenantId? {
+        val trimmed = raw?.trim()
+        if (trimmed.isNullOrBlank()) {
+            return null
+        }
+        return runCatching { TenantId.from(trimmed) }.getOrNull()
     }
 }

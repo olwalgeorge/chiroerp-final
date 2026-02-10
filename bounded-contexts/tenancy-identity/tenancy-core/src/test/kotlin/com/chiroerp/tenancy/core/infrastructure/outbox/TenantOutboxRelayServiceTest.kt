@@ -1,5 +1,6 @@
 package com.chiroerp.tenancy.core.infrastructure.outbox
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -10,9 +11,11 @@ class TenantOutboxRelayServiceTest {
     fun `relay marks event published on successful dispatch`() {
         val store = InMemoryOutboxStore()
         val dispatcher = RecordingDispatcher()
+        val meterRegistry = SimpleMeterRegistry()
         val service = TenantOutboxRelayService(
             tenantOutboxStore = store,
             tenantOutboxDispatcher = dispatcher,
+            meterRegistry = meterRegistry,
             batchSize = 100,
             maxBackoffSeconds = 60,
             maxAttempts = 10,
@@ -29,15 +32,19 @@ class TenantOutboxRelayServiceTest {
         assertThat(store.entries[entry.eventId]!!.status).isEqualTo(OutboxStatus.PUBLISHED)
         assertThat(store.entries[entry.eventId]!!.publishedAt).isEqualTo(now)
         assertThat(store.entries[entry.eventId]!!.publishAttempts).isEqualTo(0)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.dispatched").count()).isEqualTo(1.0)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.failed").count()).isEqualTo(0.0)
     }
 
     @Test
     fun `relay records failed attempt and retries with exponential backoff`() {
         val store = InMemoryOutboxStore()
         val dispatcher = FailingOnceDispatcher()
+        val meterRegistry = SimpleMeterRegistry()
         val service = TenantOutboxRelayService(
             tenantOutboxStore = store,
             tenantOutboxDispatcher = dispatcher,
+            meterRegistry = meterRegistry,
             batchSize = 100,
             maxBackoffSeconds = 60,
             maxAttempts = 10,
@@ -64,6 +71,8 @@ class TenantOutboxRelayServiceTest {
         assertThat(afterSuccess.status).isEqualTo(OutboxStatus.PUBLISHED)
         assertThat(afterSuccess.publishedAt).isEqualTo(secondAttempt)
         assertThat(dispatcher.calls).isEqualTo(2)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.failed").count()).isEqualTo(1.0)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.dispatched").count()).isEqualTo(1.0)
     }
 
     @Test
@@ -71,9 +80,11 @@ class TenantOutboxRelayServiceTest {
         val store = InMemoryOutboxStore()
         val dispatcher = AlwaysFailingDispatcher()
         val maxAttempts = 3
+        val meterRegistry = SimpleMeterRegistry()
         val service = TenantOutboxRelayService(
             tenantOutboxStore = store,
             tenantOutboxDispatcher = dispatcher,
+            meterRegistry = meterRegistry,
             batchSize = 100,
             maxBackoffSeconds = 60,
             maxAttempts = maxAttempts,
@@ -100,6 +111,8 @@ class TenantOutboxRelayServiceTest {
         assertThat(afterMaxAttempts.status).isEqualTo(OutboxStatus.DEAD)
         assertThat(afterMaxAttempts.lastError).isEqualTo("Intentional failure")
         assertThat(dispatcher.calls).isEqualTo(maxAttempts)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.dead").count()).isEqualTo(1.0)
+        assertThat(meterRegistry.counter("chiroerp.tenancy.outbox.relay.failed").count()).isEqualTo(maxAttempts.toDouble())
     }
 
     @Test

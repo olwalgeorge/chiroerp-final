@@ -16,4 +16,5 @@ class TenantLifecycleTransitionException(
 class TenantProvisioningException(
     val tenantId: TenantId,
     reason: String,
-) : RuntimeException("Tenant '${tenantId.value}' provisioning failed: $reason")
+    cause: Throwable? = null,
+) : RuntimeException("Tenant '${tenantId.value}' provisioning failed: $reason", cause)

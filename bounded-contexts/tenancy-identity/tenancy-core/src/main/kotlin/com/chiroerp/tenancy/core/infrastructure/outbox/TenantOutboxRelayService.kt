@@ -1,5 +1,6 @@
 package com.chiroerp.tenancy.core.infrastructure.outbox
 
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.transaction.Transactional
 import org.eclipse.microprofile.config.inject.ConfigProperty
@@ -10,6 +11,7 @@ import java.time.Instant
 class TenantOutboxRelayService(
     private val tenantOutboxStore: TenantOutboxStore,
     private val tenantOutboxDispatcher: TenantOutboxDispatcher,
+    private val meterRegistry: MeterRegistry,
     @ConfigProperty(name = "chiroerp.messaging.tenant-events.outbox.batch-size", defaultValue = "100")
     private val batchSize: Int,
     @ConfigProperty(name = "chiroerp.messaging.tenant-events.outbox.max-backoff-seconds", defaultValue = "60")
@@ -18,6 +20,9 @@ class TenantOutboxRelayService(
     private val maxAttempts: Int,
 ) {
     private val logger = Logger.getLogger(TenantOutboxRelayService::class.java)
+    private val dispatchedCounter = meterRegistry.counter("chiroerp.tenancy.outbox.relay.dispatched")
+    private val failedCounter = meterRegistry.counter("chiroerp.tenancy.outbox.relay.failed")
+    private val deadCounter = meterRegistry.counter("chiroerp.tenancy.outbox.relay.dead")
 
     @Transactional
     fun relayBatch(now: Instant = Instant.now()): Int {
@@ -30,6 +35,7 @@ class TenantOutboxRelayService(
             try {
                 tenantOutboxDispatcher.dispatch(entry)
                 tenantOutboxStore.markPublished(entry.eventId, now)
+                dispatchedCounter.increment()
                 logger.debugf("Outbox event %s published successfully", entry.eventId)
             } catch (ex: Exception) {
                 handleDispatchFailure(entry, ex, now)
@@ -49,6 +55,7 @@ class TenantOutboxRelayService(
                 attempts = attempts,
                 lastError = error,
             )
+            deadCounter.increment()
             logger.errorf(
                 ex,
                 "Outbox event %s marked DEAD after %d attempts; requires manual intervention",
@@ -72,6 +79,7 @@ class TenantOutboxRelayService(
                 nextAttemptAt,
             )
         }
+        failedCounter.increment()
     }
 
     internal fun computeBackoffSeconds(attempts: Int): Long {

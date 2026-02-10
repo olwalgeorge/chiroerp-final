@@ -11,7 +11,13 @@ quarkus:
     migrate-at-start: true
 
 chiroerp:
+  tenancy:
+    provisioning:
+      schema-grant-role: ""
   messaging:
     tenant-events:
       outbox:
         enabled: false
+        metrics-refresh-interval: 5s
+        pending-threshold: 10
+        dead-threshold: 0

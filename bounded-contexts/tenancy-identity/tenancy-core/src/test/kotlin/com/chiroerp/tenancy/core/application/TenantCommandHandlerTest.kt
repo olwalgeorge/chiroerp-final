@@ -8,6 +8,7 @@ import com.chiroerp.tenancy.core.application.exception.TenantLifecycleTransition
 import com.chiroerp.tenancy.core.application.handler.TenantCommandHandler
 import com.chiroerp.tenancy.core.application.service.TenantIsolationService
 import com.chiroerp.tenancy.core.application.service.TenantProvisioningService
+import com.chiroerp.tenancy.core.application.service.TenantSchemaProvisioner
 import com.chiroerp.tenancy.core.domain.event.TenantActivatedEvent
 import com.chiroerp.tenancy.core.domain.event.TenantCreatedEvent
 import com.chiroerp.tenancy.core.domain.event.TenantDomainEvent
@@ -27,6 +28,7 @@ class TenantCommandHandlerTest {
     private val eventPublisher = RecordingTenantEventPublisher()
     private val provisioningService = TenantProvisioningService(
         tenantIsolationService = TenantIsolationService(configuredIsolationStrategy = "AUTO"),
+        tenantSchemaProvisioner = NoOpSchemaProvisioner(),
     )
 
     private val handler = TenantCommandHandler(
@@ -139,5 +141,14 @@ class TenantCommandHandlerTest {
         override fun publish(events: List<TenantDomainEvent>) {
             published += events
         }
+    }
+
+    private class NoOpSchemaProvisioner : TenantSchemaProvisioner {
+        override fun verifySharedSchema() = Unit
+        override fun createSchema(schemaName: String) = Unit
+        override fun grantSchemaUsage(schemaName: String) = Unit
+        override fun createBootstrapObjects(schemaName: String) = Unit
+        override fun seedSchemaReferenceData(schemaName: String, tenantId: TenantId) = Unit
+        override fun dropSchema(schemaName: String) = Unit
     }
 }
