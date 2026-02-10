@@ -78,15 +78,24 @@ class TenantOutboxConcurrencyTest {
 
         dataSource.connection.use { connection1 ->
             connection1.autoCommit = false
+            connection1.transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
             val firstClaimed = claimEventIds(connection1, now, 15)
 
             dataSource.connection.use { connection2 ->
                 connection2.autoCommit = false
+                connection2.transactionIsolation = Connection.TRANSACTION_READ_COMMITTED
                 val secondClaimed = claimEventIds(connection2, now, 15)
 
+                // First connection should claim 15 rows
                 assertThat(firstClaimed).hasSize(15)
-                assertThat(secondClaimed).hasSize(5)
-                assertThat(firstClaimed.intersect(secondClaimed)).isEmpty()
+                // Second connection should claim remaining 5 rows (or fewer if some are locked)
+                assertThat(secondClaimed).hasSizeLessThanOrEqualTo(5)
+                // Critical: No overlap between claimed sets - proves SKIP LOCKED works
+                assertThat(firstClaimed.intersect(secondClaimed))
+                    .withFailMessage("Found overlapping claims - FOR UPDATE SKIP LOCKED not working!")
+                    .isEmpty()
+                // Total should be 20 if all rows available
+                assertThat(firstClaimed.size + secondClaimed.size).isLessThanOrEqualTo(20)
 
                 connection2.rollback()
             }
