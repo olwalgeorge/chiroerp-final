@@ -151,7 +151,7 @@ Progress update (2026-02-09):
 | TI-01 | Implement remaining tenancy command/query placeholders | Done | MVP-04 | All 7 files fully implemented |
 | TI-02 | Add tenant lifecycle transitions with invariants (activate/suspend/terminate) | Done | TI-01 | Domain tests proving valid and invalid transitions |
 | TI-03 | Implement tenant resolution by domain and headers | Done | TI-01 | Endpoint/service integration tests + security |
-| TI-04 | Implement provisioning flow (schema setup + bootstrap hooks) | Done | TI-01 | Schema-tier provisioning executes DDL, grants, bootstrap audit + rollback tests |
+| TI-04 | Implement provisioning flow (schema setup + bootstrap hooks) | Done | TI-01 | Schema-tier + database-tier provisioning executes DDL, grants, telemetry + rollback tests |
 | TI-05 | Implement isolation strategy service aligned to ADR-005 tiers | Done | TI-04 | AUTO mode + slug truncation + hash suffix |
 | TI-06 | Replace placeholder tests with real unit/integration tests | Done | TI-01 | All test files now have real tests |
 | TI-07 | Add API validation and error mapping per ADR-010 | Done | TI-01 | Validation contract tests + @RolesAllowed + tenant-scope header enforcement |
@@ -275,6 +275,6 @@ Decisions Needed:
 5. Start `ID-01` identity-core placeholder replacement (domain layer first).
 6. Implement identity Flyway scripts (`ID-10`).
 7. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
-8. Design automated enterprise database provisioning path (TI-04 follow-up) and document manual fallback.
-9. Instrument provisioning rollout/rollback telemetry aligned with SOC controls.
+8. (Done 2026-02-10) Automated enterprise database provisioning (TI-04 follow-up) with rollback path.
+ 9. Instrument provisioning rollout/rollback telemetry aligned with SOC controls. **(Completed via provisioning metrics)**
 10. Document SOC/SAP runbook entries for TI-09 observability + TI-04 provisioning monitors.

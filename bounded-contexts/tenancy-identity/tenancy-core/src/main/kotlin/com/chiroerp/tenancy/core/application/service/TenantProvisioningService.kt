@@ -12,12 +12,14 @@ import java.time.Instant
 class TenantProvisioningService(
     private val tenantIsolationService: TenantIsolationService,
     private val tenantSchemaProvisioner: TenantSchemaProvisioner,
+    private val provisioningTelemetry: ProvisioningTelemetry,
 ) {
     fun provision(tenant: Tenant): TenantProvisioningResult {
         val isolationPlan = tenantIsolationService.buildProvisioningPlan(tenant)
         val bootstrapSteps = bootstrapStepsFor(isolationPlan.isolationLevel)
         val executedSteps = mutableListOf<ProvisioningStepResult>()
         var createdSchema: String? = null
+        var createdDatabase: String? = null
 
         try {
             bootstrapSteps.forEach { step ->
@@ -64,28 +66,41 @@ class TenantProvisioningService(
                                 "Reference data initialized in $schemaName"
                             }
                         }
+                        IsolationLevel.DATABASE -> runStep(step, executedSteps, tenant) {
+                            "Enterprise database contains dedicated reference data"
+                        }
                         else -> runStep(step, executedSteps, tenant) {
                             "Shared reference data already available"
                         }
                     }
-                    "create-tenant-database" -> skipStep(
-                        step,
-                        executedSteps,
-                        "Enterprise database provisioning not automated yet",
-                    )
-                    "apply-database-migrations" -> skipStep(
-                        step,
-                        executedSteps,
-                        "Enterprise database migrations require manual pipeline",
-                    )
+                    "create-tenant-database" -> {
+                        val databaseName = isolationPlan.databaseName
+                            ?: throw TenantProvisioningException(tenant.id, "Isolation plan missing database name")
+                        runStep(step, executedSteps, tenant) {
+                            tenantSchemaProvisioner.createDatabase(databaseName)
+                            tenantSchemaProvisioner.grantDatabaseAccess(databaseName)
+                            createdDatabase = databaseName
+                            "Database $databaseName created"
+                        }
+                    }
+                    "apply-database-migrations" -> {
+                        val databaseName = isolationPlan.databaseName
+                            ?: throw TenantProvisioningException(tenant.id, "Isolation plan missing database name")
+                        runStep(step, executedSteps, tenant) {
+                            tenantSchemaProvisioner.runDatabaseMigrations(databaseName, tenant.id)
+                            "Database migrations executed for $databaseName"
+                        }
+                    }
                     else -> skipStep(step, executedSteps, "No action mapped for step")
                 }
             }
         } catch (ex: TenantProvisioningException) {
             rollbackSchema(createdSchema)
+            rollbackDatabase(createdDatabase)
             throw ex
         } catch (ex: Exception) {
             rollbackSchema(createdSchema)
+            rollbackDatabase(createdDatabase)
             throw TenantProvisioningException(
                 tenantId = tenant.id,
                 reason = ex.message ?: "Provisioning failed unexpectedly",
@@ -93,13 +108,8 @@ class TenantProvisioningService(
             )
         }
 
-        val ready = isolationPlan.isolationLevel != IsolationLevel.DATABASE
-        if (!ready) {
-            Log.warnf(
-                "Tenant %s created in PENDING status - enterprise database automation pending",
-                tenant.id.value,
-            )
-        }
+        val ready = executedSteps.none { it.status == ProvisioningStepStatus.FAILED }
+        provisioningTelemetry.recordOutcome(isolationPlan.isolationLevel, ready)
 
         return TenantProvisioningResult(
             tenantId = tenant.id,
@@ -124,12 +134,14 @@ class TenantProvisioningService(
                 status = ProvisioningStepStatus.SUCCEEDED,
                 message = message,
             )
+            provisioningTelemetry.recordStep(stepName, ProvisioningStepStatus.SUCCEEDED)
         } catch (ex: Exception) {
             executedSteps += ProvisioningStepResult(
                 stepName = stepName,
                 status = ProvisioningStepStatus.FAILED,
                 message = ex.message,
             )
+            provisioningTelemetry.recordStep(stepName, ProvisioningStepStatus.FAILED)
             throw TenantProvisioningException(
                 tenantId = tenant.id,
                 reason = "Step '$stepName' failed: ${ex.message}",
@@ -148,12 +160,19 @@ class TenantProvisioningService(
             status = ProvisioningStepStatus.SKIPPED,
             message = reason,
         )
+        provisioningTelemetry.recordStep(stepName, ProvisioningStepStatus.SKIPPED)
     }
 
     private fun rollbackSchema(schemaName: String?) {
         if (schemaName == null) return
         runCatching { tenantSchemaProvisioner.dropSchema(schemaName) }
             .onFailure { Log.warnf(it, "Failed to rollback schema %s after provisioning error", schemaName) }
+    }
+
+    private fun rollbackDatabase(databaseName: String?) {
+        if (databaseName == null) return
+        runCatching { tenantSchemaProvisioner.dropDatabase(databaseName) }
+            .onFailure { Log.warnf(it, "Failed to rollback database %s after provisioning error", databaseName) }
     }
 
     private fun validateTenantSettings(tenant: Tenant) {

@@ -14,6 +14,14 @@ chiroerp:
   tenancy:
     provisioning:
       schema-grant-role: ""
+      database:
+        admin-url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/postgres
+        admin-username: ${POSTGRES_TENANCY_USER:svc_tenancy_core}
+        admin-password: ${POSTGRES_TENANCY_PASSWORD:dev_password}
+        owner-role: ${POSTGRES_TENANCY_USER:svc_tenancy_core}
+        template: ""
+      metrics:
+        enabled: true
   messaging:
     tenant-events:
       outbox:

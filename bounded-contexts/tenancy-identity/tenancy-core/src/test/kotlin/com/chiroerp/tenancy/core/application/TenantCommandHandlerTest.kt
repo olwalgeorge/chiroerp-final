@@ -6,6 +6,8 @@ import com.chiroerp.tenancy.core.application.command.SuspendTenantCommand
 import com.chiroerp.tenancy.core.application.command.TerminateTenantCommand
 import com.chiroerp.tenancy.core.application.exception.TenantLifecycleTransitionException
 import com.chiroerp.tenancy.core.application.handler.TenantCommandHandler
+import com.chiroerp.tenancy.core.application.service.ProvisioningStepStatus
+import com.chiroerp.tenancy.core.application.service.ProvisioningTelemetry
 import com.chiroerp.tenancy.core.application.service.TenantIsolationService
 import com.chiroerp.tenancy.core.application.service.TenantProvisioningService
 import com.chiroerp.tenancy.core.application.service.TenantSchemaProvisioner
@@ -29,6 +31,7 @@ class TenantCommandHandlerTest {
     private val provisioningService = TenantProvisioningService(
         tenantIsolationService = TenantIsolationService(configuredIsolationStrategy = "AUTO"),
         tenantSchemaProvisioner = NoOpSchemaProvisioner(),
+        provisioningTelemetry = NoopProvisioningTelemetry(),
     )
 
     private val handler = TenantCommandHandler(
@@ -150,5 +153,14 @@ class TenantCommandHandlerTest {
         override fun createBootstrapObjects(schemaName: String) = Unit
         override fun seedSchemaReferenceData(schemaName: String, tenantId: TenantId) = Unit
         override fun dropSchema(schemaName: String) = Unit
+        override fun createDatabase(databaseName: String) = Unit
+        override fun grantDatabaseAccess(databaseName: String) = Unit
+        override fun runDatabaseMigrations(databaseName: String, tenantId: TenantId) = Unit
+        override fun dropDatabase(databaseName: String) = Unit
+    }
+
+    private class NoopProvisioningTelemetry : ProvisioningTelemetry {
+        override fun recordStep(stepName: String, status: ProvisioningStepStatus) = Unit
+        override fun recordOutcome(isolationLevel: com.chiroerp.tenancy.shared.IsolationLevel, readyForActivation: Boolean) = Unit
     }
 }

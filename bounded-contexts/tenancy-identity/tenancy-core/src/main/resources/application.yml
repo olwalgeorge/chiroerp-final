@@ -50,6 +50,14 @@ chiroerp:
     default-tenant-id: ${DEFAULT_TENANT_ID:default}
     provisioning:
       schema-grant-role: ${TENANCY_SCHEMA_GRANT_ROLE:}
+      database:
+        admin-url: ${TENANCY_DB_ADMIN_JDBC_URL:jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/postgres}
+        admin-username: ${TENANCY_DB_ADMIN_USERNAME:${POSTGRES_TENANCY_USER:svc_tenancy_core}}
+        admin-password: ${TENANCY_DB_ADMIN_PASSWORD:${POSTGRES_TENANCY_PASSWORD:dev_password}}
+        owner-role: ${TENANCY_DB_OWNER_ROLE:${POSTGRES_TENANCY_USER:svc_tenancy_core}}
+        template: ${TENANCY_DB_TEMPLATE:""}
+      metrics:
+        enabled: ${TENANCY_PROVISIONING_METRICS_ENABLED:true}
   messaging:
     tenant-events:
       topic: ${TENANCY_EVENTS_TOPIC:tenancy.tenant.lifecycle}

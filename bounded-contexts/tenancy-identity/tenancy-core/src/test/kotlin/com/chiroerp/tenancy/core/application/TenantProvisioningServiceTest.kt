@@ -2,6 +2,7 @@ package com.chiroerp.tenancy.core.application
 
 import com.chiroerp.tenancy.core.application.exception.TenantProvisioningException
 import com.chiroerp.tenancy.core.application.service.ProvisioningStepStatus
+import com.chiroerp.tenancy.core.application.service.ProvisioningTelemetry
 import com.chiroerp.tenancy.core.application.service.TenantIsolationService
 import com.chiroerp.tenancy.core.application.service.TenantProvisioningService
 import com.chiroerp.tenancy.core.application.service.TenantSchemaProvisioner
@@ -123,24 +124,41 @@ class TenantProvisioningServiceTest {
     }
 
     @Test
-    fun `enterprise tenants remain pending until manual database provisioning`() {
+    fun `enterprise tenants use automated database provisioning`() {
         val provisioner = FakeSchemaProvisioner()
         val service = service("AUTO", provisioner)
-        val tenant = tenant(TenantTier.ENTERPRISE, "enterprise-pending.example")
+        val tenant = tenant(TenantTier.ENTERPRISE, "enterprise-automated.example")
 
         val result = service.provision(tenant)
 
-        assertThat(result.readyForActivation).isFalse()
-        assertThat(result.executedSteps.filter { it.stepName.startsWith("create-tenant-database") })
-            .allMatch { it.status == ProvisioningStepStatus.SKIPPED }
+        assertThat(result.readyForActivation).isTrue()
+        val databaseName = result.isolationPlan.databaseName!!
+        assertThat(provisioner.invocations).contains(
+            "create-database:$databaseName",
+            "grant-database:$databaseName",
+            "db-migrations:$databaseName",
+        )
+    }
+
+    @Test
+    fun `database provisioning failure triggers rollback`() {
+        val provisioner = FakeSchemaProvisioner(failOnStep = "apply-database-migrations")
+        val service = service("AUTO", provisioner)
+        val tenant = tenant(TenantTier.ENTERPRISE, "enterprise-rollback.example")
+
+        assertThatThrownBy { service.provision(tenant) }
+            .isInstanceOf(TenantProvisioningException::class.java)
+        assertThat(provisioner.droppedDatabase).isNotNull()
     }
 
     private fun service(
         strategy: String,
         provisioner: TenantSchemaProvisioner = FakeSchemaProvisioner(),
+        telemetry: ProvisioningTelemetry = NoopTelemetry(),
     ): TenantProvisioningService = TenantProvisioningService(
         tenantIsolationService = TenantIsolationService(strategy),
         tenantSchemaProvisioner = provisioner,
+        provisioningTelemetry = telemetry,
     )
 
     private fun tenant(tier: TenantTier, domain: String): Tenant = Tenant.create(
@@ -157,6 +175,7 @@ class TenantProvisioningServiceTest {
     ) : TenantSchemaProvisioner {
         val invocations = mutableListOf<String>()
         var droppedSchema: String? = null
+        var droppedDatabase: String? = null
 
         override fun verifySharedSchema() {
             invocations += "verify-shared-schema:true"
@@ -187,5 +206,32 @@ class TenantProvisioningServiceTest {
         override fun dropSchema(schemaName: String) {
             droppedSchema = schemaName
         }
+
+        override fun createDatabase(databaseName: String) {
+            invocations += "create-database:$databaseName"
+            if (failOnStep == "create-tenant-database") {
+                error("database creation failure")
+            }
+        }
+
+        override fun grantDatabaseAccess(databaseName: String) {
+            invocations += "grant-database:$databaseName"
+        }
+
+        override fun runDatabaseMigrations(databaseName: String, tenantId: TenantId) {
+            invocations += "db-migrations:$databaseName"
+            if (failOnStep == "apply-database-migrations") {
+                error("database migration failure")
+            }
+        }
+
+        override fun dropDatabase(databaseName: String) {
+            droppedDatabase = databaseName
+        }
+    }
+
+    private class NoopTelemetry : ProvisioningTelemetry {
+        override fun recordStep(stepName: String, status: ProvisioningStepStatus) = Unit
+        override fun recordOutcome(isolationLevel: IsolationLevel, readyForActivation: Boolean) = Unit
     }
 }

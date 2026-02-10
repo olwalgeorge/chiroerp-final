@@ -20,4 +20,12 @@ interface TenantSchemaProvisioner {
     fun seedSchemaReferenceData(schemaName: String, tenantId: TenantId)
 
     fun dropSchema(schemaName: String)
+
+    fun createDatabase(databaseName: String)
+
+    fun grantDatabaseAccess(databaseName: String)
+
+    fun runDatabaseMigrations(databaseName: String, tenantId: TenantId)
+
+    fun dropDatabase(databaseName: String)
 }
