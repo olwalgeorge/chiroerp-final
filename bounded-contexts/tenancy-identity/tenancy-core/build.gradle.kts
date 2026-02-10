@@ -20,4 +20,5 @@ dependencies {
 
     // Enables @TestSecurity for controller-level security integration tests.
     testImplementation("io.quarkus:quarkus-test-security")
+    testImplementation(libs.testcontainers.postgresql)
 }
