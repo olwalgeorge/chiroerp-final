@@ -1,8 +1,14 @@
-﻿package com.chiroerp.identity.core.domain.model
+package com.chiroerp.identity.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/UserId.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_USERID = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/UserId.kt"
+import java.util.UUID
+
+@JvmInline
+value class UserId(val value: UUID) {
+    override fun toString(): String = value.toString()
+
+    companion object {
+        fun random(): UserId = UserId(UUID.randomUUID())
+
+        fun from(raw: String): UserId = UserId(UUID.fromString(raw))
+    }
+}

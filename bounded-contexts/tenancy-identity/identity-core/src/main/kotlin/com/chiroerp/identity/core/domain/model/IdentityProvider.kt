@@ -1,8 +1,13 @@
-﻿package com.chiroerp.identity.core.domain.model
+package com.chiroerp.identity.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/IdentityProvider.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_IDENTITYPROVIDER = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/IdentityProvider.kt"
+enum class IdentityProvider {
+    LOCAL,
+    SAML,
+    OIDC,
+    LDAP;
+
+    companion object {
+        fun from(raw: String): IdentityProvider = values().firstOrNull { it.name.equals(raw.trim(), ignoreCase = true) }
+            ?: throw IllegalArgumentException("Unsupported identity provider: $raw")
+    }
+}

@@ -1,8 +1,19 @@
-﻿package com.chiroerp.identity.core.domain.event
+package com.chiroerp.identity.core.domain.event
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/event/UserCreatedEvent.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_USERCREATEDEVENT = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/event/UserCreatedEvent.kt"
+import com.chiroerp.identity.core.domain.model.UserId
+import com.chiroerp.identity.core.domain.model.UserStatus
+import com.chiroerp.tenancy.shared.TenantId
+import java.time.Instant
+import java.util.UUID
+
+data class UserCreatedEvent(
+    override val userId: UserId,
+    override val tenantId: TenantId,
+    val email: String,
+    val status: UserStatus,
+    val roles: Set<String>,
+    override val occurredAt: Instant,
+    override val eventId: UUID = UUID.randomUUID(),
+) : UserDomainEvent {
+    override val eventType: String = "UserCreated"
+}

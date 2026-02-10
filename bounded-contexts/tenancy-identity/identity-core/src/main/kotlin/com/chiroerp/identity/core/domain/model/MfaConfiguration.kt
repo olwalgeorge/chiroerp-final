@@ -1,8 +1,26 @@
-﻿package com.chiroerp.identity.core.domain.model
+package com.chiroerp.identity.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/MfaConfiguration.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_MFACONFIGURATION = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/MfaConfiguration.kt"
+import java.time.Instant
+
+enum class MfaMethod {
+    TOTP,
+    SMS,
+    EMAIL,
+}
+
+data class MfaConfiguration(
+    val methods: Set<MfaMethod>,
+    val sharedSecret: String,
+    val backupCodes: Set<String> = emptySet(),
+    val enrolledAt: Instant = Instant.now(),
+    val verifiedAt: Instant? = null,
+) {
+    init {
+        require(methods.isNotEmpty()) { "At least one MFA method is required" }
+        require(sharedSecret.isNotBlank()) { "Shared secret cannot be blank" }
+    }
+
+    fun isMethodEnabled(method: MfaMethod): Boolean = methods.contains(method)
+
+    fun markVerified(at: Instant = Instant.now()): MfaConfiguration = copy(verifiedAt = at)
+}

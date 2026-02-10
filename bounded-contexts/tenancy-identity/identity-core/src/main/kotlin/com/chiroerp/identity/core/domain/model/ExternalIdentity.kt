@@ -1,8 +1,14 @@
-﻿package com.chiroerp.identity.core.domain.model
+package com.chiroerp.identity.core.domain.model
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/ExternalIdentity.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_EXTERNALIDENTITY = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/model/ExternalIdentity.kt"
+import java.time.Instant
+
+data class ExternalIdentity(
+    val provider: IdentityProvider,
+    val subject: String,
+    val linkedAt: Instant = Instant.now(),
+    val claims: Map<String, String> = emptyMap(),
+) {
+    init {
+        require(subject.isNotBlank()) { "External subject is required" }
+    }
+}

@@ -1,8 +1,20 @@
-﻿package com.chiroerp.identity.core.domain.port
+package com.chiroerp.identity.core.domain.port
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/port/UserRepository.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_USERREPOSITORY = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/domain/port/UserRepository.kt"
+import com.chiroerp.identity.core.domain.model.IdentityProvider
+import com.chiroerp.identity.core.domain.model.User
+import com.chiroerp.identity.core.domain.model.UserId
+import com.chiroerp.tenancy.shared.TenantId
+
+interface UserRepository {
+    fun save(user: User)
+
+    fun findById(id: UserId): User?
+
+    fun findByEmail(tenantId: TenantId, email: String): User?
+
+    fun findByExternalIdentity(
+        tenantId: TenantId,
+        provider: IdentityProvider,
+        subject: String,
+    ): User?
+}
