@@ -15,6 +15,7 @@ class TenantOutboxRelayServiceTest {
             tenantOutboxDispatcher = dispatcher,
             batchSize = 100,
             maxBackoffSeconds = 60,
+            maxAttempts = 10,
         )
 
         val now = Instant.parse("2026-02-09T12:00:00Z")
@@ -25,6 +26,7 @@ class TenantOutboxRelayServiceTest {
 
         assertThat(processed).isEqualTo(1)
         assertThat(dispatcher.dispatched).extracting<UUID> { it.eventId }.contains(entry.eventId)
+        assertThat(store.entries[entry.eventId]!!.status).isEqualTo(OutboxStatus.PUBLISHED)
         assertThat(store.entries[entry.eventId]!!.publishedAt).isEqualTo(now)
         assertThat(store.entries[entry.eventId]!!.publishAttempts).isEqualTo(0)
     }
@@ -38,6 +40,7 @@ class TenantOutboxRelayServiceTest {
             tenantOutboxDispatcher = dispatcher,
             batchSize = 100,
             maxBackoffSeconds = 60,
+            maxAttempts = 10,
         )
 
         val firstAttempt = Instant.parse("2026-02-09T12:00:00Z")
@@ -48,6 +51,7 @@ class TenantOutboxRelayServiceTest {
         val afterFailure = store.entries[entry.eventId]!!
 
         assertThat(firstProcessed).isEqualTo(1)
+        assertThat(afterFailure.status).isEqualTo(OutboxStatus.PENDING)
         assertThat(afterFailure.publishedAt).isNull()
         assertThat(afterFailure.publishAttempts).isEqualTo(1)
         assertThat(afterFailure.nextAttemptAt).isEqualTo(firstAttempt.plusSeconds(1))
@@ -57,8 +61,61 @@ class TenantOutboxRelayServiceTest {
         val afterSuccess = store.entries[entry.eventId]!!
 
         assertThat(secondProcessed).isEqualTo(1)
+        assertThat(afterSuccess.status).isEqualTo(OutboxStatus.PUBLISHED)
         assertThat(afterSuccess.publishedAt).isEqualTo(secondAttempt)
         assertThat(dispatcher.calls).isEqualTo(2)
+    }
+
+    @Test
+    fun `relay marks event dead after max attempts exceeded`() {
+        val store = InMemoryOutboxStore()
+        val dispatcher = AlwaysFailingDispatcher()
+        val maxAttempts = 3
+        val service = TenantOutboxRelayService(
+            tenantOutboxStore = store,
+            tenantOutboxDispatcher = dispatcher,
+            batchSize = 100,
+            maxBackoffSeconds = 60,
+            maxAttempts = maxAttempts,
+        )
+
+        val now = Instant.parse("2026-02-09T12:00:00Z")
+        val entry = sampleEntry(createdAt = now.minusSeconds(10), nextAttemptAt = now.minusSeconds(1))
+        store.save(listOf(entry))
+
+        // Run relay until max attempts
+        repeat(maxAttempts) { attempt ->
+            val attemptTime = now.plusSeconds((attempt * 10).toLong())
+            // Update nextAttemptAt to allow retry
+            if (attempt > 0) {
+                store.entries[entry.eventId] = store.entries[entry.eventId]!!.copy(
+                    nextAttemptAt = attemptTime.minusSeconds(1),
+                )
+            }
+            service.relayBatch(attemptTime)
+        }
+
+        val afterMaxAttempts = store.entries[entry.eventId]!!
+
+        assertThat(afterMaxAttempts.status).isEqualTo(OutboxStatus.DEAD)
+        assertThat(afterMaxAttempts.lastError).isEqualTo("Intentional failure")
+        assertThat(dispatcher.calls).isEqualTo(maxAttempts)
+    }
+
+    @Test
+    fun `dead entries are not fetched by claimPending`() {
+        val store = InMemoryOutboxStore()
+        val now = Instant.parse("2026-02-09T12:00:00Z")
+
+        val deadEntry = sampleEntry(
+            createdAt = now.minusSeconds(10),
+            nextAttemptAt = now.minusSeconds(1),
+        ).copy(status = OutboxStatus.DEAD)
+        store.entries[deadEntry.eventId] = deadEntry
+
+        val pending = store.claimPending(limit = 100, now = now)
+
+        assertThat(pending).isEmpty()
     }
 
     private fun sampleEntry(
@@ -74,6 +131,7 @@ class TenantOutboxRelayServiceTest {
         payload = """{"eventType":"TenantCreated"}""",
         occurredAt = createdAt,
         createdAt = createdAt,
+        status = OutboxStatus.PENDING,
         nextAttemptAt = nextAttemptAt,
     )
 
@@ -86,14 +144,21 @@ class TenantOutboxRelayServiceTest {
             }
         }
 
-        override fun fetchPending(limit: Int, now: Instant): List<TenantOutboxEntry> = entries.values
-            .filter { it.publishedAt == null && !it.nextAttemptAt.isAfter(now) }
+        override fun fetchPending(limit: Int, now: Instant): List<TenantOutboxEntry> =
+            claimPending(limit, now)
+
+        override fun claimPending(limit: Int, now: Instant): List<TenantOutboxEntry> = entries.values
+            .filter { it.status == OutboxStatus.PENDING && !it.nextAttemptAt.isAfter(now) }
             .sortedBy { it.createdAt }
             .take(limit)
 
         override fun markPublished(eventId: UUID, publishedAt: Instant) {
             val existing = entries[eventId] ?: return
-            entries[eventId] = existing.copy(publishedAt = publishedAt, lastError = null)
+            entries[eventId] = existing.copy(
+                status = OutboxStatus.PUBLISHED,
+                publishedAt = publishedAt,
+                lastError = null,
+            )
         }
 
         override fun markFailed(eventId: UUID, attempts: Int, nextAttemptAt: Instant, lastError: String?) {
@@ -104,6 +169,19 @@ class TenantOutboxRelayServiceTest {
                 lastError = lastError,
             )
         }
+
+        override fun markDead(eventId: UUID, attempts: Int, lastError: String?) {
+            val existing = entries[eventId] ?: return
+            entries[eventId] = existing.copy(
+                status = OutboxStatus.DEAD,
+                publishAttempts = attempts,
+                lastError = lastError,
+            )
+        }
+
+        override fun countPending(): Long = entries.values.count { it.status == OutboxStatus.PENDING }.toLong()
+
+        override fun countDead(): Long = entries.values.count { it.status == OutboxStatus.DEAD }.toLong()
     }
 
     private class RecordingDispatcher : TenantOutboxDispatcher {
@@ -122,6 +200,15 @@ class TenantOutboxRelayServiceTest {
             if (calls == 1) {
                 throw IllegalStateException("broker unavailable")
             }
+        }
+    }
+
+    private class AlwaysFailingDispatcher : TenantOutboxDispatcher {
+        var calls: Int = 0
+
+        override fun dispatch(entry: TenantOutboxEntry) {
+            calls += 1
+            throw IllegalStateException("Intentional failure")
         }
     }
 }

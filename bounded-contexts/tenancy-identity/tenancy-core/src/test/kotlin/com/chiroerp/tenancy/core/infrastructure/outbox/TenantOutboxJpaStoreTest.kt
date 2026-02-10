@@ -50,7 +50,7 @@ class TenantOutboxJpaStoreTest {
         tenantOutboxStore.save(listOf(entry))
         tenantOutboxStore.save(listOf(entry.copy(payload = """{"updated":true}""")))
 
-        val pending = tenantOutboxStore.fetchPending(limit = 10, now = createdAt.plusSeconds(1))
+        val pending = tenantOutboxStore.fetchPending(limit = 2000, now = createdAt.plusSeconds(1))
         assertThat(pending.count { it.eventId == eventId }).isEqualTo(1)
     }
 
@@ -75,8 +75,8 @@ class TenantOutboxJpaStoreTest {
             lastError = "kafka timeout",
         )
 
-        val dueNow = tenantOutboxStore.fetchPending(limit = 10, now = now)
-        val dueLater = tenantOutboxStore.fetchPending(limit = 10, now = now.plusSeconds(31))
+        val dueNow = tenantOutboxStore.fetchPending(limit = 2000, now = now)
+        val dueLater = tenantOutboxStore.fetchPending(limit = 2000, now = now.plusSeconds(31))
 
         assertThat(dueNow).noneMatch { it.eventId == entry.eventId }
         assertThat(dueLater).anyMatch { it.eventId == entry.eventId && it.publishAttempts == 1 }
@@ -99,6 +99,79 @@ class TenantOutboxJpaStoreTest {
 
         val pending = tenantOutboxStore.fetchPending(limit = 10, now = now.plusSeconds(1))
         assertThat(pending).noneMatch { it.eventId == entry.eventId }
+    }
+
+    @Test
+    @Transactional
+    fun `markDead sets status to DEAD and excludes from pending`() {
+        val tenant = createTenant("outbox-dead-${System.currentTimeMillis()}.example")
+        val now = Instant.parse("2026-02-09T12:00:00Z")
+        val entry = sampleEntry(
+            tenantId = tenant.id.value,
+            aggregateId = tenant.id.value,
+            createdAt = now.minusSeconds(5),
+            nextAttemptAt = now.minusSeconds(1),
+        )
+
+        tenantOutboxStore.save(listOf(entry))
+        tenantOutboxStore.markDead(
+            eventId = entry.eventId,
+            attempts = 10,
+            lastError = "max attempts exceeded",
+        )
+
+        val pending = tenantOutboxStore.fetchPending(limit = 10, now = now.plusSeconds(1))
+        assertThat(pending).noneMatch { it.eventId == entry.eventId }
+    }
+
+    @Test
+    @Transactional
+    fun `countPending returns correct count`() {
+        val tenant = createTenant("outbox-count-${System.currentTimeMillis()}.example")
+        val now = Instant.parse("2026-02-09T12:00:00Z")
+
+        val entry1 = sampleEntry(
+            tenantId = tenant.id.value,
+            aggregateId = tenant.id.value,
+            createdAt = now.minusSeconds(5),
+            nextAttemptAt = now.minusSeconds(1),
+        )
+        val entry2 = sampleEntry(
+            tenantId = tenant.id.value,
+            aggregateId = tenant.id.value,
+            createdAt = now.minusSeconds(4),
+            nextAttemptAt = now.minusSeconds(1),
+        )
+
+        tenantOutboxStore.save(listOf(entry1, entry2))
+
+        assertThat(tenantOutboxStore.countPending()).isEqualTo(2L)
+
+        tenantOutboxStore.markPublished(entry1.eventId, now)
+        assertThat(tenantOutboxStore.countPending()).isEqualTo(1L)
+    }
+
+    @Test
+    @Transactional
+    fun `countDead returns correct count`() {
+        val tenant = createTenant("outbox-dead-count-${System.currentTimeMillis()}.example")
+        val now = Instant.parse("2026-02-09T12:00:00Z")
+        val entry = sampleEntry(
+            tenantId = tenant.id.value,
+            aggregateId = tenant.id.value,
+            createdAt = now.minusSeconds(5),
+            nextAttemptAt = now.minusSeconds(1),
+        )
+
+        tenantOutboxStore.save(listOf(entry))
+        assertThat(tenantOutboxStore.countDead()).isEqualTo(0L)
+
+        tenantOutboxStore.markDead(
+            eventId = entry.eventId,
+            attempts = 10,
+            lastError = "poison message",
+        )
+        assertThat(tenantOutboxStore.countDead()).isEqualTo(1L)
     }
 
     private fun createTenant(domain: String): Tenant {

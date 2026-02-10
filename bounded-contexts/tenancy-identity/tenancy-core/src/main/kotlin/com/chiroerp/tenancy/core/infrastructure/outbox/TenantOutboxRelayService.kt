@@ -14,12 +14,14 @@ class TenantOutboxRelayService(
     private val batchSize: Int,
     @ConfigProperty(name = "chiroerp.messaging.tenant-events.outbox.max-backoff-seconds", defaultValue = "60")
     private val maxBackoffSeconds: Long,
+    @ConfigProperty(name = "chiroerp.messaging.tenant-events.outbox.max-attempts", defaultValue = "10")
+    private val maxAttempts: Int,
 ) {
     private val logger = Logger.getLogger(TenantOutboxRelayService::class.java)
 
     @Transactional
     fun relayBatch(now: Instant = Instant.now()): Int {
-        val entries = tenantOutboxStore.fetchPending(limit = batchSize, now = now)
+        val entries = tenantOutboxStore.claimPending(limit = batchSize, now = now)
         if (entries.isEmpty()) {
             return 0
         }
@@ -28,27 +30,48 @@ class TenantOutboxRelayService(
             try {
                 tenantOutboxDispatcher.dispatch(entry)
                 tenantOutboxStore.markPublished(entry.eventId, now)
+                logger.debugf("Outbox event %s published successfully", entry.eventId)
             } catch (ex: Exception) {
-                val attempts = entry.publishAttempts + 1
-                val nextAttemptAt = now.plusSeconds(computeBackoffSeconds(attempts))
-                val error = ex.message?.take(1000) ?: "Unknown dispatch error"
-                tenantOutboxStore.markFailed(
-                    eventId = entry.eventId,
-                    attempts = attempts,
-                    nextAttemptAt = nextAttemptAt,
-                    lastError = error,
-                )
-                logger.warnf(
-                    ex,
-                    "Outbox dispatch failed for event %s (attempt %d); retry at %s",
-                    entry.eventId,
-                    attempts,
-                    nextAttemptAt,
-                )
+                handleDispatchFailure(entry, ex, now)
             }
         }
 
         return entries.size
+    }
+
+    private fun handleDispatchFailure(entry: TenantOutboxEntry, ex: Exception, now: Instant) {
+        val attempts = entry.publishAttempts + 1
+        val error = ex.message?.take(1000) ?: "Unknown dispatch error"
+
+        if (attempts >= maxAttempts) {
+            tenantOutboxStore.markDead(
+                eventId = entry.eventId,
+                attempts = attempts,
+                lastError = error,
+            )
+            logger.errorf(
+                ex,
+                "Outbox event %s marked DEAD after %d attempts; requires manual intervention",
+                entry.eventId,
+                attempts,
+            )
+        } else {
+            val nextAttemptAt = now.plusSeconds(computeBackoffSeconds(attempts))
+            tenantOutboxStore.markFailed(
+                eventId = entry.eventId,
+                attempts = attempts,
+                nextAttemptAt = nextAttemptAt,
+                lastError = error,
+            )
+            logger.warnf(
+                ex,
+                "Outbox dispatch failed for event %s (attempt %d/%d); retry at %s",
+                entry.eventId,
+                attempts,
+                maxAttempts,
+                nextAttemptAt,
+            )
+        }
     }
 
     internal fun computeBackoffSeconds(attempts: Int): Long {

@@ -56,3 +56,4 @@ chiroerp:
         batch-size: ${TENANCY_OUTBOX_BATCH_SIZE:100}
         poll-interval: ${TENANCY_OUTBOX_POLL_INTERVAL:5s}
         max-backoff-seconds: ${TENANCY_OUTBOX_MAX_BACKOFF_SECONDS:60}
+        max-attempts: ${TENANCY_OUTBOX_MAX_ATTEMPTS:10}

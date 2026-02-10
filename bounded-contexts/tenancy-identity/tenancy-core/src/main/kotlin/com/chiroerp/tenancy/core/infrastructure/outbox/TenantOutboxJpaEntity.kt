@@ -2,6 +2,8 @@ package com.chiroerp.tenancy.core.infrastructure.outbox
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.Id
 import jakarta.persistence.Table
 import org.hibernate.annotations.ColumnTransformer
@@ -36,6 +38,10 @@ class TenantOutboxJpaEntity {
 
     @Column(name = "created_at", nullable = false)
     var createdAt: Instant? = null
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 12)
+    var status: OutboxStatus = OutboxStatus.PENDING
 
     @Column(name = "published_at")
     var publishedAt: Instant? = null
