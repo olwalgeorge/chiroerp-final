@@ -169,6 +169,16 @@ Progress update (2026-02-11):
   - Defined domain ports: `UserRepository`, `SessionRepository`, `IdentityProviderGateway`, `UserEventPublisher`
   - Added comprehensive domain tests: `UserTest.kt` (67 lines), `SessionTest.kt` (44 lines) covering lifecycle, password history, permission evaluation, MFA, session refresh/heartbeat/logout
   - Build verification: `./gradlew :bounded-contexts:tenancy-identity:identity-core:test` SUCCESS (~3m36s)
+- **Outbox reliability slice completed** (ID-11, ADR-003/020 alignment):
+  - Added transactional outbox contracts + persistence implementation (`UserOutboxStore`, `UserOutboxJpaStore`, `UserOutboxJpaEntity`)
+  - Added outbox writer + relay worker (`UserOutboxEventPublisher`, `UserOutboxRelayService`, `UserOutboxRelayWorker`)
+  - Added Kafka dispatcher bridge (`UserKafkaEventPublisher`) and identity outbox runtime config keys in `application.yml`
+  - Added `V005__create_identity_outbox_table.sql` migration for `identity_outbox` with pending/dead indexes
+  - Added outbox unit tests (`UserOutboxRelayServiceTest`, `UserOutboxEventPublisherTest`, `UserOutboxHealthCheckTest`, `UserOutboxMetricsCollectorTest`)
+  - Added persistence idempotency integration tests (`UserOutboxIdempotencyIntegrationTest`)
+  - Build verification:
+    - `./gradlew :bounded-contexts:tenancy-identity:identity-core:test --tests "*UserOutboxIdempotencyIntegrationTest*" --rerun-tasks` SUCCESS (3/3 tests)
+    - `./gradlew :bounded-contexts:tenancy-identity:identity-core:test` SUCCESS (2026-02-11)
 
 | ID | Work Item | Status | Depends On | Evidence / DoD |
 |---|---|---|---|---|
@@ -182,7 +192,7 @@ Progress update (2026-02-11):
 | ID-08 | Implement JWT token provider/validation and claim contract | Not Started | ID-03 | Token tests + gateway compatibility tests |
 | ID-09 | Implement REST controllers (`Auth`, `User`, `Mfa`) | Not Started | ID-03..ID-08 | API tests (happy/failure/security paths) |
 | ID-10 | Replace placeholder Flyway scripts (`V001`-`V004`) with executable schema | Not Started | ID-01 | DB migration succeeds from empty state |
-| ID-11 | Implement event outbox for identity events | Not Started | ID-02 | Outbox relay and idempotency tests |
+| ID-11 | Implement event outbox for identity events | Done | ID-02 | Relay + publisher + health/metrics + persistence idempotency integration tests green |
 | ID-12 | Replace placeholder tests with real tests across layers | Not Started | ID-01..ID-11 | `identity-core` tests no longer placeholders |
 | ID-13 | Phase 2 gate review | Not Started | ID-01..ID-12 | All quality gates pass for identity-core |
 
@@ -280,7 +290,7 @@ Decisions Needed:
 1. ✅ **(COMPLETED 2026-02-11)** Start `ID-01` identity-core placeholder replacement (domain layer first).
 2. Execute Phase 2 kickoff: begin `ID-02` user lifecycle aggregate logic and invariants.
 3. Start `ID-10` identity Flyway scripts (user/session/role/permission tables).
-4. Prepare `ID-11` identity outbox design by reusing TI-08 pattern contracts.
+4. Document operational dead-letter runbook notes for identity outbox and align with TI-09 ops evidence style.
 5. Implement `ID-03` authentication service (login/logout, anti-enumeration).
 6. Harden outbox with dead-letter handling policy after max attempts (TI follow-up).
 7. Complete weekly scorecard workflow (`MVP-02`) and publish current week evidence.

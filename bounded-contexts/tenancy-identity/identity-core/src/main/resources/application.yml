@@ -60,3 +60,15 @@ chiroerp:
         - Password123!
         - Welcome123!
         - Chiroerp2025!
+  messaging:
+    identity-events:
+      topic: ${IDENTITY_EVENTS_TOPIC:identity.user.lifecycle}
+      outbox:
+        enabled: ${IDENTITY_OUTBOX_ENABLED:true}
+        batch-size: ${IDENTITY_OUTBOX_BATCH_SIZE:100}
+        poll-interval: ${IDENTITY_OUTBOX_POLL_INTERVAL:5s}
+        max-backoff-seconds: ${IDENTITY_OUTBOX_MAX_BACKOFF_SECONDS:60}
+        max-attempts: ${IDENTITY_OUTBOX_MAX_ATTEMPTS:10}
+        metrics-refresh-interval: ${IDENTITY_OUTBOX_METRICS_REFRESH_INTERVAL:30s}
+        pending-threshold: ${IDENTITY_OUTBOX_PENDING_THRESHOLD:500}
+        dead-threshold: ${IDENTITY_OUTBOX_DEAD_THRESHOLD:0}
