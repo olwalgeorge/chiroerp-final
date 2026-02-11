@@ -1,8 +1,12 @@
-﻿package com.chiroerp.identity.core.application.command
+package com.chiroerp.identity.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/ActivateUserCommand.kt
+import java.util.UUID
+
+/**
+ * Command that requests activation of a user within a tenant boundary.
+ * Both identifiers are required to enforce tenant isolation (ADR-007).
  */
-@Suppress("unused")
-private const val PLACEHOLDER_ACTIVATEUSERCOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/ActivateUserCommand.kt"
+data class ActivateUserCommand(
+    val userId: UUID,
+    val tenantId: UUID,
+)

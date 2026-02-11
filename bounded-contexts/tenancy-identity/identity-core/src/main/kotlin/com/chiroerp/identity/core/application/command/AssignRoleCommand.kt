@@ -1,8 +1,12 @@
-﻿package com.chiroerp.identity.core.application.command
+package com.chiroerp.identity.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/AssignRoleCommand.kt
+import java.util.UUID
+
+/**
+ * Adds or updates a user role together with its permissions.
  */
-@Suppress("unused")
-private const val PLACEHOLDER_ASSIGNROLECOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/AssignRoleCommand.kt"
+data class AssignRoleCommand(
+    val userId: UUID,
+    val tenantId: UUID,
+    val role: RoleAssignment,
+)
