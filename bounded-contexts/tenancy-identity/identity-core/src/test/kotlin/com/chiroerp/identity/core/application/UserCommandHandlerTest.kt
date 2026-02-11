@@ -4,12 +4,17 @@ import com.chiroerp.identity.core.application.command.ActivateUserCommand
 import com.chiroerp.identity.core.application.command.AssignRoleCommand
 import com.chiroerp.identity.core.application.command.ChangePasswordCommand
 import com.chiroerp.identity.core.application.command.CreateUserCommand
+import com.chiroerp.identity.core.application.command.EnableMfaCommand
+import com.chiroerp.identity.core.application.command.LinkExternalIdentityCommand
+import com.chiroerp.identity.core.application.command.LockUserCommand
 import com.chiroerp.identity.core.application.command.PermissionGrant
 import com.chiroerp.identity.core.application.command.RoleAssignment
 import com.chiroerp.identity.core.application.exception.TenantScopeViolationException
 import com.chiroerp.identity.core.application.exception.UserAlreadyExistsException
 import com.chiroerp.identity.core.application.handler.UserCommandHandler
 import com.chiroerp.identity.core.domain.event.UserDomainEvent
+import com.chiroerp.identity.core.domain.model.IdentityProvider
+import com.chiroerp.identity.core.domain.model.MfaMethod
 import com.chiroerp.identity.core.domain.model.User
 import com.chiroerp.identity.core.domain.model.UserId
 import com.chiroerp.identity.core.domain.port.UserEventPublisher
@@ -141,6 +146,58 @@ class UserCommandHandlerTest {
         val saved = repository.findById(user.id)!!
         assertThat(saved.credentialsSnapshot.passwordVersion).isEqualTo(2)
         assertThat(saved.credentialsSnapshot.mustChangePassword).isTrue()
+    }
+
+    @Test
+    fun `lock user changes status to locked`() {
+        val user = seedUser()
+
+        val saved = handler.handle(
+            LockUserCommand(
+                userId = user.id.value,
+                tenantId = tenantId,
+                reason = "manual lock",
+            ),
+        )
+
+        assertThat(saved.status.canLogin()).isFalse()
+    }
+
+    @Test
+    fun `enable mfa stores configuration and emits event`() {
+        val user = seedUser()
+
+        val saved = handler.handle(
+            EnableMfaCommand(
+                userId = user.id.value,
+                tenantId = tenantId,
+                methods = setOf(MfaMethod.TOTP),
+                sharedSecret = "base32-secret",
+                backupCodes = setOf("A1", "B2"),
+            ),
+        )
+
+        assertThat(saved.isMfaEnabled).isTrue()
+        assertThat(publisher.publishedEvents).isNotEmpty
+    }
+
+    @Test
+    fun `link external identity appends provider identity`() {
+        val user = seedUser()
+
+        val saved = handler.handle(
+            LinkExternalIdentityCommand(
+                userId = user.id.value,
+                tenantId = tenantId,
+                provider = IdentityProvider.OIDC,
+                subject = "oidc-subject-123",
+                claims = mapOf("email_verified" to "true"),
+            ),
+        )
+
+        assertThat(saved.linkedIdentities).hasSize(1)
+        assertThat(saved.linkedIdentities.first().provider).isEqualTo(IdentityProvider.OIDC)
+        assertThat(saved.linkedIdentities.first().subject).isEqualTo("oidc-subject-123")
     }
 
     private fun seedUser(): User = handler.handle(

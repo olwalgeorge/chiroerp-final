@@ -1,8 +1,14 @@
-﻿package com.chiroerp.identity.core.application.command
+package com.chiroerp.identity.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/LinkExternalIdentityCommand.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_LINKEXTERNALIDENTITYCOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/LinkExternalIdentityCommand.kt"
+import com.chiroerp.identity.core.domain.model.IdentityProvider
+import java.time.Instant
+import java.util.UUID
+
+data class LinkExternalIdentityCommand(
+    val tenantId: UUID,
+    val userId: UUID,
+    val provider: IdentityProvider,
+    val subject: String,
+    val claims: Map<String, String> = emptyMap(),
+    val linkedAt: Instant = Instant.now(),
+)

@@ -1,8 +1,14 @@
-﻿package com.chiroerp.identity.core.application.command
+package com.chiroerp.identity.core.application.command
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/EnableMfaCommand.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_ENABLEMFACOMMAND = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/command/EnableMfaCommand.kt"
+import com.chiroerp.identity.core.domain.model.MfaMethod
+import java.time.Instant
+import java.util.UUID
+
+data class EnableMfaCommand(
+    val tenantId: UUID,
+    val userId: UUID,
+    val methods: Set<MfaMethod>,
+    val sharedSecret: String,
+    val backupCodes: Set<String> = emptySet(),
+    val verifiedAt: Instant? = null,
+)

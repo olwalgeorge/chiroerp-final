@@ -4,6 +4,9 @@ import com.chiroerp.identity.core.application.command.ActivateUserCommand
 import com.chiroerp.identity.core.application.command.AssignRoleCommand
 import com.chiroerp.identity.core.application.command.ChangePasswordCommand
 import com.chiroerp.identity.core.application.command.CreateUserCommand
+import com.chiroerp.identity.core.application.command.EnableMfaCommand
+import com.chiroerp.identity.core.application.command.LinkExternalIdentityCommand
+import com.chiroerp.identity.core.application.command.LockUserCommand
 import com.chiroerp.identity.core.application.command.PermissionGrant
 import com.chiroerp.identity.core.application.command.RoleAssignment
 import com.chiroerp.identity.core.application.exception.TenantScopeViolationException
@@ -11,6 +14,8 @@ import com.chiroerp.identity.core.application.exception.UserAlreadyExistsExcepti
 import com.chiroerp.identity.core.application.exception.UserLifecycleException
 import com.chiroerp.identity.core.application.exception.UserNotFoundException
 import com.chiroerp.identity.core.domain.event.UserDomainEvent
+import com.chiroerp.identity.core.domain.model.ExternalIdentity
+import com.chiroerp.identity.core.domain.model.MfaConfiguration
 import com.chiroerp.identity.core.domain.model.Permission
 import com.chiroerp.identity.core.domain.model.User
 import com.chiroerp.identity.core.domain.model.UserId
@@ -96,6 +101,50 @@ class UserCommandHandler(
             if (command.forceChangeOnNextLogin) {
                 it.forcePasswordReset()
             }
+        }
+    }
+
+    @Transactional
+    fun handle(command: LockUserCommand): User {
+        return mutateUser(command.userId, command.tenantId) {
+            try {
+                it.lock(command.reason.trim())
+            } catch (ex: IllegalStateException) {
+                throw UserLifecycleException(it.id, ex.message ?: "Lock rejected")
+            }
+        }
+    }
+
+    @Transactional
+    fun handle(command: EnableMfaCommand): User {
+        return mutateUser(command.userId, command.tenantId) {
+            val enrolledAt = Instant.now()
+            val backupCodes = command.backupCodes
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .toSet()
+
+            val configuration = MfaConfiguration(
+                methods = command.methods,
+                sharedSecret = command.sharedSecret.trim(),
+                backupCodes = backupCodes,
+                enrolledAt = enrolledAt,
+                verifiedAt = command.verifiedAt,
+            )
+            it.enableMfa(configuration, occurredAt = enrolledAt)
+        }
+    }
+
+    @Transactional
+    fun handle(command: LinkExternalIdentityCommand): User {
+        return mutateUser(command.userId, command.tenantId) {
+            val externalIdentity = ExternalIdentity(
+                provider = command.provider,
+                subject = command.subject.trim(),
+                linkedAt = command.linkedAt,
+                claims = command.claims.filterKeys { key -> key.isNotBlank() },
+            )
+            it.linkExternalIdentity(externalIdentity)
         }
     }
 

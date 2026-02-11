@@ -1,8 +1,8 @@
-﻿package com.chiroerp.identity.core.application.query
+package com.chiroerp.identity.core.application.query
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/query/GetUserPermissionsQuery.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_GETUSERPERMISSIONSQUERY = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/application/query/GetUserPermissionsQuery.kt"
+import java.util.UUID
+
+data class GetUserPermissionsQuery(
+    val tenantId: UUID,
+    val userId: UUID,
+)
