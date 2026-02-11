@@ -6,7 +6,7 @@ import com.chiroerp.identity.core.domain.model.UserId
 import com.chiroerp.tenancy.shared.TenantId
 
 interface UserRepository {
-    fun save(user: User)
+    fun save(user: User): User
 
     fun findById(id: UserId): User?
 

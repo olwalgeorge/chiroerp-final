@@ -119,7 +119,7 @@ class UserCommandHandler(
 
     private fun RoleAssignment.toDomainRole(): UserRole = UserRole(
         code = code.trim().uppercase(Locale.ROOT),
-        description = description?.trim()?.takeUnless { it.isEmpty() },
+        description = description?.trim()?.takeUnless { it.isEmpty() } ?: "",
         permissions = permissions.map { it.toDomainPermission() }.toSet(),
         sodGroup = sodGroup,
     )
