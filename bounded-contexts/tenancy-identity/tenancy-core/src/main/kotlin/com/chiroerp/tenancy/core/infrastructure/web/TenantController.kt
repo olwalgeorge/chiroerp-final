@@ -35,11 +35,19 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
+import org.eclipse.microprofile.openapi.annotations.tags.Tag
 
 @Path("/api/tenants")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 @RolesAllowed("tenant-admin", "platform-admin")
+@SecurityRequirement(name = "jwt")
+@Tag(name = "Tenants", description = "Multi-tenant provisioning and lifecycle management")
 class TenantController(
     private val tenantCommandHandler: TenantCommandHandler,
     private val tenantQueryHandler: TenantQueryHandler,
@@ -49,6 +57,11 @@ class TenantController(
     private val securityIdentity: SecurityIdentity,
 ) {
     @POST
+    @Operation(operationId = "createTenant", summary = "Create a new tenant")
+    @APIResponses(
+        APIResponse(responseCode = "201", description = "Tenant created"),
+        APIResponse(responseCode = "409", description = "Tenant already exists"),
+    )
     fun createTenant(@Valid request: CreateTenantRequest): Response {
         return try {
             val tenant = tenantCommandHandler.handle(request.toCommand())
@@ -72,6 +85,11 @@ class TenantController(
 
     @GET
     @Path("/{id}")
+    @Operation(operationId = "getTenant", summary = "Get a tenant by ID")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant found"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+    )
     fun getTenant(
         @PathParam("id") rawTenantId: String,
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
@@ -88,6 +106,11 @@ class TenantController(
     @GET
     @Path("/by-domain/{domain}")
     @RolesAllowed("tenant-admin", "platform-admin")
+    @Operation(operationId = "getTenantByDomain", summary = "Look up a tenant by domain")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant found"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+    )
     fun getTenantByDomain(
         @PathParam("domain") rawDomain: String,
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
@@ -104,6 +127,11 @@ class TenantController(
     }
 
     @GET
+    @Operation(operationId = "listTenants", summary = "List tenants with pagination")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Paginated tenant list"),
+        APIResponse(responseCode = "403", description = "Cross-tenant access denied"),
+    )
     fun listTenants(
         @DefaultValue("0") @QueryParam("offset") offset: Int,
         @DefaultValue("50") @QueryParam("limit") limit: Int,
@@ -142,6 +170,11 @@ class TenantController(
 
     @PATCH
     @Path("/{id}/settings")
+    @Operation(operationId = "updateTenantSettings", summary = "Update tenant settings")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Settings updated"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+    )
     fun updateTenantSettings(
         @PathParam("id") rawTenantId: String,
         @Valid request: UpdateTenantSettingsRequest,
@@ -162,6 +195,12 @@ class TenantController(
     @POST
     @Path("/{id}/activate")
     @Consumes(MediaType.WILDCARD)
+    @Operation(operationId = "activateTenant", summary = "Activate a tenant")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant activated"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+        APIResponse(responseCode = "409", description = "Invalid lifecycle transition"),
+    )
     fun activateTenant(
         @PathParam("id") rawTenantId: String,
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
@@ -176,6 +215,12 @@ class TenantController(
 
     @POST
     @Path("/{id}/suspend")
+    @Operation(operationId = "suspendTenant", summary = "Suspend a tenant")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant suspended"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+        APIResponse(responseCode = "409", description = "Invalid lifecycle transition"),
+    )
     fun suspendTenant(
         @PathParam("id") rawTenantId: String,
         @Valid request: SuspendTenantRequest,
@@ -192,6 +237,12 @@ class TenantController(
 
     @POST
     @Path("/{id}/terminate")
+    @Operation(operationId = "terminateTenant", summary = "Terminate a tenant")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant terminated"),
+        APIResponse(responseCode = "404", description = "Tenant not found"),
+        APIResponse(responseCode = "409", description = "Invalid lifecycle transition"),
+    )
     fun terminateTenant(
         @PathParam("id") rawTenantId: String,
         @Valid request: TerminateTenantRequest,
@@ -209,6 +260,11 @@ class TenantController(
     @GET
     @Path("/resolve")
     @RolesAllowed("gateway-service", "platform-admin")
+    @Operation(operationId = "resolveTenant", summary = "Resolve tenant from domain or headers")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Tenant resolved"),
+        APIResponse(responseCode = "404", description = "Unable to resolve tenant"),
+    )
     fun resolveTenant(
         @QueryParam("domain") queryDomain: String?,
         @HeaderParam("X-Tenant-ID") headerTenantId: String?,

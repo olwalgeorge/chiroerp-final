@@ -25,17 +25,29 @@ import jakarta.ws.rs.QueryParam
 import jakarta.ws.rs.WebApplicationException
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
+import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.util.UUID
 
 @Path("/api/identity/users")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@SecurityRequirement(name = "jwt")
+@Tag(name = "Users", description = "User management and lifecycle operations")
 class UserController(
     private val userCommandHandler: UserCommandHandler,
     private val userQueryHandler: UserQueryHandler,
     private val passwordService: PasswordService,
 ) {
     @POST
+    @Operation(operationId = "createUser", summary = "Create a new user")
+    @APIResponses(
+        APIResponse(responseCode = "201", description = "User created"),
+        APIResponse(responseCode = "409", description = "User already exists"),
+    )
     fun createUser(@Valid request: CreateUserRequest): Response {
         return try {
             val created = userCommandHandler.handle(
@@ -61,6 +73,11 @@ class UserController(
 
     @GET
     @Path("/{userId}")
+    @Operation(operationId = "getUser", summary = "Get a user by ID")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "User found"),
+        APIResponse(responseCode = "404", description = "User not found"),
+    )
     fun getUser(
         @PathParam("userId") rawUserId: String,
         @QueryParam("tenantId") rawTenantId: String,
@@ -85,6 +102,11 @@ class UserController(
     }
 
     @GET
+    @Operation(operationId = "listUsers", summary = "List users with filtering and pagination")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Paginated user list"),
+        APIResponse(responseCode = "400", description = "Invalid filter parameters"),
+    )
     fun listUsers(
         @QueryParam("tenantId") rawTenantId: String,
         @QueryParam("offset") offset: Int?,
@@ -138,6 +160,11 @@ class UserController(
 
     @GET
     @Path("/{userId}/permissions")
+    @Operation(operationId = "getUserPermissions", summary = "Get effective permissions for a user")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Permissions retrieved"),
+        APIResponse(responseCode = "404", description = "User not found"),
+    )
     fun getPermissions(
         @PathParam("userId") rawUserId: String,
         @QueryParam("tenantId") rawTenantId: String,
@@ -163,6 +190,11 @@ class UserController(
 
     @GET
     @Path("/{userId}/sessions")
+    @Operation(operationId = "getActiveSessions", summary = "Get active sessions for a user")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Active sessions retrieved"),
+        APIResponse(responseCode = "404", description = "User not found"),
+    )
     fun getActiveSessions(
         @PathParam("userId") rawUserId: String,
         @QueryParam("tenantId") rawTenantId: String,
@@ -186,6 +218,8 @@ class UserController(
 
     @POST
     @Path("/{userId}/activate")
+    @Operation(operationId = "activateUser", summary = "Activate a user account")
+    @APIResponse(responseCode = "200", description = "User activated")
     fun activateUser(
         @PathParam("userId") rawUserId: String,
         @Valid request: ActivateUserRequest,
@@ -195,6 +229,8 @@ class UserController(
 
     @POST
     @Path("/{userId}/lock")
+    @Operation(operationId = "lockUser", summary = "Lock a user account")
+    @APIResponse(responseCode = "200", description = "User locked")
     fun lockUser(
         @PathParam("userId") rawUserId: String,
         @Valid request: LockUserRequest,
@@ -204,6 +240,8 @@ class UserController(
 
     @POST
     @Path("/{userId}/roles")
+    @Operation(operationId = "assignRole", summary = "Assign a role to a user")
+    @APIResponse(responseCode = "200", description = "Role assigned")
     fun assignRole(
         @PathParam("userId") rawUserId: String,
         @Valid request: AssignRoleRequest,
@@ -213,6 +251,8 @@ class UserController(
 
     @POST
     @Path("/{userId}/password")
+    @Operation(operationId = "changePassword", summary = "Change a user's password")
+    @APIResponse(responseCode = "200", description = "Password changed")
     fun changePassword(
         @PathParam("userId") rawUserId: String,
         @Valid request: ChangePasswordRequest,
@@ -223,6 +263,8 @@ class UserController(
 
     @POST
     @Path("/{userId}/external-identities")
+    @Operation(operationId = "linkExternalIdentity", summary = "Link an external identity provider to a user")
+    @APIResponse(responseCode = "200", description = "External identity linked")
     fun linkExternalIdentity(
         @PathParam("userId") rawUserId: String,
         @Valid request: LinkExternalIdentityRequest,

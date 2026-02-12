@@ -15,18 +15,26 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
+import org.eclipse.microprofile.openapi.annotations.tags.Tag
 import java.time.Instant
 import java.util.UUID
 
 @Path("/api/identity/mfa")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@SecurityRequirement(name = "jwt")
+@Tag(name = "MFA", description = "Multi-factor authentication enrollment and verification")
 class MfaController(
     private val mfaService: MfaService,
     private val userCommandHandler: UserCommandHandler,
 ) {
     @POST
     @Path("/enroll")
+    @Operation(operationId = "enrollMfa", summary = "Enroll a new MFA method")
+    @APIResponse(responseCode = "200", description = "MFA enrollment initiated")
     fun enroll(@Valid request: MfaEnrollRequest): MfaEnrollResponse {
         val enrollment = mfaService.createEnrollment(
             MfaEnrollmentRequest(
@@ -44,6 +52,8 @@ class MfaController(
 
     @POST
     @Path("/verify")
+    @Operation(operationId = "verifyMfa", summary = "Verify a TOTP code")
+    @APIResponse(responseCode = "200", description = "Verification result")
     fun verify(@Valid request: MfaVerifyRequest): MfaVerifyResponse = MfaVerifyResponse(
         valid = mfaService.verifyTotp(
             sharedSecret = request.sharedSecret,
@@ -53,6 +63,8 @@ class MfaController(
 
     @POST
     @Path("/backup-codes/consume")
+    @Operation(operationId = "consumeBackupCode", summary = "Consume a backup code")
+    @APIResponse(responseCode = "200", description = "Backup code validation result")
     fun consumeBackupCode(@Valid request: ConsumeBackupCodeRequest): ConsumeBackupCodeResponse {
         val result: BackupCodeValidationResult = mfaService.consumeBackupCode(
             backupCodes = request.backupCodes,
@@ -67,6 +79,8 @@ class MfaController(
 
     @POST
     @Path("/enable")
+    @Operation(operationId = "enableMfa", summary = "Enable MFA for a user")
+    @APIResponse(responseCode = "200", description = "MFA enabled")
     fun enable(@Valid request: EnableMfaRequest): Response {
         val user = userCommandHandler.handle(
             EnableMfaCommand(

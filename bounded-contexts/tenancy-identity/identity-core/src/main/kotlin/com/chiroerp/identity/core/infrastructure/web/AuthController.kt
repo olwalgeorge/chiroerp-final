@@ -14,16 +14,29 @@ import jakarta.ws.rs.Path
 import jakarta.ws.rs.Produces
 import jakarta.ws.rs.core.MediaType
 import jakarta.ws.rs.core.Response
+import org.eclipse.microprofile.openapi.annotations.Operation
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirement
+import org.eclipse.microprofile.openapi.annotations.security.SecurityRequirementsSet
+import org.eclipse.microprofile.openapi.annotations.tags.Tag
 
 @Path("/api/identity/auth")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
+@Tag(name = "Authentication", description = "Login, logout, and token verification")
 class AuthController(
     private val authenticationService: AuthenticationService,
     private val tokenService: TokenService,
 ) {
     @POST
     @Path("/login")
+    @SecurityRequirementsSet
+    @Operation(operationId = "login", summary = "Authenticate a user and issue tokens")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Login successful"),
+        APIResponse(responseCode = "401", description = "Invalid credentials"),
+    )
     fun login(
         @Valid request: LoginRequest,
         @HeaderParam("X-Forwarded-For") forwardedFor: String?,
@@ -72,6 +85,12 @@ class AuthController(
 
     @POST
     @Path("/logout")
+    @SecurityRequirement(name = "jwt")
+    @Operation(operationId = "logout", summary = "End a user session")
+    @APIResponses(
+        APIResponse(responseCode = "204", description = "Logout successful"),
+        APIResponse(responseCode = "404", description = "Session not found"),
+    )
     fun logout(@Valid request: LogoutRequestBody): Response {
         val success = authenticationService.logout(
             LogoutRequest(
@@ -93,6 +112,12 @@ class AuthController(
 
     @POST
     @Path("/token/verify")
+    @SecurityRequirementsSet
+    @Operation(operationId = "verifyToken", summary = "Verify and introspect a token")
+    @APIResponses(
+        APIResponse(responseCode = "200", description = "Token is valid"),
+        APIResponse(responseCode = "401", description = "Token is invalid or expired"),
+    )
     fun verify(@Valid request: VerifyTokenRequest): Response {
         val principal = tokenService.parse(
             token = request.token,

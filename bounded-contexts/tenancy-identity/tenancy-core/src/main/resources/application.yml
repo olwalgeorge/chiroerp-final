@@ -41,6 +41,22 @@ quarkus:
     path: /q/openapi
     store-schema-directory: build/openapi
     store-schema-file-name: openapi
+
+mp:
+  openapi:
+    extensions:
+      smallrye:
+        info:
+          title: ChiroERP Tenancy API
+          version: 1.0.0
+          description: Multi-tenant provisioning and lifecycle management API
+          contact:
+            name: ChiroERP API Team
+            email: api@chiroerp.example.com
+            url: https://github.com/olwalgeorge/chiroerp-final
+          license:
+            name: Proprietary
+        operationIdStrategy: METHOD
   swagger-ui:
     path: /q/swagger-ui
     always-include: false

@@ -45,6 +45,22 @@ quarkus:
     path: /q/openapi
     store-schema-directory: build/openapi
     store-schema-file-name: openapi
+
+mp:
+  openapi:
+    extensions:
+      smallrye:
+        info:
+          title: ChiroERP Identity API
+          version: 1.0.0
+          description: Authentication, user management, and MFA API
+          contact:
+            name: ChiroERP API Team
+            email: api@chiroerp.example.com
+            url: https://github.com/olwalgeorge/chiroerp-final
+          license:
+            name: Proprietary
+        operationIdStrategy: METHOD
   swagger-ui:
     path: /q/swagger-ui
     always-include: false
