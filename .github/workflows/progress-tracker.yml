@@ -1,23 +1,52 @@
+# =============================================================================
+# Progress Tracker — SAP-Grade Implementation Monitoring (ADR-008)
+# =============================================================================
+# Tracks module implementation progress, generates reports, and creates
+# actionable GitHub Issues for unimplemented modules.
+#
+# Design Decision:
+#   ❌ NO git push to protected branches (branch protection compliance)
+#   ✅ Reports uploaded as artifacts only
+#   ✅ PR comments with progress summaries
+#   ✅ Scheduled issue creation for missing modules
+#
+# Features:
+#   ✅ Network resilience (nick-fields/retry@v3.0.0)
+#   ✅ Version pinning (all actions pinned to semver)
+#   ✅ Concurrency controls
+#   ✅ Per-job timeout limits
+#   ✅ Least-privilege permissions
+#
+# References:
+#   - ADR-008: CI/CD Pipeline Architecture
+# =============================================================================
+
 name: Progress Tracker
 
 on:
-  # Run on every push to main/develop
   push:
-    branches: [main, master, develop]
-
-  # Run on PRs to see impact
+    branches: [master, develop]
+    paths:
+      - 'bounded-contexts/**'
+      - 'platform-shared/**'
+      - 'scripts/track-progress.ps1'
+      - '.github/workflows/progress-tracker.yml'
   pull_request:
-    branches: [main, master, develop]
-
-  # Manual trigger
+    branches: [master, develop]
   workflow_dispatch:
-
-  # Weekly report (Monday 9AM UTC)
   schedule:
+    # Weekly report — Monday 9AM UTC
     - cron: '0 9 * * 1'
 
+# Cancel in-progress runs for the same branch/PR
+concurrency:
+  group: progress-tracker-${{ github.ref }}
+  cancel-in-progress: true
+
+# Least-privilege permissions (ADR-008)
+# NOTE: contents:read only — NO writes to protected branches
 permissions:
-  contents: write
+  contents: read
   issues: write
   pull-requests: write
 
@@ -25,73 +54,82 @@ jobs:
   track-progress:
     name: Track Implementation Progress
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.7
         with:
-          fetch-depth: 0  # Full history for accurate analysis
+          fetch-depth: 0
 
-      - name: Install PowerShell
-        shell: bash
-        run: |
-          sudo apt-get update
-          wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
-          sudo dpkg -i packages-microsoft-prod.deb
-          sudo apt-get update
-          sudo apt-get install -y powershell
+      - name: Install PowerShell (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            sudo apt-get update -qq
+            wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+            sudo dpkg -i packages-microsoft-prod.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y powershell
 
-      - name: Run Progress Tracker (Console)
+      - name: Run progress tracker (console output)
         shell: pwsh
         run: |
           Write-Host "🔍 Analyzing ChiroERP codebase for progress..." -ForegroundColor Cyan
-          ./scripts/track-progress.ps1 -Verbose
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -Verbose
+          } else {
+            Write-Host "⚠️ track-progress.ps1 not found — skipping" -ForegroundColor Yellow
+          }
 
-      - name: Generate Markdown Report
+      - name: Generate Markdown report
         shell: pwsh
         run: |
-          Write-Host "📝 Generating progress report..." -ForegroundColor Cyan
-          ./scripts/track-progress.ps1 -OutputFormat markdown -OutputPath docs/PROGRESS.md
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -OutputFormat markdown -OutputPath progress-report.md
+          }
 
-      - name: Generate JSON Report
+      - name: Generate JSON report
         shell: pwsh
         run: |
-          ./scripts/track-progress.ps1 -OutputFormat json -OutputPath progress-report.json
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -OutputFormat json -OutputPath progress-report.json
+          }
 
-      - name: Upload Progress Report
-        uses: actions/upload-artifact@v4
+      - name: Upload progress reports (artifact-only — no git push)
+        uses: actions/upload-artifact@v4.3.6
         with:
           name: progress-reports
           path: |
-            docs/PROGRESS.md
+            progress-report.md
             progress-report.json
           retention-days: 90
+          if-no-files-found: ignore
 
-      - name: Commit Progress Report (main branch only)
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          if [ -f docs/PROGRESS.md ]; then
-            git add docs/PROGRESS.md
-            git diff --staged --quiet || git commit -m "docs: Update progress report [skip ci]"
-            git push
-          fi
-
-      - name: Comment on PR with Progress
+      # -----------------------------------------------------------------------
+      # PR Comment: Show progress impact of changes
+      # -----------------------------------------------------------------------
+      - name: Comment on PR with progress
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const progress = JSON.parse(fs.readFileSync('progress-report.json', 'utf8'));
+            const reportPath = 'progress-report.json';
 
-            const modulesAdded = progress.modules.filter(m => m.status === 'Implemented').length;
-            const overallProgress = progress.summary.completionPercentage;
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report found — skipping PR comment');
+              return;
+            }
 
-            const domainTable = progress.domains
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const overallProgress = progress.summary?.completionPercentage || 0;
+
+            const domainTable = (progress.domains || [])
               .sort((a, b) => b.completionPercentage - a.completionPercentage)
               .slice(0, 5)
               .map(d => `| ${d.name} | ${d.implementedModules}/${d.totalModules} | ${d.completionPercentage}% |`)
@@ -100,9 +138,7 @@ jobs:
             const body = `## 📊 Implementation Progress
 
             **Overall Completion:** ${overallProgress}%
-
-            **Modules:** ${progress.summary.implementedModules} / ${progress.summary.totalModules}
-            **ADRs:** ${progress.summary.implementedADRs} / ${progress.summary.totalADRs}
+            **Modules:** ${progress.summary?.implementedModules || 0} / ${progress.summary?.totalModules || 0}
 
             ### Top 5 Domains
 
@@ -111,10 +147,9 @@ jobs:
             ${domainTable}
 
             <details>
-            <summary>View Full Report</summary>
+            <summary>📎 Full report available in workflow artifacts</summary>
 
-            See the complete progress report in the workflow artifacts.
-
+            Download the \`progress-reports\` artifact from the Actions tab for the complete report.
             </details>
             `;
 
@@ -125,21 +160,29 @@ jobs:
               body: body
             });
 
-      - name: Create GitHub Issues for Missing Modules (scheduled only)
+      # -----------------------------------------------------------------------
+      # Scheduled: Create GitHub Issues for unimplemented modules
+      # -----------------------------------------------------------------------
+      - name: Create issues for missing modules (scheduled only)
         if: github.event_name == 'schedule'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const progress = JSON.parse(fs.readFileSync('progress-report.json', 'utf8'));
+            const reportPath = 'progress-report.json';
 
-            // Find modules that are "Not Started"
-            const notStarted = progress.modules.filter(m => m.status === 'Not Started');
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report found — skipping issue creation');
+              return;
+            }
+
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const notStarted = (progress.modules || []).filter(m => m.status === 'Not Started');
 
             console.log(`Found ${notStarted.length} modules not yet started`);
 
-            // Create issues for first 10 (don't spam)
+            // Create issues for first 10 (avoid spam)
             for (const module of notStarted.slice(0, 10)) {
               const title = `Implement module: ${module.name}`;
               const body = `## Module Implementation Task
@@ -156,14 +199,9 @@ jobs:
               - [ ] Write integration tests
               - [ ] Update documentation
 
-              ### Related ADRs
-              See \`docs/architecture/README.md\` for relevant ADRs.
-
               ---
-              *Auto-generated by progress-tracker workflow*
-              `;
+              *Auto-generated by Progress Tracker workflow*`;
 
-              // Check if issue already exists
               const existingIssues = await github.rest.issues.listForRepo({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -180,7 +218,7 @@ jobs:
                   repo: context.repo.repo,
                   title: title,
                   body: body,
-                  labels: ['module-implementation', 'enhancement', module.domain]
+                  labels: ['module-implementation', 'enhancement']
                 });
                 console.log(`Created issue: ${title}`);
               }
@@ -190,34 +228,49 @@ jobs:
     name: Generate Progress Badge
     runs-on: ubuntu-latest
     needs: track-progress
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
+    timeout-minutes: 5
 
     steps:
-      - name: Download Progress Report
-        uses: actions/download-artifact@v4
+      - name: Download progress report
+        uses: actions/download-artifact@v4.1.8
         with:
           name: progress-reports
 
-      - name: Create Progress Badge
-        uses: actions/github-script@v7
+      - name: Create progress badge JSON
+        uses: actions/github-script@v7.0.1
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
-            const progress = JSON.parse(fs.readFileSync('progress-report.json', 'utf8'));
+            const reportPath = 'progress-report.json';
 
-            const percentage = Math.round(progress.summary.completionPercentage);
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report — creating default badge');
+              fs.writeFileSync('badge.json', JSON.stringify({
+                schemaVersion: 1, label: 'implementation', message: 'N/A', color: 'lightgrey'
+              }));
+              return;
+            }
+
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const percentage = Math.round(progress.summary?.completionPercentage || 0);
             const color = percentage >= 75 ? 'green' :
                          percentage >= 50 ? 'yellow' :
                          percentage >= 25 ? 'orange' : 'red';
 
-            const badge = {
+            fs.writeFileSync('badge.json', JSON.stringify({
               schemaVersion: 1,
               label: 'implementation',
               message: `${percentage}%`,
               color: color
-            };
-
-            fs.writeFileSync('badge.json', JSON.stringify(badge));
+            }));
 
             console.log(`Badge: ${percentage}% (${color})`);
+
+      - name: Upload badge artifact
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: progress-badge
+          path: badge.json
+          retention-days: 90

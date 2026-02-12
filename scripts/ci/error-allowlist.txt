@@ -1,0 +1,40 @@
+# =============================================================================
+# Log Gate Error Allowlist — ADR-008 Compliance
+# =============================================================================
+# Each line is a regex pattern for known/expected error strings in build output.
+# These will be excluded from log-gate failure detection.
+# Lines starting with # are comments. Blank lines are ignored.
+# =============================================================================
+
+# Gradle daemon warnings (expected in CI --no-daemon mode)
+Daemon will be stopped at the end of the build
+
+# Quarkus dev services info messages that contain "ERROR" in class names
+ErrorHandlerConfig
+ErrorMapper
+ErrorResponse
+DomainError
+ValidationError
+BusinessError
+
+# Test framework expected error assertions
+expected.*Exception
+assertThrows
+shouldThrow
+expectedException
+
+# Quarkus build-time augmentation (contains "Exception" in transformer names)
+ExceptionMapper
+ExceptionHandler
+
+# Gradle deprecation warnings mentioning "Error"
+has been deprecated.*Error
+
+# OWASP dependency check (reports vulnerabilities but isn't itself an error)
+dependency-check.*ERROR
+
+# Detekt rule names containing "Error"
+ThrowsCount
+TooGenericExceptionCaught
+TooGenericExceptionThrown
+SwallowedException
