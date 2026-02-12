@@ -1,0 +1,11 @@
+extends:
+  - recommended
+
+rules:
+  info-description: error
+  info-contact: error
+  operation-summary: error
+  operation-operationId: error
+  operation-2xx-response: error
+  no-unused-components: warn
+  no-http-verbs-in-paths: warn

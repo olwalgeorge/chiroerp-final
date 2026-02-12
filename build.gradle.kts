@@ -10,6 +10,8 @@
 import org.gradle.api.artifacts.ProjectDependency
 import org.gradle.api.GradleException
 import org.gradle.api.tasks.testing.Test
+import java.io.File
+import java.util.concurrent.TimeUnit
 
 plugins {
     // Base plugins applied to all projects
@@ -18,6 +20,92 @@ plugins {
     alias(libs.plugins.ktlint) apply false
     alias(libs.plugins.detekt) apply false
     idea
+}
+
+val isWindowsHost = System.getProperty("os.name").lowercase().contains("win")
+val nodeExecutable = if (isWindowsHost) "node.exe" else "node"
+val npxExecutable = if (isWindowsHost) "npx.cmd" else "npx"
+val redoclyCliPackage = "@redocly/cli@latest"
+
+fun Project.usesQuarkusConventions(): Boolean {
+    if (!buildFile.exists()) {
+        return false
+    }
+
+    return buildFile.readText().contains("chiroerp.quarkus-conventions")
+}
+
+fun Project.hasOpenApiExportConfigured(): Boolean {
+    val yml = file("src/main/resources/application.yml")
+    val yaml = file("src/main/resources/application.yaml")
+    val properties = file("src/main/resources/application.properties")
+
+    val marker = "store-schema-directory"
+    return listOf(yml, yaml, properties).any { file ->
+        file.exists() && file.readText().contains(marker)
+    }
+}
+
+fun Project.findOpenApiSpecFiles(): List<File> {
+    return fileTree(rootDir) {
+        include("**/build/openapi/openapi.yaml")
+        include("**/build/openapi/openapi.yml")
+        include("**/build/openapi/openapi.json")
+    }.files.sortedBy { it.absolutePath }
+}
+
+fun runCommand(command: List<String>, workingDirectory: File, timeoutSeconds: Long = 0): Int {
+    val process = ProcessBuilder(command)
+        .directory(workingDirectory)
+        .inheritIO()
+        .start()
+    return if (timeoutSeconds > 0) {
+        if (process.waitFor(timeoutSeconds, TimeUnit.SECONDS)) {
+            process.exitValue()
+        } else {
+            process.destroyForcibly()
+            124
+        }
+    } else {
+        process.waitFor()
+    }
+}
+
+fun commandAvailable(command: List<String>, workingDirectory: File): Boolean {
+    return try {
+        val process = ProcessBuilder(command)
+            .directory(workingDirectory)
+            .redirectOutput(ProcessBuilder.Redirect.DISCARD)
+            .redirectError(ProcessBuilder.Redirect.DISCARD)
+            .start()
+        process.waitFor(20, TimeUnit.SECONDS) && process.exitValue() == 0
+    } catch (_: Exception) {
+        false
+    }
+}
+
+fun Project.redoclyBaseCommand(): List<String> {
+    val localBinary = file("node_modules/.bin/${if (isWindowsHost) "redocly.cmd" else "redocly"}")
+    val globalBinary = if (isWindowsHost) "redocly.cmd" else "redocly"
+    val allowNpxFallback = (findProperty("allowNpxRedoclyFallback")?.toString()?.toBooleanStrictOrNull() == true)
+
+    return when {
+        localBinary.exists() -> {
+            listOf(localBinary.absolutePath)
+        }
+        commandAvailable(listOf(globalBinary, "--version"), rootDir) -> {
+            listOf(globalBinary)
+        }
+        allowNpxFallback -> {
+            listOf(npxExecutable, "--yes", redoclyCliPackage)
+        }
+        else -> {
+            throw GradleException(
+                "Redocly CLI not found. Install with 'npm install -g @redocly/cli' " +
+                    "or run with -PallowNpxRedoclyFallback=true."
+            )
+        }
+    }
 }
 
 // =============================================================================
@@ -261,6 +349,142 @@ tasks.register("preCommit") {
     group = "verification"
     description = "Fast pre-commit checks for architecture compliance"
     dependsOn("validateArchitecture")
+}
+
+// =============================================================================
+// OPENAPI & API GOVERNANCE TASKS
+// =============================================================================
+
+tasks.register("generateOpenApiSpecs") {
+    group = "documentation"
+    description = "Build OpenAPI-enabled modules and export specs into build/openapi"
+
+    subprojects
+        .filter { it.usesQuarkusConventions() && it.hasOpenApiExportConfigured() }
+        .forEach { module ->
+            dependsOn("${module.path}:quarkusBuild")
+        }
+}
+
+tasks.register("generateApiDocs") {
+    group = "documentation"
+    description = "Generate static Redoc HTML documentation from OpenAPI specs"
+    dependsOn("generateOpenApiSpecs")
+    notCompatibleWithConfigurationCache("Executes external Node/Redocly processes at task runtime")
+
+    doFirst {
+        project.file("docs/api").mkdirs()
+
+        val nodeCheck = runCommand(
+            command = listOf(nodeExecutable, "--version"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (nodeCheck != 0) {
+            throw GradleException("Node.js is required. Install from https://nodejs.org/")
+        }
+    }
+
+    doLast {
+        val specs = project.findOpenApiSpecFiles()
+        if (specs.isEmpty()) {
+            throw GradleException("No OpenAPI specs found under **/build/openapi/. Run './gradlew generateOpenApiSpecs' first.")
+        }
+
+        val redoclyCommand = project.redoclyBaseCommand()
+
+        specs.forEach { spec ->
+            val moduleName = spec.parentFile?.parentFile?.parentFile?.name ?: spec.nameWithoutExtension
+            val outputFile = project.file("docs/api/$moduleName.html")
+
+            logger.lifecycle("Generating API docs for {} from {}", moduleName, spec.invariantSeparatorsPath)
+            val result = runCommand(
+                redoclyCommand + listOf(
+                    "build-docs",
+                    spec.absolutePath,
+                    "--output=${outputFile.absolutePath}",
+                ),
+                workingDirectory = project.rootDir,
+                timeoutSeconds = 240,
+            )
+
+            if (result == 124) {
+                throw GradleException("Timed out generating docs for ${spec.invariantSeparatorsPath}")
+            }
+            if (result != 0) {
+                throw GradleException("Failed generating docs for ${spec.invariantSeparatorsPath}")
+            }
+        }
+
+        logger.lifecycle("API documentation generated in docs/api/")
+    }
+}
+
+tasks.register("lintApiSpecs") {
+    group = "verification"
+    description = "Lint OpenAPI specifications with Redocly CLI"
+    dependsOn("generateOpenApiSpecs")
+    notCompatibleWithConfigurationCache("Executes external Node/Redocly processes at task runtime")
+
+    doFirst {
+        val nodeCheck = runCommand(
+            command = listOf(nodeExecutable, "--version"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (nodeCheck != 0) {
+            throw GradleException("Node.js is required. Install from https://nodejs.org/")
+        }
+
+        if (!project.file(".redocly.yaml").exists()) {
+            throw GradleException("Missing .redocly.yaml configuration file")
+        }
+    }
+
+    doLast {
+        val specs = project.findOpenApiSpecFiles()
+        if (specs.isEmpty()) {
+            throw GradleException("No OpenAPI specs found under **/build/openapi/. Run './gradlew generateOpenApiSpecs' first.")
+        }
+
+        logger.lifecycle("Linting {} OpenAPI specification(s)", specs.size)
+        val result = runCommand(
+            project.redoclyBaseCommand() + listOf("lint") + specs.map { it.absolutePath } + listOf("--format=stylish"),
+            workingDirectory = project.rootDir,
+            timeoutSeconds = 300,
+        )
+
+        if (result == 124) {
+            throw GradleException("OpenAPI linting timed out. Install Redocly locally/global or reduce spec scope.")
+        }
+        if (result != 0) {
+            throw GradleException("OpenAPI linting failed. See Redocly output above for details.")
+        }
+    }
+}
+
+tasks.register("apiGovernance") {
+    group = "verification"
+    description = "Run complete API governance workflow: generate specs + lint + generate docs"
+    dependsOn("lintApiSpecs", "generateApiDocs")
+
+    doLast {
+        println(
+            """
+
+            ✅ API Governance Complete!
+
+            📋 OpenAPI specs generated in: **/build/openapi/
+            📚 Static docs generated in: docs/api/
+
+            Next steps:
+            - Open docs/api/*.html in browser to view API docs
+            - Review linting output above
+            - Commit changes if specs meet governance rules
+
+            """.trimIndent(),
+        )
+    }
 }
 
 tasks.register("installGitHooks") {
