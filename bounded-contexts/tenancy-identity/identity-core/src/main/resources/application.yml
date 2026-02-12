@@ -18,8 +18,8 @@ quarkus:
       max-size: ${DB_POOL_MAX_SIZE:20}
       min-size: ${DB_POOL_MIN_IDLE:5}
   hibernate-orm:
-    database:
-      generation: none
+    schema-management:
+      strategy: none
     log:
       sql: false
   flyway:
@@ -37,9 +37,17 @@ quarkus:
   log:
     level: ${LOG_LEVEL:INFO}
     console:
-      json: true
+      json:
+        enabled: true
   smallrye-health:
     root-path: /q/health
+  smallrye-openapi:
+    path: /q/openapi
+    store-schema-directory: build/openapi
+    store-schema-file-name: openapi
+  swagger-ui:
+    path: /q/swagger-ui
+    always-include: false
 
 kafka:
   bootstrap:
@@ -47,6 +55,19 @@ kafka:
 
 chiroerp:
   identity:
+    jwt:
+      issuer: ${IDENTITY_JWT_ISSUER:identity-core}
+      secret: ${IDENTITY_JWT_SECRET:change-me-identity-jwt-secret}
+      default-ttl-seconds: ${IDENTITY_JWT_DEFAULT_TTL_SECONDS:900}
+      access-ttl-seconds: ${IDENTITY_JWT_ACCESS_TTL_SECONDS:900}
+      refresh-ttl-seconds: ${IDENTITY_JWT_REFRESH_TTL_SECONDS:2592000}
+    mfa:
+      issuer: ${IDENTITY_MFA_ISSUER:ChiroERP}
+      backup-code-count: ${IDENTITY_MFA_BACKUP_CODE_COUNT:8}
+      totp:
+        digits: ${IDENTITY_MFA_TOTP_DIGITS:6}
+        time-step-seconds: ${IDENTITY_MFA_TOTP_STEP_SECONDS:30}
+        secret-bytes: ${IDENTITY_MFA_TOTP_SECRET_BYTES:20}
     password:
       min-length: ${IDENTITY_PASSWORD_MIN_LENGTH:12}
       max-length: ${IDENTITY_PASSWORD_MAX_LENGTH:72}

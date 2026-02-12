@@ -36,6 +36,17 @@ class ArchitectureRulesTest {
     }
 
     @Test
+    fun `domain layer should remain framework agnostic`() {
+        val rule = noClasses()
+            .that().resideInAnyPackage("..domain..")
+            .should().dependOnClassesThat()
+            .resideInAnyPackage("jakarta..", "io.quarkus..", "org.springframework..")
+            .allowEmptyShould(true)
+
+        rule.check(importedClasses)
+    }
+
+    @Test
     fun `application layer should not depend on infrastructure`() {
         val rule = noClasses()
             .that().resideInAnyPackage("..application..")

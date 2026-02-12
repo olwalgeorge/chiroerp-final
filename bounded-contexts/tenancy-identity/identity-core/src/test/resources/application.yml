@@ -9,7 +9,9 @@ quarkus:
       url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DATABASE:chiroerp}?currentSchema=${POSTGRES_IDENTITY_SCHEMA:identity_core}
   flyway:
     migrate-at-start: true
+    validate-on-migrate: true
     baseline-on-migrate: true
+    baseline-version: 0
     locations: classpath:db/migration
     schemas: ${POSTGRES_IDENTITY_SCHEMA:identity_core}
-    table: flyway_history_identity_core
+    table: flyway_history_identity_core_test

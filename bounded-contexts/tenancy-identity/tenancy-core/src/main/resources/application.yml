@@ -37,6 +37,13 @@ quarkus:
       json: true
   smallrye-health:
     root-path: /q/health
+  smallrye-openapi:
+    path: /q/openapi
+    store-schema-directory: build/openapi
+    store-schema-file-name: openapi
+  swagger-ui:
+    path: /q/swagger-ui
+    always-include: false
 
 kafka:
   bootstrap:

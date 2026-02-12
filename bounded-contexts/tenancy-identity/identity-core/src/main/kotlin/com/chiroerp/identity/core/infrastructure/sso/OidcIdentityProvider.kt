@@ -1,8 +1,42 @@
-﻿package com.chiroerp.identity.core.infrastructure.sso
+package com.chiroerp.identity.core.infrastructure.sso
 
-/*
- * Placeholder generated from COMPLETE_STRUCTURE.txt
- * Path: bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/infrastructure/sso/OidcIdentityProvider.kt
- */
-@Suppress("unused")
-private const val PLACEHOLDER_OIDCIDENTITYPROVIDER = "TODO: Implement bounded-contexts/tenancy-identity/identity-core/src/main/kotlin/com/chiroerp/identity/core/infrastructure/sso/OidcIdentityProvider.kt"
+import com.chiroerp.identity.core.domain.model.ExternalIdentity
+import com.chiroerp.identity.core.domain.model.IdentityProvider
+import com.chiroerp.identity.core.domain.model.UserId
+import com.chiroerp.identity.core.domain.port.IdentityProviderGateway
+import com.chiroerp.tenancy.shared.TenantId
+import jakarta.enterprise.context.ApplicationScoped
+import java.util.concurrent.ConcurrentHashMap
+
+@ApplicationScoped
+class OidcIdentityProvider : IdentityProviderGateway {
+    private val identities = ConcurrentHashMap<String, ExternalIdentity>()
+
+    override fun resolve(
+        tenantId: TenantId,
+        provider: IdentityProvider,
+        subject: String,
+    ): ExternalIdentity? {
+        if (provider != IdentityProvider.OIDC) {
+            return null
+        }
+        return identities[keyFor(tenantId, subject)]
+    }
+
+    override fun link(
+        tenantId: TenantId,
+        userId: UserId,
+        externalIdentity: ExternalIdentity,
+    ) {
+        if (externalIdentity.provider != IdentityProvider.OIDC) {
+            return
+        }
+
+        identities[keyFor(tenantId, externalIdentity.subject)] = externalIdentity.copy(
+            claims = externalIdentity.claims + ("linkedUserId" to userId.value.toString()),
+        )
+    }
+
+    private fun keyFor(tenantId: TenantId, subject: String): String =
+        "${tenantId.value}:${subject.trim()}"
+}

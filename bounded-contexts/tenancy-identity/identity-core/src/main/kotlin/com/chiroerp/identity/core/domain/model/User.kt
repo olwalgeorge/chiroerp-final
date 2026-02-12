@@ -45,6 +45,9 @@ class User private constructor(
     val isMfaEnabled: Boolean
         get() = mfaConfiguration != null
 
+    val mfaConfigurationSnapshot: MfaConfiguration?
+        get() = mfaConfiguration
+
     fun activate(occurredAt: Instant = Instant.now()) {
         if (status == UserStatus.ACTIVE) return
         check(status == UserStatus.PENDING || status == UserStatus.LOCKED) {
