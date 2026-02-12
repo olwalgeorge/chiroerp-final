@@ -10,7 +10,6 @@
 # -----------------------------------------------------------------------------
 .gradle/
 build/
-!gradle/wrapper/gradle-wrapper.jar
 !gradle/wrapper/gradle-wrapper.properties
 .gradle-cache/
 gradle-local.properties
@@ -24,6 +23,8 @@ gradle-local.properties
 **/out/
 *.class
 *.jar
+# IMPORTANT: Negate gradle wrapper jar AFTER *.jar pattern (order matters in gitignore)
+!gradle/wrapper/gradle-wrapper.jar
 *.war
 *.ear
 *.nar
