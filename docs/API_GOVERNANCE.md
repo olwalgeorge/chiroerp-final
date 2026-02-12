@@ -160,8 +160,32 @@ When you push code that changes REST APIs:
 1. **GitHub Actions** triggers `.github/workflows/api-lint.yml`
 2. **Build step** runs `./gradlew generateOpenApiSpecs` (generates OpenAPI specs)
 3. **Lint step** runs Redocly CLI on all generated specs
-4. **PR fails** if any design rule violations are found
-5. **Comment posted** to PR with specific errors
+4. **Breaking change detection** compares PR specs against base branch (oasdiff)
+5. **PR fails** if any design rule violations are found
+6. **Comment posted** to PR with specific errors or breaking changes
+
+### Breaking Change Detection
+
+The CI workflow automatically detects **breaking API changes** using `oasdiff`:
+
+**What counts as breaking:**
+- ❌ Removing endpoints or operations
+- ❌ Renaming or removing required fields
+- ❌ Changing field types (e.g., `string` → `number`)
+- ❌ Adding new required fields to request bodies
+- ❌ Removing enum values
+
+**What's NOT breaking (additive changes):**
+- ✅ Adding new endpoints
+- ✅ Adding optional fields
+- ✅ Adding new enum values
+- ✅ Adding optional parameters
+
+**If breaking changes are detected:**
+1. PR gets a warning comment explaining the changes
+2. Review the changes in the workflow summary
+3. If intentional: add `api-breaking-change` label, bump API version
+4. If unintentional: revert and use additive changes instead
 
 ### Main Branch Workflow
 
@@ -413,6 +437,23 @@ fun getAccount(@Parameter(description = "Account ID") @PathParam("id") id: Strin
 | `.github/workflows/api-lint.yml` | CI workflow for automated linting |
 | `build.gradle.kts` | Root Gradle tasks for docs generation |
 | `build-logic/.../QuarkusConventionsPlugin.kt` | Adds `quarkus-smallrye-openapi` dependency |
+
+---
+
+## CLI Version Management
+
+CLI tools are **pinned to specific versions** in CI to ensure reproducible builds:
+
+| Tool | Version | Update URL |
+|------|---------|------------|
+| Redocly CLI | `1.25.5` | https://www.npmjs.com/package/@redocly/cli |
+| Spectral CLI | `6.11.1` | https://www.npmjs.com/package/@stoplight/spectral-cli |
+| oasdiff | `1.10.23` | https://www.npmjs.com/package/@tufin/oasdiff |
+
+**To update versions:**
+1. Edit `.github/workflows/api-lint.yml`
+2. Change the `env.REDOCLY_CLI_VERSION`, `env.SPECTRAL_CLI_VERSION`, or `env.OASDIFF_VERSION` values
+3. Test locally before merging
 
 ---
 

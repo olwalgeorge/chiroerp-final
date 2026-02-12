@@ -14,8 +14,13 @@ on:
     branches: [master, develop]
 
 env:
-  REDOCLY_CLI_PACKAGE: '@redocly/cli@latest'
-  SPECTRAL_CLI_PACKAGE: '@stoplight/spectral-cli@latest'
+  # Pin CLI versions to avoid @latest drift and ensure reproducible builds
+  # Check for updates: https://www.npmjs.com/package/@redocly/cli
+  REDOCLY_CLI_VERSION: '1.25.5'
+  # Check for updates: https://www.npmjs.com/package/@stoplight/spectral-cli
+  SPECTRAL_CLI_VERSION: '6.11.1'
+  # Check for updates: https://www.npmjs.com/package/@tufin/oasdiff
+  OASDIFF_VERSION: '1.10.23'
 
 jobs:
   # ============================================================================
@@ -86,7 +91,7 @@ jobs:
           cache: 'npm'
       
       - name: Install Redocly CLI
-        run: npm install -g $REDOCLY_CLI_PACKAGE --prefer-offline --no-audit --no-fund
+        run: npm install -g @redocly/cli@${{ env.REDOCLY_CLI_VERSION }} --prefer-offline --no-audit --no-fund
       
       - name: Lint all OpenAPI specs
         id: redocly-lint
@@ -135,6 +140,146 @@ jobs:
             })
 
   # ============================================================================
+  # Breaking Change Detection (PR only)
+  # ============================================================================
+  breaking-change-check:
+    name: Detect Breaking API Changes
+    needs: generate-specs
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          path: pr-branch
+      
+      - name: Checkout base branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.base_ref }}
+          path: base-branch
+      
+      - name: Download PR OpenAPI specs
+        uses: actions/download-artifact@v4
+        with:
+          name: openapi-specs
+          path: pr-specs
+      
+      - name: Set up JDK 21 for base branch build
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+      
+      - name: Generate base branch OpenAPI specs
+        working-directory: base-branch
+        run: |
+          chmod +x ./gradlew
+          ./gradlew generateOpenApiSpecs --parallel || echo "Base branch may not have OpenAPI generation"
+        env:
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
+        continue-on-error: true
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Install oasdiff
+        run: npm install -g oasdiff@${{ env.OASDIFF_VERSION }} --prefer-offline --no-audit --no-fund
+      
+      - name: Check for breaking changes
+        id: breaking-check
+        run: |
+          echo "### 🔍 API Breaking Change Analysis" >> $GITHUB_STEP_SUMMARY
+          
+          # Find specs in both branches
+          pr_specs=$(find pr-specs \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' \) 2>/dev/null || echo "")
+          base_specs=$(find base-branch \( -path '*/build/openapi/openapi.yaml' -o -path '*/build/openapi/openapi.yml' -o -path '*/build/openapi/openapi.json' \) 2>/dev/null || echo "")
+          
+          if [ -z "$base_specs" ]; then
+            echo "ℹ️ No base branch specs found (new API or first OpenAPI adoption). Skipping breaking change check." >> $GITHUB_STEP_SUMMARY
+            echo "has_breaking_changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          
+          breaking_found=false
+          
+          for pr_spec in $pr_specs; do
+            # Extract module name
+            module=$(echo $pr_spec | sed -E 's|.*/([^/]+)/build/openapi/.*|\1|' | sed 's|pr-specs/||')
+            
+            # Find matching base spec
+            base_spec=$(echo "$base_specs" | grep -E "/$module/build/openapi/" | head -1 || echo "")
+            
+            if [ -z "$base_spec" ]; then
+              echo "ℹ️ **$module**: New API (no base to compare)" >> $GITHUB_STEP_SUMMARY
+              continue
+            fi
+            
+            echo "#### Module: $module" >> $GITHUB_STEP_SUMMARY
+            echo "Comparing:" >> $GITHUB_STEP_SUMMARY
+            echo "- Base: \`$base_spec\`" >> $GITHUB_STEP_SUMMARY
+            echo "- PR: \`$pr_spec\`" >> $GITHUB_STEP_SUMMARY
+            
+            # Run oasdiff breaking check
+            if oasdiff breaking "$base_spec" "$pr_spec" --fail-on ERR 2>&1; then
+              echo "✅ No breaking changes detected" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "⚠️ **Breaking changes detected!**" >> $GITHUB_STEP_SUMMARY
+              oasdiff breaking "$base_spec" "$pr_spec" --format text >> $GITHUB_STEP_SUMMARY 2>&1 || true
+              breaking_found=true
+            fi
+            echo "" >> $GITHUB_STEP_SUMMARY
+          done
+          
+          echo "has_breaking_changes=$breaking_found" >> $GITHUB_OUTPUT
+          
+          if [ "$breaking_found" = "true" ]; then
+            echo "::warning::Breaking API changes detected. Review required."
+          fi
+      
+      - name: Comment PR with breaking changes
+        if: steps.breaking-check.outputs.has_breaking_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Breaking API Changes Detected
+              
+              This PR introduces **breaking changes** to the OpenAPI contract.
+              
+              **What this means:**
+              - Existing API clients may break
+              - This requires a major version bump or deprecation period
+              
+              **Required Actions:**
+              1. Review the breaking changes in the [workflow summary](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+              2. If intentional:
+                 - Add \`api-breaking-change\` label to acknowledge
+                 - Update API version (e.g., \`/api/v1\` → \`/api/v2\`)
+                 - Document migration path for clients
+              3. If unintentional:
+                 - Revert the breaking changes
+                 - Use additive changes instead (new endpoints, optional fields)
+              
+              **Common Breaking Changes:**
+              - Removing endpoints or operations
+              - Renaming required fields
+              - Changing field types
+              - Adding new required fields
+              - Removing enum values
+              
+              See [ADR-010](docs/adr/ADR-010-rest-validation-standard.md) for API versioning policy.`
+            })
+
+  # ============================================================================
   # Lint with Spectral (Alternative/Additional Linter)
   # ============================================================================
   lint-spectral:
@@ -160,7 +305,7 @@ jobs:
           cache: 'npm'
       
       - name: Install Spectral
-        run: npm install -g $SPECTRAL_CLI_PACKAGE --prefer-offline --no-audit --no-fund
+        run: npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }} --prefer-offline --no-audit --no-fund
       
       - name: Create Spectral ruleset
         run: |
@@ -209,7 +354,7 @@ jobs:
           node-version: '20'
       
       - name: Install Redocly CLI
-        run: npm install -g $REDOCLY_CLI_PACKAGE --prefer-offline --no-audit --no-fund
+        run: npm install -g @redocly/cli@${{ env.REDOCLY_CLI_VERSION }} --prefer-offline --no-audit --no-fund
       
       - name: Generate Redoc static HTML docs
         run: |
