@@ -1,0 +1,340 @@
+# AsyncAPI Specification for ChiroERP Identity Events
+# https://www.asyncapi.com/docs/reference/specification/v3.0.0
+
+asyncapi: 3.0.0
+
+info:
+  title: ChiroERP Identity Events API
+  version: 1.0.0
+  description: |
+    Event-driven API for user identity and authentication events in ChiroERP.
+    
+    This API documents domain events published when user accounts are created,
+    modified, or when authentication/authorization events occur.
+  contact:
+    name: ChiroERP Platform Team
+    email: platform@chiroerp.com
+  license:
+    name: Proprietary
+    url: https://chiroerp.com/license
+
+servers:
+  development:
+    host: localhost:9092
+    protocol: kafka
+    description: Local Kafka broker for development
+  
+  production:
+    host: kafka-prod.chiroerp.internal:9092
+    protocol: kafka
+    description: Production Kafka cluster
+    security:
+      - $ref: '#/components/securitySchemes/saslScram'
+
+defaultContentType: application/json
+
+channels:
+  userEvents:
+    address: chiroerp.identity.user-events
+    description: Channel for user lifecycle events
+    messages:
+      userCreated:
+        $ref: '#/components/messages/UserCreatedEvent'
+      userActivated:
+        $ref: '#/components/messages/UserActivatedEvent'
+      userLocked:
+        $ref: '#/components/messages/UserLockedEvent'
+      userRoleAssigned:
+        $ref: '#/components/messages/UserRoleAssignedEvent'
+  
+  authEvents:
+    address: chiroerp.identity.auth-events
+    description: Channel for authentication and MFA events
+    messages:
+      mfaEnabled:
+        $ref: '#/components/messages/MfaEnabledEvent'
+      loginSucceeded:
+        $ref: '#/components/messages/LoginSucceededEvent'
+      loginFailed:
+        $ref: '#/components/messages/LoginFailedEvent'
+
+operations:
+  publishUserEvent:
+    action: send
+    channel:
+      $ref: '#/channels/userEvents'
+    summary: Publish user lifecycle events
+    description: |
+      Published by identity-core when user state changes.
+      Events are keyed by (tenantId, userId) for partition affinity.
+    messages:
+      - $ref: '#/channels/userEvents/messages/userCreated'
+      - $ref: '#/channels/userEvents/messages/userActivated'
+      - $ref: '#/channels/userEvents/messages/userLocked'
+      - $ref: '#/channels/userEvents/messages/userRoleAssigned'
+  
+  publishAuthEvent:
+    action: send
+    channel:
+      $ref: '#/channels/authEvents'
+    summary: Publish authentication events
+    description: |
+      Published for audit logging and security monitoring.
+      Consumed by audit-service and security-monitoring.
+
+components:
+  messages:
+    UserCreatedEvent:
+      name: UserCreatedEvent
+      title: User Created
+      summary: Emitted when a new user account is created
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/UserCreatedPayload'
+      examples:
+        - name: NewUser
+          summary: New user creation
+          headers:
+            eventId: "660e8400-e29b-41d4-a716-446655440001"
+            eventType: "UserCreated"
+            occurredAt: "2026-02-12T11:00:00Z"
+            tenantId: "tenant_abc123"
+          payload:
+            userId: "user_xyz789"
+            email: "john.doe@acmechiro.com"
+            displayName: "John Doe"
+            roles: ["PRACTITIONER"]
+    
+    UserActivatedEvent:
+      name: UserActivatedEvent
+      title: User Activated
+      summary: Emitted when a user account becomes active
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/UserActivatedPayload'
+    
+    UserLockedEvent:
+      name: UserLockedEvent
+      title: User Locked
+      summary: Emitted when a user account is locked (e.g., failed login attempts)
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/UserLockedPayload'
+    
+    UserRoleAssignedEvent:
+      name: UserRoleAssignedEvent
+      title: User Role Assigned
+      summary: Emitted when roles are assigned to a user
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/UserRoleAssignedPayload'
+    
+    MfaEnabledEvent:
+      name: MfaEnabledEvent
+      title: MFA Enabled
+      summary: Emitted when multi-factor authentication is enabled for a user
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/MfaEnabledPayload'
+    
+    LoginSucceededEvent:
+      name: LoginSucceededEvent
+      title: Login Succeeded
+      summary: Emitted on successful user authentication
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/LoginEventPayload'
+    
+    LoginFailedEvent:
+      name: LoginFailedEvent
+      title: Login Failed
+      summary: Emitted on failed authentication attempt
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/LoginFailedPayload'
+
+  schemas:
+    EventHeaders:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - occurredAt
+        - tenantId
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Unique identifier for this event instance
+        eventType:
+          type: string
+          description: Type discriminator for the event
+        occurredAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the event occurred
+        tenantId:
+          type: string
+          pattern: "^tenant_[a-zA-Z0-9]+$"
+          description: Tenant context for the event
+        correlationId:
+          type: string
+          description: Request correlation ID for distributed tracing
+    
+    UserId:
+      type: string
+      pattern: "^user_[a-zA-Z0-9]+$"
+      description: Unique user identifier with prefix
+    
+    UserCreatedPayload:
+      type: object
+      required:
+        - userId
+        - email
+        - displayName
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+          description: Initial roles assigned to user
+    
+    UserActivatedPayload:
+      type: object
+      required:
+        - userId
+        - activatedAt
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        activatedAt:
+          type: string
+          format: date-time
+    
+    UserLockedPayload:
+      type: object
+      required:
+        - userId
+        - lockedAt
+        - reason
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        lockedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          enum:
+            - FAILED_LOGIN_ATTEMPTS
+            - ADMIN_ACTION
+            - SECURITY_POLICY
+        lockExpiresAt:
+          type: string
+          format: date-time
+          description: When the lock expires (null = permanent)
+    
+    UserRoleAssignedPayload:
+      type: object
+      required:
+        - userId
+        - roles
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        roles:
+          type: array
+          items:
+            type: string
+          description: Roles assigned in this operation
+        assignedBy:
+          type: string
+          description: User who assigned the roles
+    
+    MfaEnabledPayload:
+      type: object
+      required:
+        - userId
+        - mfaType
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        mfaType:
+          type: string
+          enum:
+            - TOTP
+            - SMS
+            - EMAIL
+            - HARDWARE_KEY
+          description: Type of MFA enabled
+    
+    LoginEventPayload:
+      type: object
+      required:
+        - userId
+        - ipAddress
+        - userAgent
+      properties:
+        userId:
+          $ref: '#/components/schemas/UserId'
+        ipAddress:
+          type: string
+          format: ipv4
+        userAgent:
+          type: string
+        mfaUsed:
+          type: boolean
+          description: Whether MFA was used for this login
+    
+    LoginFailedPayload:
+      type: object
+      required:
+        - attemptedEmail
+        - ipAddress
+        - failureReason
+      properties:
+        attemptedEmail:
+          type: string
+          format: email
+        ipAddress:
+          type: string
+          format: ipv4
+        userAgent:
+          type: string
+        failureReason:
+          type: string
+          enum:
+            - INVALID_CREDENTIALS
+            - ACCOUNT_LOCKED
+            - ACCOUNT_DISABLED
+            - MFA_REQUIRED
+            - MFA_FAILED
+        attemptCount:
+          type: integer
+          description: Number of failed attempts from this IP
+
+  securitySchemes:
+    saslScram:
+      type: scramSha256
+      description: SASL/SCRAM-SHA-256 authentication for Kafka

@@ -1,0 +1,355 @@
+# AsyncAPI Specification for ChiroERP Tenancy Events
+# https://www.asyncapi.com/docs/reference/specification/v3.0.0
+
+asyncapi: 3.0.0
+
+info:
+  title: ChiroERP Tenancy Events API
+  version: 1.0.0
+  description: |
+    Event-driven API for tenant lifecycle management in ChiroERP.
+    
+    This API documents the domain events published when tenant state changes occur.
+    Consumers can subscribe to these events to react to tenant provisioning,
+    activation, suspension, and termination.
+  contact:
+    name: ChiroERP Platform Team
+    email: platform@chiroerp.com
+  license:
+    name: Proprietary
+    url: https://chiroerp.com/license
+
+servers:
+  development:
+    host: localhost:9092
+    protocol: kafka
+    description: Local Kafka broker for development
+    tags:
+      - name: env:development
+  
+  staging:
+    host: kafka-staging.chiroerp.internal:9092
+    protocol: kafka
+    description: Staging Kafka cluster
+    security:
+      - $ref: '#/components/securitySchemes/saslScram'
+    tags:
+      - name: env:staging
+  
+  production:
+    host: kafka-prod.chiroerp.internal:9092
+    protocol: kafka
+    description: Production Kafka cluster (multi-broker)
+    security:
+      - $ref: '#/components/securitySchemes/saslScram'
+    tags:
+      - name: env:production
+
+defaultContentType: application/json
+
+channels:
+  tenantEvents:
+    address: chiroerp.tenancy.events
+    description: Channel for all tenant lifecycle events
+    messages:
+      tenantCreated:
+        $ref: '#/components/messages/TenantCreatedEvent'
+      tenantActivated:
+        $ref: '#/components/messages/TenantActivatedEvent'
+      tenantSuspended:
+        $ref: '#/components/messages/TenantSuspendedEvent'
+      tenantTerminated:
+        $ref: '#/components/messages/TenantTerminatedEvent'
+      tenantTierChanged:
+        $ref: '#/components/messages/TenantTierChangedEvent'
+      tenantSettingsUpdated:
+        $ref: '#/components/messages/TenantSettingsUpdatedEvent'
+
+operations:
+  publishTenantEvent:
+    action: send
+    channel:
+      $ref: '#/channels/tenantEvents'
+    summary: Publish tenant lifecycle events
+    description: |
+      Published by tenancy-core when tenant state changes.
+      Events are keyed by tenantId for partition affinity.
+    messages:
+      - $ref: '#/channels/tenantEvents/messages/tenantCreated'
+      - $ref: '#/channels/tenantEvents/messages/tenantActivated'
+      - $ref: '#/channels/tenantEvents/messages/tenantSuspended'
+      - $ref: '#/channels/tenantEvents/messages/tenantTerminated'
+      - $ref: '#/channels/tenantEvents/messages/tenantTierChanged'
+      - $ref: '#/channels/tenantEvents/messages/tenantSettingsUpdated'
+  
+  consumeTenantEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/tenantEvents'
+    summary: Consume tenant lifecycle events
+    description: |
+      Consumed by downstream services (billing, provisioning, audit).
+      Use consumer group for load balancing across instances.
+
+components:
+  messages:
+    TenantCreatedEvent:
+      name: TenantCreatedEvent
+      title: Tenant Created
+      summary: Emitted when a new tenant is provisioned
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantCreatedPayload'
+      examples:
+        - name: StandardTenant
+          summary: Standard tier tenant creation
+          headers:
+            eventId: "550e8400-e29b-41d4-a716-446655440000"
+            eventType: "TenantCreated"
+            occurredAt: "2026-02-12T10:30:00Z"
+            correlationId: "req-abc123"
+          payload:
+            tenantId: "tenant_abc123"
+            tenantName: "Acme Chiropractic"
+            domain: "acme.chiroerp.com"
+            tier: "STANDARD"
+    
+    TenantActivatedEvent:
+      name: TenantActivatedEvent
+      title: Tenant Activated
+      summary: Emitted when a tenant becomes active (after provisioning or reactivation)
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantActivatedPayload'
+    
+    TenantSuspendedEvent:
+      name: TenantSuspendedEvent
+      title: Tenant Suspended
+      summary: Emitted when a tenant is suspended (e.g., non-payment, policy violation)
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantSuspendedPayload'
+    
+    TenantTerminatedEvent:
+      name: TenantTerminatedEvent
+      title: Tenant Terminated
+      summary: Emitted when a tenant is permanently terminated
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantTerminatedPayload'
+    
+    TenantTierChangedEvent:
+      name: TenantTierChangedEvent
+      title: Tenant Tier Changed
+      summary: Emitted when a tenant upgrades or downgrades their subscription tier
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantTierChangedPayload'
+    
+    TenantSettingsUpdatedEvent:
+      name: TenantSettingsUpdatedEvent
+      title: Tenant Settings Updated
+      summary: Emitted when tenant configuration/settings are modified
+      contentType: application/json
+      headers:
+        $ref: '#/components/schemas/EventHeaders'
+      payload:
+        $ref: '#/components/schemas/TenantSettingsUpdatedPayload'
+
+  schemas:
+    EventHeaders:
+      type: object
+      required:
+        - eventId
+        - eventType
+        - occurredAt
+      properties:
+        eventId:
+          type: string
+          format: uuid
+          description: Unique identifier for this event instance
+          examples:
+            - "550e8400-e29b-41d4-a716-446655440000"
+        eventType:
+          type: string
+          description: Type discriminator for the event
+          examples:
+            - "TenantCreated"
+            - "TenantActivated"
+        occurredAt:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when the event occurred
+          examples:
+            - "2026-02-12T10:30:00Z"
+        correlationId:
+          type: string
+          description: Request correlation ID for distributed tracing
+          examples:
+            - "req-abc123"
+        causationId:
+          type: string
+          format: uuid
+          description: ID of the event that caused this event (for event chains)
+    
+    TenantId:
+      type: string
+      pattern: "^tenant_[a-zA-Z0-9]+$"
+      description: Unique tenant identifier with prefix
+      examples:
+        - "tenant_abc123"
+    
+    TenantTier:
+      type: string
+      enum:
+        - TRIAL
+        - STARTER
+        - STANDARD
+        - PROFESSIONAL
+        - ENTERPRISE
+      description: Subscription tier determining features and limits
+    
+    TenantCreatedPayload:
+      type: object
+      required:
+        - tenantId
+        - tenantName
+        - domain
+        - tier
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        tenantName:
+          type: string
+          description: Display name of the tenant organization
+          examples:
+            - "Acme Chiropractic"
+        domain:
+          type: string
+          format: hostname
+          description: Custom domain or subdomain for the tenant
+          examples:
+            - "acme.chiroerp.com"
+        tier:
+          $ref: '#/components/schemas/TenantTier'
+    
+    TenantActivatedPayload:
+      type: object
+      required:
+        - tenantId
+        - activatedAt
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        activatedAt:
+          type: string
+          format: date-time
+          description: Timestamp when tenant became active
+        previousStatus:
+          type: string
+          enum:
+            - PROVISIONING
+            - SUSPENDED
+          description: Status before activation
+    
+    TenantSuspendedPayload:
+      type: object
+      required:
+        - tenantId
+        - reason
+        - suspendedAt
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        reason:
+          type: string
+          enum:
+            - NON_PAYMENT
+            - POLICY_VIOLATION
+            - ADMIN_ACTION
+            - TRIAL_EXPIRED
+          description: Reason for suspension
+        suspendedAt:
+          type: string
+          format: date-time
+        suspendedBy:
+          type: string
+          description: User or system that initiated suspension
+    
+    TenantTerminatedPayload:
+      type: object
+      required:
+        - tenantId
+        - terminatedAt
+        - dataRetentionDays
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        terminatedAt:
+          type: string
+          format: date-time
+        dataRetentionDays:
+          type: integer
+          minimum: 0
+          description: Days until tenant data is permanently deleted
+          examples:
+            - 30
+        reason:
+          type: string
+          description: Reason for termination
+    
+    TenantTierChangedPayload:
+      type: object
+      required:
+        - tenantId
+        - previousTier
+        - newTier
+        - effectiveAt
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        previousTier:
+          $ref: '#/components/schemas/TenantTier'
+        newTier:
+          $ref: '#/components/schemas/TenantTier'
+        effectiveAt:
+          type: string
+          format: date-time
+          description: When the tier change takes effect
+        isUpgrade:
+          type: boolean
+          description: True if moving to a higher tier
+    
+    TenantSettingsUpdatedPayload:
+      type: object
+      required:
+        - tenantId
+        - changedSettings
+      properties:
+        tenantId:
+          $ref: '#/components/schemas/TenantId'
+        changedSettings:
+          type: array
+          items:
+            type: string
+          description: List of setting keys that were modified
+          examples:
+            - ["timezone", "locale", "branding.logo"]
+        updatedBy:
+          type: string
+          description: User who made the changes
+
+  securitySchemes:
+    saslScram:
+      type: scramSha256
+      description: SASL/SCRAM-SHA-256 authentication for Kafka

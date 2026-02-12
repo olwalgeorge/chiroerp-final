@@ -1,4 +1,4 @@
-# API Governance & OpenAPI Automation
+# API Governance: OpenAPI & AsyncAPI Automation
 
 **Status:** ✅ Implemented (February 12, 2026)  
 **Related ADR:** ADR-010 (REST Validation Standard)
@@ -7,7 +7,10 @@
 
 ## Overview
 
-ChiroERP uses **automated OpenAPI specification generation** to ensure consistent REST API design across all bounded contexts. This document explains the 85–95% automated workflow for API documentation, linting, and governance.
+ChiroERP uses **automated API specification generation and validation** to ensure consistent REST and event-driven API design across all bounded contexts:
+
+- **OpenAPI 3.0+** for REST APIs (auto-generated from JAX-RS annotations)
+- **AsyncAPI 3.0** for Kafka/outbox events (hand-written specs mirroring domain events)
 
 ### Why OpenAPI?
 
@@ -449,15 +452,152 @@ CLI tools are **pinned to specific versions** in CI to ensure reproducible build
 | Redocly CLI | `1.25.5` | https://www.npmjs.com/package/@redocly/cli |
 | Spectral CLI | `6.11.1` | https://www.npmjs.com/package/@stoplight/spectral-cli |
 | oasdiff | `1.10.23` | https://www.npmjs.com/package/@tufin/oasdiff |
+| AsyncAPI CLI | `2.3.0` | https://www.npmjs.com/package/@asyncapi/cli |
 
 **To update versions:**
-1. Edit `.github/workflows/api-lint.yml`
-2. Change the `env.REDOCLY_CLI_VERSION`, `env.SPECTRAL_CLI_VERSION`, or `env.OASDIFF_VERSION` values
+1. Edit `.github/workflows/api-lint.yml` and `.github/workflows/asyncapi-lint.yml`
+2. Change the version environment variables
 3. Test locally before merging
 
 ---
 
+## AsyncAPI for Event-Driven APIs (Phase 2)
+
+### Overview
+
+In addition to REST APIs (OpenAPI), ChiroERP uses **AsyncAPI specifications** to document event-driven APIs for Kafka/outbox events. This ensures consistency in domain event contracts across bounded contexts.
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│ Developer writes Domain Events in Kotlin                        │
+│   data class TenantCreatedEvent(tenantId, tenantName, ...)     │
+└────────────────────┬─────────────────────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Hand-written AsyncAPI Specs (config/asyncapi/)                  │
+│ - Documents channels, operations, message schemas               │
+│ - Mirrors Kotlin event structure                                │
+│ - Includes examples and versioning                              │
+└────────────────────┬─────────────────────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ CI Validation (AsyncAPI CLI + Spectral)                         │
+│ - Validates spec structure                                       │
+│ - Detects breaking changes                                       │
+│ - Fails PR if errors found                                      │
+└────────────────────┬─────────────────────────────────────────────┘
+                     │
+                     ▼
+┌──────────────────────────────────────────────────────────────────┐
+│ Static Documentation Generation                                  │
+│ - AsyncAPI HTML template builds docs                            │
+│ - Published to docs/events/                                      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+### AsyncAPI Quick Start
+
+#### 1. Install Tools Locally
+
+```bash
+# Install all API tools (Redocly + AsyncAPI CLI)
+./gradlew installApiTools
+
+# Or install just AsyncAPI CLI
+./gradlew installAsyncApiCli
+```
+
+#### 2. Write AsyncAPI Specification
+
+Create a spec file in `config/asyncapi/`:
+
+```yaml
+# config/asyncapi/asyncapi-mycontext.yaml
+asyncapi: 3.0.0
+
+info:
+  title: ChiroERP MyContext Events API
+  version: 1.0.0
+  description: Domain events for MyContext bounded context
+
+channels:
+  entityCreated:
+    address: chiroerp.mycontext.entity-created
+    messages:
+      entityCreated:
+        $ref: '#/components/messages/EntityCreatedEvent'
+
+operations:
+  publishEntityCreated:
+    action: send
+    channel:
+      $ref: '#/channels/entityCreated'
+
+components:
+  messages:
+    EntityCreatedEvent:
+      name: EntityCreatedEvent
+      payload:
+        type: object
+        properties:
+          eventId:
+            type: string
+            format: uuid
+          entityId:
+            type: string
+          occurredAt:
+            type: string
+            format: date-time
+```
+
+#### 3. Validate & Generate Docs
+
+```bash
+# Validate all AsyncAPI specs
+./gradlew validateAsyncApiSpecs
+
+# Generate HTML documentation
+./gradlew generateAsyncApiDocs
+
+# Run complete event governance workflow
+./gradlew eventGovernance
+
+# Run ALL API governance (REST + Events)
+./gradlew allApiGovernance
+```
+
+### Current AsyncAPI Specs
+
+| Spec File | Domain | Channels |
+|-----------|--------|----------|
+| `asyncapi-tenancy.yaml` | Tenancy | tenant.created, activated, suspended, terminated, tier-changed, settings-updated |
+| `asyncapi-identity.yaml` | Identity | user.created, activated, locked, role-assigned; auth.mfa-enabled, login-succeeded, login-failed |
+
+### AsyncAPI Design Rules
+
+1. **Use AsyncAPI 3.0.0** (latest stable version)
+2. **Channel naming:** `chiroerp.<context>.<event-name>` (kebab-case)
+3. **Message names:** Match Kotlin event class names (PascalCase)
+4. **Required headers:** eventId, eventType, occurredAt, tenantId
+5. **Include examples:** Provide realistic examples for all events
+6. **Version schemas:** Use semantic versioning for breaking changes
+
+### CI/CD for AsyncAPI
+
+The `.github/workflows/asyncapi-lint.yml` workflow:
+
+1. **Validates** all specs in `config/asyncapi/`
+2. **Lints** using Spectral with asyncapi:recommended ruleset
+3. **Detects breaking changes** on PRs (using `asyncapi diff`)
+4. **Generates docs** on merge to main
+
+---
+
 ## Migration Checklist
+
+### OpenAPI (REST APIs)
 
 For each bounded context with REST APIs:
 
@@ -482,6 +622,7 @@ For each bounded context with REST APIs:
 - **Spectral:** https://github.com/stoplightio/spectral
 - **Scalar (alternative viewer):** https://scalar.com/products/api-references/openapi
 - **AsyncAPI:** https://www.asyncapi.com/docs/tutorials/getting-started
+- **AsyncAPI CLI:** https://www.asyncapi.com/docs/tools/cli
 
 ---
 
@@ -490,10 +631,11 @@ For each bounded context with REST APIs:
 - Review `ADR-010-rest-validation-standard.md` for design decisions
 - Check existing bounded contexts for annotation examples
 - Run `./gradlew help --task lintApiSpecs` for task details
-- See `.github/workflows/api-lint.yml` for CI configuration
+- See `.github/workflows/api-lint.yml` for OpenAPI CI configuration
+- See `.github/workflows/asyncapi-lint.yml` for AsyncAPI CI configuration
 
 **Next Steps:**
 1. Apply to `finance-gl` module first (pilot)
 2. Validate workflow and refine rules
 3. Roll out to remaining bounded contexts
-4. Add AsyncAPI for event documentation (Phase 2)
+4. ✅ AsyncAPI for event documentation (Phase 2) - IMPLEMENTED

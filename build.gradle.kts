@@ -513,3 +513,296 @@ tasks.named<Wrapper>("wrapper") {
     gradleVersion = "9.0"
     distributionType = Wrapper.DistributionType.ALL
 }
+
+// =============================================================================
+// TOOL INSTALLATION TASKS
+// =============================================================================
+
+tasks.register("installRedocly") {
+    group = "tools"
+    description = "Install Redocly CLI locally in node_modules for API linting"
+    notCompatibleWithConfigurationCache("Executes external npm commands at task runtime")
+
+    doLast {
+        val nodeCheck = runCommand(
+            command = listOf(nodeExecutable, "--version"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (nodeCheck != 0) {
+            throw GradleException("Node.js is required. Install from https://nodejs.org/")
+        }
+
+        // Initialize package.json if it doesn't exist
+        val packageJson = project.file("package.json")
+        if (!packageJson.exists()) {
+            logger.lifecycle("Initializing package.json...")
+            val initResult = runCommand(
+                command = if (isWindowsHost) listOf("cmd", "/c", "npm", "init", "-y") else listOf("npm", "init", "-y"),
+                workingDirectory = project.rootDir,
+            )
+            if (initResult != 0) {
+                throw GradleException("Failed to initialize package.json")
+            }
+        }
+
+        // Install Redocly CLI
+        logger.lifecycle("Installing Redocly CLI...")
+        val installResult = runCommand(
+            command = if (isWindowsHost) listOf("cmd", "/c", "npm", "install", "--save-dev", "@redocly/cli@1.25.5") 
+                      else listOf("npm", "install", "--save-dev", "@redocly/cli@1.25.5"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (installResult != 0) {
+            throw GradleException("Failed to install Redocly CLI")
+        }
+
+        logger.lifecycle("✅ Redocly CLI installed successfully!")
+        logger.lifecycle("   Location: node_modules/.bin/redocly")
+        logger.lifecycle("   Run './gradlew lintApiSpecs' to lint OpenAPI specs")
+    }
+}
+
+tasks.register("installAsyncApiCli") {
+    group = "tools"
+    description = "Install AsyncAPI CLI locally for event API validation"
+    notCompatibleWithConfigurationCache("Executes external npm commands at task runtime")
+
+    doLast {
+        val nodeCheck = runCommand(
+            command = listOf(nodeExecutable, "--version"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (nodeCheck != 0) {
+            throw GradleException("Node.js is required. Install from https://nodejs.org/")
+        }
+
+        // Initialize package.json if it doesn't exist
+        val packageJson = project.file("package.json")
+        if (!packageJson.exists()) {
+            logger.lifecycle("Initializing package.json...")
+            val initResult = runCommand(
+                command = if (isWindowsHost) listOf("cmd", "/c", "npm", "init", "-y") else listOf("npm", "init", "-y"),
+                workingDirectory = project.rootDir,
+            )
+            if (initResult != 0) {
+                throw GradleException("Failed to initialize package.json")
+            }
+        }
+
+        // Install AsyncAPI CLI
+        logger.lifecycle("Installing AsyncAPI CLI...")
+        val installResult = runCommand(
+            command = if (isWindowsHost) listOf("cmd", "/c", "npm", "install", "--save-dev", "@asyncapi/cli@2.3.0") 
+                      else listOf("npm", "install", "--save-dev", "@asyncapi/cli@2.3.0"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (installResult != 0) {
+            throw GradleException("Failed to install AsyncAPI CLI")
+        }
+
+        logger.lifecycle("✅ AsyncAPI CLI installed successfully!")
+        logger.lifecycle("   Location: node_modules/.bin/asyncapi")
+        logger.lifecycle("   Run './gradlew validateAsyncApiSpecs' to validate event specs")
+    }
+}
+
+tasks.register("installApiTools") {
+    group = "tools"
+    description = "Install all API governance tools (Redocly + AsyncAPI CLI)"
+    dependsOn("installRedocly", "installAsyncApiCli")
+
+    doLast {
+        logger.lifecycle("""
+            
+            ✅ All API tools installed!
+            
+            Available commands:
+            - ./gradlew lintApiSpecs        # Lint OpenAPI specifications
+            - ./gradlew generateApiDocs     # Generate OpenAPI documentation
+            - ./gradlew validateAsyncApiSpecs # Validate AsyncAPI specifications
+            - ./gradlew generateAsyncApiDocs  # Generate AsyncAPI documentation
+            
+        """.trimIndent())
+    }
+}
+
+// =============================================================================
+// ASYNCAPI & EVENT GOVERNANCE TASKS
+// =============================================================================
+
+fun Project.asyncApiCliBaseCommand(): List<String> {
+    val localBinary = file("node_modules/.bin/${if (isWindowsHost) "asyncapi.cmd" else "asyncapi"}")
+    val globalBinary = if (isWindowsHost) "asyncapi.cmd" else "asyncapi"
+
+    return when {
+        localBinary.exists() -> {
+            listOf(localBinary.absolutePath)
+        }
+        commandAvailable(listOf(globalBinary, "--version"), rootDir) -> {
+            listOf(globalBinary)
+        }
+        else -> {
+            throw GradleException(
+                "AsyncAPI CLI not found. Install with './gradlew installAsyncApiCli' " +
+                    "or 'npm install -g @asyncapi/cli'."
+            )
+        }
+    }
+}
+
+fun Project.findAsyncApiSpecFiles(): List<File> {
+    return fileTree(file("config/asyncapi")) {
+        include("*.yaml")
+        include("*.yml")
+    }.files.sortedBy { it.name }
+}
+
+tasks.register("validateAsyncApiSpecs") {
+    group = "verification"
+    description = "Validate AsyncAPI specifications for event-driven APIs"
+    notCompatibleWithConfigurationCache("Executes external Node/AsyncAPI CLI processes at task runtime")
+
+    doFirst {
+        val nodeCheck = runCommand(
+            command = listOf(nodeExecutable, "--version"),
+            workingDirectory = project.rootDir,
+        )
+
+        if (nodeCheck != 0) {
+            throw GradleException("Node.js is required. Install from https://nodejs.org/")
+        }
+    }
+
+    doLast {
+        val specs = project.findAsyncApiSpecFiles()
+        if (specs.isEmpty()) {
+            logger.lifecycle("No AsyncAPI specs found in config/asyncapi/")
+            return@doLast
+        }
+
+        val asyncApiCommand = project.asyncApiCliBaseCommand()
+        var errors = 0
+
+        specs.forEach { spec ->
+            logger.lifecycle("Validating AsyncAPI spec: {}", spec.name)
+            val result = runCommand(
+                asyncApiCommand + listOf("validate", spec.absolutePath, "--fail-severity=error"),
+                workingDirectory = project.rootDir,
+                timeoutSeconds = 120,
+            )
+
+            if (result == 124) {
+                throw GradleException("Timed out validating ${spec.name}")
+            }
+            if (result != 0) {
+                logger.error("❌ Validation failed: {}", spec.name)
+                errors++
+            } else {
+                logger.lifecycle("✅ Valid: {}", spec.name)
+            }
+        }
+
+        if (errors > 0) {
+            throw GradleException("AsyncAPI validation failed for $errors spec(s)")
+        }
+
+        logger.lifecycle("✅ All {} AsyncAPI specs are valid!", specs.size)
+    }
+}
+
+tasks.register("generateAsyncApiDocs") {
+    group = "documentation"
+    description = "Generate HTML documentation from AsyncAPI specifications"
+    dependsOn("validateAsyncApiSpecs")
+    notCompatibleWithConfigurationCache("Executes external Node/AsyncAPI CLI processes at task runtime")
+
+    doLast {
+        val specs = project.findAsyncApiSpecFiles()
+        if (specs.isEmpty()) {
+            logger.lifecycle("No AsyncAPI specs found in config/asyncapi/")
+            return@doLast
+        }
+
+        project.file("docs/events").mkdirs()
+        val asyncApiCommand = project.asyncApiCliBaseCommand()
+
+        specs.forEach { spec ->
+            val baseName = spec.nameWithoutExtension.removePrefix("asyncapi-")
+            val outputDir = project.file("docs/events/$baseName")
+
+            logger.lifecycle("Generating event docs for {} from {}", baseName, spec.name)
+            val result = runCommand(
+                asyncApiCommand + listOf(
+                    "generate", "fromTemplate",
+                    spec.absolutePath,
+                    "@asyncapi/html-template",
+                    "-o", outputDir.absolutePath,
+                    "--force-write"
+                ),
+                workingDirectory = project.rootDir,
+                timeoutSeconds = 240,
+            )
+
+            if (result == 124) {
+                throw GradleException("Timed out generating docs for ${spec.name}")
+            }
+            if (result != 0) {
+                throw GradleException("Failed generating docs for ${spec.name}")
+            }
+        }
+
+        logger.lifecycle("✅ AsyncAPI documentation generated in docs/events/")
+    }
+}
+
+tasks.register("eventGovernance") {
+    group = "verification"
+    description = "Run complete event API governance workflow: validate + generate docs"
+    dependsOn("validateAsyncApiSpecs", "generateAsyncApiDocs")
+
+    doLast {
+        println(
+            """
+
+            ✅ Event API Governance Complete!
+
+            📋 AsyncAPI specs validated in: config/asyncapi/
+            📚 Event docs generated in: docs/events/
+
+            Next steps:
+            - Open docs/events/*/index.html in browser to view event docs
+            - Review validation output above
+            - Commit changes if specs meet governance rules
+
+            """.trimIndent(),
+        )
+    }
+}
+
+tasks.register("allApiGovernance") {
+    group = "verification"
+    description = "Run complete API governance for both REST (OpenAPI) and events (AsyncAPI)"
+    dependsOn("apiGovernance", "eventGovernance")
+
+    doLast {
+        println(
+            """
+
+            ✅ Complete API Governance Passed!
+
+            REST APIs:
+            - OpenAPI specs: **/build/openapi/
+            - REST docs: docs/api/
+
+            Event APIs:
+            - AsyncAPI specs: config/asyncapi/
+            - Event docs: docs/events/
+
+            """.trimIndent(),
+        )
+    }
+}
