@@ -11,14 +11,14 @@ This directory contains Architecture Decision Records documenting significant ar
 |-----|-------|--------|------|--------|------|
 | [ADR-001](ADR-001-modular-cqrs.md) | Modular CQRS Implementation | Draft (Not Implemented) | - | High | Core |
 | [ADR-002](ADR-002-database-per-context.md) | Database Per Bounded Context | Draft (Not Implemented) | - | High | Core |
-| [ADR-003](ADR-003-event-driven-integration.md) | Event-Driven Integration Between Contexts | Draft (Not Implemented) | - | High | Core |
+| [ADR-003](ADR-003-event-driven-integration.md) | Event-Driven Integration Between Contexts | Accepted (In Progress) | 2026-02-12 | High | Core |
 | [ADR-004](ADR-004-api-gateway-pattern.md) | API Gateway Pattern | Draft (Not Implemented) | - | Medium | Core |
 | [ADR-005](ADR-005-multi-tenancy-isolation.md) | Multi-Tenancy Data Isolation Strategy | Draft (Not Implemented) | - | High | Core |
 | [ADR-006](ADR-006-platform-shared-governance.md) | Platform-Shared Governance Rules | Draft (Not Implemented) | 2025-11-06 | Critical | Core |
 | [ADR-007](ADR-007-authn-authz-strategy.md) | Authentication & Authorization Strategy | Draft (Not Implemented) | 2025-11-08 | High | Core |
-| [ADR-008](ADR-008-cicd-network-resilience.md) | CI/CD Pipeline Architecture & Network Resilience | **Draft (Not Implemented)** | 2025-11-09 | **High** | Core |
+| [ADR-008](ADR-008-cicd-network-resilience.md) | CI/CD Pipeline Architecture & Network Resilience | **Accepted (Partially Implemented)** | 2026-02-12 | **High** | Core |
 | [ADR-009](ADR-009-financial-accounting-domain.md) | Financial Accounting Domain Strategy | Draft (Not Implemented) | 2025-11-13 | High | Core |
-| [ADR-010](ADR-010-rest-validation-standard.md) | REST Validation Standard - Enterprise Grade | Draft (Not Implemented) | 2025-11 | High | Core |
+| [ADR-010](ADR-010-rest-validation-standard.md) | REST Validation Standard - Enterprise Grade | Accepted (In Progress) | 2026-02-12 | High | Core |
 | [ADR-011](ADR-011-saga-pattern-compensating-transactions.md) | Saga Pattern & Compensating Transactions | Draft (Not Implemented) | 2026-02-01 | High | Core |
 | [ADR-012](ADR-012-tenant-customization-framework.md) | Tenant Customization Framework | Draft (Not Implemented) | 2026-02-01 | High | Core |
 | [ADR-013](ADR-013-external-integration-patterns-b2b-edi.md) | External Integration Patterns (B2B / EDI) | Draft (Not Implemented) | 2026-02-01 | High | Advanced |

@@ -1,11 +1,11 @@
 # ADR-003: Event-Driven Integration Between Contexts
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (In Progress)
 **Date**: 2025-11-05
 **Deciders**: Architecture Team
 **Tier**: Core
 **Tags**: events, integration, messaging, bounded-contexts
-**Updated**: 2026-02-03 (Kafka vendor selection & Redpanda local dev adoption)
+**Updated**: 2026-02-12 (AsyncAPI governance and event contract automation)
 
 ## Context
 Bounded contexts in our ERP platform need to share data and coordinate workflows without creating tight coupling. We must choose an integration strategy that supports eventual consistency, scalability, and maintains bounded context autonomy.
@@ -15,7 +15,7 @@ We also need to decide on the specific message broker implementation: which Kafk
 ## Decision
 We will use **asynchronous event-driven integration** as the primary communication pattern between bounded contexts, with **synchronous REST APIs** reserved for read-heavy, request-response scenarios.
 
-### Implementation Status: Planned (as of 2026-02-01)
+### Implementation Status: In Progress (as of 2026-02-12)
 
 **Implementation Notes:** This ADR defines the event-driven integration standard. Adoption will proceed incrementally as bounded contexts are implemented and integrated.
 
@@ -32,6 +32,24 @@ We will use **asynchronous event-driven integration** as the primary communicati
    - Events published in `*-shared/` modules
    - Versioned contracts with backward compatibility
    - No breaking changes without migration path
+
+### Event Contract Documentation & Governance (Implemented Baseline)
+
+- Async event contracts are now documented using AsyncAPI 3.0 specs under `config/asyncapi/`:
+  - `config/asyncapi/asyncapi-tenancy.yaml`
+  - `config/asyncapi/asyncapi-identity.yaml`
+- CI enforces event-contract quality via `.github/workflows/asyncapi-lint.yml`:
+  - spec validation with `@asyncapi/cli@2.3.0`
+  - linting with `@stoplight/spectral-cli@6.11.1`
+  - PR breaking-change checks against base branch
+  - documentation artifact generation on `main`
+- Local automation is available through Gradle tasks:
+  - `validateAsyncApiSpecs`
+  - `generateAsyncApiDocs`
+  - `eventGovernance`
+  - `allApiGovernance` (combined REST + event governance)
+
+These controls establish contract governance, but domain-by-domain event catalog expansion remains ongoing.
 
 3. **Message Broker Strategy**
 

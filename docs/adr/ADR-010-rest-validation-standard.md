@@ -1,7 +1,8 @@
 # ADR-010: REST Validation Standard - Enterprise Grade
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (In Progress)
 **Date**: 2025-11
+**Updated**: 2026-02-12
 **Tier**: Core
 **Impact Level**: Platform-Wide
 **Compliance**: SOX, GDPR, OWASP Top 10
@@ -1785,19 +1786,28 @@ This ADR integrates with:
 - **Error Message Quality**: < 5% support tickets due to unclear error messages
 
 ## Implementation Plan
-### Implementation Status (February 2026)
+### Implementation Status (February 2026, updated 2026-02-12)
 
-❌ **NOT IMPLEMENTED** - All phases are in design/planning stage.
+🟡 **PARTIALLY IMPLEMENTED** - REST contract governance baseline is live; full validation standard rollout remains in progress.
 
-| Phase | Status | Planned Features |
-|-------|--------|------------------|
-| Phase 1 – Foundation | ⬜ Not Started | Validated DTOs with @BeanParam, domain error codes, structured exceptions |
+**Implemented baseline (contract governance):**
+- OpenAPI generation from Quarkus resources via `quarkus-smallrye-openapi`
+- Build automation via `generateOpenApiSpecs`, `lintApiSpecs`, `generateApiDocs`, `apiGovernance`
+- CI governance in `.github/workflows/api-lint.yml` with pinned tool versions:
+  - Redocly CLI `1.25.5`
+  - Spectral CLI `6.11.1`
+  - oasdiff `1.10.23` for PR breaking-change detection
+- Static API docs generation and artifact publishing
+
+| Phase | Status | Planned / Delivered Features |
+|-------|--------|------------------------------|
+| Phase 1 – Foundation | 🟡 In Progress | Validated DTOs with @BeanParam, domain error codes, structured exceptions |
 | Phase 2 – Localization | ⬜ Not Started | Multi-language error messages, ValidationMessages.properties, ICU MessageFormat |
 | Phase 3 – Compliance | ⬜ Not Started | Audit logging, SIEM integration, SOX/GDPR compliance tracking |
 | Phase 4a – Observability | ⬜ Not Started | ValidationMetricsFilter, Grafana dashboards, Prometheus alerts |
 | Phase 4b – Security | ⬜ Not Started | Rate limiting, circuit breakers, input sanitization, DOS prevention |
 | Phase 4c – Performance | ⬜ Not Started | Entity existence caches, lazy validation, async validation for non-critical checks |
-| Phase 4d – Documentation | ⬜ Not Started | Developer guide, architecture overview, operations runbook, migration checklists |
+| Phase 4d – Documentation | ✅ Implemented (Baseline) | OpenAPI automation, linting, breaking-change checks, generated docs |
 
 ### 1. Validated DTOs (Foundational)
 - Every REST endpoint MUST use `@Valid @BeanParam` request objects
@@ -1879,3 +1889,4 @@ This ADR integrates with:
 ### Internal Documentation
 - docs/ERROR_HANDLING_ANALYSIS_AND_POLICY.md
 - docs/REST_VALIDATION_PATTERN.md
+- docs/API_GOVERNANCE.md

@@ -1,7 +1,8 @@
 # ADR-008: CI/CD Pipeline Architecture and Network Resilience
 
-**Status**: Draft (Not Implemented)
+**Status**: Accepted (Partially Implemented)
 **Date**: 2025-11-09
+**Updated**: 2026-02-12
 **Deciders**: Development Team, DevOps
 **Tier**: Core
 **Technical Story**: GitHub Actions pipeline optimization and reliability improvements
@@ -327,15 +328,31 @@ security-events: write
 ## Implementation Plan
 ### Implementation Status
 
-❌ **NOT IMPLEMENTED** - 2026-02-01
+🟡 **PARTIALLY IMPLEMENTED** - 2026-02-12
 
-All CI/CD features are in design/planning phase. No GitHub Actions workflows have been created yet.
+The CI governance baseline is implemented, especially for API contracts:
+
+- ✅ OpenAPI workflow: `.github/workflows/api-lint.yml`
+  - Generates OpenAPI specs
+  - Lints with Redocly and Spectral
+  - Enforces breaking-change checks on PRs (`oasdiff`)
+  - Generates static API docs on main/master
+- ✅ AsyncAPI workflow: `.github/workflows/asyncapi-lint.yml`
+  - Validates and lints AsyncAPI specs
+  - Performs event contract breaking-change checks on PRs
+  - Generates event docs artifacts
+- ✅ Version pinning for API-governance CLIs in CI (reproducible builds)
+
+Planned but not yet standardized across all CI lanes:
+- ⬜ Retry wrappers for all build/test lanes (`nick-fields/retry`)
+- ⬜ Global network resilience rollout for non-API workflows
+- ⬜ Full pipeline convergence into a single reliability policy
 
 ### Implementation Timeline
 
 - **Phase 1 (v1.0):** Basic CI setup - Sequential execution (~2024)
-- **Phase 2 (v2.0):** Industry-standard upgrade - Parallel execution, log gates, security (2025-11-09)
-- **Phase 3 (v3.0):** Network resilience - Retry logic, cache warmup, version pinning (2025-11-09)
+- **Phase 2 (v2.0):** API governance rollout - OpenAPI/AsyncAPI validation + breaking-change checks (Implemented Feb 2026)
+- **Phase 3 (v3.0):** Network resilience rollout - retry logic, cache warmup, version pinning across all jobs (In Progress)
 - **Future:** Potential nightly.yml optimization if network issues increase
 
 ### Decision Review
@@ -349,9 +366,9 @@ All CI/CD features are in design/planning phase. No GitHub Actions workflows hav
 - Technology updates (new GitHub Actions features)
 - Alternative solutions emerging
 
-**Last Updated:** 2025-11-09
-**Status:** ❌ NOT IMPLEMENTED
-**Version:** 3.0 (Planned)
+**Last Updated:** 2026-02-12
+**Status:** 🟡 PARTIALLY IMPLEMENTED
+**Version:** 3.1 (API governance baseline live; resilience rollout continuing)
 
 ## References
 
@@ -361,6 +378,7 @@ All CI/CD features are in design/planning phase. No GitHub Actions workflows hav
 - [ADR-020: Event-Driven Architecture](./ADR-020-event-driven-architecture-hybrid-policy.md) - EDA patterns tested in CI
 
 ### Internal Documentation
+- [API Governance Guide](../API_GOVERNANCE.md)
 - [CI Evolution Changelog](../CI_EVOLUTION_CHANGELOG.md)
 - [CI Troubleshooting Guide](../CI_TROUBLESHOOTING.md) - Detailed troubleshooting procedures
 - [Developer Advisory - Section 7](../DEVELOPER_ADVISORY.md#7-cicd--quality-gates-adr-008) - Local development workflow, CI failure interpretation, and quality gates

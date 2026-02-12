@@ -637,6 +637,7 @@ tasks.register("installApiTools") {
 fun Project.asyncApiCliBaseCommand(): List<String> {
     val localBinary = file("node_modules/.bin/${if (isWindowsHost) "asyncapi.cmd" else "asyncapi"}")
     val globalBinary = if (isWindowsHost) "asyncapi.cmd" else "asyncapi"
+    val allowNpxFallback = (findProperty("allowNpxAsyncApiFallback")?.toString()?.toBooleanStrictOrNull() == true)
 
     return when {
         localBinary.exists() -> {
@@ -645,10 +646,13 @@ fun Project.asyncApiCliBaseCommand(): List<String> {
         commandAvailable(listOf(globalBinary, "--version"), rootDir) -> {
             listOf(globalBinary)
         }
+        allowNpxFallback -> {
+            listOf(npxExecutable, "--yes", "@asyncapi/cli@2.3.0")
+        }
         else -> {
             throw GradleException(
-                "AsyncAPI CLI not found. Install with './gradlew installAsyncApiCli' " +
-                    "or 'npm install -g @asyncapi/cli'."
+                "AsyncAPI CLI not found. Install with './gradlew installAsyncApiCli', " +
+                    "'npm install -g @asyncapi/cli', or run with -PallowNpxAsyncApiFallback=true."
             )
         }
     }
