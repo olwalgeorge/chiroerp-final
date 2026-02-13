@@ -167,6 +167,8 @@ services:
       POSTGRES_PWD: ${TEMPORAL_DB_PASSWORD:-temporal}
       POSTGRES_SEEDS: postgres-temporal
       DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+    volumes:
+      - ./config/temporal-dynamicconfig:/etc/temporal/config/dynamicconfig:ro
     ports:
       - "7233:7233" # gRPC
       - "8233:8233" # Internal UI port
@@ -269,7 +271,8 @@ services:
       postgres-app:
         condition: service_healthy
     environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@chiroerp.local}
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@chiroerp.dev}
+      PGADMIN_CONFIG_CHECK_EMAIL_DELIVERABILITY: "False"
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
       PGADMIN_CONFIG_SERVER_MODE: "False"
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: "False"
@@ -278,6 +281,80 @@ services:
     volumes:
       - pgadmin-data:/var/lib/pgadmin
       - ./database/pgadmin-servers.json:/pgadmin4/servers.json:ro
+    networks:
+      - chiroerp-network
+    logging: *default-logging
+
+  # ============================================
+  # Application Services
+  # ============================================
+  
+  tenancy-core:
+    image: chiroerp/tenancy-core:latest
+    container_name: chiroerp-tenancy-core
+    restart: unless-stopped
+    depends_on:
+      postgres-app:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+    environment:
+      TENANCY_CORE_HTTP_PORT: 8071
+      POSTGRES_HOST: postgres-app
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: chiroerp
+      POSTGRES_TENANCY_USER: svc_tenancy_core
+      POSTGRES_TENANCY_PASSWORD: dev_password
+      POSTGRES_TENANCY_SCHEMA: tenancy_core
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      LOG_LEVEL: INFO
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8071:8071"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8071/q/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - chiroerp-network
+    logging: *default-logging
+
+  identity-core:
+    image: chiroerp/identity-core:latest
+    container_name: chiroerp-identity-core
+    restart: unless-stopped
+    depends_on:
+      postgres-app:
+        condition: service_healthy
+      redpanda:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      IDENTITY_CORE_HTTP_PORT: 8072
+      POSTGRES_HOST: postgres-app
+      POSTGRES_PORT: 5432
+      POSTGRES_DATABASE: chiroerp
+      POSTGRES_IDENTITY_USER: svc_identity_core
+      POSTGRES_IDENTITY_PASSWORD: dev_password
+      POSTGRES_IDENTITY_SCHEMA: identity_core
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: dev_password
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:9092
+      IDENTITY_JWT_SECRET: change-me-identity-jwt-secret-for-production
+      LOG_LEVEL: INFO
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8072:8072"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8072/q/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     networks:
       - chiroerp-network
     logging: *default-logging

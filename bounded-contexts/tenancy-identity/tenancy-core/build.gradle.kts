@@ -18,6 +18,9 @@ dependencies {
     implementation("io.quarkus:quarkus-micrometer")
     implementation("io.quarkus:quarkus-micrometer-registry-prometheus")
     implementation("org.apache.kafka:kafka-clients:3.8.0")
+    
+    // Container image support for Docker deployment
+    implementation("io.quarkus:quarkus-container-image-docker")
 
     // Enables @TestSecurity for controller-level security integration tests.
     testImplementation("io.quarkus:quarkus-test-security")

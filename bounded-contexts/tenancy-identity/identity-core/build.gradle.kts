@@ -20,6 +20,9 @@ dependencies {
     implementation("io.quarkus:quarkus-redis-client")
     implementation(libs.kafka.clients)
     implementation(libs.bcrypt)
+    
+    // Container image support for Docker deployment
+    implementation("io.quarkus:quarkus-container-image-docker")
 
     testImplementation(libs.testcontainers.postgresql)
     testImplementation(libs.testcontainers.kafka)
