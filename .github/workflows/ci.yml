@@ -370,7 +370,7 @@ jobs:
             --name redpanda \
             -p 9092:9092 \
             -p 9644:9644 \
-            docker.redpanda.com/vectorized/redpanda:latest \
+            docker.redpanda.com/redpandadata/redpanda:latest \
             redpanda start \
             --overprovisioned \
             --smp 1 \
