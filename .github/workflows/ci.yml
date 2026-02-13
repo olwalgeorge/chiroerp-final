@@ -739,19 +739,7 @@ jobs:
 
       - name: Create AsyncAPI ruleset
         run: |
-          cat > .spectral-asyncapi.yaml << 'EOF'
-          extends:
-            - "spectral:asyncapi"
-          rules:
-            asyncapi-info-description:
-              severity: error
-            asyncapi-operation-summary:
-              severity: warn
-            asyncapi-message-messageId:
-              severity: warn
-            asyncapi-schema-examples:
-              severity: hint
-          EOF
+          printf 'extends:\n  - "spectral:asyncapi"\n' > .spectral-asyncapi.yaml
 
       - name: Lint AsyncAPI specifications
         run: |
