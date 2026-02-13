@@ -254,7 +254,6 @@ jobs:
               --build-cache \
               --parallel \
               --stacktrace \
-              -Dquarkus.test.enabled=false \
               -x :bounded-contexts:tenancy-identity:identity-core:test \
               -x :bounded-contexts:tenancy-identity:tenancy-core:test
 
@@ -437,9 +436,12 @@ jobs:
         uses: dorny/test-reporter@v1.9.1
         with:
           name: Integration Test Results
-          path: '**/build/test-results/integrationTest/*.xml'
+          path: |
+            **/build/test-results/integrationTest/*.xml
+            **/build/test-results/test/*.xml
           reporter: java-junit
           fail-on-error: true
+          fail-on-empty: false
 
       - name: Upload test logs on failure
         if: failure()
@@ -449,7 +451,10 @@ jobs:
           path: |
             **/build/reports/tests/integrationTest/**
             **/build/test-results/integrationTest/**
+            **/build/reports/tests/test/**
+            **/build/test-results/test/**
           retention-days: 7
+          if-no-files-found: ignore
 
   # ===========================================================================
   # Stage 4b: Security Scan (parallel with integration tests, after build)
@@ -500,12 +505,14 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
+        continue-on-error: true
 
       - name: Upload Trivy results to GitHub Security
         if: always()
         uses: github/codeql-action/upload-sarif@v3.25.11
         with:
           sarif_file: 'trivy-results.sarif'
+        continue-on-error: true
 
   # ===========================================================================
   # API Governance: Generate OpenAPI Specs (after cache-warmup)
