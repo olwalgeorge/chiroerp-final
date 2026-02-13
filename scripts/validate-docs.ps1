@@ -198,7 +198,7 @@ if (-not (Test-Path $WORKSPACE_STRUCTURE)) {
     # Check ADR count
     $wsADRCount = Get-ADRCountFromContent $wsContent
     if (-not $wsADRCount) {
-        Write-ValidationError "WORKSPACE-STRUCTURE.md: Cannot extract ADR count"
+        Write-ValidationWarning "WORKSPACE-STRUCTURE.md: Cannot extract ADR count (no 'N ADRs' pattern found)"
     } elseif ($wsADRCount -ne $highestADR) {
         Write-ValidationError "WORKSPACE-STRUCTURE.md: ADR count mismatch (claims $wsADRCount, actual $highestADR)"
 

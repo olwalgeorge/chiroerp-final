@@ -291,7 +291,9 @@ jobs:
           retry_wait_seconds: 10
           command: |
             npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }}
-            npm install -g @stoplight/spectral-rulesets@${{ env.SPECTRAL_CLI_VERSION }}
+            # Install rulesets locally so Spectral can resolve asyncapi:recommended
+            npm init -y
+            npm install @stoplight/spectral-rulesets
             spectral --version
 
       - name: Create AsyncAPI ruleset
