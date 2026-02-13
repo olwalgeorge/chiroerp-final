@@ -390,10 +390,11 @@ jobs:
           timeout 30 bash -c 'until pg_isready -h localhost -p 5433; do sleep 1; done'
 
           echo "⏳ Waiting for Redis..."
-          timeout 30 bash -c 'until redis-cli -h localhost ping; do sleep 1; done'
+          timeout 30 bash -c 'until (echo PING | nc -w 1 localhost 6379 | grep -q PONG); do sleep 1; done'
 
           echo "⏳ Waiting for Kafka (Redpanda)..."
-          sleep 10
+          timeout 30 bash -c 'until nc -z localhost 9092; do sleep 1; done'
+          sleep 5
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
