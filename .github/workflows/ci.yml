@@ -735,15 +735,13 @@ jobs:
           retry_wait_seconds: 10
           command: |
             npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }}
-            npm init -y
-            npm install @stoplight/spectral-rulesets
             spectral --version
 
       - name: Create AsyncAPI ruleset
         run: |
           cat > .spectral-asyncapi.yaml << 'EOF'
           extends:
-            - "asyncapi:recommended"
+            - "spectral:asyncapi"
           rules:
             asyncapi-info-description:
               severity: error
