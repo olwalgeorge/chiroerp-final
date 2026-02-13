@@ -18,7 +18,7 @@ import java.util.Properties
 class TenantKafkaEventPublisher(
     @ConfigProperty(name = "kafka.bootstrap.servers")
     private val bootstrapServers: String,
-    @ConfigProperty(name = "chiroerp.messaging.tenant-events.topic", defaultValue = "tenancy.tenant.lifecycle")
+    @ConfigProperty(name = "chiroerp.messaging.tenant-events.topic", defaultValue = "chiroerp.tenancy.events")
     private val topic: String,
 ) : TenantOutboxDispatcher {
     private val logger = Logger.getLogger(TenantKafkaEventPublisher::class.java)

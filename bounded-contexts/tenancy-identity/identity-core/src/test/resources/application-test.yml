@@ -15,3 +15,9 @@ quarkus:
     locations: classpath:db/migration
     schemas: ${POSTGRES_IDENTITY_SCHEMA:identity_core}
     table: flyway_history_identity_core_test
+
+chiroerp:
+  messaging:
+    tenancy-events:
+      consumer:
+        enabled: false

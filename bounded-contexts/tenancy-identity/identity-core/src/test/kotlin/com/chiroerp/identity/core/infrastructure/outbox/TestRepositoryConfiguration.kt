@@ -4,12 +4,17 @@ import com.chiroerp.identity.core.domain.model.*
 import com.chiroerp.identity.core.domain.port.SessionRepository
 import com.chiroerp.identity.core.domain.port.UserRepository
 import com.chiroerp.tenancy.shared.TenantId
+import io.quarkus.arc.properties.IfBuildProperty
 import jakarta.enterprise.context.ApplicationScoped
 import jakarta.enterprise.inject.Produces
 import java.time.Instant
 import java.util.*
 
 @ApplicationScoped
+@IfBuildProperty(
+    name = "chiroerp.identity.tests.in-memory-repositories.enabled",
+    stringValue = "true",
+)
 class TestRepositoryConfiguration {
 
     @Produces

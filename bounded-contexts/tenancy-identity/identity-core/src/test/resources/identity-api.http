@@ -1,0 +1,159 @@
+### ChiroERP Identity Core API - Live Testing
+### Requires REST Client extension (humao.rest-client)
+### Run against: http://localhost:8072
+
+@baseUrl = http://localhost:8072
+@contentType = application/json
+
+### ============================================
+### Health & Info Endpoints
+### ============================================
+
+### Health Check
+GET {{baseUrl}}/q/health
+
+### OpenAPI Spec
+GET {{baseUrl}}/q/openapi
+
+### Metrics (Prometheus)
+GET {{baseUrl}}/q/metrics
+
+### ============================================
+### Authentication Endpoints
+### ============================================
+
+### Register a new user
+# @name registerUser
+POST {{baseUrl}}/api/auth/register
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "email": "admin@acme-chiro.localhost",
+  "password": "SecureP@ss123!",
+  "firstName": "John",
+  "lastName": "Smith",
+  "roles": ["ADMIN"]
+}
+
+### Login
+# @name login
+POST {{baseUrl}}/api/auth/login
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "email": "admin@acme-chiro.localhost",
+  "password": "SecureP@ss123!"
+}
+
+### Store the JWT token from login response
+@accessToken = {{login.response.body.accessToken}}
+
+### Refresh token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "refreshToken": "{{login.response.body.refreshToken}}"
+}
+
+### Logout
+POST {{baseUrl}}/api/auth/logout
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+### ============================================
+### User Management (Authenticated)
+### ============================================
+
+### Get current user profile
+GET {{baseUrl}}/api/users/me
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+### List users (Admin only)
+GET {{baseUrl}}/api/users?offset=0&limit=20
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+### Get user by ID
+@userId = {{registerUser.response.body.id}}
+GET {{baseUrl}}/api/users/{{userId}}
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+### Update user
+PATCH {{baseUrl}}/api/users/{{userId}}
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+{
+  "firstName": "Jonathan",
+  "lastName": "Smith-Jones"
+}
+
+### ============================================
+### MFA Operations
+### ============================================
+
+### Enable MFA (TOTP)
+POST {{baseUrl}}/api/users/me/mfa/enable
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+### Verify MFA setup
+POST {{baseUrl}}/api/users/me/mfa/verify
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+{
+  "code": "123456"
+}
+
+### Disable MFA
+POST {{baseUrl}}/api/users/me/mfa/disable
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+{
+  "code": "123456"
+}
+
+### ============================================
+### Password Management
+### ============================================
+
+### Request password reset
+POST {{baseUrl}}/api/auth/password/reset-request
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "email": "admin@acme-chiro.localhost"
+}
+
+### Reset password (with token from email)
+POST {{baseUrl}}/api/auth/password/reset
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "token": "reset-token-from-email",
+  "newPassword": "NewSecureP@ss456!"
+}
+
+### Change password (authenticated)
+POST {{baseUrl}}/api/users/me/password
+Content-Type: {{contentType}}
+Authorization: Bearer {{accessToken}}
+X-Tenant-ID: default
+
+{
+  "currentPassword": "SecureP@ss123!",
+  "newPassword": "EvenMoreSecure@789!"
+}

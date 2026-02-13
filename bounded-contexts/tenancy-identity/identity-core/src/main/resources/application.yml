@@ -45,6 +45,9 @@ quarkus:
     path: /q/openapi
     store-schema-directory: build/openapi
     store-schema-file-name: openapi
+  swagger-ui:
+    path: /q/swagger-ui
+    always-include: true
 
 mp:
   openapi:
@@ -61,9 +64,6 @@ mp:
           license:
             name: Proprietary
         operationIdStrategy: METHOD
-  swagger-ui:
-    path: /q/swagger-ui
-    always-include: false
 
 kafka:
   bootstrap:
@@ -109,3 +109,22 @@ chiroerp:
         metrics-refresh-interval: ${IDENTITY_OUTBOX_METRICS_REFRESH_INTERVAL:30s}
         pending-threshold: ${IDENTITY_OUTBOX_PENDING_THRESHOLD:500}
         dead-threshold: ${IDENTITY_OUTBOX_DEAD_THRESHOLD:0}
+    tenancy-events:
+      topic: ${TENANCY_EVENTS_TOPIC:chiroerp.tenancy.events}
+      consumer:
+        enabled: ${TENANCY_EVENTS_CONSUMER_ENABLED:true}
+        group-id: ${TENANCY_EVENTS_CONSUMER_GROUP_ID:identity-core-tenancy-events}
+        poll-interval: ${TENANCY_EVENTS_CONSUMER_POLL_INTERVAL:2s}
+        poll-timeout-ms: ${TENANCY_EVENTS_CONSUMER_POLL_TIMEOUT_MS:750}
+        max-records: ${TENANCY_EVENTS_CONSUMER_MAX_RECORDS:100}
+        auto-offset-reset: ${TENANCY_EVENTS_CONSUMER_AUTO_OFFSET_RESET:latest}
+      bootstrap-admin:
+        enabled: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_ENABLED:true}
+        email-prefix: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_EMAIL_PREFIX:admin}
+        first-name: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_FIRST_NAME:Tenant}
+        last-name: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_LAST_NAME:Admin}
+        locale: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_LOCALE:en-US}
+        time-zone-id: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_TIMEZONE:UTC}
+        role-code: ${TENANCY_EVENTS_BOOTSTRAP_ADMIN_ROLE_CODE:TENANT_ADMIN}
+      user-sync:
+        batch-size: ${TENANCY_EVENTS_USER_SYNC_BATCH_SIZE:200}

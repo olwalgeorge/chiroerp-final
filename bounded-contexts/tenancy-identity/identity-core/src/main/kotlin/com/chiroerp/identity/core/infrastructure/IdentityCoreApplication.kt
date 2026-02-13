@@ -14,4 +14,5 @@ class IdentityCoreApplication
 
 fun main(args: Array<String>) {
     Quarkus.run(*args)
+    Quarkus.waitForExit()
 }

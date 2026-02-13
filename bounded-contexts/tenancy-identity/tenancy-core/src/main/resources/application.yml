@@ -41,6 +41,9 @@ quarkus:
     path: /q/openapi
     store-schema-directory: build/openapi
     store-schema-file-name: openapi
+  swagger-ui:
+    path: /q/swagger-ui
+    always-include: true
 
 mp:
   openapi:
@@ -57,9 +60,6 @@ mp:
           license:
             name: Proprietary
         operationIdStrategy: METHOD
-  swagger-ui:
-    path: /q/swagger-ui
-    always-include: false
 
 kafka:
   bootstrap:
@@ -83,7 +83,7 @@ chiroerp:
         enabled: ${TENANCY_PROVISIONING_METRICS_ENABLED:true}
   messaging:
     tenant-events:
-      topic: ${TENANCY_EVENTS_TOPIC:tenancy.tenant.lifecycle}
+      topic: ${TENANCY_EVENTS_TOPIC:chiroerp.tenancy.events}
       outbox:
         enabled: ${TENANCY_OUTBOX_ENABLED:true}
         batch-size: ${TENANCY_OUTBOX_BATCH_SIZE:100}

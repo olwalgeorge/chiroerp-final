@@ -92,6 +92,7 @@ class TenantController(
     )
     fun getTenant(
         @PathParam("id") rawTenantId: String,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse {
         val tenantId = parseTenantId(rawTenantId)
@@ -113,6 +114,7 @@ class TenantController(
     )
     fun getTenantByDomain(
         @PathParam("domain") rawDomain: String,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse {
         val tenant = try {
@@ -135,6 +137,7 @@ class TenantController(
     fun listTenants(
         @DefaultValue("0") @QueryParam("offset") offset: Int,
         @DefaultValue("50") @QueryParam("limit") limit: Int,
+        @Parameter(required = false, description = "Required for tenant-admin (returns only their tenant); ignored for platform-admin (returns all)")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantListResponse {
         if (securityIdentity.hasRole("tenant-admin") && !securityIdentity.hasRole("platform-admin")) {
@@ -178,6 +181,7 @@ class TenantController(
     fun updateTenantSettings(
         @PathParam("id") rawTenantId: String,
         @Valid request: UpdateTenantSettingsRequest,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse {
         val tenantId = parseTenantId(rawTenantId)
@@ -203,6 +207,7 @@ class TenantController(
     )
     fun activateTenant(
         @PathParam("id") rawTenantId: String,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse = executeLifecycleOperation(
         rawTenantId = rawTenantId,
@@ -224,6 +229,7 @@ class TenantController(
     fun suspendTenant(
         @PathParam("id") rawTenantId: String,
         @Valid request: SuspendTenantRequest,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse = executeLifecycleOperation(
         rawTenantId = rawTenantId,
@@ -246,6 +252,7 @@ class TenantController(
     fun terminateTenant(
         @PathParam("id") rawTenantId: String,
         @Valid request: TerminateTenantRequest,
+        @Parameter(required = false, description = "Required for tenant-admin to scope access; ignored for platform-admin")
         @HeaderParam("X-Tenant-ID") callerTenantIdHeader: String?,
     ): TenantResponse = executeLifecycleOperation(
         rawTenantId = rawTenantId,
@@ -266,9 +273,13 @@ class TenantController(
         APIResponse(responseCode = "404", description = "Unable to resolve tenant"),
     )
     fun resolveTenant(
+        @Parameter(required = false, description = "Domain to resolve tenant from")
         @QueryParam("domain") queryDomain: String?,
+        @Parameter(required = false, description = "Direct tenant ID if known")
         @HeaderParam("X-Tenant-ID") headerTenantId: String?,
+        @Parameter(required = false, description = "Tenant domain from header")
         @HeaderParam("X-Tenant-Domain") headerTenantDomain: String?,
+        @Parameter(required = false, description = "Host header for subdomain-based resolution")
         @HeaderParam("Host") hostHeader: String?,
     ): TenantResolutionResponse {
         val resolution = try {

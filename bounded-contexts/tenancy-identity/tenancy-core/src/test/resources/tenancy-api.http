@@ -1,0 +1,103 @@
+### ChiroERP Tenancy Core API - Live Testing
+### Requires REST Client extension (humao.rest-client)
+### Run against: http://localhost:8071
+
+@baseUrl = http://localhost:8071
+@contentType = application/json
+
+### ============================================
+### Health & Info Endpoints
+### ============================================
+
+### Health Check
+GET {{baseUrl}}/q/health
+
+### OpenAPI Spec
+GET {{baseUrl}}/q/openapi
+
+### Metrics (Prometheus)
+GET {{baseUrl}}/q/metrics
+
+### ============================================
+### Tenant CRUD Operations
+### ============================================
+
+### Create a new tenant
+# @name createTenant
+POST {{baseUrl}}/api/tenants
+Content-Type: {{contentType}}
+
+{
+  "name": "Acme Chiropractic",
+  "domain": "acme-chiro.localhost",
+  "tier": "STANDARD",
+  "dataResidencyCountry": "US",
+  "locale": "en-US",
+  "timezone": "America/New_York",
+  "currency": "USD",
+  "featureFlags": {
+    "billing_enabled": true,
+    "mfa_required": false
+  },
+  "customConfiguration": {
+    "theme": "default"
+  }
+}
+
+### List all tenants (paginated)
+GET {{baseUrl}}/api/tenants?offset=0&limit=10
+X-Tenant-ID: default
+
+### Get tenant by ID
+# Replace {tenantId} with actual UUID from createTenant response
+@tenantId = {{createTenant.response.headers.Location}}
+GET {{baseUrl}}/api/tenants/{{tenantId}}
+X-Tenant-ID: default
+
+### Get tenant by domain
+GET {{baseUrl}}/api/tenants/by-domain/acme-chiro.localhost
+X-Tenant-ID: default
+
+### Resolve tenant from domain
+GET {{baseUrl}}/api/tenants/resolve?domain=acme-chiro.localhost
+X-Tenant-ID: default
+
+### ============================================
+### Tenant Lifecycle Operations
+### ============================================
+
+### Activate a tenant
+POST {{baseUrl}}/api/tenants/{{tenantId}}/activate
+X-Tenant-ID: default
+
+### Update tenant settings
+PATCH {{baseUrl}}/api/tenants/{{tenantId}}/settings
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "locale": "en-GB",
+  "timezone": "Europe/London",
+  "featureFlags": {
+    "billing_enabled": true,
+    "mfa_required": true
+  }
+}
+
+### Suspend a tenant
+POST {{baseUrl}}/api/tenants/{{tenantId}}/suspend
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "reason": "Non-payment - 30 days overdue"
+}
+
+### Terminate a tenant
+POST {{baseUrl}}/api/tenants/{{tenantId}}/terminate
+Content-Type: {{contentType}}
+X-Tenant-ID: default
+
+{
+  "reason": "Customer requested account closure"
+}
