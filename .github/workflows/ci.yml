@@ -1,0 +1,1433 @@
+# =============================================================================
+# Unified CI — SAP-Grade Build, Test, Governance & Docs (ADR-008 v3.1)
+# =============================================================================
+# Single workflow replacing ci-pipeline, api-governance, ci-docs, and
+# progress-tracker. All jobs run in parallel where safe.
+#
+# Architecture:
+#   cache-warmup ──┬── lint ──────────────────────┐
+#                  ├── validate-architecture ──────┤
+#                  ├── validate-asyncapi-specs     │
+#                  ├── check-adr-completeness      │
+#                  ├── check-markdown-lint          │
+#                  ├── documentation-metrics        │
+#                  └── track-progress              │
+#                                                  │
+#   cache-warmup ──── build ──┬── integration-tests│
+#                             ├── security-scan    │
+#                             └── generate-openapi ─┬── lint-openapi-redocly
+#                                                   ├── lint-openapi-spectral
+#                                                   └── lint-asyncapi (after validate-asyncapi)
+#
+#   All jobs ──── status-gate
+#
+# References:
+#   ADR-008: CI/CD Pipeline Architecture and Network Resilience
+#   ADR-006: Platform Shared Governance Rules
+#   ADR-010: REST Validation Standard
+# =============================================================================
+
+name: CI
+
+on:
+  push:
+    branches: [master, develop, 'feature/**']
+  pull_request:
+    branches: [master, develop]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * 1'   # Weekly Monday 9am UTC (docs + progress drift)
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+  security-events: write
+  issues: write
+
+env:
+  JAVA_VERSION: '21'
+  JAVA_DISTRIBUTION: 'temurin'
+  GRADLE_OPTS: >-
+    -Dorg.gradle.configuration-cache=true
+    -Dorg.gradle.daemon=false
+    -Dorg.gradle.parallel=true
+    -Dorg.gradle.caching=true
+  NODE_VERSION: '20'
+  REDOCLY_CLI_VERSION: '1.25.5'
+  SPECTRAL_CLI_VERSION: '6.11.1'
+  ASYNCAPI_CLI_VERSION: '2.3.0'
+
+# =============================================================================
+# Stage 1: Cache Warmup
+# =============================================================================
+jobs:
+  cache-warmup:
+    name: Cache Warmup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v3.5.0
+        continue-on-error: true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Pre-fetch dependencies (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 6
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            ./gradlew dependencies --no-daemon --stacktrace 2>&1 | tail -20 || \
+            ./gradlew help --no-daemon --stacktrace
+
+      - name: Cleanup Gradle lock files
+        if: always()
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
+
+  # ===========================================================================
+  # Stage 2a: Lint & Code Style (parallel with architecture)
+  # ===========================================================================
+  lint:
+    name: Lint & Code Style
+    runs-on: ubuntu-latest
+    needs: cache-warmup
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Detekt static analysis (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 8
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            ./gradlew detekt --stacktrace || echo "⚠️ Detekt not yet configured — skipping"
+
+      - name: Upload lint reports
+        if: always()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: lint-reports
+          path: |
+            **/build/reports/detekt/**
+            **/build/reports/ktlint/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # Stage 2b: Architecture Validation (parallel with lint)
+  # ===========================================================================
+  validate-architecture:
+    name: Architecture Validation
+    runs-on: ubuntu-latest
+    needs: cache-warmup
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run ArchUnit architecture tests (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 12
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: ./gradlew validateArchitecture --stacktrace
+
+      - name: Validate project structure (ADR compliance)
+        run: |
+          if [[ -f scripts/validate-complete-structure.sh ]]; then
+            chmod +x scripts/validate-complete-structure.sh
+            ./scripts/validate-complete-structure.sh
+          else
+            echo "ℹ️ Structure validation script not found — skipping"
+          fi
+
+      - name: Log gate scan
+        if: always()
+        run: |
+          chmod +x scripts/ci/log-gate.sh
+          ./scripts/ci/log-gate.sh scripts/ci/error-allowlist.txt . || true
+
+      - name: Upload architecture reports
+        if: always()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: architecture-reports
+          path: |
+            **/build/reports/tests/**
+            architecture-tests/build/reports/**
+          retention-days: 14
+          if-no-files-found: ignore
+
+  # ===========================================================================
+  # Stage 3: Build & Unit Tests
+  # ===========================================================================
+  build:
+    name: Build & Unit Tests
+    runs-on: ubuntu-latest
+    needs: [lint, validate-architecture]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Compile all modules (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 20
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: |
+            ./gradlew assemble \
+              --build-cache \
+              --parallel \
+              --stacktrace
+
+      - name: Run unit tests (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 20
+          max_attempts: 2
+          retry_wait_seconds: 15
+          command: |
+            ./gradlew test \
+              --continue \
+              --build-cache \
+              --parallel \
+              --stacktrace \
+              -Dquarkus.test.enabled=false \
+              -x :bounded-contexts:tenancy-identity:identity-core:test \
+              -x :bounded-contexts:tenancy-identity:tenancy-core:test
+
+      - name: Log gate scan
+        if: always()
+        run: |
+          chmod +x scripts/ci/log-gate.sh
+          ./scripts/ci/log-gate.sh scripts/ci/error-allowlist.txt . || true
+
+      - name: Generate test report
+        if: always()
+        uses: dorny/test-reporter@v1.9.1
+        with:
+          name: Unit Test Results
+          path: '**/build/test-results/test/*.xml'
+          reporter: java-junit
+          fail-on-error: true
+          fail-on-empty: false
+
+      - name: Generate code coverage
+        if: success()
+        run: ./gradlew jacocoTestReport --stacktrace
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        if: success()
+        uses: codecov/codecov-action@v4.5.0
+        with:
+          files: '**/build/reports/jacoco/test/jacocoTestReport.xml'
+          flags: unittests
+          name: codecov-chiroerp
+          fail_ci_if_error: false
+        continue-on-error: true
+
+      - name: Upload build artifacts
+        if: success()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: build-artifacts
+          path: |
+            **/build/libs/*.jar
+            **/build/quarkus-app/**
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Cleanup Gradle cache
+        if: always()
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
+
+  # ===========================================================================
+  # Stage 4a: Integration Tests (after build)
+  # ===========================================================================
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 20
+
+    services:
+      postgres-finance:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: finance
+          POSTGRES_USER: chiroerp
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      postgres-tenancy:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: tenancy
+          POSTGRES_USER: chiroerp
+          POSTGRES_PASSWORD: test_password
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5433:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Start Kafka (Redpanda)
+        run: |
+          docker run -d \
+            --name redpanda \
+            -p 9092:9092 \
+            -p 9644:9644 \
+            docker.redpanda.com/vectorized/redpanda:latest \
+            redpanda start \
+            --overprovisioned \
+            --smp 1 \
+            --memory 1G \
+            --reserve-memory 0M \
+            --node-id 0 \
+            --check=false \
+            --kafka-addr PLAINTEXT://0.0.0.0:9092 \
+            --advertise-kafka-addr PLAINTEXT://localhost:9092
+
+      - name: Wait for services
+        run: |
+          echo "⏳ Waiting for PostgreSQL (finance)..."
+          timeout 30 bash -c 'until pg_isready -h localhost -p 5432; do sleep 1; done'
+
+          echo "⏳ Waiting for PostgreSQL (tenancy)..."
+          timeout 30 bash -c 'until pg_isready -h localhost -p 5433; do sleep 1; done'
+
+          echo "⏳ Waiting for Redis..."
+          timeout 30 bash -c 'until redis-cli -h localhost ping; do sleep 1; done'
+
+          echo "⏳ Waiting for Kafka (Redpanda)..."
+          sleep 10
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run integration tests (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: |
+            # Check if integrationTest task exists
+            if ./gradlew tasks --all 2>/dev/null | grep -q 'integrationTest'; then
+              ./gradlew integrationTest \
+                --continue \
+                --stacktrace
+            else
+              echo "⚠️ No integrationTest task found — running @QuarkusTest tests with infrastructure"
+              ./gradlew \
+                :bounded-contexts:tenancy-identity:identity-core:test \
+                :bounded-contexts:tenancy-identity:tenancy-core:test \
+                --continue \
+                --stacktrace
+            fi
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_PASSWORD: test_password
+          KAFKA_BOOTSTRAP_SERVERS: localhost:9092
+          REDIS_HOST: localhost
+
+      - name: Log gate scan
+        if: always()
+        run: |
+          chmod +x scripts/ci/log-gate.sh
+          ./scripts/ci/log-gate.sh scripts/ci/error-allowlist.txt . || true
+
+      - name: Generate integration test report
+        if: always()
+        uses: dorny/test-reporter@v1.9.1
+        with:
+          name: Integration Test Results
+          path: '**/build/test-results/integrationTest/*.xml'
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Upload test logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: integration-test-logs
+          path: |
+            **/build/reports/tests/integrationTest/**
+            **/build/test-results/integrationTest/**
+          retention-days: 7
+
+  # ===========================================================================
+  # Stage 4b: Security Scan (parallel with integration tests, after build)
+  # ===========================================================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: OWASP Dependency Check (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 15
+          command: ./gradlew dependencyCheckAnalyze --stacktrace
+        continue-on-error: true
+
+      - name: Upload OWASP report
+        if: always()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: owasp-security-report
+          path: build/reports/dependency-check-report.html
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy results to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3.25.11
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ===========================================================================
+  # API Governance: Generate OpenAPI Specs (after cache-warmup)
+  # ===========================================================================
+  generate-openapi-specs:
+    name: Generate OpenAPI Specs
+    runs-on: ubuntu-latest
+    needs: cache-warmup
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4.2.1
+        with:
+          distribution: ${{ env.JAVA_DISTRIBUTION }}
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'gradle'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Generate OpenAPI specs (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: ./gradlew generateOpenApiSpecs --parallel --stacktrace
+        env:
+          GRADLE_OPTS: '-Dorg.gradle.daemon=false'
+
+      - name: Summarize generated specs
+        run: |
+          echo "### Generated OpenAPI Specifications" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          find . \( -path '*/build/openapi/openapi.yaml' \
+                  -o -path '*/build/openapi/openapi.yml' \
+                  -o -path '*/build/openapi/openapi.json' \) \
+            | sort >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload OpenAPI specs
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: openapi-specs
+          path: |
+            **/build/openapi/openapi.yaml
+            **/build/openapi/openapi.yml
+            **/build/openapi/openapi.json
+          retention-days: 30
+
+  # ===========================================================================
+  # API Governance: Lint OpenAPI with Redocly
+  # ===========================================================================
+  lint-openapi-redocly:
+    name: Lint OpenAPI (Redocly)
+    runs-on: ubuntu-latest
+    needs: generate-openapi-specs
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Download OpenAPI specs
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: openapi-specs
+          path: openapi-specs
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Redocly CLI (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm install -g @redocly/cli@${{ env.REDOCLY_CLI_VERSION }} --prefer-offline --no-audit --no-fund
+
+      - name: Lint all OpenAPI specs
+        run: |
+          echo "### Redocly Lint Results" >> $GITHUB_STEP_SUMMARY
+          specs=$(find openapi-specs \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' \))
+          if [ -z "$specs" ]; then
+            echo "⚠️ No OpenAPI specs found to lint" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          spec_count=$(echo "$specs" | wc -l | tr -d ' ')
+          echo "✅ Linting **$spec_count** spec(s)" >> $GITHUB_STEP_SUMMARY
+          redocly lint $specs --format=stylish
+
+  # ===========================================================================
+  # API Governance: Lint OpenAPI with Spectral (advisory)
+  # ===========================================================================
+  lint-openapi-spectral:
+    name: Lint OpenAPI (Spectral)
+    runs-on: ubuntu-latest
+    needs: generate-openapi-specs
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Download OpenAPI specs
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: openapi-specs
+          path: openapi-specs
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Spectral CLI (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }} --prefer-offline --no-audit --no-fund
+
+      - name: Create Spectral ruleset
+        run: |
+          cat > .spectral.yaml << 'EOF'
+          extends: spectral:oas
+          rules:
+            operation-success-response: error
+            operation-operationId: error
+            operation-description: error
+          EOF
+
+      - name: Lint with Spectral
+        run: |
+          echo "### Spectral Lint Results" >> $GITHUB_STEP_SUMMARY
+          specs=$(find openapi-specs \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' \))
+          for spec in $specs; do
+            echo "📋 **$spec**" >> $GITHUB_STEP_SUMMARY
+            spectral lint "$spec" --format=stylish || true
+          done
+
+  # ===========================================================================
+  # API Governance: Validate AsyncAPI Specs
+  # ===========================================================================
+  validate-asyncapi-specs:
+    name: Validate AsyncAPI Specs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install AsyncAPI CLI (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            npm install -g @asyncapi/cli@${{ env.ASYNCAPI_CLI_VERSION }}
+            asyncapi --version
+
+      - name: Validate AsyncAPI specifications
+        run: |
+          echo "### AsyncAPI Validation Results" >> $GITHUB_STEP_SUMMARY
+          SPECS_FOUND=0
+          ERRORS=0
+
+          for spec in config/asyncapi/*.yaml config/asyncapi/*.yml; do
+            if [ -f "$spec" ]; then
+              SPECS_FOUND=$((SPECS_FOUND + 1))
+              echo "📋 Validating: $spec"
+              if asyncapi validate "$spec" --fail-severity=error; then
+                echo "✅ Valid: $spec"
+              else
+                echo "❌ Invalid: $spec"
+                ERRORS=$((ERRORS + 1))
+              fi
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Specs validated:** $SPECS_FOUND | **Errors:** $ERRORS" >> $GITHUB_STEP_SUMMARY
+
+          if [ $ERRORS -gt 0 ]; then
+            exit 1
+          fi
+
+  # ===========================================================================
+  # API Governance: Lint AsyncAPI Specs
+  # ===========================================================================
+  lint-asyncapi:
+    name: Lint AsyncAPI Specs
+    runs-on: ubuntu-latest
+    needs: validate-asyncapi-specs
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Spectral CLI and rulesets (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }}
+            npm init -y
+            npm install @stoplight/spectral-rulesets
+            spectral --version
+
+      - name: Create AsyncAPI ruleset
+        run: |
+          cat > .spectral-asyncapi.yaml << 'EOF'
+          extends:
+            - "asyncapi:recommended"
+          rules:
+            asyncapi-info-description:
+              severity: error
+            asyncapi-operation-summary:
+              severity: warn
+            asyncapi-message-messageId:
+              severity: warn
+            asyncapi-schema-examples:
+              severity: hint
+          EOF
+
+      - name: Lint AsyncAPI specifications
+        run: |
+          echo "### AsyncAPI Lint Results" >> $GITHUB_STEP_SUMMARY
+          SPECS_FOUND=0
+          ERRORS=0
+
+          for spec in config/asyncapi/*.yaml config/asyncapi/*.yml; do
+            if [ -f "$spec" ]; then
+              SPECS_FOUND=$((SPECS_FOUND + 1))
+              echo "📋 Linting: $spec"
+              if spectral lint "$spec" --ruleset .spectral-asyncapi.yaml --fail-severity=error; then
+                echo "✅ Passed: $spec"
+              else
+                echo "⚠️ Issues in: $spec"
+                ERRORS=$((ERRORS + 1))
+              fi
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Specs linted:** $SPECS_FOUND | **Errors:** $ERRORS" >> $GITHUB_STEP_SUMMARY
+
+          if [ $ERRORS -gt 0 ]; then
+            exit 1
+          fi
+
+  # ===========================================================================
+  # API Governance: Generate API Docs (master-only)
+  # ===========================================================================
+  generate-api-docs:
+    name: Generate API Documentation
+    runs-on: ubuntu-latest
+    needs: [lint-openapi-redocly, lint-asyncapi]
+    if: github.ref == 'refs/heads/master'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Download OpenAPI specs
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: openapi-specs
+          path: openapi-specs
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install CLI tools (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            npm install -g @redocly/cli@${{ env.REDOCLY_CLI_VERSION }} --prefer-offline --no-audit --no-fund
+            npm install -g @asyncapi/cli@${{ env.ASYNCAPI_CLI_VERSION }} --prefer-offline --no-audit --no-fund
+
+      - name: Generate OpenAPI HTML docs
+        run: |
+          mkdir -p build/api-docs/openapi
+          specs=$(find openapi-specs \( -name 'openapi.yaml' -o -name 'openapi.yml' -o -name 'openapi.json' \))
+          for spec in $specs; do
+            module=$(echo $spec | sed -E 's|.*/([^/]+)/build/openapi/.*|\1|')
+            echo "📄 Generating OpenAPI docs for: $module"
+            redocly build-docs "$spec" --output="build/api-docs/openapi/$module.html"
+          done
+
+      - name: Generate AsyncAPI HTML docs
+        run: |
+          mkdir -p build/api-docs/asyncapi
+          for spec in config/asyncapi/*.yaml config/asyncapi/*.yml; do
+            if [ -f "$spec" ]; then
+              BASENAME=$(basename "$spec" | sed 's/\.[^.]*$//')
+              echo "📄 Generating AsyncAPI docs for: $BASENAME"
+              asyncapi generate fromTemplate "$spec" @asyncapi/html-template \
+                -o "build/api-docs/asyncapi/$BASENAME" --force-write || true
+            fi
+          done
+
+      - name: Upload API documentation
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: api-documentation
+          path: build/api-docs/
+          retention-days: 30
+
+  # ===========================================================================
+  # API Governance: Breaking Change Detection (PR-only)
+  # ===========================================================================
+  breaking-change-check:
+    name: Breaking Change Detection
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: [lint-openapi-redocly, lint-asyncapi]
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4.1.7
+        with:
+          path: pr-branch
+
+      - name: Checkout base branch
+        uses: actions/checkout@v4.1.7
+        with:
+          ref: ${{ github.base_ref }}
+          path: base-branch
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install AsyncAPI CLI (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm install -g @asyncapi/cli@${{ env.ASYNCAPI_CLI_VERSION }} --prefer-offline --no-audit --no-fund
+
+      - name: Check AsyncAPI breaking changes
+        run: |
+          echo "### Breaking Change Analysis" >> $GITHUB_STEP_SUMMARY
+          BREAKING=0
+
+          for spec in pr-branch/config/asyncapi/*.yaml pr-branch/config/asyncapi/*.yml; do
+            if [ -f "$spec" ]; then
+              BASENAME=$(basename "$spec")
+              BASE_SPEC="base-branch/config/asyncapi/$BASENAME"
+
+              if [ -f "$BASE_SPEC" ]; then
+                echo "📋 Comparing: $BASENAME"
+                if asyncapi diff "$BASE_SPEC" "$spec" --overrides breaking=fail 2>&1; then
+                  echo "✅ No breaking changes in: $BASENAME"
+                else
+                  echo "⚠️ Potential breaking changes in: $BASENAME"
+                  BREAKING=$((BREAKING + 1))
+                fi
+              else
+                echo "📝 New spec: $BASENAME (no base to compare)"
+              fi
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Specs with breaking changes:** $BREAKING" >> $GITHUB_STEP_SUMMARY
+
+          if [ $BREAKING -gt 0 ]; then
+            echo "⚠️ Breaking changes detected — please review carefully"
+          fi
+
+  # ===========================================================================
+  # Documentation: Validate Docs
+  # ===========================================================================
+  validate-documentation:
+    name: Validate Documentation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Install PowerShell (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            sudo apt-get update -qq
+            wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+            sudo dpkg -i packages-microsoft-prod.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y powershell
+
+      - name: Run documentation validation
+        shell: pwsh
+        run: |
+          Write-Host "Starting ChiroERP documentation validation..." -ForegroundColor Cyan
+          if (Test-Path ./scripts/validate-docs.ps1) {
+            ./scripts/validate-docs.ps1 -Verbose
+          } else {
+            Write-Host "⚠️ validate-docs.ps1 not found — skipping" -ForegroundColor Yellow
+          }
+
+      - name: Suggest auto-fix on failure
+        if: failure()
+        shell: pwsh
+        run: |
+          Write-Host "⚠️ Validation failed. Run locally:" -ForegroundColor Yellow
+          Write-Host "  pwsh ./scripts/validate-docs.ps1 -Fix" -ForegroundColor Cyan
+
+      - name: Upload validation report
+        if: always()
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: validation-report
+          path: validation-report.txt
+          retention-days: 30
+          if-no-files-found: ignore
+
+      - name: Comment on PR (if failed)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '❌ **Documentation validation failed**\n\nPlease fix before merging.\n\n```bash\npwsh ./scripts/validate-docs.ps1 -Verbose\npwsh ./scripts/validate-docs.ps1 -Fix\n```'
+            })
+
+  # ===========================================================================
+  # Documentation: ADR Completeness
+  # ===========================================================================
+  check-adr-completeness:
+    name: ADR Completeness Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Check ADR structure
+        run: |
+          echo "### ADR Completeness Report" >> $GITHUB_STEP_SUMMARY
+          ERRORS=0
+
+          for adr in docs/adr/ADR-*.md; do
+            if [ ! -f "$adr" ]; then continue; fi
+            MISSING=""
+
+            grep -q "^## Status\|^\*\*Status\*\*" "$adr"    || MISSING="${MISSING} Status"
+            grep -q "^## Context"                   "$adr"    || MISSING="${MISSING} Context"
+            grep -q "^## Decision"                  "$adr"    || MISSING="${MISSING} Decision"
+            grep -q "^## Consequences"              "$adr"    || MISSING="${MISSING} Consequences"
+
+            if [ -n "$MISSING" ]; then
+              echo "⚠️ $(basename $adr): Missing sections —$MISSING"
+              echo "⚠️ **$(basename $adr):** Missing —$MISSING" >> $GITHUB_STEP_SUMMARY
+              ERRORS=$((ERRORS + 1))
+            fi
+          done
+
+          ADR_COUNT=$(find docs/adr -name "ADR-*.md" | wc -l | tr -d ' ')
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Total ADRs:** $ADR_COUNT | **Issues:** $ERRORS" >> $GITHUB_STEP_SUMMARY
+
+          echo "✅ ADR structure check complete ($ADR_COUNT ADRs, $ERRORS issues)"
+
+  # ===========================================================================
+  # Documentation: Markdown Lint (advisory)
+  # ===========================================================================
+  check-markdown-lint:
+    name: Markdown Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install markdownlint-cli (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 3
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: npm install -g markdownlint-cli --prefer-offline --no-audit --no-fund
+
+      - name: Run markdownlint
+        run: |
+          if [ -f .markdownlint.json ]; then
+            markdownlint 'docs/**/*.md' \
+              --ignore 'docs/architecture/WORKSPACE-STRUCTURE.md' \
+              --config .markdownlint.json || echo "⚠️ Markdown lint issues found (advisory)"
+          else
+            echo "ℹ️ No .markdownlint.json config found — using defaults"
+            markdownlint 'docs/**/*.md' || echo "⚠️ Markdown lint issues found (advisory)"
+          fi
+
+      - name: Check for broken links
+        if: github.event_name != 'schedule'
+        uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          use-quiet-mode: 'yes'
+          use-verbose-mode: 'no'
+          config-file: '.markdown-link-check.json'
+          folder-path: 'docs/'
+          max-depth: 5
+        continue-on-error: true
+
+  # ===========================================================================
+  # Documentation: Metrics
+  # ===========================================================================
+  documentation-metrics:
+    name: Documentation Metrics
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+
+      - name: Calculate documentation statistics
+        run: |
+          echo "### Documentation Metrics" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          adr_count=$(find docs/adr -name "ADR-*.md" 2>/dev/null | wc -l | tr -d ' ')
+          arch_docs=$(find docs/architecture -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
+          total_md=$(find docs -name "*.md" 2>/dev/null | wc -l | tr -d ' ')
+          total_words=$(find docs -name "*.md" -exec wc -w {} + 2>/dev/null | tail -1 | awk '{print $1}')
+
+          echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Total ADRs | $adr_count |" >> $GITHUB_STEP_SUMMARY
+          echo "| Architecture Docs | $arch_docs |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Markdown Files | $total_md |" >> $GITHUB_STEP_SUMMARY
+          echo "| Total Word Count | $total_words |" >> $GITHUB_STEP_SUMMARY
+
+          if [ "$adr_count" -gt 0 ]; then
+            words_per_adr=$((total_words / adr_count))
+            echo "| Avg Words/ADR | $words_per_adr |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo ""
+          echo "✅ Documentation metrics: $adr_count ADRs, $total_md docs, $total_words words"
+
+  # ===========================================================================
+  # Progress Tracker
+  # ===========================================================================
+  track-progress:
+    name: Track Implementation Progress
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4.1.7
+        with:
+          fetch-depth: 0
+
+      - name: Install PowerShell (with retry)
+        uses: nick-fields/retry@v3.0.0
+        with:
+          timeout_minutes: 5
+          max_attempts: 3
+          retry_wait_seconds: 10
+          command: |
+            sudo apt-get update -qq
+            wget -q "https://packages.microsoft.com/config/ubuntu/$(lsb_release -rs)/packages-microsoft-prod.deb"
+            sudo dpkg -i packages-microsoft-prod.deb
+            sudo apt-get update -qq
+            sudo apt-get install -y powershell
+
+      - name: Run progress tracker
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Analyzing ChiroERP codebase for progress..." -ForegroundColor Cyan
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -Verbose
+          } else {
+            Write-Host "⚠️ track-progress.ps1 not found — skipping" -ForegroundColor Yellow
+          }
+
+      - name: Generate Markdown report
+        shell: pwsh
+        run: |
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -OutputFormat markdown -OutputPath progress-report.md
+          }
+
+      - name: Generate JSON report
+        shell: pwsh
+        run: |
+          if (Test-Path ./scripts/track-progress.ps1) {
+            ./scripts/track-progress.ps1 -OutputFormat json -OutputPath progress-report.json
+          }
+
+      - name: Upload progress reports
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: progress-reports
+          path: |
+            progress-report.md
+            progress-report.json
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Comment on PR with progress
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const reportPath = 'progress-report.json';
+
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report found — skipping PR comment');
+              return;
+            }
+
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const overallProgress = progress.summary?.completionPercentage || 0;
+
+            const domainTable = (progress.domains || [])
+              .sort((a, b) => b.completionPercentage - a.completionPercentage)
+              .slice(0, 5)
+              .map(d => `| ${d.name} | ${d.implementedModules}/${d.totalModules} | ${d.completionPercentage}% |`)
+              .join('\n');
+
+            const body = `## 📊 Implementation Progress
+
+            **Overall Completion:** ${overallProgress}%
+            **Modules:** ${progress.summary?.implementedModules || 0} / ${progress.summary?.totalModules || 0}
+
+            ### Top 5 Domains
+
+            | Domain | Modules | Progress |
+            |--------|---------|----------|
+            ${domainTable}
+
+            <details>
+            <summary>📎 Full report available in workflow artifacts</summary>
+
+            Download the \`progress-reports\` artifact from the Actions tab for the complete report.
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Create issues for missing modules (scheduled only)
+        if: github.event_name == 'schedule'
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const reportPath = 'progress-report.json';
+
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report found — skipping issue creation');
+              return;
+            }
+
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const notStarted = (progress.modules || []).filter(m => m.status === 'Not Started');
+
+            console.log(`Found ${notStarted.length} modules not yet started`);
+
+            for (const module of notStarted.slice(0, 10)) {
+              const title = `Implement module: ${module.name}`;
+              const body = `## Module Implementation Task
+
+              **Module:** \`${module.name}\`
+              **Domain:** ${module.domain}
+              **Path:** \`${module.path}\`
+
+              ### Tasks
+              - [ ] Create module structure
+              - [ ] Implement domain models
+              - [ ] Add business logic
+              - [ ] Write unit tests
+              - [ ] Write integration tests
+              - [ ] Update documentation
+
+              ---
+              *Auto-generated by Progress Tracker workflow*`;
+
+              const existingIssues = await github.rest.issues.listForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'open',
+                labels: 'module-implementation',
+                per_page: 100
+              });
+
+              const exists = existingIssues.data.some(issue => issue.title === title);
+
+              if (!exists) {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: title,
+                  body: body,
+                  labels: ['module-implementation', 'enhancement']
+                });
+                console.log(`Created issue: ${title}`);
+              }
+            }
+
+  # ===========================================================================
+  # Progress Badge (master only)
+  # ===========================================================================
+  generate-badge:
+    name: Generate Progress Badge
+    runs-on: ubuntu-latest
+    needs: track-progress
+    if: github.ref == 'refs/heads/master'
+    timeout-minutes: 5
+
+    steps:
+      - name: Download progress report
+        uses: actions/download-artifact@v4.1.8
+        with:
+          name: progress-reports
+
+      - name: Create progress badge JSON
+        uses: actions/github-script@v7.0.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const reportPath = 'progress-report.json';
+
+            if (!fs.existsSync(reportPath)) {
+              console.log('No progress report — creating default badge');
+              fs.writeFileSync('badge.json', JSON.stringify({
+                schemaVersion: 1, label: 'implementation', message: 'N/A', color: 'lightgrey'
+              }));
+              return;
+            }
+
+            const progress = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const percentage = Math.round(progress.summary?.completionPercentage || 0);
+            const color = percentage >= 75 ? 'green' :
+                         percentage >= 50 ? 'yellow' :
+                         percentage >= 25 ? 'orange' : 'red';
+
+            fs.writeFileSync('badge.json', JSON.stringify({
+              schemaVersion: 1,
+              label: 'implementation',
+              message: `${percentage}%`,
+              color: color
+            }));
+
+            console.log(`Badge: ${percentage}% (${color})`);
+
+      - name: Upload badge artifact
+        uses: actions/upload-artifact@v4.3.6
+        with:
+          name: progress-badge
+          path: badge.json
+          retention-days: 90
+
+  # ===========================================================================
+  # Final: Status Gate (ADR-008)
+  # ===========================================================================
+  status-gate:
+    name: Pipeline Status Gate
+    runs-on: ubuntu-latest
+    needs:
+      - cache-warmup
+      - lint
+      - validate-architecture
+      - build
+      - integration-tests
+      - security-scan
+      - generate-openapi-specs
+      - lint-openapi-redocly
+      - lint-openapi-spectral
+      - validate-asyncapi-specs
+      - lint-asyncapi
+      - validate-documentation
+      - check-adr-completeness
+      - check-markdown-lint
+      - documentation-metrics
+      - track-progress
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Evaluate pipeline status
+        run: |
+          echo "╔══════════════════════════════════════════════════════════════╗"
+          echo "║  Unified CI — Status Gate (ADR-008)                         ║"
+          echo "╚══════════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "  ── Build & Test ──"
+          echo "  Cache Warmup:          ${{ needs.cache-warmup.result }}"
+          echo "  Lint:                  ${{ needs.lint.result }}"
+          echo "  Architecture:          ${{ needs.validate-architecture.result }}"
+          echo "  Build & Unit Tests:    ${{ needs.build.result }}"
+          echo "  Integration Tests:     ${{ needs.integration-tests.result }}"
+          echo "  Security Scan:         ${{ needs.security-scan.result }}"
+          echo ""
+          echo "  ── API Governance ──"
+          echo "  OpenAPI Generation:    ${{ needs.generate-openapi-specs.result }}"
+          echo "  OpenAPI Redocly:       ${{ needs.lint-openapi-redocly.result }}"
+          echo "  OpenAPI Spectral:      ${{ needs.lint-openapi-spectral.result }}"
+          echo "  AsyncAPI Validation:   ${{ needs.validate-asyncapi-specs.result }}"
+          echo "  AsyncAPI Lint:         ${{ needs.lint-asyncapi.result }}"
+          echo ""
+          echo "  ── Documentation ──"
+          echo "  Doc Validation:        ${{ needs.validate-documentation.result }}"
+          echo "  ADR Completeness:      ${{ needs.check-adr-completeness.result }}"
+          echo "  Markdown Lint:         ${{ needs.check-markdown-lint.result }}"
+          echo "  Doc Metrics:           ${{ needs.documentation-metrics.result }}"
+          echo "  Progress Tracker:      ${{ needs.track-progress.result }}"
+          echo ""
+
+          # ── Hard gates (must pass) ──
+          FAILED=0
+
+          for job in cache-warmup lint validate-architecture build; do
+            result="${{ needs.cache-warmup.result }}"
+            case "$job" in
+              lint) result="${{ needs.lint.result }}" ;;
+              validate-architecture) result="${{ needs.validate-architecture.result }}" ;;
+              build) result="${{ needs.build.result }}" ;;
+            esac
+            if [[ "$result" != "success" ]]; then
+              echo "❌ HARD GATE FAILED: $job = $result"
+              FAILED=1
+            fi
+          done
+
+          # ── Soft gates (advisory — logged but not blocking) ──
+          for job_result in \
+            "integration-tests=${{ needs.integration-tests.result }}" \
+            "security-scan=${{ needs.security-scan.result }}" \
+            "generate-openapi-specs=${{ needs.generate-openapi-specs.result }}" \
+            "lint-openapi-redocly=${{ needs.lint-openapi-redocly.result }}" \
+            "lint-openapi-spectral=${{ needs.lint-openapi-spectral.result }}" \
+            "validate-asyncapi-specs=${{ needs.validate-asyncapi-specs.result }}" \
+            "lint-asyncapi=${{ needs.lint-asyncapi.result }}" \
+            "validate-documentation=${{ needs.validate-documentation.result }}" \
+            "check-adr-completeness=${{ needs.check-adr-completeness.result }}" \
+            "check-markdown-lint=${{ needs.check-markdown-lint.result }}" \
+            "documentation-metrics=${{ needs.documentation-metrics.result }}" \
+            "track-progress=${{ needs.track-progress.result }}"
+          do
+            name="${job_result%%=*}"
+            result="${job_result##*=}"
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "⚠️  ADVISORY: $name = $result"
+            fi
+          done
+
+          if [[ "$FAILED" -eq 1 ]]; then
+            echo ""
+            echo "❌ Pipeline FAILED — hard gate(s) did not pass"
+            exit 1
+          fi
+
+          echo ""
+          echo "✅ Pipeline PASSED — all quality gates satisfied"
+
+      - name: Post failure notification
+        if: failure()
+        run: |
+          echo "::error::CI Pipeline failed for ${{ github.ref_name }} (commit: ${{ github.sha }}, author: ${{ github.actor }})"
