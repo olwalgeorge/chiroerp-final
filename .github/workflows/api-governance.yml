@@ -283,7 +283,7 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
-      - name: Install Spectral CLI (with retry)
+      - name: Install Spectral CLI and rulesets (with retry)
         uses: nick-fields/retry@v3.0.0
         with:
           timeout_minutes: 3
@@ -291,6 +291,7 @@ jobs:
           retry_wait_seconds: 10
           command: |
             npm install -g @stoplight/spectral-cli@${{ env.SPECTRAL_CLI_VERSION }}
+            npm install -g @stoplight/spectral-rulesets@${{ env.SPECTRAL_CLI_VERSION }}
             spectral --version
 
       - name: Create AsyncAPI ruleset

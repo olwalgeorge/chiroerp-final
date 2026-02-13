@@ -411,6 +411,10 @@ $consistencyChecks = @(
 )
 
 foreach ($check in $consistencyChecks) {
+    if (-not $check.Values -or $check.Values.Count -eq 0) {
+        Write-ValidationWarning "$($check.Name): No values found to compare"
+        continue
+    }
     $unique = $check.Values | Select-Object -Unique
     if ($unique.Count -gt 1) {
         Write-ValidationError "$($check.Name) inconsistent across documents: $($check.Values -join ', ')"

@@ -2,7 +2,7 @@
 
 This document provides a master index, integration map, and standards for the ChiroERP architecture documentation set.
 
-**ADR Coverage**: 57+ ADRs (ADR-001 through ADR-057)
+**ADR Coverage**: 75+ ADRs (ADR-001 through ADR-075)
 
 ## Domain Index
 

@@ -9,7 +9,7 @@
 
 ## 📋 Quick Links
 
-- [Architecture Overview](docs/architecture/README.md) - 12 domains, 92 modules, 57+ ADRs
+- [Architecture Overview](docs/architecture/README.md) - 12 domains, 92 modules, 75+ ADRs
 - [Build System Guide](docs/architecture/BUILD_SYSTEM_ADOPTION.md) - Gradle 9.0 + Convention Plugins
 - [Deployment Guide](docs/architecture/DEPLOYMENT-GUIDE.md) - 3-tier topology (SMB → Enterprise)
 - [MVP Infra Prep](docs/MVP-INFRA-PREIMPLEMENTATION.md) - Local pre-implementation runtime baseline
