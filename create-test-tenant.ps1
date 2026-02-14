@@ -2,9 +2,12 @@
 
 Write-Host "=== Creating Tenant ===" -ForegroundColor Green
 
+# Generate unique domain with timestamp
+$timestamp = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+
 $tenantData = @{
     name = "Acme Chiropractic Clinic"
-    domain = "acme-chiro.chiroerp.local"
+    domain = "acme-$timestamp.chiroerp.local"
     tier = "STANDARD"
     dataResidencyCountry = "US"
     locale = "en_US"
