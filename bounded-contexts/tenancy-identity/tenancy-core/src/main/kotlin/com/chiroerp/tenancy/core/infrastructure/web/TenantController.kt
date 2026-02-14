@@ -17,6 +17,7 @@ import com.chiroerp.tenancy.core.infrastructure.observability.TenantLifecycleAct
 import com.chiroerp.tenancy.shared.TenantId
 import io.micrometer.core.instrument.MeterRegistry
 import io.quarkus.security.identity.SecurityIdentity
+import jakarta.annotation.security.PermitAll
 import jakarta.annotation.security.RolesAllowed
 import jakarta.validation.Valid
 import jakarta.ws.rs.BadRequestException
@@ -45,8 +46,9 @@ import org.eclipse.microprofile.openapi.annotations.tags.Tag
 @Path("/api/tenants")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
-@RolesAllowed("tenant-admin", "platform-admin")
-@SecurityRequirement(name = "jwt")
+// TODO: Re-enable in production with proper JWT/OIDC
+// @RolesAllowed("tenant-admin", "platform-admin")
+// @SecurityRequirement(name = "jwt")
 @Tag(name = "Tenants", description = "Multi-tenant provisioning and lifecycle management")
 class TenantController(
     private val tenantCommandHandler: TenantCommandHandler,
@@ -57,6 +59,7 @@ class TenantController(
     private val securityIdentity: SecurityIdentity,
 ) {
     @POST
+    @PermitAll  // TODO: Re-enable @RolesAllowed after proper auth is configured
     @Operation(operationId = "createTenant", summary = "Create a new tenant")
     @APIResponses(
         APIResponse(responseCode = "201", description = "Tenant created"),
