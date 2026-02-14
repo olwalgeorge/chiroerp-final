@@ -78,6 +78,44 @@ class TenantLifecycleEventEndToEndIntegrationTest {
         assertThat(userEmail(tenantId)).isEqualTo("admin@acme.example")
     }
 
+    @Test
+    fun `publish tenant activated event activates bootstrap user without duplicate roles`() {
+        val tenantId = UUID.fromString("e6536015-2394-411a-8eaf-cf09f8fe6e2f")
+        val createdEventId = UUID.fromString("3de315f9-f3b2-429f-8c9a-f6bedf7db8a2")
+        val activatedEventId = UUID.fromString("af08a5f6-f679-485c-9f29-5c6c830d7ab3")
+
+        val createdPayload = """
+            {
+              "eventId": "$createdEventId",
+              "tenantId": "$tenantId",
+              "eventType": "TenantCreated",
+              "occurredAt": "${Instant.now()}",
+              "tenantName": "Delta Chiro",
+              "domain": "delta.example"
+            }
+        """.trimIndent()
+        val activatedPayload = """
+            {
+              "eventId": "$activatedEventId",
+              "tenantId": "$tenantId",
+              "eventType": "TenantActivated",
+              "occurredAt": "${Instant.now()}"
+            }
+        """.trimIndent()
+
+        publish(createdPayload, tenantId.toString())
+        eventually("tenant created event is consumed") {
+            processedEventCount(createdEventId) == 1L && userCount(tenantId) == 1L
+        }
+
+        publish(activatedPayload, tenantId.toString())
+        eventually("tenant activated event is consumed and user is activated") {
+            processedEventCount(activatedEventId) == 1L &&
+                userStatus(tenantId) == "ACTIVE" &&
+                userRoleCount(tenantId) == 1L
+        }
+    }
+
     private fun publish(payload: String, key: String) {
         KafkaProducer<String, String>(producerProperties()).use { producer ->
             producer.send(ProducerRecord(topic, key, payload)).get(10, TimeUnit.SECONDS)
@@ -121,6 +159,32 @@ class TenantLifecycleEventEndToEndIntegrationTest {
             .resultList as List<String>
 
         return rows.firstOrNull()
+    }
+
+    private fun userStatus(tenantId: UUID): String? {
+        @Suppress("UNCHECKED_CAST")
+        val rows = entityManager.createNativeQuery(
+            "SELECT status FROM identity_users WHERE tenant_id = :tenantId ORDER BY created_at ASC",
+        )
+            .setParameter("tenantId", tenantId)
+            .setMaxResults(1)
+            .resultList as List<String>
+
+        return rows.firstOrNull()
+    }
+
+    private fun userRoleCount(tenantId: UUID): Long {
+        val result = entityManager.createNativeQuery(
+            """
+            SELECT count(*)
+            FROM identity_user_roles r
+            JOIN identity_users u ON u.id = r.user_id
+            WHERE u.tenant_id = :tenantId
+            """.trimIndent(),
+        )
+            .setParameter("tenantId", tenantId)
+            .singleResult as Number
+        return result.toLong()
     }
 
     private fun eventually(

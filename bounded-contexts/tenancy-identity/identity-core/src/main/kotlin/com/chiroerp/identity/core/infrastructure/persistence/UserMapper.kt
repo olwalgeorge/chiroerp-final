@@ -160,53 +160,9 @@ class UserMapper(
             entity.mfaVerifiedAt = mfaConfiguration.verifiedAt
         }
 
-        entity.roles.clear()
-        user.assignedRoles
-            .sortedBy { it.normalizedCode }
-            .forEach { role ->
-                val roleEntity = UserRoleJpaEntity()
-                roleEntity.user = entity
-                roleEntity.roleCode = role.normalizedCode
-                roleEntity.description = role.description
-                roleEntity.sodGroup = role.sodGroup
-                roleEntity.permissionsJson = objectMapper.writeValueAsString(
-                    role.permissions.map {
-                        PermissionPayload(
-                            objectId = it.objectId,
-                            actions = it.actions,
-                            constraints = it.constraints,
-                        )
-                    },
-                )
-                roleEntity.createdAt = user.updatedAt
-                entity.roles += roleEntity
-            }
-
-        entity.permissions.clear()
-        user.directPermissions
-            .sortedBy { it.objectId }
-            .forEach { permission ->
-                val permissionEntity = UserPermissionJpaEntity()
-                permissionEntity.user = entity
-                permissionEntity.objectId = permission.objectId
-                permissionEntity.actionsJson = objectMapper.writeValueAsString(permission.actions)
-                permissionEntity.constraintsJson = objectMapper.writeValueAsString(permission.constraints)
-                permissionEntity.createdAt = user.updatedAt
-                entity.permissions += permissionEntity
-            }
-
-        entity.externalIdentities.clear()
-        user.linkedIdentities
-            .sortedBy { "${it.provider.name}:${it.subject}" }
-            .forEach { externalIdentity ->
-                val externalIdentityEntity = UserExternalIdentityJpaEntity()
-                externalIdentityEntity.user = entity
-                externalIdentityEntity.provider = externalIdentity.provider.name
-                externalIdentityEntity.subject = externalIdentity.subject
-                externalIdentityEntity.claimsJson = objectMapper.writeValueAsString(externalIdentity.claims)
-                externalIdentityEntity.linkedAt = externalIdentity.linkedAt
-                entity.externalIdentities += externalIdentityEntity
-            }
+        syncRoleEntities(entity, user)
+        syncPermissionEntities(entity, user)
+        syncExternalIdentityEntities(entity, user)
 
         return entity
     }
@@ -219,6 +175,89 @@ class UserMapper(
 
     private fun parseZoneId(raw: String): ZoneId = runCatching { ZoneId.of(raw.trim().ifEmpty { "UTC" }) }
         .getOrDefault(ZoneId.of("UTC"))
+
+    private fun syncRoleEntities(entity: UserJpaEntity, user: User) {
+        val desiredRoles = user.assignedRoles.sortedBy { it.normalizedCode }
+        val desiredCodes = desiredRoles.map { it.normalizedCode }.toSet()
+        val existingByCode = entity.roles
+            .associateBy { it.roleCode?.trim()?.uppercase(Locale.ROOT).orEmpty() }
+
+        entity.roles.removeIf { roleEntity ->
+            val code = roleEntity.roleCode?.trim()?.uppercase(Locale.ROOT).orEmpty()
+            code.isBlank() || code !in desiredCodes
+        }
+
+        desiredRoles.forEach { role ->
+            val roleEntity = existingByCode[role.normalizedCode] ?: UserRoleJpaEntity().also {
+                it.user = entity
+                it.createdAt = user.updatedAt
+                entity.roles += it
+            }
+            roleEntity.user = entity
+            roleEntity.roleCode = role.normalizedCode
+            roleEntity.description = role.description
+            roleEntity.sodGroup = role.sodGroup
+            roleEntity.permissionsJson = objectMapper.writeValueAsString(
+                role.permissions.map {
+                    PermissionPayload(
+                        objectId = it.objectId,
+                        actions = it.actions,
+                        constraints = it.constraints,
+                    )
+                },
+            )
+        }
+    }
+
+    private fun syncPermissionEntities(entity: UserJpaEntity, user: User) {
+        val desiredPermissions = user.directPermissions.sortedBy { it.objectId }
+        val desiredObjectIds = desiredPermissions.map { it.objectId }.toSet()
+        val existingByObjectId = entity.permissions.associateBy { it.objectId?.trim().orEmpty() }
+
+        entity.permissions.removeIf { permissionEntity ->
+            val objectId = permissionEntity.objectId?.trim().orEmpty()
+            objectId.isBlank() || objectId !in desiredObjectIds
+        }
+
+        desiredPermissions.forEach { permission ->
+            val permissionEntity = existingByObjectId[permission.objectId] ?: UserPermissionJpaEntity().also {
+                it.user = entity
+                it.createdAt = user.updatedAt
+                entity.permissions += it
+            }
+            permissionEntity.user = entity
+            permissionEntity.objectId = permission.objectId
+            permissionEntity.actionsJson = objectMapper.writeValueAsString(permission.actions)
+            permissionEntity.constraintsJson = objectMapper.writeValueAsString(permission.constraints)
+        }
+    }
+
+    private fun syncExternalIdentityEntities(entity: UserJpaEntity, user: User) {
+        val desiredIdentities = user.linkedIdentities
+            .sortedBy { "${it.provider.name}:${it.subject}" }
+        val desiredKeys = desiredIdentities.map { "${it.provider.name}:${it.subject}" }.toSet()
+        val existingByKey = entity.externalIdentities.associateBy {
+            "${it.provider?.trim().orEmpty()}:${it.subject?.trim().orEmpty()}"
+        }
+
+        entity.externalIdentities.removeIf { externalIdentityEntity ->
+            val key = "${externalIdentityEntity.provider?.trim().orEmpty()}:${externalIdentityEntity.subject?.trim().orEmpty()}"
+            key !in desiredKeys
+        }
+
+        desiredIdentities.forEach { externalIdentity ->
+            val key = "${externalIdentity.provider.name}:${externalIdentity.subject}"
+            val externalIdentityEntity = existingByKey[key] ?: UserExternalIdentityJpaEntity().also {
+                it.user = entity
+                entity.externalIdentities += it
+            }
+            externalIdentityEntity.user = entity
+            externalIdentityEntity.provider = externalIdentity.provider.name
+            externalIdentityEntity.subject = externalIdentity.subject
+            externalIdentityEntity.claimsJson = objectMapper.writeValueAsString(externalIdentity.claims)
+            externalIdentityEntity.linkedAt = externalIdentity.linkedAt
+        }
+    }
 
     private fun parseRolePermissions(raw: String): List<Permission> = runCatching {
         objectMapper.readValue(raw, ROLE_PERMISSION_TYPE)
